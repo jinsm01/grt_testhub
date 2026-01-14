@@ -1,9 +1,20 @@
-import logging
-logger = logging.getLogger('django')
-
 import os
+# 必须在导入 browser-use 库之前设置环境变量
+# 设置 browser-use 配置目录到项目内部临时目录，避免权限问题
+# 正确计算项目根目录：/Users/jinsm/testhub/testhub_platform
+# 从 ai_base.py 向上走2级目录即可到达项目根目录
+# 路径结构：apps/ui_automation/ai_base.py → 向上2级 → 项目根目录
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+browseruse_config_dir = os.path.join(project_root, 'temp', 'browseruse_config')
+# 确保目录存在
+os.makedirs(os.path.join(project_root, 'temp'), exist_ok=True)
+os.makedirs(browseruse_config_dir, exist_ok=True)
+os.environ['BROWSER_USE_CONFIG_DIR'] = browseruse_config_dir
 # 禁用 browser-use 遥测
 os.environ['ANONYMIZED_TELEMETRY'] = 'false'
+
+import logging
+logger = logging.getLogger('django')
 
 import asyncio
 import functools

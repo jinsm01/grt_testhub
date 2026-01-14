@@ -33,6 +33,9 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: false,
   },
+  esbuild: {
+    sourcemap: false,
+  },
   optimizeDeps: {
     include: ['monaco-editor']
   }
