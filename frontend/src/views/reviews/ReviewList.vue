@@ -13,7 +13,7 @@
     <div class="filter-bar">
       <el-form :inline="true" :model="filters" class="filter-form">
         <el-form-item label="项目">
-          <el-select v-model="filters.project" placeholder="请选择项目" clearable @change="fetchReviews">
+          <el-select v-model="filters.project" placeholder="请选择项目" clearable @change="fetchReviews" style="min-width: 250px; max-width: 300px;">
             <el-option
               v-for="project in projects"
               :key="project.id"
@@ -23,7 +23,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="filters.status" placeholder="请选择状态" clearable @change="fetchReviews">
+          <el-select v-model="filters.status" placeholder="请选择状态" clearable @change="fetchReviews" style="min-width: 150px; max-width: 200px;">
             <el-option label="待评审" value="pending" />
             <el-option label="评审中" value="in_progress" />
             <el-option label="已通过" value="approved" />
@@ -32,7 +32,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="评审人">
-          <el-select v-model="filters.reviewer" placeholder="请选择评审人" clearable @change="fetchReviews">
+          <el-select v-model="filters.reviewer" placeholder="请选择评审人" clearable @change="fetchReviews" style="min-width: 200px; max-width: 250px;">
             <el-option
               v-for="user in users"
               :key="user.id"

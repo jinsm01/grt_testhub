@@ -119,19 +119,25 @@
                 <button 
                   class="view-detail-btn" 
                   @click="viewTaskDetail(task)">
-                  📖 查看详情
+                  📖 详情
                 </button>
                 <button 
                   v-if="task.status === 'completed'"
                   class="adopt-btn" 
                   @click="batchAdoptTask(task)">
-                  ✅ 一键采纳
+                  ✅ 采纳
                 </button>
                 <button 
                   v-if="task.status === 'completed'"
                   class="discard-btn" 
                   @click="batchDiscardTask(task)">
-                  ❌ 一键弃用
+                  ❌ 弃用
+                </button>
+                <button 
+                  v-if="task.status === 'completed'"
+                  class="export-btn" 
+                  @click="exportTestCasesMD(task)">
+                  📄导出MD
                 </button>
               </div>
             </div>
@@ -642,6 +648,7 @@ export default {
         'pending': '需求分析中',
         'generating': '用例编写中', 
         'reviewing': '用例评审中',
+        'revising': '改进中',
         'completed': '已完成',
         'failed': '失败'
       }
@@ -769,6 +776,25 @@ export default {
         ElMessage.error('一键弃用失败: ' + (error.response?.data?.message || error.message))
       }
     },
+
+    exportTestCasesMD(task) {
+      try {
+        // 构建导出URL
+        const currentOrigin = window.location.origin
+        const url = new URL(currentOrigin)
+        const baseUrl = `${url.protocol}//${url.hostname}:8001`
+        const exportUrl = `${baseUrl}/api/requirement-analysis/testcase-generation/${task.task_id}/export_md/`
+
+        // 打开新窗口下载
+        window.open(exportUrl, '_blank')
+
+        ElMessage.success('正在导出MD格式测试用例...')
+      } catch (error) {
+        console.error('导出MD格式测试用例失败:', error)
+        ElMessage.error('导出失败，请重试')
+      }
+    },
+
 
     formatDateTime(dateString) {
       if (!dateString) return ''
@@ -1223,17 +1249,20 @@ export default {
 
 .table-header {
   display: grid;
-  grid-template-columns: 50px 60px 180px 320px 100px 100px 180px 200px;
+  grid-template-columns: 40px 60px 140px 250px 120px 80px 130px 450px;
   background: #f8f9fa;
   font-weight: bold;
   color: #2c3e50;
+  border-bottom: 2px solid #dee2e6;
 }
 
 .table-body .table-row {
   display: grid;
-  grid-template-columns: 50px 60px 180px 320px 100px 100px 180px 200px;
+  grid-template-columns: 40px 60px 140px 250px 120px 80px 130px 450px;
   border-bottom: 1px solid #eee;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
+  min-height: 60px;
+  height: auto;
 }
 
 .table-row:hover {
@@ -1249,22 +1278,25 @@ export default {
 }
 
 .header-cell {
-  padding: 12px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-right: 1px solid #eee;
   word-wrap: break-word;
   word-break: break-word;
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 .body-cell {
-  padding: 12px;
+  padding: 10px 12px;
   display: flex;
   align-items: center;
   border-right: 1px solid #eee;
   word-wrap: break-word;
   word-break: break-word;
+  font-size: 14px;
 }
 
 .header-cell:last-child,
@@ -1274,7 +1306,7 @@ export default {
 
 .checkbox-cell {
   justify-content: center;
-  width: 50px;
+  width: 40px;
   flex-shrink: 0;
 }
 
@@ -1287,37 +1319,40 @@ export default {
 }
 
 .task-checkbox {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
   accent-color: #3498db;
 }
 
 /* 任务ID列 */
 .task-id-cell {
-  width: 180px;
+  width: 140px;
   flex-shrink: 0;
 }
 
 .body-cell.task-id-cell {
   justify-content: flex-start;
+  font-size: 13px;
 }
 
 /* 关联需求列 */
 .requirement-name-cell {
-  min-width: 320px;
-  max-width: 320px;
+  min-width: 250px;
+  max-width: 250px;
   flex-shrink: 0;
 }
 
 .body-cell.requirement-name-cell {
   justify-content: flex-start;
+  padding-left: 8px;
 }
 
 /* 状态列 */
 .status-cell {
-  width: 100px;
+  width: 120px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .body-cell.status-cell {
@@ -1327,36 +1362,40 @@ export default {
 /* 用例条数列 */
 .count-cell {
   justify-content: center;
-  width: 100px;
+  width: 80px;
   flex-shrink: 0;
 }
 
 /* 生成时间列 */
 .time-cell {
-  width: 180px;
+  width: 130px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .body-cell.time-cell {
   justify-content: center;
+  font-size: 13px;
 }
 
 /* 操作列 */
 .action-cell {
-  min-width: 200px;
+  min-width: 450px;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .body-cell.action-cell {
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .action-buttons {
   display: flex;
-  gap: 5px;
+  gap: 8px;
   flex-wrap: nowrap;
   align-items: center;
-  margin: 0 auto;
+  justify-content: center;
+  width: 100%;
 }
 
 .count-badge {
@@ -1378,6 +1417,10 @@ export default {
   word-wrap: break-word;
   word-break: break-word;
   white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .requirement-id {
@@ -1429,6 +1472,11 @@ export default {
   color: #1976d2;
 }
 
+.status-tag.revising {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
 .status-tag.completed {
   background: #d4edda;
   color: #155724;
@@ -1448,7 +1496,6 @@ export default {
   cursor: pointer;
   font-size: 0.8rem;
   transition: background 0.3s ease;
-  margin-right: 3px;
   white-space: nowrap;
 }
 
@@ -1465,7 +1512,6 @@ export default {
   cursor: pointer;
   font-size: 0.8rem;
   transition: background 0.3s ease;
-  margin-right: 3px;
   white-space: nowrap;
 }
 
@@ -1489,11 +1535,30 @@ export default {
   background: #c0392b;
 }
 
+.export-btn {
+  background: #9b59b6;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background 0.3s ease;
+  white-space: nowrap;
+}
+
+.export-btn:hover {
+  background: #8e44ad;
+}
+
+
 .action-buttons {
   display: flex;
   gap: 5px;
   flex-wrap: nowrap;
   align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .adopted-label {
@@ -1827,7 +1892,8 @@ export default {
 
   .view-detail-btn,
   .adopt-btn,
-  .discard-btn {
+  .discard-btn,
+  .export-btn {
     margin-right: 0;
     font-size: 0.65rem;
     padding: 2px 4px;
@@ -1864,7 +1930,8 @@ export default {
   
   .view-detail-btn,
   .adopt-btn,
-  .discard-btn {
+  .discard-btn,
+  .export-btn {
     font-size: 0.65rem;
     padding: 2px 4px;
   }

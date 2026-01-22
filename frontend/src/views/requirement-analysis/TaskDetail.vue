@@ -475,6 +475,7 @@ export default {
         'pending': '需求分析中',
         'generating': '用例编写中',
         'reviewing': '用例评审中',
+        'revising': '改进中',
         'completed': '已完成',
         'failed': '失败'
       }

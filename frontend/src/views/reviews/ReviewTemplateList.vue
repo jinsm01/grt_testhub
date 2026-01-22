@@ -13,7 +13,7 @@
     <div class="filter-bar">
       <el-form :inline="true" :model="filters" class="filter-form">
         <el-form-item label="项目">
-          <el-select v-model="filters.project" placeholder="请选择项目" clearable @change="fetchTemplates">
+          <el-select v-model="filters.project" placeholder="请选择项目" clearable @change="fetchTemplates" style="min-width: 250px; max-width: 300px;">
             <el-option
               v-for="project in projects"
               :key="project.id"
