@@ -170,8 +170,17 @@ class SeleniumTestEngine:
                 options.add_argument('--disable-popup-blocking')  # 禁用弹窗拦截（避免某些警告）
                 options.add_argument('--disable-notifications')  # 禁用所有通知
 
-                # 使用缓存优先策略
-                service = Service(ChromeDriverManager().install())
+                # 使用项目内部缓存目录，避免权限问题
+                from webdriver_manager.chrome import ChromeDriverManager
+                from webdriver_manager.core.driver_cache import DriverCacheManager
+                
+                # 设置缓存目录到项目内部
+                cache_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'temp', 'webdriver_cache')
+                os.makedirs(cache_dir, exist_ok=True)
+                
+                # 使用DriverCacheManager设置缓存目录
+                cache_manager = DriverCacheManager(root_dir=cache_dir)
+                service = Service(ChromeDriverManager(cache_manager=cache_manager).install())
                 self.driver = webdriver.Chrome(service=service, options=options)
 
             elif self.browser_type == 'firefox':
@@ -200,8 +209,17 @@ class SeleniumTestEngine:
                 options.set_preference('extensions.update.enabled', False)
                 options.set_preference('extensions.update.autoUpdateDefault', False)
 
-                # 使用缓存优先策略
-                service = Service(GeckoDriverManager().install())
+                # 使用项目内部缓存目录，避免权限问题
+                from webdriver_manager.firefox import GeckoDriverManager
+                from webdriver_manager.core.driver_cache import DriverCacheManager
+                
+                # 设置缓存目录到项目内部
+                cache_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'temp', 'webdriver_cache')
+                os.makedirs(cache_dir, exist_ok=True)
+                
+                # 使用DriverCacheManager设置缓存目录
+                cache_manager = DriverCacheManager(root_dir=cache_dir)
+                service = Service(GeckoDriverManager(cache_manager=cache_manager).install())
                 self.driver = webdriver.Firefox(service=service, options=options)
 
             elif self.browser_type == 'edge':
@@ -215,8 +233,17 @@ class SeleniumTestEngine:
                 options.add_argument('--disable-blink-features=AutomationControlled')
                 options.add_argument('--window-size=1920,1080')
 
-                # 使用缓存优先策略，7天内不重新下载
-                service = Service(EdgeChromiumDriverManager().install())
+                # 使用项目内部缓存目录，避免权限问题
+                from webdriver_manager.microsoft import EdgeChromiumDriverManager
+                from webdriver_manager.core.driver_cache import DriverCacheManager
+                
+                # 设置缓存目录到项目内部
+                cache_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'temp', 'webdriver_cache')
+                os.makedirs(cache_dir, exist_ok=True)
+                
+                # 使用DriverCacheManager设置缓存目录
+                cache_manager = DriverCacheManager(root_dir=cache_dir)
+                service = Service(EdgeChromiumDriverManager(cache_manager=cache_manager).install())
                 self.driver = webdriver.Edge(service=service, options=options)
 
             elif self.browser_type == 'safari':
@@ -274,7 +301,17 @@ class SeleniumTestEngine:
                 options.add_argument('--disable-features=TranslateUI')  # 禁用翻译提示
                 options.add_argument('--disable-infobars')  # 禁用信息栏
 
-                service = Service(ChromeDriverManager().install())
+                # 使用项目内部缓存目录，避免权限问题
+                from webdriver_manager.chrome import ChromeDriverManager
+                from webdriver_manager.core.driver_cache import DriverCacheManager
+                
+                # 设置缓存目录到项目内部
+                cache_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'temp', 'webdriver_cache')
+                os.makedirs(cache_dir, exist_ok=True)
+                
+                # 使用DriverCacheManager设置缓存目录
+                cache_manager = DriverCacheManager(root_dir=cache_dir)
+                service = Service(ChromeDriverManager(cache_manager=cache_manager).install())
                 self.driver = webdriver.Chrome(service=service, options=options)
 
             # 设置隐式等待

@@ -5,6 +5,7 @@
     </div>
 
     <div class="card-container">
+      <div class="table-wrapper" style="overflow-x: auto;">
       <div class="filter-bar">
         <el-input
           v-model="searchText"
@@ -19,25 +20,46 @@
         </el-input>
       </div>
 
-      <el-table :data="cases" v-loading="loading" style="width: 100%">
-        <el-table-column prop="name" label="用例名称" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="task_description" label="任务描述" min-width="300" show-overflow-tooltip />
-        <el-table-column prop="created_at" label="创建时间" width="180" :formatter="formatDate" />
-        <el-table-column label="操作" width="200" fixed="right">
+      <el-table :data="cases" v-loading="loading" style="width: auto; table-layout: auto;">
+        <el-table-column prop="name" label="用例名称" width="200" />
+        <el-table-column prop="description" label="描述" width="200" />
+        <el-table-column prop="task_description" label="任务描述" min-width="500">
           <template #default="{ row }">
-            <el-button size="small" type="success" @click="runCase(row)">
-              <el-icon><VideoPlay /></el-icon>
-              执行
-            </el-button>
-            <el-button size="small" type="primary" @click="editCase(row)">
-              <el-icon><Edit /></el-icon>
-              编辑
-            </el-button>
-            <el-button size="small" type="danger" @click="deleteCase(row.id)">
-              <el-icon><Delete /></el-icon>
-              删除
-            </el-button>
+            <el-tooltip 
+              :content="row.task_description" 
+              placement="top" 
+              effect="dark"
+              :width="'25vw'"
+              :max-height="'33vh'"
+              :show-after="200"
+              manual
+              @mouseenter="showTooltip"
+              @mouseleave="hideTooltip"
+              ref="tooltipRef"
+            >
+              <div class="task-description-cell">
+                {{ row.task_description }}
+              </div>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        <el-table-column prop="created_at" label="创建时间" width="180" :formatter="formatDate" />
+        <el-table-column label="操作" width="250" fixed="right">
+          <template #default="{ row }">
+            <div style="display: flex; gap: 6px; white-space: nowrap;">
+              <el-button size="small" type="success" @click="runCase(row)" style="white-space: nowrap; padding: 0 8px;">
+                <el-icon><VideoPlay /></el-icon>
+                执行
+              </el-button>
+              <el-button size="small" type="primary" @click="editCase(row)" style="white-space: nowrap; padding: 0 8px;">
+                <el-icon><Edit /></el-icon>
+                编辑
+              </el-button>
+              <el-button size="small" type="danger" @click="deleteCase(row.id)" style="white-space: nowrap; padding: 0 8px;">
+                <el-icon><Delete /></el-icon>
+                删除
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -52,6 +74,7 @@
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
         />
+      </div>
       </div>
     </div>
 
@@ -85,7 +108,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElTooltip } from 'element-plus'
 import { Search, VideoPlay, Edit, Delete } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import {
@@ -100,6 +123,20 @@ const cases = ref([])
 const loading = ref(false)
 const searchText = ref('')
 const total = ref(0)
+const tooltipRef = ref(null)
+
+// tooltip手动控制
+const showTooltip = () => {
+  if (tooltipRef.value) {
+    tooltipRef.value.show()
+  }
+}
+
+const hideTooltip = () => {
+  if (tooltipRef.value) {
+    tooltipRef.value.hide()
+  }
+}
 const pagination = reactive({
   currentPage: 1,
   pageSize: 20
@@ -255,6 +292,28 @@ onMounted(() => {
   border-radius: 4px;
   padding: 20px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+.task-description-cell {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.5;
+  max-height: 3em; /* 2行 * line-height */
+}
+
+/* 自定义tooltip样式 */
+.el-tooltip__popper {
+  max-width: 300px !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
+  word-break: break-all !important;
+  overflow-wrap: break-word !important;
+  white-space: pre-wrap !important;
+  padding: 10px !important;
+  width: auto !important;
 }
 
 .filter-bar {

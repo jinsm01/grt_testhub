@@ -33,7 +33,7 @@
         </el-row>
       </div>
       
-      <el-table :data="projects" v-loading="loading" style="width: 100%">
+      <el-table :data="projects" v-loading="loading" style="width: 100%" :cell-style="{whiteSpace: 'nowrap'}">
         <el-table-column prop="name" label="项目名称" min-width="200">
           <template #default="{ row }">
             <el-link @click="goToProjectDetail(row.id)" type="primary">
@@ -51,20 +51,22 @@
         <el-table-column prop="owner.username" label="负责人" width="100" />
         <el-table-column prop="created_at" label="创建时间" width="180" :formatter="formatDate" />
         <el-table-column prop="updated_at" label="更新时间" width="180" :formatter="formatDate" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" min-width="300" width="300" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" type="primary" @click="goToProjectDetail(row.id)">
-              <el-icon><View /></el-icon>
-              查看
-            </el-button>
-            <el-button size="small" @click="editProject(row)">
-              <el-icon><Edit /></el-icon>
-              编辑
-            </el-button>
-            <el-button size="small" type="danger" @click="deleteProject(row.id)">
-              <el-icon><Delete /></el-icon>
-              删除
-            </el-button>
+            <div style="display: flex; gap: 8px; width: 100%; white-space: nowrap;">
+              <el-button size="small" type="primary" @click="goToProjectDetail(row.id)" style="white-space: nowrap;">
+                <el-icon><View /></el-icon>
+                查看
+              </el-button>
+              <el-button size="small" @click="editProject(row)" style="white-space: nowrap;">
+                <el-icon><Edit /></el-icon>
+                编辑
+              </el-button>
+              <el-button size="small" type="danger" @click="deleteProject(row.id)" style="white-space: nowrap;">
+                <el-icon><Delete /></el-icon>
+                删除
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>

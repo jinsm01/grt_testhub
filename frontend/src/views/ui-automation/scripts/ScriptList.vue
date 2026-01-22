@@ -14,7 +14,7 @@
     </div>
 
     <div class="main-content">
-      <el-table :data="scripts" stripe style="width: 100%">
+      <el-table :data="scripts" stripe style="width: 100%; max-width: 100%; margin: 0; padding: 0;">
         <el-table-column type="index" label="序号" width="60" />
         <el-table-column label="项目" width="150">
           <template #default="{ row }">
@@ -241,7 +241,7 @@ const handleCurrentChange = async () => {
 
 // 跳转到脚本编辑器
 const goToScriptEditor = () => {
-  router.push('/ui-automation/scripts/editor')
+  router.push('/ui-automation/scripts-enhanced')
 }
 
 // 查看脚本详情
@@ -382,8 +382,12 @@ onMounted(async () => {
 <style scoped>
 .script-list {
   height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .page-header {
@@ -407,9 +411,29 @@ onMounted(async () => {
 
 .main-content {
   flex: 1;
-  padding: 20px;
+  padding: 0;
   overflow: auto;
   background: #f5f5f5;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+:deep(.el-table) {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+:deep(.el-table__header-wrapper),
+:deep(.el-table__body-wrapper) {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+:deep(.el-table__inner-wrapper) {
+  width: 100% !important;
+  max-width: 100% !important;
 }
 
 .pagination {

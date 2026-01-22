@@ -23,7 +23,7 @@
             </el-input>
           </el-form-item>
           <el-form-item label="状态">
-            <el-select v-model="queryParams.status" placeholder="执行状态" clearable>
+            <el-select v-model="queryParams.status" placeholder="请选择" clearable style="width: 120px;">
               <el-option label="待执行" value="pending" />
               <el-option label="执行中" value="running" />
               <el-option label="通过" value="passed" />
@@ -32,7 +32,7 @@
             </el-select>
           </el-form-item>
           <el-form-item label="浏览器">
-            <el-select v-model="queryParams.browser" placeholder="浏览器" clearable>
+            <el-select v-model="queryParams.browser" placeholder="请选择" clearable style="width: 120px;">
               <el-option label="Chrome" value="chrome" />
               <el-option label="Firefox" value="firefox" />
               <el-option label="Safari" value="safari" />
@@ -105,29 +105,34 @@
             {{ formatDuration(row.execution_time) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right" align="center">
+        <el-table-column label="操作" min-width="200" width="200" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button size="small" type="primary" link @click="viewExecutionDetail(row)">
-              <el-icon><View /></el-icon>
-              详情
-            </el-button>
-            <el-button
-              v-if="row.status === 'failed' || row.status === 'error'"
-              size="small"
-              type="warning"
-              link
-              @click="showRerunDialog(row)"
-            >
-              <el-icon><Refresh /></el-icon>
-              重跑
-            </el-button>
-            <el-button 
-              link 
-              type="danger" 
-              @click="handleDelete(row)"
-            >
-              删除
-            </el-button>
+            <div style="display: flex; gap: 8px; white-space: nowrap;">
+              <el-button size="small" type="primary" link @click="viewExecutionDetail(row)" style="white-space: nowrap;">
+                <el-icon><View /></el-icon>
+                详情
+              </el-button>
+              <el-button
+                v-if="row.status === 'failed' || row.status === 'error'"
+                size="small"
+                type="warning"
+                link
+                @click="showRerunDialog(row)"
+                style="white-space: nowrap;"
+              >
+                <el-icon><Refresh /></el-icon>
+                重跑
+              </el-button>
+              <el-button 
+                size="small"
+                link 
+                type="danger" 
+                @click="handleDelete(row)"
+                style="white-space: nowrap;"
+              >
+                删除
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -288,8 +293,8 @@ const pagination = reactive({
 const queryParams = reactive({
   project: undefined,
   search: '',
-  status: '',
-  browser: ''
+  status: undefined,
+  browser: undefined
 })
 const selectedIds = ref([])
 
@@ -448,7 +453,13 @@ const loadExecutions = async () => {
     const params = {
       page: pagination.currentPage,
       page_size: pagination.pageSize,
-      ...queryParams
+      search: queryParams.search,
+      browser: queryParams.browser
+    }
+
+    // 只有当status有值时才添加到params中
+    if (queryParams.status) {
+      params.status = queryParams.status
     }
 
     // 添加项目筛选
@@ -472,8 +483,8 @@ const loadExecutions = async () => {
 // 项目变更处理
 const onProjectChange = () => {
   queryParams.search = ''
-  queryParams.status = ''
-  queryParams.browser = ''
+  queryParams.status = undefined
+  queryParams.browser = undefined
   pagination.currentPage = 1
   loadExecutions()
 }
@@ -487,8 +498,8 @@ const handleSearch = () => {
 // 重置查询
 const resetQuery = () => {
   queryParams.search = ''
-  queryParams.status = ''
-  queryParams.browser = ''
+  queryParams.status = undefined
+  queryParams.browser = undefined
   pagination.currentPage = 1
   loadExecutions()
 }

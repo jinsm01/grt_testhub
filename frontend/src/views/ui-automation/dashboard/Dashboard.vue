@@ -142,7 +142,7 @@
     <!-- 核心功能介绍 -->
     <div class="features-section">
       <h2 class="section-title">核心功能</h2>
-      <el-row :gutter="20">
+      <el-row :gutter="20" class="features-row">
         <el-col :span="6">
           <el-card shadow="hover" class="feature-card">
             <div class="feature-icon">
@@ -179,6 +179,8 @@
             <p class="feature-description">自由配置邮件、飞书、企微、钉钉在内的多种机器人通知，实现「躺在家」就能接收测试结果</p>
           </el-card>
         </el-col>
+      </el-row>
+      <el-row :gutter="20" class="features-row">
         <el-col :span="6">
           <el-card shadow="hover" class="feature-card">
             <div class="feature-icon">
@@ -589,6 +591,14 @@ onMounted(() => {
 
 .features-section {
   margin-bottom: 40px;
+}
+
+.features-section .features-row {
+  margin-bottom: 20px;
+}
+
+.features-section .features-row:last-child {
+  margin-bottom: 0;
 }
 
 .section-title {

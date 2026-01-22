@@ -4,6 +4,7 @@ Playwright自动化测试执行引擎
 """
 import asyncio
 import base64
+import os
 import time
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
@@ -46,20 +47,67 @@ class PlaywrightTestEngine:
             else:
                 browser_launcher = self.playwright.chromium
 
-            # 启动浏览器
+            # 创建项目内部的临时目录，避免权限问题
+            project_temp_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'temp')
+            browser_temp_dir = os.path.join(project_temp_dir, f'playwright_{self.browser_type}_context')
+            os.makedirs(browser_temp_dir, exist_ok=True)
+
+            # 尝试使用系统已安装的Chrome浏览器，避免权限问题
+            import subprocess
+            chrome_path = None
+            
+            # 查找系统中已安装的Chrome浏览器
+            try:
+                # 在macOS上查找Chrome
+                chrome_path = subprocess.check_output(['which', 'google-chrome']).decode('utf-8').strip()
+            except:
+                try:
+                    # 查找Chrome的另一个常见路径
+                    chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+                    if not os.path.exists(chrome_path):
+                        chrome_path = None
+                except:
+                    pass
+            
+            # 使用launch()方法启动浏览器，避免权限问题
             self.browser = await browser_launcher.launch(
                 headless=self.headless,
-                args=['--disable-blink-features=AutomationControlled']  # 避免被检测
+                args=[
+                    '--disable-blink-features=AutomationControlled',  # 避免被检测
+                    '--no-crashpad',  # 禁用Crashpad，避免权限问题
+                    '--disable-gpu',  # 禁用GPU加速
+                    '--disable-dev-shm-usage',  # 禁用/dev/shm使用，避免内存问题
+                    '--disable-background-networking',  # 禁用后台网络
+                    '--disable-component-update',  # 禁用组件更新
+                    '--disable-default-apps',  # 禁用默认应用
+                    '--disable-extensions',  # 禁用扩展
+                    '--disable-notifications',  # 禁用通知
+                    '--no-first-run',  # 不运行首次启动
+                    '--no-service-autorun',  # 不自动运行服务
+                ],
+                **({'executable_path': chrome_path} if chrome_path else {})  # 使用系统Chrome如果找到的话
             )
 
-            # 创建浏览器上下文
+            # 检查browser是否创建成功
+            if not self.browser:
+                raise Exception("无法创建浏览器实例")
+            
+            # 创建上下文
             self.context = await self.browser.new_context(
                 viewport={'width': 1920, 'height': 1080},
                 user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
             )
-
-            # 创建页面
+            
+            if not self.context:
+                raise Exception("无法创建浏览器上下文")
+            
+            # 创建新页面
             self.page = await self.context.new_page()
+            if not self.page:
+                raise Exception("无法创建页面")
+            
+            # 打开一个空白页面，避免浏览器启动后立即关闭
+            await self.page.goto("about:blank")
 
             logger.info(f"浏览器启动成功: {self.browser_type}, headless={self.headless}")
 

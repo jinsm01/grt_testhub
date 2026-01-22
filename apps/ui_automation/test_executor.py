@@ -223,65 +223,112 @@ class TestExecutor:
             )
             case_executions[case_data['id']] = case_execution
 
-        # 执行每个测试用例，为每个用例单独启动和关闭浏览器
+        # 执行测试用例，复用浏览器实例和页面
         print(f"准备执行 {len(test_cases_data)} 个测试用例")
 
         with sync_playwright() as p:
-            for i, case_data in enumerate(test_cases_data, 1):
-                print(f"\n{'='*60}")
-                print(f"正在执行第 {i}/{len(test_cases_data)} 个用例: {case_data['name']}")
-                print(f"{'='*60}")
+            browser = None
+            context = None
+            page = None
+            
+            try:
+                # 尝试使用系统已安装的Chrome浏览器，避免权限问题
+                import subprocess
+                import os
+                chrome_path = None
                 
-                # 记录用例实际开始执行时间
-                case_execution = case_executions[case_data['id']]
-                case_execution.started_at = timezone.now()
-                case_execution.status = 'running'
-                case_execution.save()
-
-                # 为每个测试用例启动新的浏览器实例
-                try:
-                    # 选择浏览器
-                    if self.browser == 'firefox':
-                        browser = p.firefox.launch(headless=self.headless)
-                    elif self.browser == 'safari':
-                        browser = p.webkit.launch(headless=self.headless)
-                    else:  # chrome or edge
-                        # 添加防检测参数
-                        browser = p.chromium.launch(
-                            headless=self.headless,
-                            args=['--disable-blink-features=AutomationControlled']
-                        )
-
-                    print(f"✓ 浏览器已启动")
-
-                    # 配置上下文（User Agent 和 Viewport）
-                    self.context = browser.new_context(
-                        viewport={'width': 1920, 'height': 1080},
-                        user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
-                    )
-                    self.current_page = self.context.new_page()
-
-                    # 导航到项目基础URL
-                    if self.test_suite.project.base_url:
+                # 查找系统中已安装的Chrome浏览器
+                if self.browser != 'firefox' and self.browser != 'safari':
+                    try:
+                        # 在macOS上查找Chrome
+                        chrome_path = subprocess.check_output(['which', 'google-chrome']).decode('utf-8').strip()
+                    except:
                         try:
-                            print(f"正在导航到: {self.test_suite.project.base_url}")
+                            # 查找Chrome的另一个常见路径
+                            chrome_path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+                            if not os.path.exists(chrome_path):
+                                chrome_path = None
+                        except:
+                            pass
+                
+                # 选择浏览器
+                if self.browser == 'firefox':
+                    browser = p.firefox.launch(
+                        headless=self.headless,
+                        args=[
+                            '--disable-blink-features=AutomationControlled',
+                            '--disable-gpu',
+                            '--disable-dev-shm-usage',
+                            '--disable-background-networking'
+                        ]
+                    )
+                elif self.browser == 'safari':
+                    browser = p.webkit.launch(
+                        headless=self.headless,
+                        args=[
+                            '--disable-blink-features=AutomationControlled',
+                            '--disable-gpu',
+                            '--disable-dev-shm-usage'
+                        ]
+                    )
+                else:  # chrome or edge
+                    # 添加防检测和稳定性参数
+                    launch_options = {
+                        'headless': self.headless,
+                        'args': [
+                            '--disable-blink-features=AutomationControlled',  # 避免被检测
+                            '--no-crashpad',  # 禁用Crashpad，避免权限问题
+                            '--disable-gpu',  # 禁用GPU加速
+                            '--disable-dev-shm-usage',  # 禁用/dev/shm使用，避免内存问题
+                            '--disable-background-networking',  # 禁用后台网络
+                            '--disable-component-update',  # 禁用组件更新
+                            '--disable-default-apps',  # 禁用默认应用
+                            '--disable-extensions',  # 禁用扩展
+                            '--disable-notifications',  # 禁用通知
+                            '--no-first-run',  # 不运行首次启动
+                            '--no-service-autorun',  # 不自动运行服务
+                        ]
+                    }
+                    
+                    # 如果找到系统Chrome，使用它
+                    if chrome_path:
+                        launch_options['executable_path'] = chrome_path
+                    
+                    browser = p.chromium.launch(**launch_options)
 
-                            # 检测是否在Linux服务器环境
-                            import platform
-                            is_linux = platform.system() == 'Linux'
+                print(f"✓ 浏览器已启动")
 
-                            # 使用 networkidle 等待页面加载完成
-                            self.current_page.goto(self.test_suite.project.base_url, wait_until='networkidle', timeout=30000)
+                # 配置上下文（User Agent 和 Viewport）
+                context = browser.new_context(
+                    viewport={'width': 1920, 'height': 1080},
+                    user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+                )
+                
+                # 创建单个页面用于所有测试用例
+                page = context.new_page()
+                
+                # 导航到项目基础URL（只在开始时执行一次）
+                if self.test_suite.project.base_url:
+                    try:
+                        print(f"正在导航到: {self.test_suite.project.base_url}")
 
-                            # 额外等待，确保动态内容加载（Vue/React等SPA应用）
-                            # 服务器无头模式需要更长的等待时间
-                            extra_wait = 3 if is_linux else 2
-                            time.sleep(extra_wait)
+                        # 检测是否在Linux服务器环境
+                        import platform
+                        is_linux = platform.system() == 'Linux'
 
-                            print(f"✓ 成功导航到: {self.test_suite.project.base_url} (已等待页面加载完成，额外{extra_wait}秒)")
-                        except Exception as e:
-                            print(f"✗ 导航失败: {str(e)}")
-                            # 导航失败，记录错误并继续下一个用例
+                        # 使用 networkidle 等待页面加载完成
+                        page.goto(self.test_suite.project.base_url, wait_until='networkidle', timeout=30000)
+
+                        # 额外等待，确保动态内容加载（Vue/React等SPA应用）
+                        # 服务器无头模式需要更长的等待时间
+                        extra_wait = 3 if is_linux else 2
+                        time.sleep(extra_wait)
+
+                        print(f"✓ 成功导航到: {self.test_suite.project.base_url} (已等待页面加载完成，额外{extra_wait}秒)")
+                    except Exception as e:
+                        print(f"✗ 导航失败: {str(e)}")
+                        # 导航失败，记录所有用例为失败
+                        for case_data in test_cases_data:
                             self.results.append({
                                 'test_case_id': case_data['id'],
                                 'test_case_name': case_data['name'],
@@ -293,66 +340,90 @@ class TestExecutor:
                                 'screenshots': []
                             })
                             failed += 1
-                            browser.close()
-                            print(f"✓ 浏览器已关闭")
-                            continue
-
-                    # 执行测试用例（不再传递page参数，使用self.current_page）
-                    case_result = self.execute_test_case_playwright_no_db(case_data)
-                    self.results.append(case_result)
-                    print(f"✓ 用例执行完成，状态: {case_result['status']}")
-
-                    # 立即更新该用例的执行记录（包含准确的执行时间）
-                    case_execution = case_executions[case_data['id']]
-                    case_execution.status = case_result['status']
-                    case_execution.finished_at = timezone.now()
-                    case_execution.execution_time = (case_execution.finished_at - case_execution.started_at).total_seconds()
-                    case_execution.execution_logs = json.dumps(case_result['steps'], ensure_ascii=False)
-                    if case_result['error']:
-                        case_execution.error_message = case_result['error']
-                    if case_result.get('screenshots'):
-                        case_execution.screenshots = case_result['screenshots']
-                    case_execution.save()
+                            
+                            # 更新执行记录
+                            case_execution = case_executions[case_data['id']]
+                            case_execution.status = 'failed'
+                            case_execution.finished_at = timezone.now()
+                            case_execution.execution_time = 0
+                            case_execution.error_message = f"导航到基础URL失败: {str(e)}"
+                            case_execution.save()
+                        
+                        print(f"✓ 所有用例执行记录已更新")
+                        return
+                
+                # 执行所有测试用例，使用同一个页面
+                for i, case_data in enumerate(test_cases_data, 1):
+                    print(f"\n{'='*60}")
+                    print(f"正在执行第 {i}/{len(test_cases_data)} 个用例: {case_data['name']}")
+                    print(f"{'='*60}")
                     
-                    print(f"⏱️  执行时长: {case_execution.execution_time:.2f}秒")
-
-                    if case_result['status'] == 'passed':
-                        passed += 1
-                    elif case_result['status'] == 'failed':
-                        failed += 1
-                    else:
-                        skipped += 1
-
-                except Exception as e:
-                    print(f"✗ 用例执行出现异常: {str(e)}")
-                    # 记录异常
-                    self.results.append({
-                        'test_case_id': case_data['id'],
-                        'test_case_name': case_data['name'],
-                        'status': 'failed',
-                        'steps': [],
-                        'error': f"用例执行异常: {str(e)}",
-                        'start_time': datetime.now().isoformat(),
-                        'end_time': datetime.now().isoformat(),
-                        'screenshots': []
-                    })
-                    failed += 1
-                    
-                    # 更新执行记录
+                    # 记录用例实际开始执行时间
                     case_execution = case_executions[case_data['id']]
-                    case_execution.status = 'failed'
-                    case_execution.finished_at = timezone.now()
-                    case_execution.execution_time = (case_execution.finished_at - case_execution.started_at).total_seconds()
-                    case_execution.error_message = f"用例执行异常: {str(e)}"
+                    case_execution.started_at = timezone.now()
+                    case_execution.status = 'running'
                     case_execution.save()
 
-                finally:
-                    # 确保每个用例执行后都关闭浏览器
                     try:
+                        # 执行测试用例，使用同一个页面
+                        case_result = self.execute_test_case_playwright_no_db(case_data, page)
+                        self.results.append(case_result)
+                        print(f"✓ 用例执行完成，状态: {case_result['status']}")
+
+                        # 立即更新该用例的执行记录（包含准确的执行时间）
+                        case_execution = case_executions[case_data['id']]
+                        case_execution.status = case_result['status']
+                        case_execution.finished_at = timezone.now()
+                        case_execution.execution_time = (case_execution.finished_at - case_execution.started_at).total_seconds()
+                        case_execution.execution_logs = json.dumps(case_result['steps'], ensure_ascii=False)
+                        if case_result['error']:
+                            case_execution.error_message = case_result['error']
+                        if case_result.get('screenshots'):
+                            case_execution.screenshots = case_result['screenshots']
+                        case_execution.save()
+                        
+                        print(f"⏱️  执行时长: {case_execution.execution_time:.2f}秒")
+
+                        if case_result['status'] == 'passed':
+                            passed += 1
+                        elif case_result['status'] == 'failed':
+                            failed += 1
+                        else:
+                            skipped += 1
+
+                    except Exception as e:
+                        print(f"✗ 用例执行出现异常: {str(e)}")
+                        # 记录异常
+                        self.results.append({
+                            'test_case_id': case_data['id'],
+                            'test_case_name': case_data['name'],
+                            'status': 'failed',
+                            'steps': [],
+                            'error': f"用例执行异常: {str(e)}",
+                            'start_time': datetime.now().isoformat(),
+                            'end_time': datetime.now().isoformat(),
+                            'screenshots': []
+                        })
+                        failed += 1
+                        
+                        # 更新执行记录
+                        case_execution = case_executions[case_data['id']]
+                        case_execution.status = 'failed'
+                        case_execution.finished_at = timezone.now()
+                        case_execution.execution_time = (case_execution.finished_at - case_execution.started_at).total_seconds()
+                        case_execution.error_message = f"用例执行异常: {str(e)}"
+                        case_execution.save()
+            
+            finally:
+                # 确保所有用例执行完成后关闭上下文和浏览器
+                try:
+                    if context:
+                        context.close()
+                    if browser:
                         browser.close()
                         print(f"✓ 浏览器已关闭\n")
-                    except:
-                        pass
+                except:
+                    pass
 
         # 注意：每个用例的执行记录已在执行过程中实时更新，不需要在这里统一更新
 
@@ -360,14 +431,12 @@ class TestExecutor:
         status = 'SUCCESS' if failed == 0 else 'FAILED'
         self.update_execution_result(status, passed, failed, skipped, duration)
 
-    def execute_test_case_playwright_no_db(self, case_data):
+    def execute_test_case_playwright_no_db(self, case_data, page):
         """使用 Playwright 执行单个测试用例（不访问数据库）
 
         Args:
             case_data: 预先准备的用例数据字典，包含id, name, project_id, steps等
-            
-        Note:
-            使用 self.current_page 作为当前活动页面，switchTab会更新这个实例变量
+            page: Playwright Page对象
         """
         result = {
             'test_case_id': case_data['id'],
@@ -387,21 +456,21 @@ class TestExecutor:
                 step_data['_just_switched_tab'] = just_switched_tab
                 just_switched_tab = False  # 重置标志
                 
-                step_result = self.execute_step_playwright(step_data)
+                step_result = self.execute_step_playwright(step_data, page)
                 
                 # Debug: Log which page we're using
                 print(f"📄 步骤 {step_data['step_number']} 执行完成")
-                print(f"   使用的page URL: {self.current_page.url}")
-                print(f"   使用的page 标题: {self.current_page.title()}")
+                print(f"   使用的page URL: {page.url}")
+                print(f"   使用的page 标题: {page.title()}")
                 
                 result['steps'].append(step_result)
                 
-                # 显式更新self.current_page，确保引用正确
+                # 显式更新page，确保引用正确
                 if step_result.get('switched_page'):
-                    self.current_page = step_result['switched_page']
-                    print(f"🔄 页面切换确认: {self.current_page.title()}")
-                    print(f"   当前页面URL: {self.current_page.url}")
-                    print(f"   Page ID: {id(self.current_page)}")
+                    page = step_result['switched_page']
+                    print(f"🔄 页面切换确认: {page.title()}")
+                    print(f"   当前页面URL: {page.url}")
+                    print(f"   Page ID: {id(page)}")
                     del step_result['switched_page']
                     just_switched_tab = True
                 
@@ -412,9 +481,9 @@ class TestExecutor:
                     import time as sync_time
                     # 点击操作后等待更长时间（下拉框展开动画）
                     if step_data['action_type'] == 'click':
-                        self.current_page.wait_for_timeout(800)  # 等待800ms，确保下拉框完全展开
+                        page.wait_for_timeout(800)  # 等待800ms，确保下拉框完全展开
                     else:
-                        self.current_page.wait_for_timeout(300)  # 其他操作等待300ms
+                        page.wait_for_timeout(300)  # 其他操作等待300ms
 
                 # 如果步骤失败，捕获失败截图
                 if not step_result['success']:
@@ -427,9 +496,9 @@ class TestExecutor:
                         import base64
                         # 增加超时设置，避免截图等待时间过长
                         print(f"🔍 开始捕获失败截图 (步骤 {step_data['step_number']})...")
-                        print(f"   当前page对象URL: {self.current_page.url}")
-                        print(f"   当前page对象标题: {self.current_page.title()}")
-                        screenshot_bytes = self.current_page.screenshot(timeout=5000)  # 5秒超时
+                        print(f"   当前page对象URL: {page.url}")
+                        print(f"   当前page对象标题: {page.title()}")
+                        screenshot_bytes = page.screenshot(timeout=5000)  # 5秒超时
                         print(f"   截图字节大小: {len(screenshot_bytes)} bytes")
 
                         screenshot_base64 = base64.b64encode(screenshot_bytes).decode('utf-8')
@@ -462,6 +531,7 @@ class TestExecutor:
                             'error': str(screenshot_error)
                         })
 
+
                     break
 
         except Exception as e:
@@ -473,7 +543,7 @@ class TestExecutor:
                 import base64
                 # 增加超时设置，避免截图等待时间过长
                 print(f"🔍 开始捕获异常截图...")
-                screenshot_bytes = self.current_page.screenshot(timeout=5000)  # 5秒超时
+                screenshot_bytes = page.screenshot(timeout=5000)  # 5秒超时
                 print(f"   截图字节大小: {len(screenshot_bytes)} bytes")
 
                 screenshot_base64 = base64.b64encode(screenshot_bytes).decode('utf-8')
@@ -570,14 +640,12 @@ class TestExecutor:
         result['end_time'] = datetime.now().isoformat()
         return result
 
-    def execute_step_playwright(self, step_data):
+    def execute_step_playwright(self, step_data, page):
         """使用 Playwright 执行单个步骤（同步版本）
 
         Args:
             step_data: 预先准备的步骤数据字典
-            
-        Note:
-            使用 self.current_page 作为当前活动页面
+            page: Playwright Page对象
         """
         import time
         start_time = time.time()
@@ -684,10 +752,10 @@ class TestExecutor:
                                 }})()
                             """
                         
-                        js_result = self.current_page.evaluate(js_code)
+                        js_result = page.evaluate(js_code)
                         
                         if js_result.get('success'):
-                            self.current_page.wait_for_timeout(800)  # 等待下拉框展开
+                            page.wait_for_timeout(800)  # 等待下拉框展开
                             step_result['success'] = True
                         else:
                             step_result['error'] = f"✗ 下拉框触发器点击失败: {js_result.get('error')}"
@@ -695,7 +763,7 @@ class TestExecutor:
                     elif is_dropdown_option:
                         # 下拉框选项：使用 Playwright 原生方法（更可靠）
                         # 之前使用 JS click() 可能无法触发 Element Plus 的事件监听
-                        self.current_page.wait_for_timeout(800)  # 等待下拉框展开
+                        page.wait_for_timeout(800)  # 等待下拉框展开
                         
                         print(f"[Playwright-调试] 下拉框选项处理: {locator_strategy}={locator_value}")
                         
@@ -705,14 +773,14 @@ class TestExecutor:
                         try:
                             if locator_strategy.lower() == 'xpath':
                                 if not base_locator_value.startswith('xpath='):
-                                    candidates = self.current_page.locator(f"xpath={base_locator_value}")
+                                    candidates = page.locator(f"xpath={base_locator_value}")
                                 else:
-                                    candidates = self.current_page.locator(base_locator_value)
+                                    candidates = page.locator(base_locator_value)
                             elif locator_strategy.lower() in ['css', 'css selector']:
-                                candidates = self.current_page.locator(base_locator_value)
+                                candidates = page.locator(base_locator_value)
                             else:
                                 # 其他策略暂按 CSS 处理
-                                candidates = self.current_page.locator(base_locator_value)
+                                candidates = page.locator(base_locator_value)
                             
                             # 获取匹配元素数量
                             count = candidates.count()
@@ -750,10 +818,10 @@ class TestExecutor:
                         # 检查并关闭多选下拉框（如果还在显示）
                         if step_result['success']:
                             try:
-                                if self.current_page.locator('.el-select-dropdown').first.is_visible():
+                                if page.locator('.el-select-dropdown').first.is_visible():
                                     # 点击空白处关闭
-                                    self.current_page.click('body', position={'x': 10, 'y': 10}, timeout=3000)
-                                    self.current_page.wait_for_timeout(500)
+                                    page.click('body', position={'x': 10, 'y': 10}, timeout=3000)
+                                    page.wait_for_timeout(500)
                             except:
                                 pass
                         
@@ -765,22 +833,22 @@ class TestExecutor:
                             print(f"  ⚠️  刚切换标签页，增加元素等待时间和滚动")
                             
                             # 关键修复：确保页面保持在前台！
-                            self.current_page.bring_to_front()
+                            page.bring_to_front()
                             print(f"  ✓ 页面已置于前台")
                             
                             # 先尝试滚动到元素（确保元素在视口内）
                             try:
-                                self.current_page.locator(selector).scroll_into_view_if_needed(timeout=5000)
+                                page.locator(selector).scroll_into_view_if_needed(timeout=5000)
                                 print(f"  ✓ 元素已滚动到视口")
                             except Exception as e:
                                 print(f"  ⚠️  滚动失败: {str(e)[:50]}")
                             
                             # 使用更长的超时时间（至少10秒）
                             extended_timeout = max(step_data['wait_time'], 10000)
-                            self.current_page.click(selector, timeout=extended_timeout)
+                            page.click(selector, timeout=extended_timeout)
                             print(f"  ✓ 点击成功（超时: {extended_timeout}ms）")
                         else:
-                            self.current_page.click(selector, timeout=step_data['wait_time'])
+                            page.click(selector, timeout=step_data['wait_time'])
                         step_result['success'] = True
 
                 elif step_data['action_type'] == 'fill':
@@ -790,11 +858,11 @@ class TestExecutor:
                     # 如果刚切换了标签页，增加超时时间
                     if step_data.get('_just_switched_tab'):
                         # 确保页面保持在前台
-                        self.current_page.bring_to_front()
+                        page.bring_to_front()
                         extended_timeout = max(step_data['wait_time'], 10000)
-                        self.current_page.fill(selector, resolved_value, timeout=extended_timeout)
+                        page.fill(selector, resolved_value, timeout=extended_timeout)
                     else:
-                        self.current_page.fill(selector, resolved_value, timeout=step_data['wait_time'])
+                        page.fill(selector, resolved_value, timeout=step_data['wait_time'])
                     
                     step_result['success'] = True
                     # 记录解析后的值（用于调试）
@@ -804,7 +872,7 @@ class TestExecutor:
 
 
                 elif step_data['action_type'] == 'getText':
-                    text = self.current_page.text_content(selector, timeout=step_data['wait_time'])
+                    text = page.text_content(selector, timeout=step_data['wait_time'])
                     step_result['result'] = text
                     step_result['success'] = True
 
@@ -819,24 +887,24 @@ class TestExecutor:
                     
                     if is_dropdown_option_wait:
                         # 对于下拉框选项，只等待元素在DOM中（attached），不要求可见
-                        self.current_page.wait_for_selector(selector, state='attached', timeout=step_data['wait_time'])
+                        page.wait_for_selector(selector, state='attached', timeout=step_data['wait_time'])
                     else:
                         # 普通元素：等待可见
-                        self.current_page.wait_for_selector(selector, timeout=step_data['wait_time'])
+                        page.wait_for_selector(selector, timeout=step_data['wait_time'])
                     
                     step_result['success'] = True
 
                 elif step_data['action_type'] == 'hover':
-                    self.current_page.hover(selector, timeout=step_data['wait_time'])
+                    page.hover(selector, timeout=step_data['wait_time'])
                     step_result['success'] = True
 
                 elif step_data['action_type'] == 'scroll':
-                    self.current_page.locator(selector).scroll_into_view_if_needed()
+                    page.locator(selector).scroll_into_view_if_needed()
                     step_result['success'] = True
 
                 elif step_data['action_type'] == 'screenshot':
                     screenshot_path = f'screenshots/step_{step_data["step_number"]}.png'
-                    self.current_page.screenshot(path=screenshot_path)
+                    page.screenshot(path=screenshot_path)
                     step_result['screenshot'] = screenshot_path
                     step_result['success'] = True
 
@@ -848,7 +916,7 @@ class TestExecutor:
 
                     # 执行断言
                     if step_data['assert_type'] == 'textContains':
-                        text = self.current_page.text_content(selector, timeout=step_data['wait_time'])
+                        text = page.text_content(selector, timeout=step_data['wait_time'])
                         if resolved_assert_value in text:
                             step_result['success'] = True
                         else:
@@ -857,7 +925,7 @@ class TestExecutor:
                             log += f"  - 实际文本: '{text}'"
                             step_result['error'] = log
                     elif step_data['assert_type'] == 'textEquals':
-                        text = self.current_page.text_content(selector, timeout=step_data['wait_time'])
+                        text = page.text_content(selector, timeout=step_data['wait_time'])
                         if text == resolved_assert_value:
                             step_result['success'] = True
                         else:
@@ -867,18 +935,18 @@ class TestExecutor:
                             log += f"  - 实际: '{text}'"
                             step_result['error'] = log
                     elif step_data['assert_type'] == 'isVisible':
-                        is_visible = self.current_page.is_visible(selector)
+                        is_visible = page.is_visible(selector)
                         step_result['success'] = is_visible
                         if not is_visible:
                             step_result['error'] = f"✗ 断言失败: 元素 '{element_name}' 不可见"
                     elif step_data['assert_type'] == 'exists':
-                        count = self.current_page.locator(selector).count()
+                        count = page.locator(selector).count()
                         step_result['success'] = count > 0
                         if count == 0:
                             step_result['error'] = f"✗ 断言失败: 元素 '{element_name}' 不存在"
 
                 elif step_data['action_type'] == 'wait':
-                    self.current_page.wait_for_timeout(step_data['wait_time'])
+                    page.wait_for_timeout(step_data['wait_time'])
                     step_result['success'] = True
 
                 elif step_data['action_type'] == 'switchTab':
@@ -895,13 +963,13 @@ class TestExecutor:
                     
                     print(f"🔄 开始执行切换标签页 (超时: {timeout}s)...")
                     start_wait = sync_time.time()
-                    current_page = self.current_page
+                    current_page = page
                     target_index = -1
                     
                     # 轮询等待新标签页
                     # 轮询等待新标签页
                     while True:
-                        pages = self.current_page.context.pages
+                        pages = page.context.pages
                         target_index = -1  # 默认切换到最新标签页
                         should_switch = False
                         
@@ -940,10 +1008,10 @@ class TestExecutor:
                         
                         # 关键修改：使用 wait_for_timeout 代替 time.sleep
                         # time.sleep 会阻塞线程，导致 Playwright 无法接收新页面事件
-                        self.current_page.wait_for_timeout(500)
+                        page.wait_for_timeout(500)
                     
                     # 获取目标页面
-                    pages = self.current_page.context.pages
+                    pages = page.context.pages
                     if target_index == -1:
                         # 自动模式
                         candidates = [p for p in pages if p != current_page]
@@ -987,15 +1055,14 @@ class TestExecutor:
                     print(f"  - 当前活动页面URL: {target_page.url}")
                     print(f"  - 页面是否可见: {target_page.is_visible('body') if target_page else 'Unknown'}")
                     
-                    # 关键修复：直接更新实例变量！
-                    self.current_page = target_page
+                    # 设置切换后的页面
                     step_result['switched_page'] = target_page
                     step_result['success'] = True
                     
                     print(f"✓ 切换标签页成功")
                     print(f"  - 目标索引: {final_target_index}")
-                    print(f"  - 页面标题: {self.current_page.title()}")
-                    print(f"  - self.current_page已更新为新页面")
+                    print(f"  - 页面标题: {target_page.title()}")
+                    print(f"  - 已返回新页面引用")
 
                 else:
                     step_result['error'] = f'⚠ 未知的操作类型: {step_data["action_type"]}'
@@ -1003,7 +1070,7 @@ class TestExecutor:
             else:
                 # 没有元素的步骤（如等待、切换标签页）
                 if step_data['action_type'] == 'wait':
-                    self.current_page.wait_for_timeout(step_data['wait_time'])
+                    page.wait_for_timeout(step_data['wait_time'])
                     step_result['success'] = True
                 
                 elif step_data['action_type'] == 'switchTab':
@@ -1026,7 +1093,7 @@ class TestExecutor:
                     # 轮询等待新标签页
                     # 轮询等待新标签页
                     while True:
-                        pages = self.current_page.context.pages
+                        pages = page.context.pages
                         target_index = -1  # 默认切换到最新标签页
                         should_switch = False
                         
@@ -1067,7 +1134,7 @@ class TestExecutor:
                         self.current_page.wait_for_timeout(500)
                     
                     # 获取目标页面
-                    pages = self.current_page.context.pages
+                    pages = page.context.pages
                     if target_index == -1:
                         # 自动模式
                         candidates = [p for p in pages if p != current_page]
@@ -1110,15 +1177,14 @@ class TestExecutor:
                     print(f"  - 当前活动页面URL: {target_page.url}")
                     print(f"  - 页面是否可见: {target_page.is_visible('body') if target_page else 'Unknown'}")
                     
-                    # 关键修复：直接更新实例变量！
-                    self.current_page = target_page
+                    # 设置切换后的页面
                     step_result['switched_page'] = target_page
                     step_result['success'] = True
                     
                     print(f"✓ 切换标签页成功")
                     print(f"  - 目标索引: {final_target_index}")
-                    print(f"  - 页面标题: {self.current_page.title()}")
-                    print(f"  - self.current_page已更新为新页面")
+                    print(f"  - 页面标题: {target_page.title()}")
+                    print(f"  - 已返回新页面引用")
 
         except Exception as e:
             # 格式化为详细的错误信息，与playwright_engine.py保持一致
@@ -1238,8 +1304,9 @@ class TestExecutor:
         # 注意：Safari 不支持浏览器复用（会话管理问题），需要每个用例独立启动
         print(f"准备执行 {len(test_cases_data)} 个测试用例")
         
-        # Safari 需要独立浏览器实例，其他浏览器可以复用
-        use_browser_reuse = self.browser != 'safari'
+        # 暂时禁用浏览器复用，解决测试套件闪退问题
+        # Safari 需要独立浏览器实例，其他浏览器也暂时禁用复用
+        use_browser_reuse = False
         
         if use_browser_reuse:
             # 在套件开始时启动一次浏览器（Chrome/Firefox/Edge）

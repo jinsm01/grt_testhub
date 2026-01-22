@@ -188,21 +188,29 @@ const handleNavigate = (type) => {
 
 .cards-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 30px;
+  grid-template-columns: repeat(7, minmax(180px, 1fr));
+  gap: 25px;
   padding: 20px;
+  margin: 0 auto;
+  justify-content: center;
+  width: 100%;
+  overflow-x: visible;
 }
 
 .nav-card {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 16px;
-  padding: 40px 20px;
+  padding: 25px 15px;
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
+  text-align: center;
+  min-height: 240px;
+  width: 100%;
 
   &:hover {
     transform: translateY(-10px);
@@ -211,27 +219,40 @@ const handleNavigate = (type) => {
   }
 
   h3 {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     color: #2c3e50;
-    margin: 20px 0 10px;
+    margin: 15px 0 10px;
+    font-weight: 600;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
   }
 
   p {
     color: #7f8c8d;
     line-height: 1.5;
     margin: 0;
+    font-size: 0.85rem;
+    padding: 0 5px;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
   }
 }
 
 .card-icon {
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40px;
-  margin-bottom: 10px;
+  font-size: 32px;
+  margin-bottom: 15px;
   transition: all 0.3s ease;
 
   &.ai-icon {

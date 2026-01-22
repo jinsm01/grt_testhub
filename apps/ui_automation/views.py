@@ -1380,7 +1380,10 @@ class TestCaseViewSet(viewsets.ModelViewSet):
                 def run_test_selenium():
                     """使用Selenium执行测试"""
                     browser_type = request.data.get('browser', 'chrome')
+                    # 确保headless是布尔值，处理前端可能传递的字符串值
                     headless = request.data.get('headless', False)
+                    if isinstance(headless, str):
+                        headless = headless.lower() == 'true'
 
                     # 创建Selenium引擎实例
                     engine = SeleniumTestEngine(browser_type=browser_type, headless=headless)
@@ -1581,7 +1584,10 @@ class TestCaseViewSet(viewsets.ModelViewSet):
                             'safari': 'webkit'
                         }
                         browser_type = browser_map.get(request.data.get('browser', 'chrome'), 'chromium')
+                        # 确保headless是布尔值，处理前端可能传递的字符串值
                         headless = request.data.get('headless', False)
+                        if isinstance(headless, str):
+                            headless = headless.lower() == 'true'
 
                         # 创建Playwright引擎实例
                         engine = PlaywrightTestEngine(browser_type=browser_type, headless=headless)
@@ -1595,6 +1601,9 @@ class TestCaseViewSet(viewsets.ModelViewSet):
                             execution_logs.append("")
 
                             # 导航到项目基础URL
+                            execution_logs.append(f"[调试] 项目基础URL: {test_case.project.base_url}")
+                            execution_logs.append(f"[调试] URL类型: {type(test_case.project.base_url)}")
+                            execution_logs.append(f"[调试] URL长度: {len(test_case.project.base_url) if test_case.project.base_url else 0}")
                             if test_case.project.base_url:
                                 execution_logs.append("========== 导航到测试页面 ==========")
                                 success, nav_log = await engine.navigate(test_case.project.base_url)
@@ -1605,6 +1614,8 @@ class TestCaseViewSet(viewsets.ModelViewSet):
                                     execution_result['status'] = 'failed'
                                     execution_result['error_message'] = "导航到测试页面失败"
                                     return False
+                            else:
+                                execution_logs.append("[调试] 项目基础URL为空，跳过导航")
 
                             if steps_data:
                                 execution_logs.append("========== 执行测试步骤 ==========")

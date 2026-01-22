@@ -14,13 +14,13 @@
     </div>
 
     <div class="main-content">
-      <!-- 左侧：测试用例列表 -->
+      <!-- 左侧：用例列表 -->
       <div class="left-panel">
         <div class="panel-header">
-          <h3>测试用例列表</h3>
+          <h3>用例列表</h3>
           <el-input
             v-model="searchKeyword"
-            placeholder="搜索测试用例..."
+            placeholder="搜索用例..."
             clearable
             size="small"
             style="width: 200px"
