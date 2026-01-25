@@ -211,7 +211,7 @@
               </el-breadcrumb>
             </div>
             <div class="header-right">
-              <el-dropdown @command="handleCommand">
+              <el-dropdown @command="handleCommand" class="user-dropdown">
                 <span class="user-info">
                   <el-avatar :size="32" :src="userStore.user?.avatar || ''" />
                   <span class="username">{{ userStore.user?.username }}</span>
@@ -833,43 +833,45 @@ const handleCommand = (command) => {
   }
   
   /* 下拉菜单样式 */
-  :deep(.el-dropdown-menu) {
-    background: rgba(255, 255, 255, 0.95) !important;
-    border: 1px solid rgba(90, 50, 163, 0.2) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 16px rgba(90, 50, 163, 0.15) !important;
-    backdrop-filter: blur(10px) !important;
-    padding: 8px 0 !important;
-    
-    .el-dropdown-menu__item {
-      color: #5a32a3 !important;
-      font-weight: 500 !important;
-      padding: 10px 20px !important;
-      margin: 0 !important;
-      border-radius: 8px !important;
-      transition: all 0.3s ease !important;
+  .user-dropdown {
+    :deep(.el-dropdown-menu) {
+      background: rgba(255, 255, 255, 0.95) !important;
+      border: 1px solid rgba(90, 50, 163, 0.2) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 4px 16px rgba(90, 50, 163, 0.15) !important;
+      backdrop-filter: blur(10px) !important;
+      padding: 8px 0 !important;
       
-      &:hover {
-        background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%) !important;
-        color: #7b42f6 !important;
-        font-weight: 600 !important;
-        box-shadow: 0 2px 8px rgba(90, 50, 163, 0.1) !important;
-      }
-      
-      &.is-disabled {
-        color: #c0c4cc !important;
+      .el-dropdown-menu__item {
+        color: #5a32a3 !important;
+        font-weight: 500 !important;
+        padding: 10px 20px !important;
+        margin: 0 !important;
+        border-radius: 8px !important;
+        transition: all 0.3s ease !important;
         
         &:hover {
-          background: transparent !important;
+          background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%) !important;
+          color: #7b42f6 !important;
+          font-weight: 600 !important;
+          box-shadow: 0 2px 8px rgba(90, 50, 163, 0.1) !important;
+        }
+        
+        &.is-disabled {
           color: #c0c4cc !important;
+          
+          &:hover {
+            background: transparent !important;
+            color: #c0c4cc !important;
+          }
         }
       }
-    }
-    
-    .el-dropdown-menu__item--divided {
-      border-top: 1px solid rgba(90, 50, 163, 0.1) !important;
-      margin-top: 8px !important;
-      padding-top: 8px !important;
+      
+      .el-dropdown-menu__item--divided {
+        border-top: 1px solid rgba(90, 50, 163, 0.1) !important;
+        margin-top: 8px !important;
+        padding-top: 8px !important;
+      }
     }
   }
 }
