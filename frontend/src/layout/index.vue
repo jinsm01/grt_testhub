@@ -850,7 +850,8 @@ const handleCommand = (command) => {
         border-radius: 8px !important;
         transition: all 0.3s ease !important;
         
-        &:hover {
+        &:hover,
+        &:focus {
           background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%) !important;
           color: #7b42f6 !important;
           font-weight: 600 !important;
@@ -873,6 +874,12 @@ const handleCommand = (command) => {
         padding-top: 8px !important;
       }
     }
+  }
+  
+  /* 全局下拉菜单样式覆盖 */
+  :global(.el-dropdown-menu__item:hover) {
+    background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%) !important;
+    color: #7b42f6 !important;
   }
 }
 
