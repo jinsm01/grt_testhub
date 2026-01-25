@@ -9,19 +9,18 @@
         <el-menu
           :default-active="$route.path"
           router
-          background-color="#001529"
           text-color="#fff"
-          active-text-color="#1890ff"
+          active-text-color="#fff"
         >
           <!-- AI用例生成模块菜单 -->
           <template v-if="currentModule === 'ai-generation'">
             <el-sub-menu index="requirement">
               <template #title>
                 <el-icon><MagicStick /></el-icon>
-                <span>智能用例生成</span>
+                <span>智能用例</span>
               </template>
               <el-menu-item index="/ai-generation/requirement-analysis">AI用例生成</el-menu-item>
-              <el-menu-item index="/ai-generation/generated-testcases">AI生成用例记录</el-menu-item>
+              <el-menu-item index="/ai-generation/generated-testcases">AI用例记录</el-menu-item>
             </el-sub-menu>
             <el-menu-item index="/ai-generation/projects">
               <el-icon><Folder /></el-icon>
@@ -164,7 +163,7 @@
             <el-sub-menu index="ai-case-generation">
               <template #title>
                 <el-icon><MagicStick /></el-icon>
-                <span>AI用例生成配置</span>
+                <span>AI用例配置</span>
               </template>
               <el-menu-item index="/configuration/ai-model">
                 <el-icon><Cpu /></el-icon>
@@ -214,7 +213,7 @@
             <div class="header-right">
               <el-dropdown @command="handleCommand">
                 <span class="user-info">
-                  <el-avatar :size="32" :src="userStore.user?.avatar" />
+                  <el-avatar :size="32" :src="userStore.user?.avatar || ''" />
                   <span class="username">{{ userStore.user?.username }}</span>
                   <el-icon><ArrowDown /></el-icon>
                 </span>
@@ -239,7 +238,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
@@ -252,6 +251,13 @@ import {
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+
+onMounted(async () => {
+  console.log('Layout 初始化用户信息...')
+  await userStore.initAuth()
+  console.log('Layout 用户信息初始化完成:', userStore.user)
+  console.log('Layout 用户头像:', userStore.user?.avatar)
+})
 
 const currentModule = computed(() => {
   if (route.path.startsWith('/ai-generation')) return 'ai-generation'
@@ -360,9 +366,9 @@ const handleCommand = (command) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #001529;
-  color: white;
-  border-bottom: 1px solid #1f1f1f;
+  background: #f3f0fa;
+  color: #5a32a3;
+  border-bottom: 1px solid rgba(90, 50, 163, 0.2);
   flex-shrink: 0;
 
   h2 {
@@ -373,22 +379,65 @@ const handleCommand = (command) => {
 }
 
 .el-aside {
-  background-color: #001529;
+  position: relative;
+  background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 50%, #f3f0fa 100%);
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   transition: width 0.3s ease;
   width: 240px !important;
+  box-shadow: 2px 0 10px rgba(90, 50, 163, 0.1);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: linear-gradient(45deg, rgba(90, 50, 163, 0.1), rgba(74, 20, 140, 0.05));
+    border-radius: 0 0 0 100%;
+    z-index: 1;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 150px;
+    height: 150px;
+    background: linear-gradient(135deg, rgba(90, 50, 163, 0.05), rgba(74, 20, 140, 0.1));
+    border-radius: 100% 0 0 0;
+    z-index: 1;
+  }
 
   .el-menu {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
     border-right: none;
+    background: transparent !important;
+    position: relative;
+    z-index: 2;
     
     &::-webkit-scrollbar {
-      width: 0;
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: rgba(90, 50, 163, 0.05);
+      border-radius: 10px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: rgba(90, 50, 163, 0.2);
+      border-radius: 10px;
+    }
+    
+    &::-webkit-scrollbar-thumb:hover {
+      background: rgba(90, 50, 163, 0.3);
     }
   }
 }
@@ -397,6 +446,270 @@ const handleCommand = (command) => {
   :deep(.el-sub-menu__title),
   :deep(.el-menu-item) {
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  
+  /* 调整图标与文字间距，固定图标宽度确保对齐 */
+  :deep(.el-sub-menu__title > .el-icon),
+  :deep(.el-menu-item > .el-icon) {
+    width: 20px;
+    margin-right: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* 确保箭头右对齐 */
+  :deep(.el-sub-menu__title) {
+    position: relative;
+  }
+  
+  :deep(.el-sub-menu__title .el-sub-menu__icon-arrow) {
+    position: absolute;
+    right: 16px;
+  }
+  
+  :deep(.el-menu-item) {
+    background: rgba(243, 240, 250, 0.8) !important;
+    color: #5a32a3 !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+    padding-left: 20px !important;
+    margin: 6px 12px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(90, 50, 163, 0.05) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  
+  :deep(.el-sub-menu__title) {
+    background: rgba(243, 240, 250, 0.8) !important;
+    color: #5a32a3 !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+    padding-left: 20px !important;
+    margin: 6px 12px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(90, 50, 163, 0.05) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  
+  :deep(.el-menu-item.is-active) {
+    background: rgba(90, 50, 163, 0.9) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-right: none !important;
+    transition: all 0.3s ease !important;
+    padding-left: 20px !important;
+    margin: 6px 12px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(90, 50, 163, 0.3) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  
+  :deep(.el-sub-menu__title.is-active) {
+    background: rgba(90, 50, 163, 0.9) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-right: none !important;
+    transition: all 0.3s ease !important;
+    padding-left: 20px !important;
+    margin: 6px 12px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(90, 50, 163, 0.3) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  
+  :deep(.el-menu-item:hover) {
+    background: rgba(225, 215, 240, 0.9) !important;
+    color: #5a32a3 !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    padding-left: 20px !important;
+    margin: 6px 12px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(90, 50, 163, 0.1) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  
+  :deep(.el-sub-menu__title:hover) {
+    background: rgba(225, 215, 240, 0.9) !important;
+    color: #5a32a3 !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    padding-left: 20px !important;
+    margin: 6px 12px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(90, 50, 163, 0.1) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  
+  :deep(.el-menu-item.is-active:hover) {
+    background: rgba(74, 20, 140, 0.9) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-right: none !important;
+    transition: all 0.3s ease !important;
+    padding-left: 20px !important;
+    margin: 6px 12px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 6px 16px rgba(74, 20, 140, 0.4) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  
+  :deep(.el-sub-menu__title.is-active:hover) {
+    background: rgba(74, 20, 140, 0.9) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    border-right: none !important;
+    transition: all 0.3s ease !important;
+    padding-left: 20px !important;
+    margin: 6px 12px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 6px 16px rgba(74, 20, 140, 0.4) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+  
+  /* 子菜单样式 - 统一背景 */
+  :deep(.el-sub-menu__content) {
+    background: #f3f0fa !important;
+    border-left: none !important;
+    padding-left: 32px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transition: all 0.3s ease !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  
+  /* 智能用例生成子菜单特殊处理 */
+  :deep(.el-menu-item-group) {
+    background: #f3f0fa !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  
+  :deep(.el-menu-item-group__title) {
+    background: #f3f0fa !important;
+    color: #5a32a3 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 12px !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  
+  /* 子菜单项样式 - 统一文字颜色 */
+  :deep(.el-sub-menu__content .el-menu-item) {
+    background: rgba(243, 240, 250, 0.8) !important;
+    color: #5a32a3 !important;
+    font-weight: 500 !important;
+    margin: 4px 12px !important;
+    padding: 10px 16px !important;
+    transition: all 0.3s ease !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 6px rgba(90, 50, 163, 0.05) !important;
+    backdrop-filter: blur(10px) !important;
+    width: calc(100% - 24px) !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  
+  /* 子菜单项hover和激活状态 */
+  :deep(.el-sub-menu__content .el-menu-item:hover) {
+    background: rgba(225, 215, 240, 0.9) !important;
+    color: #5a32a3 !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 3px 10px rgba(90, 50, 163, 0.1) !important;
+    padding: 10px 16px !important;
+    margin: 4px 12px !important;
+    border-radius: 6px !important;
+    backdrop-filter: blur(10px) !important;
+    width: calc(100% - 24px) !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  
+  /* 子菜单项激活状态 - 高亮 */
+  :deep(.el-sub-menu__content .el-menu-item.is-active) {
+    background: rgba(90, 50, 163, 0.9) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    padding: 10px 16px !important;
+    margin: 4px 12px !important;
+    border-radius: 6px !important;
+    box-shadow: 0 3px 10px rgba(90, 50, 163, 0.3) !important;
+    backdrop-filter: blur(10px) !important;
+    width: calc(100% - 24px) !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  
+  /* 子菜单项激活+hover状态 */
+  :deep(.el-sub-menu__content .el-menu-item.is-active:hover) {
+    background: rgba(74, 20, 140, 0.9) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    padding: 10px 16px !important;
+    margin: 4px 12px !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 12px rgba(74, 20, 140, 0.4) !important;
+    backdrop-filter: blur(10px) !important;
+    width: calc(100% - 24px) !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  
+  /* 智能用例生成子菜单特殊处理 - 确保无白色背景 */
+  :deep(.el-sub-menu .el-sub-menu__content) {
+    background: #f3f0fa !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  
+  /* 菜单项组特殊处理 */
+  :deep(.el-menu-item-group) {
+    background: #f3f0fa !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  
+  /* 菜单项组标题特殊处理 */
+  :deep(.el-menu-item-group__title) {
+    background: #f3f0fa !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  
+  /* 确保整个侧边栏无白色背景 */
+  :deep(.el-menu) {
+    background: #f3f0fa !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  
+  /* 确保所有菜单项无白色背景 */
+  :deep(.el-menu-item) {
+    background: #f3f0fa !important;
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+  
+  /* 确保所有子菜单项无白色背景 */
+  :deep(.el-sub-menu__title) {
+    background: #f3f0fa !important;
+    border-right: none !important;
+    border-bottom: none !important;
   }
 }
 
@@ -422,18 +735,20 @@ const handleCommand = (command) => {
 }
 
 .el-header {
-  background-color: white;
-  border-bottom: 1px solid #e8e8e8;
+  background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%);
+  border-bottom: 1px solid rgba(90, 50, 163, 0.2);
   padding: 0;
   flex-shrink: 0;
   height: 60px !important;
+  box-shadow: 0 2px 8px rgba(90, 50, 163, 0.1);
+  backdrop-filter: blur(10px);
 
   .header-content {
     height: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 20px;
+    padding: 0 24px;
   }
 
   .header-left {
@@ -442,6 +757,33 @@ const handleCommand = (command) => {
     
     :deep(.el-breadcrumb) {
       font-size: 14px;
+      font-weight: 500;
+      
+      .el-breadcrumb__item {
+        .el-breadcrumb__inner {
+          color: #5a32a3;
+          font-weight: 500;
+          
+          &:hover {
+            color: #7b42f6;
+          }
+          
+          &.is-link {
+            color: #9370db;
+            font-weight: 500;
+            
+            &:hover {
+              color: #7b42f6;
+              text-decoration: underline;
+            }
+          }
+        }
+        
+        .el-breadcrumb__separator {
+          color: #9370db;
+          margin: 0 8px;
+        }
+      }
     }
   }
 
@@ -450,11 +792,43 @@ const handleCommand = (command) => {
     align-items: center;
     cursor: pointer;
     white-space: nowrap;
+    outline: none;
+    padding: 6px 12px;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 8px rgba(90, 50, 163, 0.1);
+    
+    &:hover {
+      background: rgba(255, 255, 255, 1);
+      box-shadow: 0 4px 12px rgba(90, 50, 163, 0.15);
+      transform: translateY(-1px);
+    }
 
     .username {
-      margin: 0 8px;
-      color: #303133;
+      margin: 0 10px;
+      color: #5a32a3;
       font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .el-avatar {
+      border: 2px solid rgba(90, 50, 163, 0.2);
+      transition: all 0.3s ease;
+      
+      &:hover {
+        border-color: #9370db;
+        box-shadow: 0 0 0 2px rgba(147, 112, 219, 0.2);
+      }
+    }
+    
+    .el-icon {
+      color: #5a32a3;
+      transition: all 0.3s ease;
+      
+      &:hover {
+        color: #7b42f6;
+      }
     }
   }
 }
@@ -603,7 +977,6 @@ const handleCommand = (command) => {
     :deep(.el-sub-menu__title),
     :deep(.el-menu-item) {
       font-size: 12px;
-      padding-left: 12px !important;
     }
   }
   

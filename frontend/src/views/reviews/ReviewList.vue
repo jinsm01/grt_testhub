@@ -333,10 +333,346 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.priority-tag {
-  &.low { color: #67c23a; }
-  &.medium { color: #e6a23c; }
-  &.high { color: #f56c6c; }
-  &.urgent { color: #f56c6c; font-weight: bold; }
+.page-container {
+  padding: 20px;
+  min-height: calc(100vh - 120px);
+  background: linear-gradient(135deg, #f9f7ff 0%, #f3f0fa 100%);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(90, 50, 163, 0.1);
+  
+  .page-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #5a32a3;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .el-button {
+    box-shadow: 0 4px 12px rgba(90, 50, 163, 0.2);
+    transition: all 0.3s ease;
+    
+    &:hover {
+      box-shadow: 0 6px 16px rgba(90, 50, 163, 0.3);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+.filter-bar {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(90, 50, 163, 0.08);
+  backdrop-filter: blur(10px);
+  
+  .filter-form {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+    
+    .el-form-item {
+      margin-bottom: 0;
+      
+      .el-form-item__label {
+        font-weight: 500;
+        color: #5a32a3;
+      }
+      
+      .el-select {
+        border-radius: 8px;
+        border: 1px solid rgba(90, 50, 163, 0.2);
+        transition: all 0.3s ease;
+        
+        &:hover {
+          border-color: #9370db;
+          box-shadow: 0 0 0 2px rgba(147, 112, 219, 0.1);
+        }
+        
+        &.is-focus {
+          border-color: #5a32a3;
+          box-shadow: 0 0 0 2px rgba(90, 50, 163, 0.2);
+        }
+      }
+    }
+  }
+}
+
+.table-container {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(90, 50, 163, 0.08);
+  backdrop-filter: blur(10px);
+  
+  .el-table {
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    
+    &::before {
+      display: none;
+    }
+    
+    .el-table__header-wrapper {
+      .el-table__header {
+        background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%);
+        
+        th {
+          background: transparent !important;
+          color: #5a32a3;
+          font-weight: 600;
+          border-bottom: 2px solid rgba(90, 50, 163, 0.2);
+          padding: 16px 12px;
+        }
+      }
+    }
+    
+    .el-table__body-wrapper {
+      .el-table__row {
+        transition: all 0.3s ease;
+        
+        &:hover {
+          background: rgba(90, 50, 163, 0.02) !important;
+        }
+        
+        &.el-table__row--striped {
+          background: rgba(243, 240, 250, 0.5) !important;
+        }
+        
+        td {
+          padding: 14px 12px;
+          border-bottom: 1px solid rgba(90, 50, 163, 0.1);
+          
+          .el-tag {
+            border-radius: 16px;
+            padding: 2px 12px;
+            font-size: 12px;
+            font-weight: 500;
+          }
+          
+          .priority-tag {
+            &.low {
+              background: rgba(103, 194, 58, 0.1);
+              color: #67c23a;
+            }
+            &.medium {
+              background: rgba(230, 162, 60, 0.1);
+              color: #e6a23c;
+            }
+            &.high {
+              background: rgba(245, 108, 108, 0.1);
+              color: #f56c6c;
+            }
+            &.urgent {
+              background: rgba(245, 108, 108, 0.2);
+              color: #f56c6c;
+              font-weight: 600;
+            }
+          }
+          
+          .el-button {
+            transition: all 0.3s ease;
+            
+            &:hover {
+              transform: translateY(-1px);
+            }
+          }
+        }
+      }
+    }
+    
+    .el-table__empty-block {
+      padding: 60px 0;
+      
+      .el-table__empty-text {
+        color: #909399;
+        font-size: 14px;
+      }
+    }
+  }
+  
+  .pagination-container {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 20px;
+    border-top: 1px solid rgba(90, 50, 163, 0.1);
+    
+    .el-pagination {
+      .el-pagination__sizes {
+        margin-right: 16px;
+      }
+      
+      .el-select .el-input {
+        width: 100px;
+      }
+      
+      .el-pager li {
+        border-radius: 4px;
+        margin: 0 4px;
+        transition: all 0.3s ease;
+        
+        &:hover:not(.disabled) {
+          color: #5a32a3;
+        }
+        
+        &.active {
+          background: #5a32a3;
+          color: #ffffff;
+        }
+      }
+      
+      .el-pagination__prev, .el-pagination__next {
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        
+        &:hover:not(.disabled) {
+          color: #5a32a3;
+        }
+      }
+    }
+  }
+}
+
+// 对话框样式
+.el-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(90, 50, 163, 0.2);
+  
+  .el-dialog__header {
+    background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%);
+    padding: 20px;
+    border-bottom: 1px solid rgba(90, 50, 163, 0.1);
+    
+    .el-dialog__title {
+      color: #5a32a3;
+      font-weight: 600;
+      font-size: 18px;
+    }
+  }
+  
+  .el-dialog__body {
+    padding: 24px;
+  }
+  
+  .el-dialog__footer {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(90, 50, 163, 0.1);
+    background: #f9f7ff;
+  }
+}
+
+// 按钮样式
+.el-button {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  
+  &.el-button--primary {
+    background: linear-gradient(135deg, #5a32a3 0%, #7b42f6 100%);
+    border: none;
+    
+    &:hover {
+      background: linear-gradient(135deg, #4a288a 0%, #6a36d6 100%);
+      box-shadow: 0 4px 12px rgba(90, 50, 163, 0.3);
+    }
+  }
+  
+  &.el-button--success {
+    background: linear-gradient(135deg, #67c23a 0%, #85ce61 100%);
+    border: none;
+    
+    &:hover {
+      background: linear-gradient(135deg, #529b2e 0%, #67c23a 100%);
+    }
+  }
+  
+  &.el-button--warning {
+    background: linear-gradient(135deg, #e6a23c 0%, #ebb563 100%);
+    border: none;
+    
+    &:hover {
+      background: linear-gradient(135deg, #cf9236 0%, #e6a23c 100%);
+    }
+  }
+  
+  &.el-button--danger {
+    background: linear-gradient(135deg, #f56c6c 0%, #f78989 100%);
+    border: none;
+    
+    &:hover {
+      background: linear-gradient(135deg, #e65252 0%, #f56c6c 100%);
+    }
+  }
+  
+  &.el-button--text {
+    color: #5a32a3;
+    
+    &:hover {
+      color: #7b42f6;
+      background: rgba(90, 50, 163, 0.1);
+    }
+  }
+}
+
+// 进度条样式
+.el-progress {
+  .el-progress__bar {
+    border-radius: 3px;
+  }
+  
+  .el-progress__text {
+    font-size: 12px;
+    color: #606266;
+  }
+}
+
+// 响应式设计
+@media screen and (max-width: 1200px) {
+  .page-container {
+    padding: 16px;
+  }
+  
+  .filter-bar .filter-form {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .table-container .el-table {
+    .el-table__row td {
+      padding: 12px 8px;
+    }
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .filter-bar .filter-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .table-container {
+    padding: 12px;
+  }
+  
+  .pagination-container {
+    justify-content: center;
+  }
 }
 </style>
