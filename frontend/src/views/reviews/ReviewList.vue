@@ -368,7 +368,7 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 16px;
   padding: 20px 24px;
-  background-color: var(--primary-light);
+  background-color: #f8f7ff;
   border-radius: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   
@@ -403,7 +403,7 @@ onMounted(() => {
 
 // 筛选栏
 .filter-bar {
-  background-color: var(--primary-light);
+  background-color: #f8f7ff;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 16px 24px;
@@ -422,13 +422,13 @@ onMounted(() => {
     --el-color-primary-light-3: #9370db;
     --el-color-primary-light-5: #a888e0;
     --el-color-primary-light-7: #c2a9f3;
-    --el-color-primary-light-9: var(--primary-light);
+    --el-color-primary-light-9: #f8f7ff;
     --el-border-color: var(--border-color);
     --el-border-color-light: var(--border-color);
     --el-border-color-lighter: var(--border-color);
-    --el-fill-color-light: var(--primary-light);
-    --el-fill-color-lighter: var(--primary-lighter);
-    --el-fill-color-blank: var(--primary-light);
+    --el-fill-color-light: #f8f7ff;
+    --el-fill-color-lighter: #f8f7ff;
+    --el-fill-color-blank: #f8f7ff;
     --el-text-color-primary: var(--text-primary);
     --el-text-color-regular: var(--text-secondary);
     --el-text-color-secondary: var(--text-tertiary);
@@ -502,74 +502,97 @@ onMounted(() => {
   // 表格样式
   .el-table {
     border: none;
-    border-radius: 0;
+    border-radius: 8px;
     overflow: hidden;
     flex-grow: 1;
-    box-shadow: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     transition: all 0.3s ease;
+    background-color: #f8f7ff !important;
     
     /* 覆盖 Element Plus 默认主题变量 */
     --el-color-primary: var(--primary-color);
     --el-color-primary-light-3: #9370db;
     --el-color-primary-light-5: #a888e0;
     --el-color-primary-light-7: #c2a9f3;
-    --el-color-primary-light-9: var(--primary-light);
-    --el-border-color: var(--border-color);
-    --el-border-color-light: var(--border-color);
-    --el-border-color-lighter: var(--border-color);
-    --el-fill-color-light: var(--primary-light);
-    --el-fill-color-lighter: var(--primary-lighter);
-    --el-fill-color-blank: var(--primary-light);
-    --el-text-color-primary: var(--text-primary);
-    --el-text-color-regular: var(--text-secondary);
-    --el-text-color-secondary: var(--text-tertiary);
-    --el-text-color-placeholder: var(--text-tertiary);
+    --el-color-primary-light-9: #f8f7ff;
+    --el-border-color: #e9ecef;
+    --el-border-color-light: #e9ecef;
+    --el-border-color-lighter: #e9ecef;
+    --el-fill-color-light: #f8f7ff;
+    --el-fill-color-lighter: #f8f7ff;
+    --el-fill-color-blank: #f8f7ff;
+    --el-text-color-primary: #333;
+    --el-text-color-regular: #333;
+    --el-text-color-secondary: #666;
+    --el-text-color-placeholder: #999;
+    --el-table-header-bg-color: #f8f7ff;
+    --el-table-row-hover-bg-color: #f0edff;
+    --el-table-stripe-bg-color: #f0edff;
     
     &::before {
       display: none;
     }
     
-    // 表头
+    // 表头包装器
     :deep(.el-table__header-wrapper) {
+      background-color: #f8f7ff !important;
+      
+      // 表头
       :deep(.el-table__header) {
-        background-color: var(--primary-light) !important;
+        background-color: #f8f7ff !important;
         
+        // 表头单元格
         :deep(th) {
-          background-color: var(--primary-light) !important;
-          color: var(--text-primary);
+          background-color: #f8f7ff !important;
+          color: #5a32a3;
           font-weight: 600;
           font-size: 14px;
-          border-bottom: 1px solid var(--border-color);
+          border-bottom: 1px solid #e9ecef;
           padding: 16px;
           text-align: left;
+          line-height: 24px;
           transition: all 0.3s ease;
           
           &:hover {
-            background-color: var(--primary-light) !important;
+            background-color: #f8f7ff !important;
+          }
+          
+          // 表头单元格内部
+          :deep(.cell) {
+            background-color: #f8f7ff !important;
+            color: #5a32a3 !important;
+            font-weight: 600 !important;
           }
         }
       }
     }
     
-    // 表格体
+    // 表格体包装器
     :deep(.el-table__body-wrapper) {
+      background-color: #f8f7ff !important;
+      
+      // 表格行
       :deep(.el-table__row) {
         transition: all 0.3s ease;
-        background-color: var(--primary-light) !important;
+        background-color: #f8f7ff !important;
+        line-height: 24px;
         
         &:hover {
-          background-color: var(--primary-lighter) !important;
+          background-color: #f0edff !important;
         }
         
         &.el-table__row--striped {
-          background-color: var(--primary-lighter) !important;
+          background-color: #f0edff !important;
         }
         
+        // 表格单元格
         :deep(td) {
           padding: 14px 16px;
-          border-bottom: 1px solid var(--border-color);
-          color: var(--text-primary);
+          border-bottom: 1px solid #e9ecef;
+          color: #333;
           font-size: 14px;
+          font-weight: 400;
+          line-height: 24px;
           transition: all 0.3s ease;
           
           // 标签样式
@@ -638,7 +661,7 @@ onMounted(() => {
               
               &:hover {
                 color: var(--primary-dark);
-                background: var(--primary-light);
+                background: #f8f7ff;
                 border-radius: 4px;
               }
             }
@@ -650,25 +673,61 @@ onMounted(() => {
     // 空状态
     :deep(.el-table__empty-block) {
       padding: 60px 0;
-      background: var(--primary-light) !important;
+      background: #f8f7ff !important;
       
       :deep(.el-table__empty-text) {
-        color: var(--text-tertiary);
+        color: #666;
         font-size: 14px;
+        line-height: 24px;
       }
+    }
+    
+    // 确保整个表格容器都使用正确的背景色
+    &.el-table--enable-row-hover {
+      background-color: #f8f7ff !important;
+    }
+    
+    // 覆盖表格行的默认样式
+    :deep(.el-table__row) {
+      background-color: #f8f7ff !important;
+    }
+    
+    // 覆盖表格行的条纹样式
+    :deep(.el-table__row.el-table__row--striped) {
+      background-color: #f0edff !important;
+    }
+    
+    // 覆盖表格行的 hover 样式
+    :deep(.el-table__row:hover) {
+      background-color: #f0edff !important;
+    }
+    
+    // 直接覆盖表头单元格样式
+    :deep(.el-table__header th) {
+      background-color: #f8f7ff !important;
+      color: #5a32a3 !important;
+      font-weight: 600 !important;
+    }
+    
+    // 覆盖表头单元格内容样式
+    :deep(.el-table__header th .cell) {
+      background-color: #f8f7ff !important;
+      color: #5a32a3 !important;
+      font-weight: 600 !important;
     }
   }
   
   // 分页容器
   .pagination-container {
-    margin-top: 0;
+    margin-top: 16px;
     display: flex;
     justify-content: flex-end;
     align-items: center;
     gap: 16px;
     padding: 16px 24px;
-    background-color: var(--primary-light);
-    border-top: 1px solid var(--border-color);
+    background-color: #f8f7ff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
     transition: all 0.3s ease;
     
     /* 覆盖 Element Plus 默认主题变量 */
@@ -676,13 +735,13 @@ onMounted(() => {
     --el-color-primary-light-3: #9370db;
     --el-color-primary-light-5: #a888e0;
     --el-color-primary-light-7: #c2a9f3;
-    --el-color-primary-light-9: var(--primary-light);
+    --el-color-primary-light-9: #f8f7ff;
     --el-border-color: var(--border-color);
     --el-border-color-light: var(--border-color);
     --el-border-color-lighter: var(--border-color);
-    --el-fill-color-light: var(--primary-light);
-    --el-fill-color-lighter: var(--primary-lighter);
-    --el-fill-color-blank: var(--primary-light);
+    --el-fill-color-light: #f8f7ff;
+    --el-fill-color-lighter: #f8f7ff;
+    --el-fill-color-blank: #f8f7ff;
     --el-text-color-primary: var(--text-primary);
     --el-text-color-regular: var(--text-secondary);
     --el-text-color-secondary: var(--text-tertiary);
