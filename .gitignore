@@ -1,39 +1,58 @@
-# 忽略虚拟环境及项目产生的临时文件
-.venv/
+# Virtual environment
+venv/
+env/
+
+# IDE files
 .idea/
-.claude/
 .vscode/
-__pycache__/
+*.swp
+*.swo
+
+# OS files
 .DS_Store
-.pytest_cache
-备注笔记.txt
-frontend/dist/
-# 忽略log文件
-logs/*
-!logs/.gitkeep
-# 忽略.env
+Thumbs.db
+
+# Build files
+dist/
+build/
+*.egg-info/
+
+# Log files
+*.log
+
+# Environment variables
 .env
+.env.local
+.env.*.local
 
-# 忽略所有 app/*/migrations/ 目录下的所有内容 (包括文件和子目录)
-apps/*/migrations/*
-# 使用否定模式，例外地跟踪 __init__.py 文件
-!apps/*/migrations/__init__.py
+# Test files
+coverage/
+.pytest_cache/
 
-# 忽略media下的子目录及文件，但保留.gitkeep文件
-media/allure-reports/*
-!media/allure-reports/.gitkeep
-media/allure-results/*
-!media/allure-results/.gitkeep
-media/requirement_docs/*
-!media/requirement_docs/.gitkeep
-media/ai_recording/*
-!media/ai_recording/.gitkeep
+# Temporary files
+*.tmp
+*.temp
 
-# 忽略前端文件
-frontend/node_modules/
-frontend/dist/
-frontend/.DS_Store
-frontend/*.log
+# Python files
+__pycache__/
+*.py[cod]
 
-# 忽略临时文件
-temp/
+# Node.js files
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Django files
+static/
+media/
+
+# Database files
+*.sqlite3
+
+# Cache files
+.cache/
+.parcel-cache/
+
+# Docker files
+docker-compose.override.yml

@@ -4,55 +4,50 @@
       <h2>AI生成用例记录</h2>
     </div>
 
-    <div class="filters-section">
-      <div class="filter-card">
-        <div class="filter-group">
-          <label>状态筛选:</label>
+    <!-- 筛选和统计信息 -->
+    <div class="filters-stats-section" v-if="allStats.total > 0">
+      <div class="filters-stats-card">
+        <div class="filters-area">
           <select v-model="selectedStatus" @change="loadTasks" class="filter-select">
             <option value="">全部状态</option>
-            <option value="pending">需求分析中</option>
-            <option value="generating">用例编写中</option>
-            <option value="reviewing">用例评审中</option>
+            <option value="pending">分析中</option>
+            <option value="generating">生成中</option>
+            <option value="reviewing">评审中</option>
             <option value="completed">已完成</option>
             <option value="failed">失败</option>
           </select>
+          <div class="filter-actions">
+            <button 
+              v-if="selectedTasks.length > 0" 
+              class="batch-delete-btn" 
+              @click="batchDeleteTasks"
+              :disabled="isDeleting">
+              <span v-if="isDeleting">删除中...</span>
+              <span v-else>批量删除 ({{ selectedTasks.length }})</span>
+            </button>
+            <button class="refresh-btn" @click="loadTasks" :disabled="isLoading">
+              <span v-if="isLoading">加载中...</span>
+              <span v-else>刷新</span>
+            </button>
+          </div>
         </div>
-
-        <div class="filter-actions">
-          <button 
-            v-if="selectedTasks.length > 0" 
-            class="batch-delete-btn" 
-            @click="batchDeleteTasks"
-            :disabled="isDeleting">
-            <span v-if="isDeleting">🗑️ 删除中...</span>
-            <span v-else>🗑️ 批量删除 ({{ selectedTasks.length }})</span>
-          </button>
-          <button class="refresh-btn" @click="loadTasks" :disabled="isLoading">
-            <span v-if="isLoading">🔄 加载中...</span>
-            <span v-else>🔄 刷新</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 统计信息 -->
-    <div class="stats-section" v-if="allStats.total > 0">
-      <div class="stats-card">
-        <div class="stat-item">
-          <span class="stat-number">{{ allStats.total }}</span>
-          <span class="stat-label">任务总数</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number">{{ allStats.completed }}</span>
-          <span class="stat-label">已完成</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number">{{ allStats.running }}</span>
-          <span class="stat-label">进行中</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-number">{{ allStats.failed }}</span>
-          <span class="stat-label">失败</span>
+        <div class="stats-area">
+          <div class="stat-item">
+            <span class="stat-number">{{ allStats.total }}</span>
+            <span class="stat-label">任务总数</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ allStats.completed }}</span>
+            <span class="stat-label">已完成</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ allStats.running }}</span>
+            <span class="stat-label">进行中</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-number">{{ allStats.failed }}</span>
+            <span class="stat-label">失败</span>
+          </div>
         </div>
       </div>
     </div>
@@ -66,25 +61,27 @@
       <div v-else-if="tasks.length === 0" class="empty-state">
         <div class="empty-icon">📝</div>
         <h3>暂无生成任务</h3>
-        <p>还没有AI生成用例任务，去<router-link to="/requirement-analysis">AI用例生成</router-link>页面创建一个任务吧！</p>
+        <p>还没有AI生成用例任务，去<router-link to="/ai-generation/requirement-analysis">AI用例生成</router-link>页面创建一个任务吧！</p>
       </div>
 
       <div v-else class="testcases-table">
         <div class="table-header">
-          <div class="header-cell checkbox-cell">
-            <input
-              type="checkbox"
-              @change="toggleSelectAll"
-              :checked="isAllSelected"
-              class="task-checkbox">
+          <div class="table-header-row">
+            <div class="header-cell checkbox-cell">
+              <input
+                type="checkbox"
+                @change="toggleSelectAll"
+                :checked="isAllSelected"
+                class="task-checkbox">
+            </div>
+            <div class="header-cell serial-cell">序号</div>
+            <div class="header-cell task-id-cell">任务ID</div>
+            <div class="header-cell requirement-name-cell">关联需求</div>
+            <div class="header-cell status-cell">状态</div>
+            <div class="header-cell count-cell">条数</div>
+            <div class="header-cell time-cell">生成时间</div>
+            <div class="header-cell action-cell">操作</div>
           </div>
-          <div class="header-cell serial-cell">序号</div>
-          <div class="header-cell task-id-cell">任务ID</div>
-          <div class="header-cell requirement-name-cell">关联需求</div>
-          <div class="header-cell status-cell">状态</div>
-          <div class="header-cell count-cell">用例条数</div>
-          <div class="header-cell time-cell">生成时间</div>
-          <div class="header-cell action-cell">操作</div>
         </div>
         
         <div class="table-body">
@@ -119,25 +116,25 @@
                 <button 
                   class="view-detail-btn" 
                   @click="viewTaskDetail(task)">
-                  📖 详情
+                  详情
                 </button>
                 <button 
                   v-if="task.status === 'completed'"
                   class="adopt-btn" 
                   @click="batchAdoptTask(task)">
-                  ✅ 采纳
+                  采纳
                 </button>
                 <button 
                   v-if="task.status === 'completed'"
                   class="discard-btn" 
                   @click="batchDiscardTask(task)">
-                  ❌ 弃用
+                  弃用
                 </button>
                 <button 
                   v-if="task.status === 'completed'"
                   class="export-btn" 
                   @click="exportTestCasesMD(task)">
-                  📄导出MD
+                  导出MD
                 </button>
               </div>
             </div>
@@ -646,7 +643,7 @@ export default {
     getStatusText(status) {
       const statusMap = {
         'pending': '需求分析中',
-        'generating': '用例编写中', 
+        'generating': '生成中', 
         'reviewing': '用例评审中',
         'revising': '改进中',
         'completed': '已完成',
@@ -654,6 +651,8 @@ export default {
       }
       return statusMap[status] || status
     },
+
+
 
     // 获取测试用例条数
     getTestCaseCount(task) {
@@ -779,19 +778,52 @@ export default {
 
     exportTestCasesMD(task) {
       try {
-        // 构建导出URL
-        const currentOrigin = window.location.origin
-        const url = new URL(currentOrigin)
-        const baseUrl = `${url.protocol}//${url.hostname}:8001`
-        const exportUrl = `${baseUrl}/api/requirement-analysis/testcase-generation/${task.task_id}/export_md/`
+        // 使用相对路径或通过API模块构建URL，以确保与当前环境一致
+        const exportUrl = `/api/requirement-analysis/testcase-generation/${task.task_id}/export_md/?filename=${encodeURIComponent(task.title || task.task_id)}`
 
-        // 打开新窗口下载
-        window.open(exportUrl, '_blank')
+        console.log('开始导出MD文件，URL:', exportUrl)
 
-        ElMessage.success('正在导出MD格式测试用例...')
+        // 使用fetch API代替XMLHttpRequest，以便更好地处理认证和跨域
+        fetch(exportUrl, {
+          method: 'GET',
+          credentials: 'include', // 包含cookies等认证信息
+        })
+        .then(response => {
+          if (response.ok) {
+            return response.blob();
+          } else {
+            throw new Error(`导出失败: ${response.status} ${response.statusText}`);
+          }
+        })
+        .then(blob => {
+          console.log('获取到文件blob，大小:', blob.size)
+          
+          // 创建本地URL
+          const urlObject = URL.createObjectURL(blob)
+          
+          // 创建下载链接
+          const link = document.createElement('a')
+          link.href = urlObject
+          link.download = `${task.title || task.task_id}.md`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          
+          // 释放URL对象
+          setTimeout(() => {
+            URL.revokeObjectURL(urlObject)
+          }, 100)
+
+          console.log('文件下载已触发')
+          ElMessage.success('MD格式测试用例导出成功！')
+        })
+        .catch(error => {
+          console.error('导出失败:', error)
+          ElMessage.error(`导出失败: ${error.message || '未知错误'}`)
+        });
       } catch (error) {
         console.error('导出MD格式测试用例失败:', error)
-        ElMessage.error('导出失败，请重试')
+        ElMessage.error(`导出失败: ${error.message || '未知错误'}`)
       }
     },
 
@@ -1064,130 +1096,156 @@ export default {
 
 <style scoped>
 .generated-testcase-list {
-  padding: 20px;
+  padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
 }
 
 .page-header {
   text-align: center;
-  margin-bottom: 15px; /* 进一步减少底部边距 */
+  margin-bottom: 32px;
+  padding: 20px 0;
 }
 
 .page-header h2 {
-  font-size: 1.6rem; /* H2标题适合的字体大小 */
-  color: #2c3e50;
-  margin-bottom: 0; /* 移除底部边距 */
-  margin-top: 5px; /* 减少顶部边距 */
+  font-size: 2rem;
+  color: #4a249c;
+  margin-bottom: 8px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-shadow: 0 1px 2px rgba(74, 36, 156, 0.1);
+}
+
+.page-header h2::before,
+.page-header h2::after {
+  content: '✨';
+  font-size: 1.5rem;
 }
 
 .page-header p {
-  color: #666;
+  color: #6d5d8f;
   font-size: 1.1rem;
-}
-
-/* 过滤器部分 */
-.filters-section {
-  margin-bottom: 15px; /* 进一步减少底部边距 */
-}
-
-.filter-card {
-  background: white;
-  border-radius: 12px;
-  padding: 25px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  display: flex;
-  gap: 20px;
-  align-items: end;
-  flex-wrap: wrap;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 150px;
-}
-
-.filter-group label {
-  font-weight: bold;
-  color: #2c3e50;
-  font-size: 0.9rem;
+  opacity: 0.9;
+  margin: 0;
 }
 
 .filter-select {
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  background: white;
+  padding: 10px 16px;
+  border: 2px solid rgba(147, 112, 219, 0.2);
+  border-radius: 12px;
+  font-size: 1rem;
+  background: linear-gradient(145deg, #ffffff 0%, #f8f6ff 100%);
   cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 160px;
 }
 
 .filter-select:focus {
   outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  border-color: #9370db;
+  box-shadow: 0 0 0 3px rgba(147, 112, 219, 0.25);
+  background: rgba(243, 240, 250, 0.8);
 }
 
 .filter-actions {
   display: flex;
-  gap: 10px;
+  gap: 12px;
+  align-items: center;
 }
 
 .refresh-btn {
-  background: #3498db;
+  background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
   color: white;
   border: none;
   padding: 10px 20px;
-  border-radius: 6px;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.3s ease;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.2);
 }
 
 .refresh-btn:hover:not(:disabled) {
-  background: #2980b9;
+  background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(147, 112, 219, 0.3);
 }
 
 .refresh-btn:disabled {
-  background: #bdc3c7;
+  background: linear-gradient(135deg, #d1c5f7 0%, #b8a7e8 100%);
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .batch-delete-btn {
-  background: #e74c3c;
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
   color: white;
   border: none;
   padding: 10px 20px;
-  border-radius: 6px;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.3s ease;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(231, 76, 60, 0.2);
 }
 
 .batch-delete-btn:hover:not(:disabled) {
-  background: #c0392b;
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(231, 76, 60, 0.3);
 }
 
 .batch-delete-btn:disabled {
-  background: #bdc3c7;
+  background: linear-gradient(135deg, #fadbd8 0%, #f5c6c0 100%);
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
-/* 统计信息 */
-.stats-section {
-  margin-bottom: 15px; /* 进一步减少底部边距 */
+/* 筛选和统计信息 */
+.filters-stats-section {
+  margin-bottom: 24px;
 }
 
-.stats-card {
-  background: white;
-  border-radius: 12px;
-  padding: 25px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+.filters-stats-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 32px rgba(147, 112, 219, 0.12);
+  border: 1px solid rgba(147, 112, 219, 0.2);
   display: flex;
-  gap: 40px; /* 调整间距，因为现在有4个项目 */
-  justify-content: center;
+  gap: 32px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  transition: all 0.3s ease;
+}
+
+.filters-stats-card:hover {
+  box-shadow: 0 12px 48px rgba(147, 112, 219, 0.18);
+  transform: translateY(-2px);
+}
+
+.filters-area {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 300px;
+}
+
+.stats-area {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .stat-item {
@@ -1195,108 +1253,187 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  border: 1px solid rgba(147, 112, 219, 0.1);
+  transition: all 0.3s ease;
+  min-width: 100px;
+}
+
+.stat-item:hover {
+  background: rgba(243, 240, 250, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.15);
 }
 
 .stat-number {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #3498db;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #5a32a3;
+  text-shadow: 0 1px 2px rgba(90, 50, 163, 0.1);
 }
 
 .stat-label {
-  color: #666;
+  color: #6d5d8f;
   font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.9;
 }
 
 /* 测试用例列表 */
 .testcases-section {
-  background: white;
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 8px 32px rgba(147, 112, 219, 0.12);
+  border: 1px solid rgba(147, 112, 219, 0.2);
+  transition: all 0.3s ease;
+}
+
+.testcases-section:hover {
+  box-shadow: 0 12px 48px rgba(147, 112, 219, 0.18);
+  transform: translateY(-2px);
 }
 
 .loading-state, .empty-state {
   text-align: center;
-  padding: 60px 20px;
-  color: #666;
+  padding: 80px 20px;
+  color: #6d5d8f;
+}
+
+.loading-state {
+  font-size: 1.2rem;
+  font-weight: 500;
 }
 
 .empty-icon {
-  font-size: 4rem;
-  margin-bottom: 20px;
+  font-size: 5rem;
+  margin-bottom: 24px;
+  filter: drop-shadow(0 4px 8px rgba(147, 112, 219, 0.2));
 }
 
 .empty-state h3 {
-  color: #2c3e50;
-  margin-bottom: 10px;
+  color: #4a249c;
+  margin-bottom: 12px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto 24px;
 }
 
 .empty-state a {
-  color: #3498db;
+  color: #7b42f6;
   text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  padding: 8px 16px;
+  border-radius: 8px;
 }
 
 .empty-state a:hover {
   text-decoration: underline;
+  background: rgba(147, 112, 219, 0.1);
+  transform: translateY(-1px);
 }
 
 .testcases-table {
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  border: 2px solid rgba(147, 112, 219, 0.1);
+  border-radius: 16px;
   overflow: hidden;
+  overflow-x: auto;
+  display: block;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  min-width: 1000px;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
+  background: white;
 }
 
 .table-header {
-  display: grid;
-  grid-template-columns: 40px 60px 140px 250px 120px 80px 130px 450px;
-  background: #f8f9fa;
-  font-weight: bold;
-  color: #2c3e50;
-  border-bottom: 2px solid #dee2e6;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  background: linear-gradient(135deg, #f8f4ff 0%, #f0e8ff 100%);
+  font-weight: 600;
+  color: #4a249c;
+  border-bottom: 2px solid rgba(147, 112, 219, 0.2);
+}
+
+.table-header-row {
+  display: table-row;
+}
+
+.table-body {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
 }
 
 .table-body .table-row {
-  display: grid;
-  grid-template-columns: 40px 60px 140px 250px 120px 80px 130px 450px;
-  border-bottom: 1px solid #eee;
-  transition: all 0.2s ease;
-  min-height: 60px;
+  display: table-row;
+  border-bottom: 1px solid rgba(147, 112, 219, 0.1);
+  transition: all 0.3s ease;
+  min-height: 72px;
   height: auto;
 }
 
+.table-header .header-cell,
+.table-body .body-cell {
+  display: table-cell;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .table-row:hover {
-  background: #f8f9fa;
+  background: rgba(243, 240, 250, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.1);
 }
 
 .table-row.selected {
-  background: #e3f2fd;
+  background: rgba(117, 70, 239, 0.15);
+  border-left: 4px solid #7b42f6;
 }
 
 .table-row.selected:hover {
-  background: #bbdefb;
+  background: rgba(117, 70, 239, 0.2);
 }
 
 .header-cell {
-  padding: 10px 12px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-right: 1px solid #eee;
+  border-right: 1px solid rgba(147, 112, 219, 0.1);
   word-wrap: break-word;
   word-break: break-word;
   font-size: 14px;
+  font-weight: 600;
   white-space: nowrap;
+  text-align: center;
+  color: #4a249c;
+  text-shadow: 0 1px 2px rgba(74, 36, 156, 0.1);
 }
 
 .body-cell {
-  padding: 10px 12px;
+  padding: 16px 20px;
   display: flex;
   align-items: center;
-  border-right: 1px solid #eee;
+  border-right: 1px solid rgba(147, 112, 219, 0.1);
   word-wrap: break-word;
   word-break: break-word;
   font-size: 14px;
+  color: #333;
+  font-weight: 400;
 }
 
 .header-cell:last-child,
@@ -1306,46 +1443,65 @@ export default {
 
 .checkbox-cell {
   justify-content: center;
-  width: 40px;
+  align-items: center;
+  width: 50px;
   flex-shrink: 0;
+  display: flex;
 }
 
 .serial-cell {
   justify-content: center;
-  width: 60px;
-  font-weight: 500;
-  color: #7f8c8d;
+  width: 80px;
+  font-weight: 600;
   flex-shrink: 0;
+  color: #5a32a3;
 }
 
 .task-checkbox {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
-  accent-color: #3498db;
+  accent-color: #9370db;
+  transition: all 0.3s ease;
+}
+
+.task-checkbox:hover {
+  transform: scale(1.1);
 }
 
 /* 任务ID列 */
 .task-id-cell {
-  width: 140px;
+  width: 160px;
   flex-shrink: 0;
 }
 
 .body-cell.task-id-cell {
   justify-content: flex-start;
   font-size: 13px;
+  font-weight: 500;
+  color: #6d5d8f;
+  font-family: 'Courier New', monospace;
 }
 
 /* 关联需求列 */
 .requirement-name-cell {
-  min-width: 250px;
-  max-width: 250px;
-  flex-shrink: 0;
+  min-width: 350px;
+  max-width: 450px;
+  flex-grow: 1;
 }
 
 .body-cell.requirement-name-cell {
   justify-content: flex-start;
-  padding-left: 8px;
+  padding-left: 16px;
+}
+
+.requirement-name {
+  font-weight: 500;
+  color: #4a249c;
+  line-height: 1.4;
+  display: block;
+  white-space: normal;
+  word-wrap: break-word;
 }
 
 /* 状态列 */
@@ -1359,16 +1515,72 @@ export default {
   justify-content: center;
 }
 
+.status-tag {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+}
+
+.status-tag.completed {
+  background: rgba(103, 194, 58, 0.1);
+  color: #67c23a;
+  border: 1px solid rgba(103, 194, 58, 0.2);
+}
+
+.status-tag.generating {
+  background: rgba(64, 158, 255, 0.1);
+  color: #409eff;
+  border: 1px solid rgba(64, 158, 255, 0.2);
+}
+
+.status-tag.failed {
+  background: rgba(245, 108, 108, 0.1);
+  color: #f56c6c;
+  border: 1px solid rgba(245, 108, 108, 0.2);
+}
+
+.status-tag.pending,
+.status-tag.reviewing {
+  background: rgba(230, 162, 60, 0.1);
+  color: #e6a23c;
+  border: 1px solid rgba(230, 162, 60, 0.2);
+}
+
+.status-tag:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 /* 用例条数列 */
 .count-cell {
   justify-content: center;
-  width: 80px;
+  width: 90px;
   flex-shrink: 0;
+}
+
+.count-badge {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #f3f0fa 0%, #e9d8fd 100%);
+  color: #5a32a3;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(147, 112, 219, 0.2);
+  transition: all 0.3s ease;
+}
+
+.count-badge:hover {
+  background: linear-gradient(135deg, #e9d8fd 0%, #d6bcfa 100%);
+  transform: scale(1.1);
 }
 
 /* 生成时间列 */
 .time-cell {
-  width: 130px;
+  width: 180px;
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -1376,6 +1588,8 @@ export default {
 .body-cell.time-cell {
   justify-content: center;
   font-size: 13px;
+  color: #6d5d8f;
+  font-family: 'Courier New', monospace;
 }
 
 /* 操作列 */
@@ -1391,23 +1605,243 @@ export default {
 
 .action-buttons {
   display: flex;
-  gap: 8px;
-  flex-wrap: nowrap;
+  gap: 12px;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   width: 100%;
 }
 
-.count-badge {
-  background: #3498db;
+.view-detail-btn,
+.adopt-btn,
+.discard-btn,
+.export-btn {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.view-detail-btn {
+  background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
   color: white;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: bold;
-  min-width: 30px;
+}
+
+.view-detail-btn:hover {
+  background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(117, 70, 239, 0.3);
+}
+
+.adopt-btn {
+  background: linear-gradient(135deg, #67c23a 0%, #529b2e 100%);
+  color: white;
+}
+
+.adopt-btn:hover {
+  background: linear-gradient(135deg, #529b2e 0%, #3d7a22 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(103, 194, 58, 0.3);
+}
+
+.discard-btn {
+  background: linear-gradient(135deg, #f56c6c 0%, #e74c3c 100%);
+  color: white;
+}
+
+.discard-btn:hover {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(245, 108, 108, 0.3);
+}
+
+.export-btn {
+  background: linear-gradient(135deg, #409eff 0%, #2979ff 100%);
+  color: white;
+}
+
+.export-btn:hover {
+  background: linear-gradient(135deg, #2979ff 0%, #1c66e0 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.3);
+}
+
+/* 分页组件 */
+.pagination-section {
+  margin-top: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.1);
+  border: 1px solid rgba(147, 112, 219, 0.1);
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #5a32a3;
+  font-weight: 400;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-size-selector label {
+  font-size: 14px;
+  color: #5a32a3;
+  font-weight: 400;
+}
+
+.page-size-selector select {
+  padding: 6px 10px;
+  border: 2px solid rgba(147, 112, 219, 0.2);
+  border-radius: 8px;
+  font-size: 14px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8f6ff 100%);
+  color: #5a32a3;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(147, 112, 219, 0.1);
+  min-width: 60px;
+}
+
+.page-size-selector select:focus {
+  outline: none;
+  border-color: #9370db;
+  box-shadow: 0 0 0 3px rgba(147, 112, 219, 0.25);
+  transform: translateY(-1px);
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-btn {
+  background: transparent;
+  color: #5a32a3;
+  border: 1px solid rgba(147, 112, 219, 0.2);
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(147, 112, 219, 0.1);
+  transform: translateY(-1px);
+  border-color: #9370db;
+}
+
+.page-btn:disabled {
+  background: transparent;
+  color: rgba(147, 112, 219, 0.4);
+  border-color: rgba(147, 112, 219, 0.1);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.page-btn.active {
+  background: transparent;
+  color: #5a32a3;
+  font-weight: 500;
+  border-color: #9370db;
+}
+
+.page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.page-number {
+  display: flex;
+  align-items: center;
+}
+
+.ellipsis {
+  padding: 6px 8px;
+  font-size: 14px;
+  color: #5a32a3;
+  font-weight: 400;
+}
+
+.page-jumper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-jumper label {
+  font-size: 14px;
+  color: #5a32a3;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.page-jumper input {
+  padding: 6px 12px;
+  border: 2px solid rgba(147, 112, 219, 0.2);
+  border-radius: 6px;
+  font-size: 14px;
+  width: 120px;
+  height: 32px;
   text-align: center;
-  display: inline-block;
+  background: linear-gradient(145deg, #ffffff 0%, #f8f6ff 100%);
+  color: #5a32a3;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.page-jumper input:focus {
+  outline: none;
+  border-color: #9370db;
+  box-shadow: 0 0 0 3px rgba(147, 112, 219, 0.25);
+}
+
+.jump-btn {
+  background: transparent;
+  color: #5a32a3;
+  border: 1px solid rgba(147, 112, 219, 0.2);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.jump-btn:hover {
+  background: rgba(147, 112, 219, 0.1);
+  border-color: #9370db;
+  transform: translateY(-1px);
 }
 
 .requirement-name {
@@ -1418,9 +1852,10 @@ export default {
   word-break: break-word;
   white-space: normal;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .requirement-id {
@@ -1431,10 +1866,13 @@ export default {
 
 .priority-tag,
 .status-tag {
-  padding: 4px 8px;
+  padding: 2px 4px;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   font-weight: bold;
+  display: inline-block;
+  min-width: 45px;
+  text-align: center;
 }
 
 .priority-tag.p0 {
@@ -1491,10 +1929,10 @@ export default {
   background: #3498db;
   color: white;
   border: none;
-  padding: 6px 10px;
+  padding: 2px 4px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   transition: background 0.3s ease;
   white-space: nowrap;
 }
@@ -1507,10 +1945,10 @@ export default {
   background: #27ae60;
   color: white;
   border: none;
-  padding: 6px 10px;
+  padding: 2px 4px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   transition: background 0.3s ease;
   white-space: nowrap;
 }
@@ -1523,10 +1961,10 @@ export default {
   background: #e74c3c;
   color: white;
   border: none;
-  padding: 6px 10px;
+  padding: 2px 4px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   transition: background 0.3s ease;
   white-space: nowrap;
 }
@@ -1539,10 +1977,10 @@ export default {
   background: #9b59b6;
   color: white;
   border: none;
-  padding: 6px 10px;
+  padding: 2px 4px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   transition: background 0.3s ease;
   white-space: nowrap;
 }
@@ -1559,6 +1997,7 @@ export default {
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-width: 300px;
 }
 
 .adopted-label {
@@ -1578,119 +2017,47 @@ export default {
   justify-content: space-between;
   align-items: center;
   background: white;
-  padding: 20px;
+  padding: 12px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .pagination-info {
   color: #666;
-  font-size: 0.9rem;
+  font-size: 0.65rem;
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
 }
 
 .page-size-selector {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .page-size-selector label {
   color: #666;
-  font-size: 0.9rem;
+  font-size: 0.65rem;
 }
 
 .page-size-selector select {
-  padding: 6px 10px;
+  padding: 2px 4px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 0.9rem;
+  font-size: 0.65rem;
 }
 
 .pagination-buttons {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
 }
 
-.page-btn {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  background: white;
-  color: #666;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-}
 
-.page-btn:hover:not(:disabled) {
-  background: #f0f0f0;
-  border-color: #ccc;
-}
-
-.page-btn:disabled {
-  color: #ccc;
-  cursor: not-allowed;
-  background: #f9f9f9;
-}
-
-.page-btn.active {
-  background: #3498db;
-  color: white;
-  border-color: #3498db;
-}
-
-.page-numbers {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.ellipsis {
-  padding: 8px 4px;
-  color: #666;
-}
-
-.page-jumper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.page-jumper label {
-  color: #666;
-  font-size: 0.9rem;
-}
-
-.page-jumper input {
-  width: 60px;
-  padding: 6px 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-.jump-btn {
-  padding: 6px 12px;
-  background: #3498db;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background 0.2s ease;
-}
-
-.jump-btn:hover {
-  background: #2980b9;
-}
 
 /* 测试用例详情弹窗 */
 .testcase-detail-modal {

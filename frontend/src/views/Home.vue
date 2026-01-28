@@ -4,7 +4,7 @@
       <div class="header-actions">
         <el-dropdown @command="handleCommand">
           <span class="el-dropdown-link">
-            <el-avatar :size="32" :icon="UserFilled" />
+            <el-avatar :size="32" :src="userStore.user?.avatar" :icon="UserFilled" />
             <span class="username">{{ userStore.user?.username || '用户' }}</span>
             <el-icon class="el-icon--right"><arrow-down /></el-icon>
           </span>
@@ -15,7 +15,7 @@
           </template>
         </el-dropdown>
       </div>
-      <h1 class="main-title">TestHub 测试平台</h1>
+      <h1 class="main-title">国人通 TestHub 测试平台</h1>
       <p class="subtitle">一站式智能化测试解决方案</p>
       
       <div class="cards-container">
@@ -24,7 +24,7 @@
           <div class="card-icon ai-icon">
             <el-icon><MagicStick /></el-icon>
           </div>
-          <h3>AI用例生成</h3>
+          <h3>AI用例</h3>
           <p>智能分析需求，自动生成测试用例</p>
         </div>
 
@@ -42,7 +42,7 @@
           <div class="card-icon ui-icon">
             <el-icon><Monitor /></el-icon>
           </div>
-          <h3>UI自动化测试</h3>
+          <h3>UI自动化</h3>
           <p>可视化的Web/App UI自动化测试</p>
         </div>
 
@@ -59,7 +59,7 @@
           <div class="card-icon ai-intelligent-icon">
             <el-icon><Cpu /></el-icon>
           </div>
-          <h3>AI 智能模式</h3>
+          <h3>AI模式</h3>
           <p>基于自然语言的智能化测试执行</p>
         </div>
         <!-- AI评测师 -->
@@ -68,7 +68,7 @@
             <el-icon><ChatDotRound /></el-icon>
           </div>
           <h3>AI评测师</h3>
-          <p>基于评测师知识库，提供专业软件测试问答</p>
+          <p>基于知识库，提供专业软件测试问答</p>
         </div>
         <!-- 配置中心 -->
         <div class="nav-card" @click="handleNavigate('config')" role="button" tabindex="0">
@@ -135,11 +135,75 @@ const handleNavigate = (type) => {
 <style scoped lang="scss">
 .home-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 20px;
+  position: relative;
+  overflow: hidden;
+
+  /* 紫色冷焰火粒子效果 */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+      radial-gradient(circle at 10% 20%, rgba(189, 147, 249, 0.3) 0%, transparent 20%),
+      radial-gradient(circle at 90% 80%, rgba(144, 123, 199, 0.25) 0%, transparent 20%),
+      radial-gradient(circle at 50% 40%, rgba(123, 110, 207, 0.2) 0%, transparent 15%),
+      radial-gradient(circle at 70% 30%, rgba(163, 149, 219, 0.2) 0%, transparent 15%),
+      radial-gradient(circle at 30% 70%, rgba(209, 183, 255, 0.15) 0%, transparent 12%);
+    pointer-events: none;
+  }
+
+  /* 紫色冷焰火动画粒子 */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      radial-gradient(circle at 20% 30%, rgba(189, 147, 249, 0.3) 3px, transparent 3px),
+      radial-gradient(circle at 80% 70%, rgba(144, 123, 199, 0.3) 3px, transparent 3px),
+      radial-gradient(circle at 40% 10%, rgba(123, 110, 207, 0.3) 3px, transparent 3px),
+      radial-gradient(circle at 60% 90%, rgba(163, 149, 219, 0.3) 3px, transparent 3px),
+      radial-gradient(circle at 10% 80%, rgba(209, 183, 255, 0.3) 3px, transparent 3px),
+      radial-gradient(circle at 90% 20%, rgba(189, 147, 249, 0.3) 3px, transparent 3px),
+      radial-gradient(circle at 30% 60%, rgba(144, 123, 199, 0.3) 3px, transparent 3px),
+      radial-gradient(circle at 70% 40%, rgba(123, 110, 207, 0.3) 3px, transparent 3px);
+    animation: twinkle 4s infinite alternate;
+    pointer-events: none;
+  }
+}
+
+/* 冷焰火闪烁动画 */
+@keyframes twinkle {
+  0% {
+    opacity: 0.6;
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    opacity: 0.8;
+    transform: translateY(-5px) translateX(3px);
+  }
+  50% {
+    opacity: 0.4;
+    transform: translateY(3px) translateX(-2px);
+  }
+  75% {
+    opacity: 0.9;
+    transform: translateY(-3px) translateX(5px);
+  }
+  100% {
+    opacity: 0.7;
+    transform: translateY(0) translateX(0);
+  }
 }
 
 .content-wrapper {
@@ -160,6 +224,13 @@ const handleNavigate = (type) => {
     align-items: center;
     cursor: pointer;
     color: #5e6d82;
+    background: rgba(255, 255, 255, 0.3);
+    padding: 8px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    outline: none !important;  // 移除聚焦框
+    border: none !important;   // 确保没有边框
     
     .username {
       margin: 0 8px;
@@ -168,8 +239,44 @@ const handleNavigate = (type) => {
     
     &:hover {
       color: #409eff;
+      background: rgba(255, 255, 255, 0.5);
+      transform: scale(1.05);
+    }
+    
+    &:focus {
+      outline: none !important;  // 强制移除聚焦框
+      box-shadow: none !important;  // 确保没有聚焦阴影
     }
   }
+}
+
+// 下拉菜单样式
+:deep(.el-dropdown-menu) {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(173, 246, 255, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(173, 246, 255, 0.2);
+}
+
+:deep(.el-dropdown-menu__item) {
+  color: #2c3e50;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background-color: rgba(79, 209, 255, 0.2);
+    color: #29b6f6;
+  }
+  
+  // 退出登录项的特殊样式
+  &:last-child:hover {
+    background-color: rgba(255, 108, 108, 0.2); // 使用淡红色背景
+    color: #ff6b6b; // 使用更清晰的红色字体
+  }
+}
+
+:deep(.el-dropdown-menu__item--divided) {
+  border-top: 1px solid rgba(173, 246, 255, 0.2);
 }
 
 .main-title {

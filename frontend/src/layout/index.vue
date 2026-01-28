@@ -11,17 +11,19 @@
           router
           text-color="#fff"
           active-text-color="#fff"
+          mode="vertical"
+          collapse-transition="false"
         >
           <!-- AI用例生成模块菜单 -->
           <template v-if="currentModule === 'ai-generation'">
-            <el-sub-menu index="requirement">
-              <template #title>
-                <el-icon><MagicStick /></el-icon>
-                <span>智能用例</span>
-              </template>
-              <el-menu-item index="/ai-generation/requirement-analysis">AI用例生成</el-menu-item>
-              <el-menu-item index="/ai-generation/generated-testcases">AI用例记录</el-menu-item>
-            </el-sub-menu>
+            <SidebarDropdown 
+              title="智能用例"
+              icon="MagicStick"
+              :items="[
+                { title: 'AI用例生成', index: '/ai-generation/requirement-analysis' },
+                { title: 'AI用例记录', index: '/ai-generation/generated-testcases' }
+              ]"
+            />
             <el-menu-item index="/ai-generation/projects">
               <el-icon><Folder /></el-icon>
               <span>项目管理</span>
@@ -34,14 +36,14 @@
               <el-icon><Flag /></el-icon>
               <span>版本管理</span>
             </el-menu-item>
-            <el-sub-menu index="reviews">
-              <template #title>
-                <el-icon><Check /></el-icon>
-                <span>评审管理</span>
-              </template>
-              <el-menu-item index="/ai-generation/reviews">评审列表</el-menu-item>
-              <el-menu-item index="/ai-generation/review-templates">评审模板</el-menu-item>
-            </el-sub-menu>
+            <SidebarDropdown 
+              title="评审管理"
+              icon="Check"
+              :items="[
+                { title: '评审列表', index: '/ai-generation/reviews' },
+                { title: '评审模板', index: '/ai-generation/review-templates' }
+              ]"
+            />
 
             <el-menu-item index="/ai-generation/executions">
               <el-icon><VideoPlay /></el-icon>
@@ -160,24 +162,17 @@
 
           <!-- 配置中心模块菜单 -->
           <template v-else-if="currentModule === 'configuration'">
-            <el-sub-menu index="ai-case-generation">
-              <template #title>
-                <el-icon><MagicStick /></el-icon>
-                <span>AI用例配置</span>
-              </template>
-              <el-menu-item index="/configuration/ai-model">
-                <el-icon><Cpu /></el-icon>
-                <span>用例模型配置</span>
-              </el-menu-item>
-              <el-menu-item index="/configuration/prompt-config">
-                <el-icon><Edit /></el-icon>
-                <span>提示词配置</span>
-              </el-menu-item>
-              <el-menu-item index="/configuration/generation-config">
-                <el-icon><Setting /></el-icon>
-                <span>生成行为配置</span>
-              </el-menu-item>
-            </el-sub-menu>
+            <SidebarDropdown 
+              title="AI用例配置"
+              icon="MagicStick"
+              :items="[
+                { title: '用例模型配置', index: '/configuration/ai-model' },
+                { title: '提示词配置', index: '/configuration/prompt-config' },
+                { title: '生成行为配置', index: '/configuration/generation-config' },
+                { title: '用例模板管理', index: '/configuration/case-templates' },
+                { title: '生成规则配置', index: '/configuration/generation-rules' }
+              ]"
+            />
             <el-menu-item index="/configuration/ui-env">
               <el-icon><Monitor /></el-icon>
               <span>UI环境配置</span>
@@ -242,6 +237,7 @@ import { computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
+import SidebarDropdown from '@/components/SidebarDropdown.vue'
 import { 
   Monitor, Folder, Document, Flag, Check, Collection, VideoPlay, 
   DataAnalysis, ChatDotRound, DocumentCopy, Link, MagicStick,
@@ -387,6 +383,8 @@ const handleCommand = (command) => {
   overflow: hidden;
   transition: width 0.3s ease;
   width: 240px !important;
+  min-width: 240px;
+  max-width: 240px;
   box-shadow: 2px 0 10px rgba(90, 50, 163, 0.1);
 
   &::before {
@@ -449,6 +447,7 @@ const handleCommand = (command) => {
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    width: calc(100% - 24px) !important; /* Adjust for margins */
   }
   
   /* 调整图标与文字间距，固定图标宽度确保对齐 */
@@ -472,7 +471,7 @@ const handleCommand = (command) => {
   }
   
   :deep(.el-menu-item) {
-    background: rgba(243, 240, 250, 0.8) !important;
+    background: #f3f0fa !important;
     color: #5a32a3 !important;
     font-weight: 500 !important;
     transition: all 0.3s ease !important;
@@ -481,10 +480,18 @@ const handleCommand = (command) => {
     border-radius: 8px !important;
     box-shadow: 0 2px 8px rgba(90, 50, 163, 0.05) !important;
     backdrop-filter: blur(10px) !important;
+    width: calc(100% - 24px) !important; /* Adjust for margins */
+    box-sizing: border-box !important;
+    outline: none !important;
+    
+    &:focus {
+      outline: none !important;
+      box-shadow: 0 2px 8px rgba(90, 50, 163, 0.05) !important;
+    }
   }
   
   :deep(.el-sub-menu__title) {
-    background: rgba(243, 240, 250, 0.8) !important;
+    background: #f3f0fa !important;
     color: #5a32a3 !important;
     font-weight: 500 !important;
     transition: all 0.3s ease !important;
@@ -493,10 +500,18 @@ const handleCommand = (command) => {
     border-radius: 8px !important;
     box-shadow: 0 2px 8px rgba(90, 50, 163, 0.05) !important;
     backdrop-filter: blur(10px) !important;
+    width: calc(100% - 24px) !important; /* Adjust for margins */
+    box-sizing: border-box !important;
+    outline: none !important;
+    
+    &:focus {
+      outline: none !important;
+      box-shadow: 0 2px 8px rgba(90, 50, 163, 0.05) !important;
+    }
   }
   
   :deep(.el-menu-item.is-active) {
-    background: rgba(90, 50, 163, 0.9) !important;
+    background: #5a32a3 !important;
     color: #ffffff !important;
     font-weight: 600 !important;
     border-right: none !important;
@@ -506,10 +521,16 @@ const handleCommand = (command) => {
     border-radius: 8px !important;
     box-shadow: 0 4px 12px rgba(90, 50, 163, 0.3) !important;
     backdrop-filter: blur(10px) !important;
+    outline: none !important;
+    
+    &:focus {
+      outline: none !important;
+      box-shadow: 0 4px 12px rgba(90, 50, 163, 0.3) !important;
+    }
   }
   
   :deep(.el-sub-menu__title.is-active) {
-    background: rgba(90, 50, 163, 0.9) !important;
+    background: #5a32a3 !important;
     color: #ffffff !important;
     font-weight: 600 !important;
     border-right: none !important;
@@ -519,10 +540,16 @@ const handleCommand = (command) => {
     border-radius: 8px !important;
     box-shadow: 0 4px 12px rgba(90, 50, 163, 0.3) !important;
     backdrop-filter: blur(10px) !important;
+    outline: none !important;
+    
+    &:focus {
+      outline: none !important;
+      box-shadow: 0 4px 12px rgba(90, 50, 163, 0.3) !important;
+    }
   }
   
   :deep(.el-menu-item:hover) {
-    background: rgba(225, 215, 240, 0.9) !important;
+    background: #e1d7f0 !important;
     color: #5a32a3 !important;
     font-weight: 600 !important;
     transition: all 0.3s ease !important;
@@ -531,10 +558,16 @@ const handleCommand = (command) => {
     border-radius: 8px !important;
     box-shadow: 0 4px 12px rgba(90, 50, 163, 0.1) !important;
     backdrop-filter: blur(10px) !important;
+    outline: none !important;
+    
+    &:focus {
+      outline: none !important;
+      box-shadow: 0 4px 12px rgba(90, 50, 163, 0.1) !important;
+    }
   }
   
   :deep(.el-sub-menu__title:hover) {
-    background: rgba(225, 215, 240, 0.9) !important;
+    background: #e1d7f0 !important;
     color: #5a32a3 !important;
     font-weight: 600 !important;
     transition: all 0.3s ease !important;
@@ -543,10 +576,16 @@ const handleCommand = (command) => {
     border-radius: 8px !important;
     box-shadow: 0 4px 12px rgba(90, 50, 163, 0.1) !important;
     backdrop-filter: blur(10px) !important;
+    outline: none !important;
+    
+    &:focus {
+      outline: none !important;
+      box-shadow: 0 4px 12px rgba(90, 50, 163, 0.1) !important;
+    }
   }
   
   :deep(.el-menu-item.is-active:hover) {
-    background: rgba(74, 20, 140, 0.9) !important;
+    background: #4a148c !important;
     color: #ffffff !important;
     font-weight: 600 !important;
     border-right: none !important;
@@ -556,10 +595,16 @@ const handleCommand = (command) => {
     border-radius: 8px !important;
     box-shadow: 0 6px 16px rgba(74, 20, 140, 0.4) !important;
     backdrop-filter: blur(10px) !important;
+    outline: none !important;
+    
+    &:focus {
+      outline: none !important;
+      box-shadow: 0 6px 16px rgba(74, 20, 140, 0.4) !important;
+    }
   }
   
   :deep(.el-sub-menu__title.is-active:hover) {
-    background: rgba(74, 20, 140, 0.9) !important;
+    background: #4a148c !important;
     color: #ffffff !important;
     font-weight: 600 !important;
     border-right: none !important;
@@ -569,26 +614,89 @@ const handleCommand = (command) => {
     border-radius: 8px !important;
     box-shadow: 0 6px 16px rgba(74, 20, 140, 0.4) !important;
     backdrop-filter: blur(10px) !important;
+    outline: none !important;
+    
+    &:focus {
+      outline: none !important;
+      box-shadow: 0 6px 16px rgba(74, 20, 140, 0.4) !important;
+    }
   }
   
-  /* 子菜单样式 - 统一背景 */
-  :deep(.el-sub-menu__content) {
+  /* 自定义悬浮子菜单样式 - 统一背景 */
+  :deep(.custom-submenu-popper .el-menu) {
+    background: #f3f0fa !important; /* 统一背景色，与主侧边栏一致 */
+    border: 1px solid #e9ecef !important; /* 添加边框 */
+    border-radius: 8px !important; /* 保持圆角 */
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1) !important; /* 悬浮阴影 */
+    padding: 4px !important; /* 内边距 */
+  }
+  
+  /* 自定义悬浮子菜单项样式 */
+  :deep(.custom-submenu-popper .el-menu .el-menu-item) {
+    background: transparent !important;
+    color: #5a32a3 !important;
+    font-weight: 500 !important;
+    margin: 2px 4px !important;
+    padding: 10px 16px !important;
+    border-radius: 6px !important;
+    transition: all 0.3s ease !important;
+  }
+  
+  /* 自定义悬浮子菜单项悬停状态 */
+  :deep(.custom-submenu-popper .el-menu .el-menu-item:hover) {
+    background: #e1d7f0 !important;
+    color: #5a32a3 !important;
+    font-weight: 600 !important;
+  }
+  
+  /* 自定义悬浮子菜单项激活状态 */
+  :deep(.custom-submenu-popper .el-menu .el-menu-item.is-active) {
+    background: #5a32a3 !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+  }
+  
+  /* 确保子菜单内容不显示在侧边栏内部，只以悬浮形式显示 */
+  :deep(.el-sub-menu .el-menu) {
+    display: none !important;
+  }
+  
+  /* 通过popper显示子菜单内容 */
+  :deep(.custom-submenu-popper.el-popper) {
     background: #f3f0fa !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 8px !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
+  }
+  
+  /* 旧的子菜单样式 - 保持兼容性 */
+  :deep(.el-sub-menu__content) {
+    background: transparent !important;
     border-left: none !important;
-    padding-left: 32px !important;
+    padding-left: 20px !important;
     max-height: none !important;
     overflow: visible !important;
     transition: all 0.3s ease !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
+    border: none !important;
     border-right: none !important;
     border-bottom: none !important;
   }
   
+  /* 内联菜单样式 - 确保与父级一致 */
+  :deep(.el-menu--inline) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
   /* 智能用例生成子菜单特殊处理 */
   :deep(.el-menu-item-group) {
-    background: #f3f0fa !important;
+    background: transparent !important;
     border: none !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -608,13 +716,13 @@ const handleCommand = (command) => {
   
   /* 子菜单项样式 - 统一文字颜色 */
   :deep(.el-sub-menu__content .el-menu-item) {
-    background: rgba(243, 240, 250, 0.8) !important;
+    background: transparent !important;
     color: #5a32a3 !important;
     font-weight: 500 !important;
-    margin: 4px 12px !important;
+    margin: 6px 12px !important;
     padding: 10px 16px !important;
     transition: all 0.3s ease !important;
-    border-radius: 6px !important;
+    border-radius: 8px !important;
     box-shadow: 0 2px 6px rgba(90, 50, 163, 0.05) !important;
     backdrop-filter: blur(10px) !important;
     width: calc(100% - 24px) !important;
@@ -624,14 +732,14 @@ const handleCommand = (command) => {
   
   /* 子菜单项hover和激活状态 */
   :deep(.el-sub-menu__content .el-menu-item:hover) {
-    background: rgba(225, 215, 240, 0.9) !important;
+    background: rgba(225, 215, 240, 0.5) !important;
     color: #5a32a3 !important;
     font-weight: 600 !important;
     transition: all 0.3s ease !important;
     box-shadow: 0 3px 10px rgba(90, 50, 163, 0.1) !important;
     padding: 10px 16px !important;
-    margin: 4px 12px !important;
-    border-radius: 6px !important;
+    margin: 6px 12px !important;
+    border-radius: 8px !important;
     backdrop-filter: blur(10px) !important;
     width: calc(100% - 24px) !important;
     border-right: none !important;
@@ -645,8 +753,8 @@ const handleCommand = (command) => {
     font-weight: 600 !important;
     transition: all 0.3s ease !important;
     padding: 10px 16px !important;
-    margin: 4px 12px !important;
-    border-radius: 6px !important;
+    margin: 6px 12px !important;
+    border-radius: 8px !important;
     box-shadow: 0 3px 10px rgba(90, 50, 163, 0.3) !important;
     backdrop-filter: blur(10px) !important;
     width: calc(100% - 24px) !important;
@@ -661,8 +769,8 @@ const handleCommand = (command) => {
     font-weight: 600 !important;
     transition: all 0.3s ease !important;
     padding: 10px 16px !important;
-    margin: 4px 12px !important;
-    border-radius: 6px !important;
+    margin: 6px 12px !important;
+    border-radius: 8px !important;
     box-shadow: 0 4px 12px rgba(74, 20, 140, 0.4) !important;
     backdrop-filter: blur(10px) !important;
     width: calc(100% - 24px) !important;
@@ -719,11 +827,48 @@ const handleCommand = (command) => {
   :deep(.el-sub-menu__title),
   :deep(.el-menu-item) {
     padding-left: 20px !important;
+    width: calc(100% - 24px) !important; /* Adjust for margins */
   }
   
   :deep(.el-sub-menu__title span),
   :deep(.el-menu-item span) {
     display: none;
+  }
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 768px) {
+  .el-aside {
+    width: 200px !important;
+    min-width: 200px;
+    max-width: 200px;
+  }
+  
+  .el-menu :deep(.el-menu-item),
+  .el-menu :deep(.el-sub-menu__title) {
+    margin: 4px 8px !important;
+    width: calc(100% - 16px) !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .el-aside {
+    width: 180px !important;
+    min-width: 180px;
+    max-width: 180px;
+  }
+  
+  .el-menu :deep(.el-menu-item),
+  .el-menu :deep(.el-sub-menu__title) {
+    margin: 3px 6px !important;
+    width: calc(100% - 12px) !important;
+    height: 36px !important;
+    padding-left: 16px !important;
+  }
+  
+  .el-menu :deep(.el-menu-item span),
+  .el-menu :deep(.el-sub-menu__title span) {
+    font-size: 13px !important;
   }
 }
 
