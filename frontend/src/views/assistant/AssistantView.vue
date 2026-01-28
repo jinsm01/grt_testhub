@@ -35,7 +35,7 @@
       <div class="user-profile">
         <el-dropdown trigger="click" @command="handleCommand">
           <div class="user-info">
-            <el-avatar :size="32" :icon="UserFilled" />
+            <el-avatar :size="32" :src="userStore.user?.avatar || ''" :icon="UserFilled" />
             <span class="username">{{ userStore.user?.username || '用户' }}</span>
             <el-icon class="el-icon--right"><ArrowDown /></el-icon>
           </div>
@@ -106,7 +106,7 @@
             :class="['message-row', message.role]"
           >
             <div class="avatar">
-              <el-avatar v-if="message.role === 'user'" :size="36" :icon="User" class="user-avatar" />
+              <el-avatar v-if="message.role === 'user'" :size="36" :src="userStore.user?.avatar || ''" :icon="User" class="user-avatar" />
               <el-avatar v-else :size="36" :icon="Cpu" class="ai-avatar" />
             </div>
             <div class="message-bubble">
@@ -382,7 +382,11 @@ const loadHistory = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  console.log('开始初始化用户信息...')
+  await userStore.initAuth()
+  console.log('用户信息初始化完成:', userStore.user)
+  console.log('用户头像:', userStore.user?.avatar)
   loadHistory()
   startNewChat()
 })
@@ -399,30 +403,29 @@ onMounted(() => {
 /* 左侧侧边栏 */
 .sidebar {
   width: 260px;
-  background: #001529; /* 与主布局一致的深色背景 */
-  border-right: 1px solid #1f1f1f;
+  background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 50%, #f3f0fa 100%);
+  border-right: 1px solid rgba(90, 50, 163, 0.2);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  color: rgba(255, 255, 255, 0.65);
+  color: #5a32a3;
   
   .new-chat-btn-wrapper {
     padding: 20px;
     
     .new-chat-btn {
-      width: 100%;
-      height: 40px;
-      border-radius: 4px; /* 稍微减小圆角以匹配整体风格 */
-      font-size: 14px;
-      background: #1890ff;
-      border-color: #1890ff;
-      color: white;
-      
-      &:hover {
-        background: #40a9ff;
-        border-color: #40a9ff;
+        width: 100%;
+        height: 40px;
+        border-radius: 4px; /* 稍微减小圆角以匹配整体风格 */
+        font-size: 14px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        
+        &:hover {
+          opacity: 0.9;
+        }
       }
-    }
   }
   
   .history-list {
@@ -434,7 +437,7 @@ onMounted(() => {
     .history-label {
       padding: 0 20px 10px;
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.45);
+      color: rgba(90, 50, 163, 0.6);
     }
     
     .session-scroll-area {
@@ -456,15 +459,20 @@ onMounted(() => {
       align-items: center;
       justify-content: space-between;
       padding: 10px 12px;
-      margin-bottom: 4px;
-      border-radius: 4px;
+      margin: 6px 12px;
+      border-radius: 8px;
       cursor: pointer;
-      transition: all 0.2s;
-      color: rgba(255, 255, 255, 0.65);
+      transition: all 0.3s ease;
+      color: #5a32a3;
+      background: rgba(243, 240, 250, 0.8);
+      box-shadow: 0 2px 8px rgba(90, 50, 163, 0.05);
+      backdrop-filter: blur(10px);
       
       &:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: white;
+        background: rgba(225, 215, 240, 0.9);
+        color: #5a32a3;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(90, 50, 163, 0.1);
         
         .session-actions {
           opacity: 1;
@@ -472,8 +480,10 @@ onMounted(() => {
       }
       
       &.active {
-        background: #1890ff;
+        background: rgba(90, 50, 163, 0.9);
         color: white;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(90, 50, 163, 0.3);
       }
       
       .session-title-wrapper {
@@ -501,7 +511,7 @@ onMounted(() => {
         
         .delete-icon {
           font-size: 14px;
-          color: rgba(255, 255, 255, 0.45);
+          color: rgba(90, 50, 163, 0.6);
           &:hover {
             color: #ff4d4f;
           }
@@ -512,24 +522,29 @@ onMounted(() => {
   
   .user-profile {
     padding: 16px;
-    border-top: 1px solid #1f1f1f;
+    border-top: 1px solid rgba(90, 50, 163, 0.2);
     
     .user-info {
       display: flex;
       align-items: center;
       cursor: pointer;
       padding: 8px;
-      border-radius: 4px;
-      transition: all 0.2s;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      background: rgba(243, 240, 250, 0.8);
+      box-shadow: 0 2px 8px rgba(90, 50, 163, 0.05);
+      backdrop-filter: blur(10px);
       
       &:hover {
-        background: rgba(255, 255, 255, 0.08);
+        background: rgba(225, 215, 240, 0.9);
+        box-shadow: 0 4px 12px rgba(90, 50, 163, 0.1);
       }
       
       .username {
         margin: 0 8px;
         font-size: 14px;
-        color: rgba(255, 255, 255, 0.85);
+        color: #5a32a3;
+        font-weight: 500;
         flex: 1;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -537,7 +552,7 @@ onMounted(() => {
       }
       
       .el-icon {
-        color: rgba(255, 255, 255, 0.45);
+        color: rgba(90, 50, 163, 0.6);
       }
     }
   }

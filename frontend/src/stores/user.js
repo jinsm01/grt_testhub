@@ -186,6 +186,7 @@ export const useUserStore = defineStore('user', () => {
   const fetchProfile = async () => {
     try {
       const response = await api.get('/auth/profile/')
+      console.log('获取用户信息:', response.data)
       user.value = response.data
       localStorage.setItem('user', JSON.stringify(user.value))
       return response.data
@@ -211,6 +212,7 @@ export const useUserStore = defineStore('user', () => {
       if (savedUser) {
         try {
           user.value = JSON.parse(savedUser)
+          console.log('从localStorage恢复用户信息成功:', user.value?.username)
         } catch (e) {
           console.error('解析用户信息失败:', e)
         }

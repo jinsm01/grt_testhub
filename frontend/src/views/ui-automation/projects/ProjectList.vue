@@ -185,9 +185,12 @@
 
 <script setup>
 import { ref, reactive, onMounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, View, Edit, Delete } from '@element-plus/icons-vue'
 import { getUiProjects, createUiProject, updateUiProject, deleteUiProject } from '@/api/ui_automation'
+
+const router = useRouter()
 
 // 项目数据
 const projects = ref([])
@@ -332,14 +335,7 @@ const currentProjectDetail = ref(null)
 
 // 查看项目详情
 const goToProjectDetail = (id) => {
-  // 查找当前项目
-  const project = projects.value.find(p => p.id === id)
-  if (project) {
-    currentProjectDetail.value = project
-    showDetailDialog.value = true
-  } else {
-    ElMessage.error('未找到项目信息')
-  }
+  router.push(`/ui-automation/projects/${id}`)
 }
 
 // 编辑项目

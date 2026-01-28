@@ -488,6 +488,12 @@ onMounted(() => {
   if (isEdit.value) {
     // 如果是编辑模式，加载现有数据
     fetchReviewData(route.params.id)
+  } else {
+    // 如果是创建模式，检查是否有模板参数
+    const templateId = route.query.template
+    if (templateId) {
+      form.template = templateId
+    }
   }
 })
 </script>

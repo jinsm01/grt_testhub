@@ -304,7 +304,7 @@ const editTemplate = (template) => {
 const useTemplate = (template) => {
   // 使用模板创建评审
   router.push({
-    path: '/reviews/create',
+    path: '/ai-generation/reviews/create',
     query: { template: template.id }
   })
 }
@@ -391,119 +391,318 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+// 全局变量
+:root {
+  --primary-color: #667eea;
+  --primary-dark: #764ba2;
+  --primary-light: #f8f7ff;
+  --primary-lighter: #fafbff;
+  --border-color: #e8e8e8;
+  --text-primary: #262626;
+  --text-secondary: #595959;
+  --text-tertiary: #8c8c8c;
+  --bg-light: #ffffff;
+  --bg-gray: #fafafa;
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --danger-color: #ff4d4f;
+  --info-color: #1890ff;
+}
+
+// 页面容器
+.page-container {
+  padding: 24px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%);
+  display: flex;
+  flex-direction: column;
+  line-height: 24px;
+}
+
+// 页面头部
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 20px 24px;
+  background-color: #f8f7ff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  
+  .page-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  
+  .el-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    
+    &:hover {
+      background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+    }
+    
+    &:active {
+      transform: translateY(0) !important;
+    }
+  }
+}
+
+// 筛选栏
+.filter-bar {
+  background-color: #f8f7ff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  
+  .filter-form {
+    /* 覆盖 Element Plus 默认主题变量 */
+    --el-color-primary: var(--primary-color);
+    --el-color-primary-light-3: #9370db;
+    --el-color-primary-light-5: #a888e0;
+    --el-color-primary-light-7: #c2a9f3;
+    --el-color-primary-light-9: #f8f7ff;
+    --el-border-color: var(--border-color);
+    --el-border-color-light: var(--border-color);
+    --el-border-color-lighter: var(--border-color);
+    --el-fill-color-light: #f8f7ff;
+    --el-fill-color-lighter: #f8f7ff;
+    --el-fill-color-blank: #f8f7ff;
+    --el-text-color-primary: var(--text-primary);
+    --el-text-color-regular: var(--text-secondary);
+    --el-text-color-secondary: var(--text-tertiary);
+    --el-text-color-placeholder: var(--text-tertiary);
+    
+    .el-form-item {
+      margin-bottom: 0;
+      
+      .el-form-item__label {
+        font-weight: 500;
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+      
+      .el-select {
+        min-width: 250px;
+        
+        .el-select__wrapper {
+          border-radius: 4px;
+          border: 1px solid var(--border-color);
+          transition: all 0.3s ease;
+          background: var(--bg-light);
+          
+          &:hover {
+            border-color: var(--primary-color);
+          }
+          
+          &.is-focus {
+            border-color: var(--primary-color);
+          }
+        }
+        
+        .el-select-dropdown {
+          background: var(--bg-light);
+          border: 1px solid var(--border-color);
+          border-radius: 4px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          
+          .el-select-dropdown__item {
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            
+            &:hover {
+              background: var(--primary-light);
+              color: var(--primary-color);
+            }
+            
+            &.selected {
+              background: var(--primary-light);
+              color: var(--primary-color);
+              font-weight: 500;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 模板网格
 .templates-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
   gap: 20px;
+  flex-grow: 1;
 }
 
+// 模板卡片
 .template-card {
+  background-color: #f8f7ff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+  
   .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
     
     .template-name {
       font-weight: 600;
       font-size: 16px;
+      color: #5a32a3;
     }
     
     .card-actions {
       display: flex;
       gap: 8px;
-    }
-  }
-}
-
-.template-content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  
-  .template-info {
-    .info-item {
-      display: flex;
-      margin-bottom: 8px;
       
-      .info-label {
-        min-width: 80px;
-        color: #909399;
-        font-size: 14px;
-      }
-      
-      .info-value {
-        color: #303133;
-        font-size: 14px;
-      }
-    }
-  }
-  
-  .template-description {
-    color: #606266;
-    line-height: 1.6;
-    font-size: 14px;
-  }
-  
-  .template-checklist {
-    .checklist-title {
-      font-weight: 500;
-      margin-bottom: 8px;
-      color: #303133;
-    }
-    
-    ul {
-      margin: 0;
-      padding-left: 20px;
-      
-      li {
-        margin-bottom: 4px;
-        color: #606266;
-        font-size: 14px;
+      .el-button {
+        font-size: 13px;
+        padding: 0;
+        transition: all 0.3s ease;
         
-        &.more-items {
+        &:hover {
+          transform: translateY(-1px);
+        }
+        
+        &.el-button--text {
+          color: var(--primary-color);
+          
+          &:hover {
+            color: var(--primary-dark);
+            background: #f8f7ff;
+            border-radius: 4px;
+          }
+        }
+      }
+    }
+  }
+  
+  .template-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    
+    .template-info {
+      .info-item {
+        display: flex;
+        margin-bottom: 8px;
+        
+        .info-label {
+          min-width: 80px;
           color: #909399;
-          font-style: italic;
+          font-size: 14px;
+        }
+        
+        .info-value {
+          color: #303133;
+          font-size: 14px;
         }
       }
     }
     
-    .empty-checklist {
-      color: #909399;
+    .template-description {
+      color: #606266;
+      line-height: 1.6;
       font-size: 14px;
-      font-style: italic;
-    }
-  }
-  
-  .template-reviewers {
-    .reviewers-title {
-      font-weight: 500;
-      margin-bottom: 8px;
-      color: #303133;
     }
     
-    .reviewers-list {
-      .reviewer-tag {
-        margin-right: 8px;
-        margin-bottom: 4px;
+    .template-checklist {
+      .checklist-title {
+        font-weight: 500;
+        margin-bottom: 8px;
+        color: #303133;
       }
       
-      .empty-reviewers {
+      ul {
+        margin: 0;
+        padding-left: 20px;
+        
+        li {
+          margin-bottom: 4px;
+          color: #606266;
+          font-size: 14px;
+          
+          &.more-items {
+            color: #909399;
+            font-style: italic;
+          }
+        }
+      }
+      
+      .empty-checklist {
         color: #909399;
         font-size: 14px;
         font-style: italic;
       }
     }
+    
+    .template-reviewers {
+      .reviewers-title {
+        font-weight: 500;
+        margin-bottom: 8px;
+        color: #303133;
+      }
+      
+      .reviewers-list {
+        .reviewer-tag {
+          margin-right: 8px;
+          margin-bottom: 4px;
+          background-color: rgba(102, 126, 234, 0.1);
+          color: var(--primary-color);
+          border: none;
+          
+          &:hover {
+            background-color: rgba(102, 126, 234, 0.2);
+          }
+        }
+        
+        .empty-reviewers {
+          color: #909399;
+          font-size: 14px;
+          font-style: italic;
+        }
+      }
+    }
   }
 }
 
+// 空状态
 .empty-templates {
   grid-column: 1 / -1;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 200px;
+  min-height: 300px;
+  background-color: #f8f7ff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
+// 检查清单编辑器
 .checklist-editor {
   .checklist-item {
     display: flex;

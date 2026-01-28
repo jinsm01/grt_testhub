@@ -92,23 +92,27 @@
     <!-- 输出模式选择器 - 全局设置 -->
     <div class="output-mode-section" v-if="!isGenerating && !showResults">
       <div class="output-mode-card">
-        <h3>📤 输出模式设置</h3>
-        <p class="mode-section-desc">选择测试用例生成的输出方式（适用于手动输入和文档上传两种方式）</p>
-        <div class="output-mode-selector">
-          <label class="mode-option" :class="{ active: globalOutputMode === 'stream' }">
-            <input type="radio" v-model="globalOutputMode" value="stream">
-            <div class="mode-content">
-              <div class="mode-title">⚡ 实时流式输出</div>
-              <div class="mode-desc">内容逐字显示，体验流畅，适合大需求文档</div>
-            </div>
-          </label>
-          <label class="mode-option" :class="{ active: globalOutputMode === 'complete' }">
-            <input type="radio" v-model="globalOutputMode" value="complete">
-            <div class="mode-content">
-              <div class="mode-title">📄 完整输出</div>
-              <div class="mode-desc">完成后一次性展示，适合简单需求</div>
-            </div>
-          </label>
+        <div class="output-mode-header">
+          <h3>📤 输出模式设置</h3>
+        </div>
+        <div class="output-mode-content">
+          <p class="mode-section-desc">选择测试用例生成的输出方式（适用于手动输入和文档上传两种方式）</p>
+          <div class="output-mode-selector">
+            <label class="mode-option" :class="{ active: globalOutputMode === 'stream' }">
+              <input type="radio" v-model="globalOutputMode" value="stream">
+              <div class="mode-content">
+                <div class="mode-title">⚡ 实时流式输出</div>
+                <div class="mode-desc">内容逐字显示，体验流畅，适合大需求文档</div>
+              </div>
+            </label>
+            <label class="mode-option" :class="{ active: globalOutputMode === 'complete' }">
+              <input type="radio" v-model="globalOutputMode" value="complete">
+              <div class="mode-content">
+                <div class="mode-title">📄 完整输出</div>
+                <div class="mode-desc">完成后一次性展示，适合简单需求</div>
+              </div>
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -1484,33 +1488,55 @@ export default {
 }
 
 .output-mode-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 8px 32px rgba(147, 112, 219, 0.12);
+  border: 1px solid rgba(147, 112, 219, 0.2);
   transition: all 0.3s ease;
+  margin: 0 auto;
+  max-width: 1000px;
 }
 
 .output-mode-card:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 48px rgba(147, 112, 219, 0.18);
+  transform: translateY(-2px);
 }
 
-.output-mode-card h3 {
-  font-size: 1.3rem;
-  color: #1a202c;
-  margin: 0 0 8px 0;
-  font-weight: 600;
+.output-mode-header {
+  margin-bottom: 24px;
+}
+
+.output-mode-header h3 {
+  font-size: 1.4rem;
+  color: #4a249c;
+  margin: 0;
+  font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(74, 36, 156, 0.1);
+}
+
+.output-mode-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
 }
 
 .mode-section-desc {
-  color: #64748b;
-  font-size: 0.9rem;
-  margin: 0 0 16px 0;
-  line-height: 1.5;
+  color: #6d5d8f;
+  font-size: 1rem;
+  margin: 0 0 24px 0;
+  line-height: 1.6;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+  opacity: 0.9;
+  max-width: 800px;
+  width: 100%;
 }
 
 /* 配置引导弹出窗口 */
@@ -1758,18 +1784,31 @@ export default {
 
 
 .manual-input-card, .upload-card {
-  background: white;
-  border-radius: 12px;
-  padding: 30px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e1e8ed;
-  margin-bottom: 30px;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 8px 32px rgba(147, 112, 219, 0.12);
+  border: 1px solid rgba(147, 112, 219, 0.2);
+  transition: all 0.3s ease;
+  margin: 0 auto 30px;
+  max-width: 1000px;
+}
+
+.manual-input-card:hover, .upload-card:hover {
+  box-shadow: 0 12px 48px rgba(147, 112, 219, 0.18);
+  transform: translateY(-2px);
 }
 
 .manual-input-card h2, .upload-card h2 {
-  color: #2c3e50;
-  margin-bottom: 20px;
+  color: #4a249c;
+  margin-bottom: 24px;
   font-size: 1.5rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(74, 36, 156, 0.1);
 }
 
 .form-group {
@@ -1778,21 +1817,72 @@ export default {
 
 .form-group label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   font-weight: 600;
-  color: #2c3e50;
+  color: #4a249c;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
 }
 
 /* 输出模式选择器 */
 .output-mode-selector {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 24px;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 900px;
+  padding: 0 20px;
 }
 
 .mode-option {
   position: relative;
   cursor: pointer;
+  flex: 1;
+  min-width: 300px;
+  max-width: 400px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: stretch;
+}
+
+.mode-content {
+  border: 2px solid rgba(147, 112, 219, 0.2);
+  border-radius: 16px;
+  padding: 28px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(145deg, #ffffff 0%, #fafaff 100%);
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 200px;
+}
+
+.mode-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #4a249c;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  letter-spacing: 0.5px;
+}
+
+.mode-desc {
+  font-size: 0.95rem;
+  color: #6d5d8f;
+  line-height: 1.6;
+  opacity: 0.9;
+  font-weight: 400;
+  flex-grow: 1;
+  display: flex;
+  align-items: flex-start;
 }
 
 .mode-option input[type="radio"] {
@@ -1803,39 +1893,73 @@ export default {
 }
 
 .mode-content {
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 16px;
-  transition: all 0.3s ease;
-  background: white;
+  border: 2px solid rgba(147, 112, 219, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(145deg, #ffffff 0%, #fafaff 100%);
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.mode-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #9370db, #7b42f6);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease;
 }
 
 .mode-option:hover .mode-content {
-  border-color: #3b82f6;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+  border-color: rgba(147, 112, 219, 0.4);
+  box-shadow: 0 8px 24px rgba(147, 112, 219, 0.15);
+  transform: translateY(-2px);
+}
+
+.mode-option:hover .mode-content::before {
+  transform: scaleX(1);
 }
 
 .mode-option.active .mode-content {
-  border-color: #3b82f6;
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+  border-color: #9370db;
+  background: linear-gradient(145deg, #f8f4ff 0%, #f0e8ff 100%);
+  box-shadow: 0 12px 32px rgba(147, 112, 219, 0.25);
+  transform: translateY(-4px);
+}
+
+.mode-option.active .mode-content::before {
+  transform: scaleX(1);
+  height: 6px;
+  background: linear-gradient(90deg, #7b42f6, #9370db);
 }
 
 .mode-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 6px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #4a249c;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: 0.5px;
 }
 
 .mode-desc {
-  font-size: 0.85rem;
-  color: #64748b;
-  line-height: 1.4;
+  font-size: 0.9rem;
+  color: #6d5d8f;
+  line-height: 1.5;
+  opacity: 0.9;
+  font-weight: 400;
 }
 
 .mode-option.active .mode-title {
-  color: #2563eb;
+  color: #5a32a3;
 }
 
 .mode-option.active .mode-desc {
@@ -1844,29 +1968,47 @@ export default {
 
 .form-input, .form-select, .form-textarea {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: 14px 16px;
+  border: 1px solid rgba(147, 112, 219, 0.3);
+  border-radius: 12px;
   font-size: 1rem;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
+  background: linear-gradient(145deg, #ffffff 0%, #f8f6ff 100%);
+  box-shadow: inset 0 2px 4px rgba(147, 112, 219, 0.05);
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  border-color: #9370db;
+  box-shadow: 0 0 0 3px rgba(147, 112, 219, 0.25);
+  background: rgba(243, 240, 250, 0.8);
+  transform: translateY(-1px);
 }
 
 .form-textarea {
   resize: vertical;
   font-family: inherit;
+  min-height: 200px;
+  line-height: 1.6;
+  padding: 16px;
 }
 
 .char-count {
   text-align: right;
   font-size: 0.85rem;
-  color: #666;
-  margin-top: 5px;
+  color: #6d5d8f;
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: rgba(147, 112, 219, 0.05);
+  border-radius: 8px;
+  display: inline-block;
+  margin-left: auto;
+  transition: all 0.3s ease;
+}
+
+.char-count:hover {
+  background: rgba(147, 112, 219, 0.1);
+  color: #4a249c;
 }
 
 .required {
@@ -1874,31 +2016,50 @@ export default {
 }
 
 .generate-manual-btn, .generate-btn {
-  background: #27ae60;
+  background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
   color: white;
   border: none;
-  padding: 15px 30px;
-  border-radius: 8px;
+  padding: 16px 32px;
+  border-radius: 16px;
   cursor: pointer;
   font-size: 1.1rem;
-  transition: background 0.3s ease;
+  font-weight: 600;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
-  margin-top: 10px;
+  margin-top: 20px;
+  box-shadow: 0 6px 20px rgba(90, 50, 163, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  letter-spacing: 0.5px;
 }
 
 .generate-manual-btn:hover:not(:disabled), .generate-btn:hover:not(:disabled) {
-  background: #219a52;
+  background: linear-gradient(135deg, #9370db 0%, #7b42f6 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(90, 50, 163, 0.45);
+}
+
+.generate-manual-btn:active:not(:disabled), .generate-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(90, 50, 163, 0.3);
 }
 
 .generate-manual-btn:disabled, .generate-btn:disabled {
-  background: #bdc3c7;
+  opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 4px 12px rgba(90, 50, 163, 0.2);
 }
 
 .divider {
-  text-align: center;
-  margin: 40px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 30px 0;
   position: relative;
+  height: 40px;
 }
 
 .divider::before {
@@ -1908,14 +2069,27 @@ export default {
   left: 0;
   right: 0;
   height: 1px;
-  background: #ddd;
+  background: linear-gradient(90deg, transparent 0%, #e2e8f0 50%, transparent 100%);
 }
 
 .divider span {
   background: white;
-  padding: 0 20px;
-  color: #666;
-  font-size: 1rem;
+  padding: 8px 20px;
+  color: #64748b;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.divider span:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  color: #475569;
 }
 
 .upload-area {
@@ -1928,8 +2102,8 @@ export default {
 }
 
 .upload-area.drag-over {
-  border-color: #3498db;
-  background: #f8f9fa;
+  border-color: #9370db;
+  background: #f3f0fa;
 }
 
 .upload-placeholder {
@@ -1949,19 +2123,28 @@ export default {
 }
 
 .select-file-btn {
-  background: #3498db;
+  background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
   color: white;
   border: none;
   padding: 10px 20px;
   border-radius: 6px;
   cursor: pointer;
   margin-top: 15px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(90, 50, 163, 0.3);
+}
+
+.select-file-btn:hover {
+  background: linear-gradient(135deg, #9370db 0%, #6a4b8e 100%);
+  box-shadow: 0 4px 12px rgba(90, 50, 163, 0.4);
+  transform: translateY(-1px);
 }
 
 .file-selected {
   padding: 20px;
-  background: #f8f9fa;
+  background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%);
   border-radius: 6px;
+  border: 1px solid rgba(147, 112, 219, 0.3);
 }
 
 .file-info {
@@ -1994,6 +2177,12 @@ export default {
   border: none;
   cursor: pointer;
   font-size: 1.2rem;
+  color: #5a32a3;
+  transition: color 0.3s ease;
+}
+
+.remove-file:hover {
+  color: #7b42f6;
 }
 
 .generation-progress {
@@ -2058,10 +2247,10 @@ export default {
 /* 流式内容显示区域 */
 .stream-content-display {
   margin: 20px 0;
-  border: 2px solid #e1e8ed;
+  border: 2px solid rgba(147, 112, 219, 0.3);
   border-radius: 8px;
   overflow: hidden;
-  background: #f8f9fa;
+  background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%);
 }
 
 .stream-header {
@@ -2069,23 +2258,23 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #e9ecef;
-  border-bottom: 1px solid #dee2e6;
+  background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+  border-bottom: 1px solid rgba(147, 112, 219, 0.5);
 }
 
 .stream-title {
   font-weight: 600;
-  color: #495057;
+  color: white;
   font-size: 0.95rem;
 }
 
 .stream-status {
   font-size: 0.85rem;
-  color: #6c757d;
+  color: #5a32a3;
   background: white;
   padding: 4px 10px;
   border-radius: 12px;
-  border: 1px solid #dee2e6;
+  border: 1px solid rgba(147, 112, 219, 0.3);
 }
 
 .stream-content {
@@ -2106,33 +2295,38 @@ export default {
 }
 
 .stream-content::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f3f0fa;
   border-radius: 4px;
 }
 
 .stream-content::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: linear-gradient(135deg, #9370db 0%, #6a4b8e 100%);
   border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(147, 112, 219, 0.3);
 }
 
 .stream-content::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
 }
 
 /* 最终版用例特殊样式 */
 .stream-content.final-testcases {
-  background: #f0f7ff;
-  border-left: 4px solid #2196F3;
+  background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%);
+  border: 1px solid rgba(147, 112, 219, 0.3);
+  border-radius: 6px;
+  margin: -8px;
+  padding: 24px;
+  border-left: 4px solid #7b42f6;
 }
 
 .stream-content.final-testcases::before {
   content: '📋 最终版本';
   display: block;
   font-weight: 600;
-  color: #2196F3;
+  color: #5a32a3;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 2px solid #e3f2fd;
+  border-bottom: 2px solid rgba(147, 112, 219, 0.3);
 }
 
 /* 流式输出指示器 */

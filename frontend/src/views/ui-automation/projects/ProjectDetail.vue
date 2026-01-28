@@ -19,6 +19,10 @@
               </el-descriptions-item>
               <el-descriptions-item label="负责人">{{ project.owner?.username }}</el-descriptions-item>
               <el-descriptions-item label="创建时间">{{ formatDate(project.created_at) }}</el-descriptions-item>
+              <el-descriptions-item label="基础URL">{{ project.base_url }}</el-descriptions-item>
+              <el-descriptions-item label="开始日期">{{ project.start_date ? formatDate(project.start_date) : '未设置' }}</el-descriptions-item>
+              <el-descriptions-item label="结束日期">{{ project.end_date ? formatDate(project.end_date) : '未设置' }}</el-descriptions-item>
+              <el-descriptions-item label="更新时间">{{ formatDate(project.updated_at) }}</el-descriptions-item>
               <el-descriptions-item label="项目描述" :span="2">{{ project.description || '暂无描述' }}</el-descriptions-item>
             </el-descriptions>
           </div>
@@ -51,23 +55,6 @@
               <el-table-column label="操作" width="100">
                 <template #default="{ row }">
                   <el-button size="small" type="danger" @click="removeMember(row)">删除</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </el-tab-pane>
-        
-        <el-tab-pane label="环境配置" name="environments">
-          <div class="environments-section">
-            <el-button type="primary" @click="showAddEnvDialog = true">添加环境</el-button>
-            <el-table :data="project?.environments || []" style="width: 100%; margin-top: 20px;">
-              <el-table-column prop="name" label="环境名称" />
-              <el-table-column prop="base_url" label="基础URL" />
-              <el-table-column prop="description" label="描述" />
-              <el-table-column prop="is_default" label="默认环境">
-                <template #default="{ row }">
-                  <el-tag v-if="row.is_default" type="success">是</el-tag>
-                  <span v-else>否</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -112,6 +99,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { getUiProjectDetail } from '@/api/ui_automation'
 import api from '@/utils/api'
 import dayjs from 'dayjs'
 
@@ -119,7 +107,6 @@ const route = useRoute()
 const project = ref(null)
 const activeTab = ref('info')
 const showAddMemberDialog = ref(false)
-const showAddEnvDialog = ref(false)
 const users = ref([])
 const addMemberFormRef = ref()
 
@@ -139,7 +126,7 @@ const addMemberRules = {
 
 const fetchProject = async () => {
   try {
-    const response = await api.get(`/projects/${route.params.id}/`)
+    const response = await getUiProjectDetail(route.params.id)
     project.value = response.data
   } catch (error) {
     ElMessage.error('获取项目详情失败')
@@ -157,31 +144,30 @@ const fetchUsers = async () => {
 
 const getStatusType = (status) => {
   const typeMap = {
-    active: 'success',
-    paused: 'warning',
-    completed: 'info',
-    archived: 'info'
+    'NOT_STARTED': 'warning',
+    'IN_PROGRESS': 'primary',
+    'COMPLETED': 'success'
   }
   return typeMap[status] || 'info'
 }
 
 const getStatusText = (status) => {
   const textMap = {
-    active: '进行中',
-    paused: '已暂停',
-    completed: '已完成',
-    archived: '已归档'
+    'NOT_STARTED': '未开始',
+    'IN_PROGRESS': '进行中',
+    'COMPLETED': '已结束'
   }
   return textMap[status] || status
 }
 
 const formatDate = (dateString) => {
-  return dayjs(dateString).format('YYYY-MM-DD HH:mm')
+  if (!dateString) return ''
+  return dayjs(dateString).format('YYYY-MM-DD HH:mm:ss')
 }
 
 const addMember = async () => {
   try {
-    const response = await api.post(`/projects/${route.params.id}/members/add/`, addMemberForm.value)
+    const response = await api.post(`/ui-automation/projects/${route.params.id}/members/`, addMemberForm.value)
     ElMessage.success('成员添加成功')
     showAddMemberDialog.value = false
     // 重置表单
@@ -194,9 +180,9 @@ const addMember = async () => {
   }
 }
 
-const removeMember = async (member) => {
+const removeMember = async (row) => {
   try {
-    await api.delete(`/projects/${route.params.id}/members/${member.id}/`)
+    await api.delete(`/ui-automation/projects/${route.params.id}/members/${row.user?.id || row.id}/`)
     ElMessage.success('成员删除成功')
     // 重新获取项目信息
     fetchProject()
@@ -212,7 +198,7 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-.members-section, .environments-section {
+.members-section {
   padding: 20px 0;
 }
 </style>

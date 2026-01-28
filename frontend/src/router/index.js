@@ -229,6 +229,11 @@ const routes = [
         component: () => import('@/views/ui-automation/projects/ProjectList.vue')
       },
       {
+        path: 'projects/:id',
+        name: 'UiProjectDetail',
+        component: () => import('@/views/ui-automation/projects/ProjectDetail.vue')
+      },
+      {
         path: 'elements-enhanced',
         name: 'UiElementsEnhanced',
         component: () => import('@/views/ui-automation/elements/ElementManagerEnhanced.vue')

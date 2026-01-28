@@ -97,18 +97,18 @@
         
         <el-form-item>
           <el-button
-            type="primary"
             size="large"
             :loading="loading"
             @click="handleRegister"
             style="width: 100%"
+            class="register-button"
           >
             注册
           </el-button>
         </el-form-item>
         
         <div class="form-footer">
-          <router-link to="/login">已有账号？立即登录</router-link>
+          <router-link to="/login" class="login-link">已有账号？<span>立即登录</span></router-link>
         </div>
       </el-form>
     </div>
@@ -219,16 +219,43 @@ const handleRegister = async () => {
     }
   }
   
+  .register-button {
+    width: 100%;
+    height: 48px;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+  }
+  
   .form-footer {
     text-align: center;
     margin-top: 20px;
     
-    a {
-      color: #409eff;
+    .login-link {
+      color: #909399;
       text-decoration: none;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      
+      span {
+        color: #667eea;
+        font-weight: 600;
+      }
       
       &:hover {
-        text-decoration: underline;
+        color: #667eea;
       }
     }
   }

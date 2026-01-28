@@ -642,35 +642,349 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.execution-list {
-  padding: 20px;
+/* 全局变量 */
+:root {
+  --primary-color: #667eea;
+  --primary-dark: #764ba2;
+  --primary-light: #f8f7ff;
+  --primary-lighter: #fafbff;
+  --border-color: #e8e8e8;
+  --text-primary: #262626;
+  --text-secondary: #595959;
+  --text-tertiary: #8c8c8c;
+  --bg-light: #ffffff;
+  --bg-gray: #fafafa;
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --danger-color: #ff4d4f;
+  --info-color: #1890ff;
 }
 
+/* 页面容器 */
+.execution-list {
+  padding: 24px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%);
+  display: flex;
+  flex-direction: column;
+  line-height: 24px;
+}
+
+/* 页面头部 */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding: 20px 24px;
+  background-color: #f8f7ff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+  
+  .header-actions {
+    display: flex;
+    gap: 10px;
+    
+    .el-button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      border: none !important;
+      color: white !important;
+      font-weight: 600 !important;
+      transition: all 0.3s ease !important;
+      
+      &:hover {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+      }
+      
+      &:active {
+        transform: translateY(0) !important;
+      }
+      
+      &.el-button--danger {
+        background: linear-gradient(135deg, #ff7675 0%, #d63031 100%) !important;
+        
+        &:hover {
+          background: linear-gradient(135deg, #d63031 0%, #ff7675 100%) !important;
+        }
+      }
+    }
+  }
 }
 
-.header-actions {
-  display: flex;
-  gap: 10px;
-}
-
+/* 筛选栏 */
 .filter-bar {
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 4px;
+  background-color: #f8f7ff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  
+  /* 覆盖 Element Plus 默认主题变量 */
+  --el-color-primary: var(--primary-color);
+  --el-color-primary-light-3: #9370db;
+  --el-color-primary-light-5: #a888e0;
+  --el-color-primary-light-7: #c2a9f3;
+  --el-color-primary-light-9: #f8f7ff;
+  --el-border-color: var(--border-color);
+  --el-border-color-light: var(--border-color);
+  --el-border-color-lighter: var(--border-color);
+  --el-fill-color-light: #f8f7ff;
+  --el-fill-color-lighter: #f8f7ff;
+  --el-fill-color-blank: #f8f7ff;
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+  --el-text-color-placeholder: var(--text-tertiary);
+  
+  .el-form {
+    .el-form-item {
+      .el-form-item__label {
+        font-weight: 500;
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+      
+      .el-select {
+        .el-select__wrapper {
+          border-radius: 4px;
+          border: 1px solid var(--border-color);
+          transition: all 0.3s ease;
+          background: var(--bg-light);
+          
+          &:hover {
+            border-color: var(--primary-color);
+          }
+          
+          &.is-focus {
+            border-color: var(--primary-color);
+          }
+        }
+        
+        .el-select-dropdown {
+          background: var(--bg-light);
+          border: 1px solid var(--border-color);
+          border-radius: 4px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          
+          .el-select-dropdown__item {
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            
+            &:hover {
+              background: var(--primary-light);
+              color: var(--primary-color);
+            }
+            
+            &.selected {
+              background: var(--primary-light);
+              color: var(--primary-color);
+              font-weight: 500;
+            }
+          }
+        }
+      }
+      
+      .el-button {
+        &.el-button--primary {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+          border: none !important;
+          color: white !important;
+          font-weight: 600 !important;
+          transition: all 0.3s ease !important;
+          
+          &:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+          }
+        }
+      }
+    }
+  }
 }
 
+/* 表格样式 */
+.el-table {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  
+  --el-table-bg-color: #f8f7ff;
+  --el-table-header-bg-color: #f8f7ff;
+  --el-table-header-border-color: var(--border-color);
+  --el-table-border-color: var(--border-color);
+  --el-table-row-hover-bg-color: rgba(102, 126, 234, 0.05);
+  
+  .el-table__header-wrapper {
+    .el-table__header {
+      th {
+        background-color: #f8f7ff;
+        color: var(--text-secondary);
+        font-weight: 500;
+        border-bottom: 1px solid var(--border-color);
+      }
+    }
+  }
+  
+  .el-table__body-wrapper {
+    .el-table__body {
+      td {
+        background-color: #f8f7ff;
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--border-color);
+      }
+      
+      tr:hover {
+        td {
+          background-color: rgba(102, 126, 234, 0.05) !important;
+        }
+      }
+    }
+  }
+  
+  .el-link {
+    color: var(--primary-color);
+    
+    &:hover {
+      color: var(--primary-dark);
+    }
+  }
+  
+  .el-tag {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  
+  .el-button {
+    font-size: 13px;
+    padding: 0;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: translateY(-1px);
+    }
+    
+    &.el-button--primary {
+      color: var(--primary-color);
+      
+      &:hover {
+        color: var(--primary-dark);
+        background: #f8f7ff;
+        border-radius: 4px;
+      }
+    }
+    
+    &.el-button--warning {
+      color: var(--warning-color);
+      
+      &:hover {
+        color: #e09a00;
+        background: #fff7e6;
+        border-radius: 4px;
+      }
+    }
+    
+    &.el-button--danger {
+      color: var(--danger-color);
+      
+      &:hover {
+        color: #cf1322;
+        background: #fff1f0;
+        border-radius: 4px;
+      }
+    }
+    
+    &.el-button--success {
+      color: var(--success-color);
+      
+      &:hover {
+        color: #389e0d;
+        background: #f6ffed;
+        border-radius: 4px;
+      }
+    }
+  }
+}
+
+/* 分页容器 */
 .pagination {
-  margin-top: 20px;
+  margin-top: 16px;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  background-color: #f8f7ff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  
+  /* 覆盖 Element Plus 分页组件样式 */
+  --el-pagination-fill: #f8f7ff;
+  --el-pagination-color: var(--text-secondary);
+  --el-pagination-hover-color: var(--primary-color);
+  --el-pagination-current-color: var(--primary-color);
+  --el-pagination-current-bg-color: #f8f7ff;
+  --el-pagination-btn-bg-color: #f8f7ff;
+  --el-pagination-btn-hover-bg-color: rgba(102, 126, 234, 0.1);
+  --el-pagination-border-color: var(--border-color);
+  
+  .el-pagination {
+    .el-pagination__sizes {
+      .el-select {
+        .el-select__wrapper {
+          border-radius: 4px;
+          border: 1px solid var(--border-color);
+          transition: all 0.3s ease;
+          background: var(--bg-light);
+          
+          &:hover {
+            border-color: var(--primary-color);
+          }
+          
+          &.is-focus {
+            border-color: var(--primary-color);
+          }
+        }
+      }
+    }
+    
+    .el-pager {
+      .number {
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          color: var(--primary-color);
+          background: rgba(102, 126, 234, 0.1);
+        }
+        
+        &.active {
+          color: var(--primary-color);
+          background: rgba(102, 126, 234, 0.1);
+          border-color: var(--primary-color);
+        }
+      }
+    }
+  }
 }
 
+/* 对话框样式 */
 .dialog-footer {
   display: flex;
   justify-content: flex-end;

@@ -18,43 +18,44 @@
       </div>
     </div>
     
-    <div class="card-container">
-      <div class="filter-bar">
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <el-input
-              v-model="searchText"
-              placeholder="搜索版本名称"
-              clearable
-              @input="handleSearch"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-            </el-input>
-          </el-col>
-          <el-col :span="4">
-            <el-select v-model="projectFilter" placeholder="关联项目" clearable @change="handleFilter">
-              <el-option
-                v-for="project in projects"
-                :key="project.id"
-                :label="project.name"
-                :value="project.id"
-              />
-            </el-select>
-          </el-col>
-          <el-col :span="3">
-            <el-select v-model="baselineFilter" placeholder="版本类型" clearable @change="handleFilter">
-              <el-option label="基线版本" :value="true" />
-              <el-option label="普通版本" :value="false" />
-            </el-select>
-          </el-col>
-        </el-row>
-      </div>
-      
+    <div class="filter-bar">
+      <el-row :gutter="20">
+        <el-col :span="6">
+          <el-input
+            v-model="searchText"
+            placeholder="搜索版本名称"
+            clearable
+            @input="handleSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </el-col>
+        <el-col :span="4">
+          <el-select v-model="projectFilter" placeholder="关联项目" clearable @change="handleFilter">
+            <el-option
+              v-for="project in projects"
+              :key="project.id"
+              :label="project.name"
+              :value="project.id"
+            />
+          </el-select>
+        </el-col>
+        <el-col :span="3">
+          <el-select v-model="baselineFilter" placeholder="版本类型" clearable @change="handleFilter">
+            <el-option label="基线版本" :value="true" />
+            <el-option label="普通版本" :value="false" />
+          </el-select>
+        </el-col>
+      </el-row>
+    </div>
+    
+    <div class="table-container">
       <el-table 
         :data="versions" 
         v-loading="loading" 
+        stripe
         style="width: 100%"
         @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" />
@@ -100,10 +101,10 @@
             {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="editVersion(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="deleteVersion(row)">删除</el-button>
+            <el-button link type="primary" @click="editVersion(row)">编辑</el-button>
+            <el-button link type="danger" @click="deleteVersion(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -404,21 +405,630 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+// 全局变量
+:root {
+  --primary-color: #667eea;
+  --primary-dark: #764ba2;
+  --primary-light: #f8f7ff;
+  --primary-lighter: #fafbff;
+  --border-color: #e8e8e8;
+  --text-primary: #262626;
+  --text-secondary: #595959;
+  --text-tertiary: #8c8c8c;
+  --bg-light: #ffffff;
+  --bg-gray: #fafafa;
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --danger-color: #ff4d4f;
+  --info-color: #1890ff;
+}
+
+// 页面容器
+.page-container {
+  padding: 24px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f3f0fa 0%, #e8e3f5 100%);
+  display: flex;
+  flex-direction: column;
+  line-height: 24px;
+}
+
+// 页面头部
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 20px 24px;
+  background-color: #f8f7ff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  
+  .page-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .header-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .el-button {
+    &.el-button--primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      border: none !important;
+      color: white !important;
+      font-weight: 600 !important;
+      transition: all 0.3s ease !important;
+      
+      &:hover {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3) !important;
+      }
+      
+      &:active {
+        transform: translateY(0) !important;
+      }
+    }
+    
+    &.el-button--danger {
+      transition: all 0.3s ease !important;
+      
+      &:hover {
+        transform: translateY(-1px) !important;
+      }
+    }
+  }
+}
+
+// 筛选栏
 .filter-bar {
-  margin-bottom: 20px;
+  background-color: #f8f7ff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  
+  /* 覆盖 Element Plus 默认主题变量 */
+  --el-color-primary: var(--primary-color);
+  --el-color-primary-light-3: #9370db;
+  --el-color-primary-light-5: #a888e0;
+  --el-color-primary-light-7: #c2a9f3;
+  --el-color-primary-light-9: #f8f7ff;
+  --el-border-color: var(--border-color);
+  --el-border-color-light: var(--border-color);
+  --el-border-color-lighter: var(--border-color);
+  --el-fill-color-light: #f8f7ff;
+  --el-fill-color-lighter: #f8f7ff;
+  --el-fill-color-blank: #f8f7ff;
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+  --el-text-color-placeholder: var(--text-tertiary);
 }
 
-.pagination-container {
-  margin-top: 20px;
+// 表格容器
+.table-container {
+  background: var(--primary-light);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  flex-grow: 1;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  overflow: hidden;
+  
+  // 表格样式
+  .el-table {
+    border: none;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-grow: 1;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    background-color: #f8f7ff !important;
+    
+    /* 覆盖 Element Plus 默认主题变量 */
+    --el-color-primary: var(--primary-color);
+    --el-color-primary-light-3: #9370db;
+    --el-color-primary-light-5: #a888e0;
+    --el-color-primary-light-7: #c2a9f3;
+    --el-color-primary-light-9: #f8f7ff;
+    --el-border-color: #e9ecef;
+    --el-border-color-light: #e9ecef;
+    --el-border-color-lighter: #e9ecef;
+    --el-fill-color-light: #f8f7ff;
+    --el-fill-color-lighter: #f8f7ff;
+    --el-fill-color-blank: #f8f7ff;
+    --el-text-color-primary: #333;
+    --el-text-color-regular: #333;
+    --el-text-color-secondary: #666;
+    --el-text-color-placeholder: #999;
+    --el-table-header-bg-color: #f8f7ff;
+    --el-table-row-hover-bg-color: #f0edff;
+    --el-table-stripe-bg-color: #f0edff;
+    
+    &::before {
+      display: none;
+    }
+    
+    // 表头包装器
+    :deep(.el-table__header-wrapper) {
+      background-color: #f8f7ff !important;
+      
+      // 表头
+      :deep(.el-table__header) {
+        background-color: #f8f7ff !important;
+        
+        // 表头单元格
+        :deep(th) {
+          background-color: #f8f7ff !important;
+          color: #5a32a3;
+          font-weight: 600;
+          font-size: 14px;
+          border-bottom: 1px solid #e9ecef;
+          padding: 16px;
+          text-align: left;
+          line-height: 24px;
+          transition: all 0.3s ease;
+          
+          &:hover {
+            background-color: #f8f7ff !important;
+          }
+          
+          // 表头单元格内部
+          :deep(.cell) {
+            background-color: #f8f7ff !important;
+            color: #5a32a3 !important;
+            font-weight: 600 !important;
+          }
+        }
+      }
+    }
+    
+    // 表格体包装器
+    :deep(.el-table__body-wrapper) {
+      background-color: #f8f7ff !important;
+      
+      // 表格行
+      :deep(.el-table__row) {
+        transition: all 0.3s ease;
+        background-color: #f8f7ff !important;
+        line-height: 24px;
+        
+        &:hover {
+          background-color: #f0edff !important;
+        }
+        
+        &.el-table__row--striped {
+          background-color: #f0edff !important;
+        }
+        
+        // 表格单元格
+        :deep(td) {
+          padding: 14px 16px;
+          border-bottom: 1px solid #e9ecef;
+          color: #333;
+          font-size: 14px;
+          font-weight: 400;
+          line-height: 24px;
+          transition: all 0.3s ease;
+          
+          // 标签样式
+          .el-tag {
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 2px 8px;
+            transition: all 0.3s ease;
+          }
+          
+          // 按钮样式
+          .el-button {
+            font-size: 13px;
+            padding: 0;
+            margin-right: 12px;
+            transition: all 0.3s ease;
+            
+            &:last-child {
+              margin-right: 0;
+            }
+            
+            &:hover {
+              transform: translateY(-1px);
+            }
+            
+            &.el-button--text {
+              color: var(--primary-color);
+              
+              &:hover {
+                color: var(--primary-dark);
+                background: #f8f7ff;
+                border-radius: 4px;
+              }
+            }
+            
+            &.el-button--text.el-button--primary {
+              color: var(--primary-color);
+              
+              &:hover {
+                color: var(--primary-dark);
+              }
+            }
+            
+            &.el-button--text.el-button--danger {
+              color: var(--danger-color);
+              
+              &:hover {
+                color: #cf1322;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // 空状态
+    :deep(.el-table__empty-block) {
+      padding: 60px 0;
+      background: #f8f7ff !important;
+      
+      :deep(.el-table__empty-text) {
+        color: #666;
+        font-size: 14px;
+        line-height: 24px;
+      }
+    }
+    
+    // 确保整个表格容器都使用正确的背景色
+    &.el-table--enable-row-hover {
+      background-color: #f8f7ff !important;
+    }
+    
+    // 覆盖表格行的默认样式
+    :deep(.el-table__row) {
+      background-color: #f8f7ff !important;
+    }
+    
+    // 覆盖表格行的条纹样式
+    :deep(.el-table__row.el-table__row--striped) {
+      background-color: #f0edff !important;
+    }
+    
+    // 覆盖表格行的 hover 样式
+    :deep(.el-table__row:hover) {
+      background-color: #f0edff !important;
+    }
+    
+    // 直接覆盖表头单元格样式
+    :deep(.el-table__header th) {
+      background-color: #f8f7ff !important;
+      color: #5a32a3 !important;
+      font-weight: 600 !important;
+    }
+    
+    // 覆盖表头单元格内容样式
+    :deep(.el-table__header th .cell) {
+      background-color: #f8f7ff !important;
+      color: #5a32a3 !important;
+      font-weight: 600 !important;
+    }
+  }
+  
+  // 分页容器
+  .pagination-container {
+    margin-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 24px;
+    background-color: #f8f7ff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    
+    /* 覆盖 Element Plus 默认主题变量 */
+    --el-color-primary: var(--primary-color);
+    --el-color-primary-light-3: #9370db;
+    --el-color-primary-light-5: #a888e0;
+    --el-color-primary-light-7: #c2a9f3;
+    --el-color-primary-light-9: #f8f7ff;
+    --el-border-color: var(--border-color);
+    --el-border-color-light: var(--border-color);
+    --el-border-color-lighter: var(--border-color);
+    --el-fill-color-light: #f8f7ff;
+    --el-fill-color-lighter: #f8f7ff;
+    --el-fill-color-blank: #f8f7ff;
+    --el-text-color-primary: var(--text-primary);
+    --el-text-color-regular: var(--text-secondary);
+    --el-text-color-secondary: var(--text-tertiary);
+    --el-text-color-placeholder: var(--text-tertiary);
+    
+    // 分页组件
+    .el-pagination {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      
+      // 总数
+      :deep(.el-pagination__total) {
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-weight: 500;
+      }
+      
+      // 每页大小
+      :deep(.el-pagination__sizes) {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        
+        label {
+          font-size: 14px;
+          color: var(--text-secondary);
+          font-weight: 500;
+        }
+        
+        .el-select {
+          min-width: 80px;
+          
+          .el-select__wrapper {
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            background: var(--bg-light);
+            
+            &:hover {
+              border-color: var(--primary-color);
+            }
+            
+            &.is-focus {
+              border-color: var(--primary-color);
+            }
+          }
+          
+          .el-select-dropdown {
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            
+            .el-select-dropdown__item {
+              color: var(--text-primary);
+              transition: all 0.3s ease;
+              
+              &:hover {
+                background: var(--primary-light);
+                color: var(--primary-color);
+              }
+              
+              &.selected {
+                background: var(--primary-light);
+                color: var(--primary-color);
+                font-weight: 500;
+              }
+            }
+          }
+        }
+      }
+      
+      // 分页按钮
+      :deep(.el-pagination__button) {
+        transition: all 0.3s ease;
+        border-radius: 4px;
+        
+        &:hover {
+          background: var(--primary-light);
+          color: var(--primary-color);
+          border-color: var(--primary-color);
+        }
+        
+        &:focus {
+          box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+      }
+      
+      // 当前页按钮
+      :deep(.el-pagination__item--active) {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        border-color: var(--primary-color);
+        color: white;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        
+        &:hover {
+          background: linear-gradient(135deg, var(--primary-dark) 0%, #5a4ba2 100%);
+          border-color: var(--primary-dark);
+        }
+      }
+      
+      // 禁用按钮
+      :deep(.is-disabled) {
+        opacity: 0.5;
+        
+        &:hover {
+          background: transparent;
+          color: var(--text-tertiary);
+          border-color: var(--border-color);
+        }
+      }
+      
+      // 页码
+      :deep(.el-pager li) {
+        border-radius: 4px;
+        margin: 0 3px;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        font-weight: 500;
+        
+        &:hover:not(.disabled) {
+          color: var(--primary-color);
+          background: var(--primary-light);
+          transform: translateY(-1px);
+        }
+        
+        &.active {
+          background: var(--primary-color);
+          color: #ffffff;
+          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+      }
+      
+      // 上一页/下一页
+      :deep(.el-pagination__prev),
+      :deep(.el-pagination__next) {
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        font-size: 14px;
+        
+        &:hover:not(.is-disabled) {
+          color: var(--primary-color);
+          border-color: var(--primary-color);
+          background: var(--primary-light);
+          transform: translateY(-1px);
+        }
+      }
+      
+      // 跳转
+      :deep(.el-pagination__jump) {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        
+        label {
+          font-size: 14px;
+          color: var(--text-secondary);
+          font-weight: 500;
+        }
+        
+        .el-input {
+          width: 80px;
+          
+          .el-input__wrapper {
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            
+            &:hover {
+              border-color: var(--primary-color);
+            }
+            
+            &.is-focus {
+              border-color: var(--primary-color);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
-.header-actions {
-  display: flex;
-  gap: 10px;
+// 对话框样式
+.el-dialog {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  
+  .el-dialog__header {
+    background-color: var(--bg-gray);
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+    
+    .el-dialog__title {
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 16px;
+    }
+  }
+  
+  .el-dialog__body {
+    padding: 24px;
+    background: var(--bg-light);
+  }
+  
+  .el-dialog__footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-gray);
+  }
 }
 
+// 按钮样式
+.el-button {
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+  }
+  
+  &.el-button--primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    border: none;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    
+    &:hover {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, #5a4ba2 100%);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+  }
+  
+  &.el-button--success {
+    background: linear-gradient(135deg, var(--success-color) 0%, #389e0d 100%);
+    border: none;
+    box-shadow: 0 2px 8px rgba(82, 196, 26, 0.2);
+    
+    &:hover {
+      background: linear-gradient(135deg, #389e0d 0%, #237804 100%);
+      box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+    }
+  }
+  
+  &.el-button--warning {
+    background: linear-gradient(135deg, var(--warning-color) 0%, #d48806 100%);
+    border: none;
+    box-shadow: 0 2px 8px rgba(250, 173, 20, 0.2);
+    
+    &:hover {
+      background: linear-gradient(135deg, #d48806 0%, #ad6800 100%);
+      box-shadow: 0 4px 12px rgba(250, 173, 20, 0.3);
+    }
+  }
+  
+  &.el-button--danger {
+    background: linear-gradient(135deg, var(--danger-color) 0%, #cf1322 100%);
+    border: none;
+    box-shadow: 0 2px 8px rgba(255, 77, 79, 0.2);
+    
+    &:hover {
+      background: linear-gradient(135deg, #cf1322 0%, #a8071a 100%);
+      box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+    }
+  }
+  
+  &.el-button--text {
+    color: var(--primary-color);
+    
+    &:hover {
+      color: var(--primary-dark);
+      background: var(--primary-light);
+      border-radius: 4px;
+    }
+  }
+}
+
+/* 版本名称 */
 .version-name {
   display: flex;
   align-items: center;
@@ -429,6 +1039,7 @@ onMounted(() => {
   }
 }
 
+/* 项目标签 */
 .project-tags {
   display: flex;
   flex-wrap: wrap;
@@ -439,9 +1050,59 @@ onMounted(() => {
   }
 }
 
+/* 无项目状态 */
 .no-project {
   color: #909399;
   font-size: 12px;
   font-style: italic;
+}
+
+// 响应式设计
+@media screen and (max-width: 1200px) {
+  .page-container {
+    padding: 20px;
+  }
+  
+  .filter-bar {
+    padding: 16px;
+  }
+  
+  .table-container .el-table {
+    .el-table__row td {
+      padding: 12px 14px;
+    }
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .page-container {
+    padding: 16px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .filter-bar {
+    padding: 16px;
+  }
+  
+  .table-container {
+    border-radius: 8px;
+  }
+  
+  .pagination-container {
+    justify-content: center;
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  .el-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
 }
 </style>

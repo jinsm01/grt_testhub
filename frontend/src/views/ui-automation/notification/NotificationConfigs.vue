@@ -492,6 +492,26 @@ export default {
   padding: 0;
 }
 
+/* 让Tab标签水平居中显示 */
+.notification-tabs :deep(.el-tabs__header) {
+  display: flex !important;
+  justify-content: center !important;
+  margin-bottom: 0 !important;
+  width: 100% !important;
+}
+
+.notification-tabs :deep(.el-tabs__nav-wrap) {
+  flex: 1 !important;
+  display: flex !important;
+  justify-content: center !important;
+}
+
+.notification-tabs :deep(.el-tabs__nav) {
+  margin: 0 auto !important;
+  float: none !important;
+  text-align: center !important;
+}
+
 .tab-content {
   min-height: 600px;
   padding: 24px;
@@ -519,6 +539,62 @@ export default {
   padding-top: 20px;
   border-top: 1px solid #eee;
   text-align: right;
+}
+
+/* 自定义按钮样式 - 与头部紫色渐变一致 */
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-button--primary:hover) {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+:deep(.el-button--primary:active) {
+  transform: translateY(0);
+}
+
+/* 自定义复选框样式 - 与头部紫色一致 */
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #667eea;
+  border-color: #667eea;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner:hover) {
+  background-color: #764ba2;
+  border-color: #764ba2;
+}
+
+/* 自定义开关样式 - 与头部紫色一致 */
+:deep(.el-switch.is-active .el-switch__core) {
+  background-color: #667eea !important;
+}
+
+:deep(.el-switch.is-active .el-switch__core:hover) {
+  background-color: #764ba2 !important;
+}
+
+/* 自定义开关滑块颜色 */
+:deep(.el-switch__core .el-switch__button) {
+  background-color: white !important;
+}
+
+/* 确保开关激活状态的边框和背景都是紫色 */
+:deep(.el-switch.is-active) {
+  --el-switch-on-color: #667eea !important;
+  --el-switch-on-border-color: #667eea !important;
+}
+
+/* 自定义复选框文字颜色 - 与头部紫色一致 */
+:deep(.el-checkbox.is-checked .el-checkbox__label) {
+  color: #667eea;
+  font-weight: 500;
 }
 
 /* 响应式设计 */

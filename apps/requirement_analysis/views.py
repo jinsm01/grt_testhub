@@ -1780,16 +1780,16 @@ class TestCaseGenerationTaskViewSet(viewsets.ModelViewSet):
             def get_allowed_origin(origin):
                 """获取允许的CORS origin，支持localhost和任意IP地址"""
                 if not origin:
-                    return 'http://localhost:3000'
-                # 允许localhost和127.0.0.1
-                if origin in ['http://localhost:3000', 'http://127.0.0.1:3000']:
+                    return 'http://localhost:4173'
+                # 允许localhost和127.0.0.1，支持3000和4173端口
+                if origin in ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:4173', 'http://127.0.0.1:4173']:
                     return origin
-                # 允许任意IP地址的3000端口
+                # 允许任意IP地址的3000或4173端口
                 import re
-                if re.match(r'^http://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:3000$', origin):
+                if re.match(r'^http://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:(3000|4173)$', origin):
                     return origin
-                # 默认返回localhost:3000
-                return 'http://localhost:3000'
+                # 默认返回localhost:4173
+                return 'http://localhost:4173'
 
             cors_origin = get_allowed_origin(request_origin)
 
@@ -1963,13 +1963,13 @@ class TestCaseGenerationTaskViewSet(viewsets.ModelViewSet):
             request_origin = request.META.get('HTTP_ORIGIN', 'unknown')
             def get_allowed_origin(origin):
                 if not origin:
-                    return 'http://localhost:3000'
-                if origin in ['http://localhost:3000', 'http://127.0.0.1:3000']:
+                    return 'http://localhost:4173'
+                if origin in ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:4173', 'http://127.0.0.1:4173']:
                     return origin
                 import re
-                if re.match(r'^http://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:3000$', origin):
+                if re.match(r'^http://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:(3000|4173)$', origin):
                     return origin
-                return 'http://localhost:3000'
+                return 'http://localhost:4173'
             cors_origin = get_allowed_origin(request_origin)
             response = HttpResponse(
                 json.dumps({'error': f'流式推送失败: {str(e)}'}),
@@ -2006,6 +2006,85 @@ class TestCaseGenerationTaskViewSet(viewsets.ModelViewSet):
             logger.error(f"取消任务时出错: {e}")
             return Response(
                 {'error': f'取消任务失败: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=True, methods=['get'])
+    def export_md(self, request, task_id=None):
+        """导出MD格式的测试用例"""
+        try:
+            # 获取任务对象
+            task = self.get_object()
+
+            # 检查任务状态，只允许已完成的任务导出
+            if task.status != 'completed':
+                return Response(
+                    {'error': '只能导出已完成的测试用例生成任务'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # 检查是否有最终测试用例
+            if not task.final_test_cases:
+                return Response(
+                    {'error': '没有最终测试用例可以导出'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # 构建MD格式内容
+            md_content = f"# {task.title}\n\n"
+            md_content += f"## 任务信息\n"
+            md_content += f"- 任务ID: {task.task_id}\n"
+            md_content += f"- 创建时间: {task.created_at.strftime('%Y-%m-%d %H:%M:%S')}\n"
+            md_content += f"- 完成时间: {task.completed_at.strftime('%Y-%m-%d %H:%M:%S') if task.completed_at else '未知'}\n"
+            md_content += f"- 状态: {task.get_status_display()}\n\n"
+
+            md_content += f"## 需求描述\n"
+            md_content += f"{task.requirement_text}\n\n"
+
+            md_content += f"## 测试用例\n"
+            md_content += task.final_test_cases
+
+            # 如果有评审反馈，也添加到MD中
+            if task.review_feedback:
+                md_content += f"\n## 评审反馈\n"
+                md_content += task.review_feedback
+
+            # 设置响应头，返回MD文件
+            from django.http import HttpResponse
+            response = HttpResponse(md_content, content_type='text/markdown; charset=utf-8')
+            
+            # 优先使用前端传递的文件名，否则使用任务ID
+            filename = request.GET.get('filename', task.task_id)
+            # 确保文件名安全且包含.md后缀
+            import re
+            # 移除不安全的字符
+            safe_filename = re.sub(r'[^a-zA-Z0-9\u4e00-\u9fa5\-_\.]', '_', filename)
+            # 确保以.md结尾
+            if not safe_filename.endswith('.md'):
+                safe_filename = f'{safe_filename}_testcases.md'
+            response['Content-Disposition'] = f'attachment; filename="{safe_filename}"'
+            
+            # 添加CORS头
+            if request.META.get('HTTP_ORIGIN'):
+                def get_allowed_origin(origin):
+                    if not origin:
+                        return 'http://localhost:4173'
+                    if origin in ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:4173', 'http://127.0.0.1:4173']:
+                        return origin
+                    import re
+                    if re.match(r'^http://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:(3000|4173)$', origin):
+                        return origin
+                    return 'http://localhost:4173'
+                cors_origin = get_allowed_origin(request.META.get('HTTP_ORIGIN'))
+                response['Access-Control-Allow-Origin'] = cors_origin
+                response['Access-Control-Allow-Credentials'] = 'true'
+
+            return response
+
+        except Exception as e:
+            logger.error(f"导出MD格式测试用例出错: {e}")
+            return Response(
+                {'error': f'导出失败: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     

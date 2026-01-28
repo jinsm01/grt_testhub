@@ -140,7 +140,7 @@ class UiProjectViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的项目
         user = self.request.user
         return UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
 
     def perform_create(self, serializer):
@@ -158,6 +158,60 @@ class UiProjectViewSet(viewsets.ModelViewSet):
         # 记录操作（在删除前记录）
         log_operation('delete', 'project', instance.id, instance.name, self.request.user)
         instance.delete()
+
+    @action(detail=True, methods=['post'], url_path='members')
+    def add_member(self, request, pk=None):
+        """添加项目成员"""
+        project = self.get_object()
+        if project.owner != request.user:
+            return Response({'error': '无权限添加成员'}, status=status.HTTP_403_FORBIDDEN)
+        
+        user_id = request.data.get('user_id')
+        role = request.data.get('role', 'tester')
+        if not user_id:
+            return Response({'error': '需要指定用户ID'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = User.objects.get(id=user_id)
+            if user == project.owner:
+                return Response({'error': '项目负责人不能添加为成员'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # 检查用户是否已经是成员
+            from .models import UiProjectMember
+            if UiProjectMember.objects.filter(project=project, user=user).exists():
+                return Response({'error': '用户已经是项目成员'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # 创建项目成员记录
+            UiProjectMember.objects.create(project=project, user=user, role=role)
+            log_operation('add_member', 'project', project.id, project.name, request.user, f'添加成员: {user.username}, 角色: {role}')
+            return Response({'message': '成员添加成功'})
+        except User.DoesNotExist:
+            return Response({'error': '用户不存在'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['delete'], url_path='members/(?P<member_id>\d+)')
+    def remove_member(self, request, pk=None, member_id=None):
+        """删除项目成员"""
+        project = self.get_object()
+        if project.owner != request.user:
+            return Response({'error': '无权限删除成员'}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            user = User.objects.get(id=member_id)
+            if user == project.owner:
+                return Response({'error': '不能删除项目负责人'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # 检查用户是否是成员
+            from .models import UiProjectMember
+            member = UiProjectMember.objects.filter(project=project, user=user).first()
+            if not member:
+                return Response({'error': '用户不是项目成员'}, status=status.HTTP_404_NOT_FOUND)
+            
+            # 删除成员记录
+            member.delete()
+            log_operation('remove_member', 'project', project.id, project.name, request.user, f'删除成员: {user.username}')
+            return Response({'message': '成员删除成功'})
+        except User.DoesNotExist:
+            return Response({'error': '用户不存在'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class LocatorStrategyViewSet(viewsets.ModelViewSet):
@@ -183,7 +237,7 @@ class ElementViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的项目的元素
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         return Element.objects.filter(project__in=accessible_projects).select_related(
             'project', 'group', 'locator_strategy', 'created_by', 'parent_element'
@@ -365,7 +419,7 @@ class ElementGroupViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的项目的元素分组
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         return ElementGroup.objects.filter(project__in=accessible_projects).select_related('project', 'parent_group').order_by('order', 'name')
 
@@ -397,7 +451,7 @@ class PageObjectViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的项目的页面对象
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         return PageObject.objects.filter(project__in=accessible_projects).select_related(
             'project', 'created_by'
@@ -463,7 +517,7 @@ class PageObjectElementViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的页面对象元素
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         return PageObjectElement.objects.filter(
             page_object__project__in=accessible_projects
@@ -481,7 +535,7 @@ class ScriptStepViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的脚本步骤
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         return ScriptStep.objects.filter(
             script__project__in=accessible_projects
@@ -518,7 +572,7 @@ class ScriptElementUsageViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的脚本元素使用记录
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         return ScriptElementUsage.objects.filter(
             script__project__in=accessible_projects
@@ -621,7 +675,7 @@ class TestScriptViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的项目的测试脚本
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         return TestScript.objects.filter(project__in=accessible_projects)
 
@@ -647,7 +701,7 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的项目的测试套件
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         return TestSuite.objects.filter(project__in=accessible_projects)
 
@@ -832,7 +886,7 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的项目的测试执行记录
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         return TestExecution.objects.filter(
             project__in=accessible_projects
@@ -907,7 +961,7 @@ class ScreenshotViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的项目的截图
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         executions = TestExecution.objects.filter(project__in=accessible_projects)
         return Screenshot.objects.filter(execution__in=executions)
@@ -928,13 +982,7 @@ class TestCaseViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的项目的测试用例
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
-        ).distinct()
-    def get_queryset(self):
-        # 只显示用户有权限访问的项目的测试用例
-        user = self.request.user
-        accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         return TestCase.objects.filter(project__in=accessible_projects).select_related('project', 'created_by')
 
@@ -1911,10 +1959,10 @@ class TestCaseStepViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的测试用例的步骤
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         accessible_test_cases = TestCase.objects.filter(project__in=accessible_projects)
-        return TestCaseStep.objects.filter(test_case__in=accessible_projects)
+        return TestCaseStep.objects.filter(test_case__in=accessible_test_cases)
 
 
 class TestCaseExecutionViewSet(viewsets.ModelViewSet):
@@ -1935,7 +1983,7 @@ class TestCaseExecutionViewSet(viewsets.ModelViewSet):
         # 只显示用户有权限访问的项目的执行记录
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         return TestCaseExecution.objects.filter(
             project__in=accessible_projects
@@ -2009,7 +2057,7 @@ class UiScheduledTaskViewSet(viewsets.ModelViewSet):
         """只显示用户有权限访问的项目的定时任务"""
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         return UiScheduledTask.objects.filter(project__in=accessible_projects)
 
@@ -2868,7 +2916,7 @@ class AICaseViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         # 返回用户有权限的项目下的AI用例，以及没有关联项目的AI用例
         return AICase.objects.filter(
@@ -3097,7 +3145,7 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         # 返回用户有权限的项目下的执行记录，以及没有关联项目的执行记录
         return AIExecutionRecord.objects.filter(
@@ -3117,7 +3165,7 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
         # 确保只能删除有权限的记录，重新构建查询以避免 distinct() 限制
         user = self.request.user
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         )
         deleted_count, _ = AIExecutionRecord.objects.filter(
             id__in=ids
@@ -3502,7 +3550,7 @@ class UiDashboardViewSet(viewsets.ViewSet):
         
         # 获取用户可访问的项目ID列表
         accessible_projects = UiProject.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
+            models.Q(owner=user) | models.Q(members__user=user)
         ).distinct()
         project_ids = accessible_projects.values_list('id', flat=True)
 

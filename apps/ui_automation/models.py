@@ -21,7 +21,6 @@ class UiProject(models.Model):
     start_date = models.DateField(null=True, blank=True, verbose_name='开始日期')
     end_date = models.DateField(null=True, blank=True, verbose_name='结束日期')
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owned_ui_projects', verbose_name='负责人')
-    members = models.ManyToManyField(User, blank=True, related_name='ui_projects', verbose_name='团队成员')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
@@ -33,6 +32,30 @@ class UiProject(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class UiProjectMember(models.Model):
+    """UI自动化测试项目成员模型"""
+    ROLE_CHOICES = [
+        ('admin', '管理员'),
+        ('developer', '开发者'),
+        ('tester', '测试者'),
+        ('viewer', '观察者'),
+    ]
+
+    project = models.ForeignKey(UiProject, on_delete=models.CASCADE, related_name='members', verbose_name='所属项目')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ui_project_memberships', verbose_name='用户')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, verbose_name='角色', default='tester')
+    joined_at = models.DateTimeField(auto_now_add=True, verbose_name='加入时间')
+
+    class Meta:
+        db_table = 'ui_project_members'
+        verbose_name = 'UI自动化项目成员'
+        verbose_name_plural = 'UI自动化项目成员'
+        unique_together = ('project', 'user')  # 确保一个用户在一个项目中只能有一个成员记录
+
+    def __str__(self):
+        return f'{self.user.username} - {self.project.name} - {self.role}'
 
 
 class LocatorStrategy(models.Model):

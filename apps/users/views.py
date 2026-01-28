@@ -1,4 +1,4 @@
-from rest_framework import generics, status, permissions
+from rest_framework import generics, status, permissions, parsers
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.contrib.auth import login, logout
@@ -55,22 +55,29 @@ class RegisterView(generics.CreateAPIView):
 @permission_classes([permissions.AllowAny])
 @csrf_exempt
 def login_view(request):
-    serializer = LoginSerializer(data=request.data)
-    serializer.is_valid(raise_exception=True)
-    user = serializer.validated_data['user']
-    login(request, user)
+    print(f"登录请求数据: {request.data}")
+    print(f"请求头: {request.headers}")
+    try:
+        serializer = LoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        login(request, user)
 
-    # JWT Token (优先使用JWT)
-    refresh = RefreshToken.for_user(user)
-    access_token = str(refresh.access_token)
-    refresh_token = str(refresh)
+        # JWT Token (优先使用JWT)
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
 
-    return Response({
-        'user': UserSerializer(user).data,
-        'access': access_token,       # JWT access token
-        'refresh': refresh_token,     # JWT refresh token
-        'message': '登录成功'
-    })
+        print(f"登录成功，用户: {user.username}")
+        return Response({
+            'user': UserSerializer(user).data,
+            'access': access_token,       # JWT access token
+            'refresh': refresh_token,     # JWT refresh token
+            'message': '登录成功'
+        })
+    except Exception as e:
+        print(f"登录失败: {e}")
+        raise
 
 @api_view(['POST'])
 @csrf_exempt
@@ -118,3 +125,15 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all().order_by('username')
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
+    
+    def put(self, request, *args, **kwargs):
+        print(f"PUT请求数据: {request.data}")
+        print(f"请求头: {request.headers}")
+        try:
+            response = super().put(request, *args, **kwargs)
+            print(f"响应状态码: {response.status_code}")
+            return response
+        except Exception as e:
+            print(f"PUT请求错误: {e}")
+            raise

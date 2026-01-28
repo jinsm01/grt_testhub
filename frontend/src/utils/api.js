@@ -5,9 +5,7 @@ import { useUserStore } from '@/stores/user'
 const api = axios.create({
   baseURL: '/api',
   timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  // 移除默认的Content-Type，让axios自动根据数据类型设置
 })
 
 // 正在刷新的标志
