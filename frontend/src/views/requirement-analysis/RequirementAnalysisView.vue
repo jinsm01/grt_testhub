@@ -1461,7 +1461,7 @@ export default {
 <style scoped>
 .requirement-analysis {
   padding: 20px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   position: relative;
 }
@@ -1495,7 +1495,7 @@ export default {
   border: 1px solid rgba(147, 112, 219, 0.2);
   transition: all 0.3s ease;
   margin: 0 auto;
-  max-width: 1000px;
+  max-width: 1200px;
 }
 
 .output-mode-card:hover {
@@ -1791,7 +1791,7 @@ export default {
   border: 1px solid rgba(147, 112, 219, 0.2);
   transition: all 0.3s ease;
   margin: 0 auto 30px;
-  max-width: 1000px;
+  max-width: 1200px;
 }
 
 .manual-input-card:hover, .upload-card:hover {
@@ -1832,7 +1832,7 @@ export default {
   gap: 24px;
   margin: 0 auto;
   width: 100%;
-  max-width: 900px;
+  max-width: 1100px;
   padding: 0 20px;
 }
 
@@ -1841,7 +1841,7 @@ export default {
   cursor: pointer;
   flex: 1;
   min-width: 300px;
-  max-width: 400px;
+  max-width: 500px;
   transition: all 0.3s ease;
   display: flex;
   align-items: stretch;
@@ -2191,11 +2191,13 @@ export default {
 
 .progress-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 20px;
   padding: 30px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e1e8ed;
+  box-shadow: 0 8px 32px rgba(147, 112, 219, 0.12);
+  border: 1px solid rgba(147, 112, 219, 0.2);
   text-align: center;
+  margin: 0 auto;
+  max-width: 1200px;
 }
 
 .progress-card h3 {

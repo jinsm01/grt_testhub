@@ -1,36 +1,13 @@
+
 <template>
   <div class="generated-testcase-list">
     <div class="page-header">
       <h2>AI生成用例记录</h2>
     </div>
 
-    <!-- 筛选和统计信息 -->
+    <!-- 统计信息 -->
     <div class="filters-stats-section" v-if="allStats.total > 0">
       <div class="filters-stats-card">
-        <div class="filters-area">
-          <select v-model="selectedStatus" @change="loadTasks" class="filter-select">
-            <option value="">全部状态</option>
-            <option value="pending">分析中</option>
-            <option value="generating">生成中</option>
-            <option value="reviewing">评审中</option>
-            <option value="completed">已完成</option>
-            <option value="failed">失败</option>
-          </select>
-          <div class="filter-actions">
-            <button 
-              v-if="selectedTasks.length > 0" 
-              class="batch-delete-btn" 
-              @click="batchDeleteTasks"
-              :disabled="isDeleting">
-              <span v-if="isDeleting">删除中...</span>
-              <span v-else>批量删除 ({{ selectedTasks.length }})</span>
-            </button>
-            <button class="refresh-btn" @click="loadTasks" :disabled="isLoading">
-              <span v-if="isLoading">加载中...</span>
-              <span v-else>刷新</span>
-            </button>
-          </div>
-        </div>
         <div class="stats-area">
           <div class="stat-item">
             <span class="stat-number">{{ allStats.total }}</span>
@@ -67,13 +44,6 @@
       <div v-else class="testcases-table">
         <div class="table-header">
           <div class="table-header-row">
-            <div class="header-cell checkbox-cell">
-              <input
-                type="checkbox"
-                @change="toggleSelectAll"
-                :checked="isAllSelected"
-                class="task-checkbox">
-            </div>
             <div class="header-cell serial-cell">序号</div>
             <div class="header-cell task-id-cell">任务ID</div>
             <div class="header-cell requirement-name-cell">关联需求</div>
@@ -88,15 +58,7 @@
           <div 
             v-for="(task, index) in tasks" 
             :key="task.task_id"
-            class="table-row"
-            :class="{ 'selected': isTaskSelected(task.task_id) }">
-            <div class="body-cell checkbox-cell">
-              <input
-                type="checkbox"
-                :checked="isTaskSelected(task.task_id)"
-                @change="toggleTaskSelection(task.task_id)"
-                class="task-checkbox">
-            </div>
+            class="table-row">
             <div class="body-cell serial-cell">{{ getSerialNumber(index) }}</div>
             <div class="body-cell task-id-cell">{{ task.task_id }}</div>
             <div class="body-cell requirement-name-cell">
@@ -1150,56 +1112,7 @@ export default {
   background: rgba(243, 240, 250, 0.8);
 }
 
-.filter-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
 
-.refresh-btn {
-  background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.2);
-}
-
-.refresh-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(147, 112, 219, 0.3);
-}
-
-.refresh-btn:disabled {
-  background: linear-gradient(135deg, #d1c5f7 0%, #b8a7e8 100%);
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.batch-delete-btn {
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(231, 76, 60, 0.2);
-}
-
-.batch-delete-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(231, 76, 60, 0.3);
-}
 
 .batch-delete-btn:disabled {
   background: linear-gradient(135deg, #fadbd8 0%, #f5c6c0 100%);
@@ -1232,20 +1145,14 @@ export default {
   transform: translateY(-2px);
 }
 
-.filters-area {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  flex-wrap: wrap;
-  flex: 1;
-  min-width: 300px;
-}
+
 
 .stats-area {
-  display: flex;
-  gap: 32px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
   align-items: center;
-  flex-wrap: wrap;
+  width: 100%;
 }
 
 .stat-item {
@@ -1441,13 +1348,7 @@ export default {
   border-right: none;
 }
 
-.checkbox-cell {
-  justify-content: center;
-  align-items: center;
-  width: 50px;
-  flex-shrink: 0;
-  display: flex;
-}
+
 
 .serial-cell {
   justify-content: center;
@@ -1457,16 +1358,9 @@ export default {
   color: #5a32a3;
 }
 
-.task-checkbox {
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  accent-color: #9370db;
-  transition: all 0.3s ease;
-}
-
-.task-checkbox:hover {
-  transform: scale(1.1);
+.body-cell.serial-cell {
+  justify-content: center;
+  align-items: center;
 }
 
 /* 任务ID列 */

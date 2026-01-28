@@ -56,3 +56,4 @@ media/
 
 # Docker files
 docker-compose.override.yml
+venv/
