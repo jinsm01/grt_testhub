@@ -1,0 +1,500 @@
+// 全局弹窗组件样式
+// 统一所有页面的弹窗、确认框、消息提示样式
+
+// ==================== 消息确认框样式 (ElMessageBox) ====================
+.el-message-box {
+  border-radius: 16px !important;
+  border: 1px solid rgba(147, 112, 219, 0.15) !important;
+  box-shadow: 0 8px 32px rgba(147, 112, 219, 0.2) !important;
+  padding: 24px !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%) !important;
+
+  .el-message-box__header {
+    padding: 0 0 16px 0 !important;
+    border-bottom: 1px solid rgba(147, 112, 219, 0.1) !important;
+
+    .el-message-box__title {
+      font-size: 18px !important;
+      font-weight: 600 !important;
+      color: #5a32a3 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+
+      &::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 20px;
+        background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+        border-radius: 2px;
+      }
+    }
+
+    .el-message-box__headerbtn {
+      top: 0 !important;
+      right: 0 !important;
+      width: 32px !important;
+      height: 32px !important;
+      border-radius: 8px !important;
+      transition: all 0.3s ease !important;
+
+      &:hover {
+        background: rgba(147, 112, 219, 0.1) !important;
+        transform: rotate(90deg) !important;
+      }
+
+      .el-message-box__close {
+        color: #9370db !important;
+        font-size: 16px !important;
+
+        &:hover {
+          color: #5a32a3 !important;
+        }
+      }
+    }
+  }
+
+  .el-message-box__content {
+    padding: 20px 0 !important;
+
+    .el-message-box__container {
+      display: flex !important;
+      align-items: flex-start !important;
+      gap: 12px !important;
+
+      .el-message-box__status {
+        font-size: 24px !important;
+        margin: 0 !important;
+        position: static !important;
+        transform: none !important;
+
+        &.el-icon-warning {
+          color: #faad14 !important;
+        }
+
+        &.el-icon-error {
+          color: #ff4d4f !important;
+        }
+
+        &.el-icon-success {
+          color: #52c41a !important;
+        }
+
+        &.el-icon-info {
+          color: #1890ff !important;
+        }
+      }
+
+      .el-message-box__message {
+        padding: 0 !important;
+        margin: 0 !important;
+        color: #333 !important;
+        font-size: 14px !important;
+        line-height: 1.6 !important;
+      }
+    }
+  }
+
+  .el-message-box__btns {
+    padding: 16px 0 0 0 !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 12px !important;
+    border-top: 1px solid rgba(147, 112, 219, 0.1) !important;
+
+    .el-button {
+      padding: 10px 24px !important;
+      border-radius: 8px !important;
+      font-weight: 500 !important;
+      font-size: 14px !important;
+      transition: all 0.3s ease !important;
+      min-width: 80px !important;
+
+      // 取消按钮
+      &:not(.el-button--primary) {
+        border: 1px solid rgba(147, 112, 219, 0.3) !important;
+        color: #5a32a3 !important;
+        background: #ffffff !important;
+
+        &:hover {
+          border-color: #7b42f6 !important;
+          color: #7b42f6 !important;
+          background: rgba(123, 66, 246, 0.05) !important;
+          transform: translateY(-1px) !important;
+        }
+      }
+
+      // 确认按钮
+      &.el-button--primary {
+        background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+        border: none !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(123, 66, 246, 0.3) !important;
+
+        &:hover {
+          background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+          transform: translateY(-2px) !important;
+          box-shadow: 0 6px 20px rgba(123, 66, 246, 0.4) !important;
+        }
+
+        &:active {
+          transform: translateY(0) !important;
+        }
+      }
+    }
+  }
+}
+
+// ==================== 气泡确认框样式 (el-popconfirm) ====================
+.el-popconfirm {
+  padding: 16px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(147, 112, 219, 0.15) !important;
+  box-shadow: 0 8px 24px rgba(147, 112, 219, 0.15) !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%) !important;
+  min-width: 240px !important;
+
+  .el-popconfirm__main {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+
+    .el-popconfirm__icon {
+      font-size: 22px !important;
+      margin: 0 !important;
+      color: #faad14 !important;
+    }
+
+    .el-popconfirm__main-text {
+      color: #333 !important;
+      font-size: 14px !important;
+      line-height: 1.5 !important;
+      font-weight: 500 !important;
+    }
+  }
+
+  .el-popconfirm__action {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    margin-top: 0 !important;
+
+    .el-button {
+      padding: 8px 16px !important;
+      border-radius: 6px !important;
+      font-weight: 500 !important;
+      font-size: 13px !important;
+      transition: all 0.3s ease !important;
+      min-width: 60px !important;
+
+      // 取消按钮
+      &:not(.el-button--primary) {
+        border: 1px solid rgba(147, 112, 219, 0.3) !important;
+        color: #5a32a3 !important;
+        background: #ffffff !important;
+
+        &:hover {
+          border-color: #7b42f6 !important;
+          color: #7b42f6 !important;
+          background: rgba(123, 66, 246, 0.05) !important;
+        }
+      }
+
+      // 确认按钮
+      &.el-button--primary {
+        background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+        border: none !important;
+        color: white !important;
+        box-shadow: 0 2px 8px rgba(123, 66, 246, 0.3) !important;
+
+        &:hover {
+          background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+          transform: translateY(-1px) !important;
+          box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4) !important;
+        }
+      }
+    }
+  }
+}
+
+// ==================== 对话框样式 (el-dialog) ====================
+.el-dialog {
+  border-radius: 16px !important;
+  border: 1px solid rgba(147, 112, 219, 0.15) !important;
+  box-shadow: 0 8px 32px rgba(147, 112, 219, 0.2) !important;
+  overflow: hidden !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%) !important;
+
+  .el-dialog__header {
+    padding: 20px 24px !important;
+    margin: 0 !important;
+    border-bottom: 1px solid rgba(147, 112, 219, 0.1) !important;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%) !important;
+
+    .el-dialog__title {
+      font-size: 18px !important;
+      font-weight: 600 !important;
+      color: #5a32a3 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+
+      &::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 20px;
+        background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+        border-radius: 2px;
+      }
+    }
+
+    .el-dialog__headerbtn {
+      width: 32px !important;
+      height: 32px !important;
+      border-radius: 8px !important;
+      transition: all 0.3s ease !important;
+      top: 16px !important;
+      right: 16px !important;
+
+      &:hover {
+        background: rgba(147, 112, 219, 0.1) !important;
+        transform: rotate(90deg) !important;
+      }
+
+      .el-dialog__close {
+        color: #9370db !important;
+        font-size: 16px !important;
+
+        &:hover {
+          color: #5a32a3 !important;
+        }
+      }
+    }
+  }
+
+  .el-dialog__body {
+    padding: 24px !important;
+    color: #333 !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    background: #ffffff !important;
+  }
+
+  .el-dialog__footer {
+    padding: 16px 24px !important;
+    border-top: 1px solid rgba(147, 112, 219, 0.1) !important;
+    background: linear-gradient(135deg, #f8f7ff 0%, #ffffff 100%) !important;
+
+    .dialog-footer {
+      display: flex !important;
+      justify-content: flex-end !important;
+      gap: 12px !important;
+
+      .el-button {
+        padding: 10px 24px !important;
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+        font-size: 14px !important;
+        transition: all 0.3s ease !important;
+        min-width: 80px !important;
+
+        // 取消按钮
+        &:not(.el-button--primary) {
+          border: 1px solid rgba(147, 112, 219, 0.3) !important;
+          color: #5a32a3 !important;
+          background: #ffffff !important;
+
+          &:hover {
+            border-color: #7b42f6 !important;
+            color: #7b42f6 !important;
+            background: rgba(123, 66, 246, 0.05) !important;
+            transform: translateY(-1px) !important;
+          }
+        }
+
+        // 确认按钮
+        &.el-button--primary {
+          background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+          border: none !important;
+          color: white !important;
+          box-shadow: 0 4px 12px rgba(123, 66, 246, 0.3) !important;
+
+          &:hover {
+            background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 20px rgba(123, 66, 246, 0.4) !important;
+          }
+
+          &:active {
+            transform: translateY(0) !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ==================== 消息提示样式 (ElMessage) ====================
+.el-message {
+  border-radius: 12px !important;
+  border: 1px solid rgba(147, 112, 219, 0.15) !important;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.15) !important;
+  padding: 12px 20px !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%) !important;
+  min-width: 200px !important;
+
+  .el-message__content {
+    color: #333 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+  }
+
+  .el-message__icon {
+    font-size: 18px !important;
+    margin-right: 10px !important;
+
+    &.el-icon-success {
+      color: #52c41a !important;
+    }
+
+    &.el-icon-error {
+      color: #ff4d4f !important;
+    }
+
+    &.el-icon-warning {
+      color: #faad14 !important;
+    }
+
+    &.el-icon-info {
+      color: #1890ff !important;
+    }
+  }
+
+  .el-message__closeBtn {
+    color: #9370db !important;
+    font-size: 14px !important;
+    transition: all 0.3s ease !important;
+
+    &:hover {
+      color: #5a32a3 !important;
+      transform: rotate(90deg) !important;
+    }
+  }
+}
+
+// ==================== 抽屉样式 (el-drawer) ====================
+.el-drawer {
+  .el-drawer__header {
+    padding: 20px 24px !important;
+    margin: 0 !important;
+    border-bottom: 1px solid rgba(147, 112, 219, 0.1) !important;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%) !important;
+
+    span {
+      font-size: 18px !important;
+      font-weight: 600 !important;
+      color: #5a32a3 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+
+      &::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 20px;
+        background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+        border-radius: 2px;
+      }
+    }
+
+    .el-drawer__close {
+      width: 32px !important;
+      height: 32px !important;
+      border-radius: 8px !important;
+      transition: all 0.3s ease !important;
+
+      &:hover {
+        background: rgba(147, 112, 219, 0.1) !important;
+        transform: rotate(90deg) !important;
+      }
+
+      .el-icon {
+        color: #9370db !important;
+        font-size: 16px !important;
+
+        &:hover {
+          color: #5a32a3 !important;
+        }
+      }
+    }
+  }
+
+  .el-drawer__body {
+    padding: 24px !important;
+    background: #ffffff !important;
+  }
+
+  .el-drawer__footer {
+    padding: 16px 24px !important;
+    border-top: 1px solid rgba(147, 112, 219, 0.1) !important;
+    background: linear-gradient(135deg, #f8f7ff 0%, #ffffff 100%) !important;
+  }
+}
+
+// ==================== 通知样式 (ElNotification) ====================
+.el-notification {
+  border-radius: 12px !important;
+  border: 1px solid rgba(147, 112, 219, 0.15) !important;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.15) !important;
+  padding: 16px 20px !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%) !important;
+
+  .el-notification__title {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: #5a32a3 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .el-notification__content {
+    color: #333 !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+  }
+
+  .el-notification__closeBtn {
+    color: #9370db !important;
+    font-size: 14px !important;
+    transition: all 0.3s ease !important;
+
+    &:hover {
+      color: #5a32a3 !important;
+      transform: rotate(90deg) !important;
+    }
+  }
+
+  .el-notification__icon {
+    font-size: 20px !important;
+    margin-right: 12px !important;
+
+    &.el-icon-success {
+      color: #52c41a !important;
+    }
+
+    &.el-icon-error {
+      color: #ff4d4f !important;
+    }
+
+    &.el-icon-warning {
+      color: #faad14 !important;
+    }
+
+    &.el-icon-info {
+      color: #1890ff !important;
+    }
+  }
+}

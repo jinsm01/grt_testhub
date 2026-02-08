@@ -1,0 +1,24 @@
+<svg width="240" height="60" viewBox="0 0 240 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景渐变 -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f3f0fa"/>
+      <stop offset="100%" stop-color="#e8e3f5"/>
+    </linearGradient>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5a32a3"/>
+      <stop offset="100%" stop-color="#7b42f6"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景 -->
+  <rect width="240" height="60" rx="8" fill="url(#bgGradient)"/>
+  
+  <!-- 装饰元素 -->
+  <circle cx="40" cy="30" r="20" fill="url(#logoGradient)"/>
+  <path d="M30 25 L40 15 L50 25 L50 35 L40 45 L30 35 Z" fill="white"/>
+  <path d="M35 25 L45 25 L45 35 L35 35 Z" fill="url(#logoGradient)"/>
+  
+  <!-- 文字 -->
+  <text x="70" y="38" font-size="24" font-weight="700" fill="#5a32a3">TestHub</text>
+</svg>
