@@ -1105,12 +1105,12 @@ export default {
 .filter-card {
   background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
   border-radius: 16px;
-  padding: 20px 24px;
+  padding: 16px 20px;
   box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
   border: 1px solid rgba(147, 112, 219, 0.15);
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
 }
 
@@ -1198,20 +1198,21 @@ export default {
 /* 状态筛选标签样式 */
 .status-tabs {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .status-tab {
-  padding: 8px 16px;
+  padding: 6px 12px;
   border: none;
   border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   background: rgba(147, 112, 219, 0.1);
   color: #6d5d8f;
+  white-space: nowrap;
 }
 
 .status-tab:hover {
@@ -2268,16 +2269,26 @@ export default {
     flex-direction: column;
     align-items: stretch;
     padding: 16px 20px;
+    gap: 12px;
   }
 
   .stats-container {
     flex-wrap: wrap;
     gap: 12px;
     justify-content: center;
+    padding: 12px 16px;
+    background: rgba(147, 112, 219, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(147, 112, 219, 0.1);
+  }
+
+  .stats-divider {
+    display: none;
   }
 
   .status-tabs {
     justify-content: center;
+    padding-bottom: 4px;
   }
 
   .testcases-section {
@@ -2379,6 +2390,37 @@ export default {
 
   .stats-container .stat-label {
     font-size: 0.7rem;
+  }
+}
+
+/* 中间断点：优化两行布局 */
+@media (max-width: 1200px) and (min-width: 769px) {
+  .filter-card {
+    gap: 12px;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .status-tabs {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .stats-divider {
+    display: none;
+  }
+
+  .stats-container {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 12px 16px;
+    background: rgba(147, 112, 219, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(147, 112, 219, 0.1);
+    flex-wrap: wrap;
+    gap: 12px;
   }
 }
 </style>

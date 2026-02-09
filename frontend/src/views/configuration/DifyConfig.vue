@@ -246,17 +246,28 @@ onMounted(() => {
 
 .page-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
+  padding: 28px 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(147, 112, 219, 0.12);
+  border: 1px solid rgba(147, 112, 219, 0.2);
 
   h1 {
-    font-size: 2rem;
-    color: #2c3e50;
-    margin-bottom: 10px;
+    font-size: 2.2rem;
+    color: #5a32a3;
+    margin-bottom: 12px;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(90, 50, 163, 0.1);
+    line-height: 1.2;
   }
 
   p {
-    color: #666;
-    font-size: 1rem;
+    color: #6d5d8f;
+    font-size: 1.05rem;
+    opacity: 0.9;
+    margin: 0;
+    line-height: 1.5;
   }
 }
 
@@ -267,26 +278,120 @@ onMounted(() => {
 }
 
 .config-card, .info-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(147, 112, 219, 0.1);
+  border: 1px solid rgba(147, 112, 219, 0.2);
+  overflow: hidden;
+
+  :deep(.el-card__header) {
+    background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+    border-bottom: 1px solid rgba(147, 112, 219, 0.15);
+    padding: 16px 20px;
+  }
+
+  :deep(.el-card__body) {
+    padding: 24px;
+  }
+
   .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-weight: 600;
+    color: #5a32a3;
+    font-size: 1.1rem;
+
+    span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      &::before {
+        content: '🔧';
+        font-size: 1.2rem;
+      }
+    }
   }
 }
 
 .form-tip {
   font-size: 12px;
-  color: #909399;
+  color: #6d5d8f;
   margin-top: 4px;
+  font-style: italic;
 }
 
 .switch-label {
   margin-left: 10px;
-  color: #606266;
+  color: #5a32a3;
+  font-weight: 500;
 }
 
 .el-form-item {
   margin-bottom: 24px;
+
+  :deep(.el-form-item__label) {
+    color: #5a32a3;
+    font-weight: 600;
+  }
+
+  :deep(.el-input__wrapper) {
+    border-radius: 10px;
+    box-shadow: 0 0 0 1px rgba(147, 112, 219, 0.2) inset;
+
+    &:hover {
+      box-shadow: 0 0 0 1px rgba(147, 112, 219, 0.4) inset;
+    }
+
+    &.is-focus {
+      box-shadow: 0 0 0 1px #7b42f6 inset, 0 0 0 3px rgba(123, 66, 246, 0.15);
+    }
+  }
+}
+
+// 按钮样式优化
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+  border: none;
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.2);
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(147, 112, 219, 0.3);
+  }
+
+  &:disabled {
+    background: linear-gradient(135deg, #d1c5f7 0%, #b8a7e8 100%);
+  }
+}
+
+:deep(.el-button--success) {
+  background: linear-gradient(135deg, #27ae60 0%, #219a52 100%);
+  border: none;
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(39, 174, 96, 0.2);
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #219a52 0%, #1e8449 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(39, 174, 96, 0.3);
+  }
+}
+
+:deep(.el-descriptions__label) {
+  color: #5a32a3;
+  font-weight: 600;
+  background: rgba(243, 240, 250, 0.6);
+}
+
+:deep(.el-descriptions__content) {
+  color: #6d5d8f;
 }
 </style>

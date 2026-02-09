@@ -357,66 +357,117 @@ export default {
 .page-header {
   text-align: center;
   margin-bottom: 40px;
+  padding: 28px 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(147, 112, 219, 0.12);
+  border: 1px solid rgba(147, 112, 219, 0.2);
 }
 
 .page-header h1 {
-  font-size: 2.5rem;
-  color: #2c3e50;
-  margin-bottom: 10px;
+  font-size: 2.2rem;
+  color: #5a32a3;
+  margin-bottom: 12px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(90, 50, 163, 0.1);
+  line-height: 1.2;
 }
 
 .page-header p {
-  color: #666;
-  font-size: 1.1rem;
+  color: #6d5d8f;
+  font-size: 1.05rem;
+  opacity: 0.9;
+  margin: 0;
+  line-height: 1.5;
 }
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 28px;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 12px;
+  padding: 0 16px;
 }
 
 .section-header h2 {
-  color: #2c3e50;
+  color: #5a32a3;
   margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-header h2::before {
+  content: '⚙️';
+  font-size: 1.2rem;
 }
 
 .add-config-btn {
-  background: #27ae60;
+  background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
   color: white;
   border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 1rem;
-  transition: background 0.3s ease;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.add-config-btn:hover {
-  background: #219a52;
+.add-config-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(147, 112, 219, 0.3);
+}
+
+.add-config-btn:disabled {
+  background: linear-gradient(135deg, #d1c5f7 0%, #b8a7e8 100%);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .configs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(650px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(550px, 1fr));
   gap: 20px;
+  padding: 0 16px;
 }
 
 .config-card {
-  background: white;
-  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+  border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e1e8ed;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 20px rgba(147, 112, 219, 0.1);
+  border: 1px solid rgba(147, 112, 219, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.config-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #7b42f6 0%, #5a32a3 100%);
+  border-radius: 16px 16px 0 0;
 }
 
 .config-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 32px rgba(147, 112, 219, 0.15);
 }
 
 .config-header {
@@ -424,14 +475,16 @@ export default {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 2px solid #f0f0f0;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .config-title h3 {
-  color: #2c3e50;
-  margin: 0 0 10px 0;
-  font-size: 1.3rem;
+  color: #5a32a3;
+  margin: 0 0 8px 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .config-badges {
@@ -442,83 +495,104 @@ export default {
 
 .status-badge, .mode-badge {
   padding: 4px 12px;
-  border-radius: 20px;
+  border-radius: 16px;
   font-size: 0.8rem;
   font-weight: 600;
+  transition: all 0.3s ease;
 }
 
 .status-badge {
-  background: #ffebee;
+  background: rgba(211, 47, 47, 0.1);
   color: #d32f2f;
+  border: 1px solid rgba(211, 47, 47, 0.2);
 }
 
 .status-badge.active {
-  background: #e8f5e8;
-  color: #388e3c;
+  background: rgba(74, 36, 156, 0.1);
+  color: #5a32a3;
+  border: 1px solid rgba(147, 112, 219, 0.2);
 }
 
 .mode-badge {
-  background: #e3f2fd;
+  background: rgba(25, 118, 210, 0.1);
   color: #1976d2;
+  border: 1px solid rgba(25, 118, 210, 0.2);
 }
 
 .config-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .enable-btn, .edit-btn, .delete-btn {
-  padding: 6px 12px;
+  padding: 6px 14px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.85rem;
-  transition: background 0.3s ease;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .enable-btn {
-  background: #27ae60;
+  background: linear-gradient(135deg, #27ae60 0%, #219a52 100%);
   color: white;
 }
 
 .enable-btn:hover {
-  background: #219a52;
+  background: linear-gradient(135deg, #219a52 0%, #1e8449 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
 }
 
 .edit-btn {
-  background: #f39c12;
+  background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
   color: white;
 }
 
 .edit-btn:hover {
-  background: #e67e22;
+  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
 }
 
 .delete-btn {
-  background: #e74c3c;
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
   color: white;
 }
 
 .delete-btn:hover {
-  background: #c0392b;
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
 }
 
 .config-details {
-  margin-top: 15px;
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
 }
 
 .detail-section {
-  margin-bottom: 15px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  padding: 16px;
+  background: rgba(243, 240, 250, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(147, 112, 219, 0.1);
 }
 
 .detail-section h4 {
-  margin: 0 0 10px 0;
-  color: #2c3e50;
-  font-size: 1rem;
+  margin: 0 0 12px 0;
+  color: #5a32a3;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .detail-item {
@@ -530,12 +604,13 @@ export default {
 }
 
 .detail-item label {
-  color: #666;
+  color: #6d5d8f;
   font-weight: 500;
+  font-size: 0.85rem;
 }
 
 .detail-item span {
-  color: #2c3e50;
+  color: #5a32a3;
   font-weight: 600;
 }
 
@@ -549,11 +624,14 @@ export default {
 
 .config-meta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
-  margin-top: 15px;
-  padding-top: 15px;
-  border-top: 1px solid #e0e0e0;
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(243, 240, 250, 0.4);
+  border-radius: 10px;
+  border: 1px solid rgba(147, 112, 219, 0.1);
+  grid-column: 1 / -1;
 }
 
 .meta-item {
@@ -563,20 +641,23 @@ export default {
 }
 
 .meta-item label {
-  font-size: 0.85rem;
-  color: #666;
+  font-size: 0.75rem;
+  color: #6d5d8f;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .meta-item span {
-  color: #2c3e50;
-  font-size: 0.9rem;
+  color: #5a32a3;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .empty-state {
   text-align: center;
   padding: 80px 20px;
-  color: #666;
+  color: #6d5d8f;
 }
 
 .empty-icon {
@@ -585,24 +666,34 @@ export default {
 }
 
 .empty-state h3 {
-  color: #2c3e50;
+  color: #5a32a3;
   margin-bottom: 10px;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.empty-state p {
+  color: #6d5d8f;
+  margin-bottom: 24px;
 }
 
 .add-first-config-btn {
-  background: #3498db;
+  background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
   color: white;
   border: none;
-  padding: 15px 30px;
-  border-radius: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 1.1rem;
-  transition: background 0.3s ease;
-  margin-top: 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.2);
 }
 
 .add-first-config-btn:hover {
-  background: #2980b9;
+  background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(147, 112, 219, 0.3);
 }
 
 .config-modal {
@@ -620,12 +711,13 @@ export default {
 
 .modal-content {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 0;
   max-width: 700px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(147, 112, 219, 0.2);
 }
 
 .modal-header {
@@ -633,12 +725,15 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 20px 30px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(147, 112, 219, 0.15);
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
 }
 
 .modal-header h3 {
   margin: 0;
-  color: #2c3e50;
+  color: #5a32a3;
+  font-size: 1.3rem;
+  font-weight: 600;
 }
 
 .close-btn {
@@ -646,7 +741,15 @@ export default {
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: #666;
+  color: #6d5d8f;
+  transition: all 0.3s ease;
+  padding: 5px 10px;
+  border-radius: 8px;
+}
+
+.close-btn:hover {
+  color: #5a32a3;
+  background: rgba(147, 112, 219, 0.1);
 }
 
 .modal-body {
@@ -656,14 +759,16 @@ export default {
 .form-section {
   margin-bottom: 25px;
   padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  background: rgba(243, 240, 250, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(147, 112, 219, 0.1);
 }
 
 .form-section h4 {
   margin: 0 0 15px 0;
-  color: #2c3e50;
+  color: #5a32a3;
   font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .form-group {
@@ -680,29 +785,30 @@ export default {
   display: block;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #2c3e50;
+  color: #5a32a3;
   font-size: 0.9rem;
 }
 
 .form-input, .form-select {
   width: 100%;
   padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  border: 1px solid rgba(147, 112, 219, 0.2);
+  border-radius: 10px;
   font-size: 0.95rem;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
+  background: white;
 }
 
 .form-input:focus, .form-select:focus {
   outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  border-color: #7b42f6;
+  box-shadow: 0 0 0 3px rgba(123, 66, 246, 0.15);
 }
 
 .field-hint {
   margin-top: 5px;
   font-size: 0.8rem;
-  color: #666;
+  color: #6d5d8f;
   font-style: italic;
 }
 
@@ -712,16 +818,19 @@ export default {
   gap: 10px;
   cursor: pointer;
   user-select: none;
+  color: #5a32a3;
+  font-weight: 500;
 }
 
 .checkbox-label input[type="checkbox"] {
   width: auto;
+  accent-color: #7b42f6;
 }
 
 .checkbox-hint {
   margin-top: 5px;
   font-size: 0.8rem;
-  color: #666;
+  color: #6d5d8f;
   font-style: italic;
 }
 
@@ -737,34 +846,45 @@ export default {
 }
 
 .cancel-btn {
-  background: #95a5a6;
+  background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
   color: white;
   border: none;
   padding: 10px 20px;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 .cancel-btn:hover {
-  background: #7f8c8d;
+  background: linear-gradient(135deg, #7f8c8d 0%, #6c7a7d 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
 }
 
 .confirm-btn {
-  background: #27ae60;
+  background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
   color: white;
   border: none;
   padding: 10px 20px;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.2);
 }
 
 .confirm-btn:hover:not(:disabled) {
-  background: #219a52;
+  background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(147, 112, 219, 0.3);
 }
 
 .confirm-btn:disabled {
-  background: #bdc3c7;
+  background: linear-gradient(135deg, #d1c5f7 0%, #b8a7e8 100%);
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 @media (max-width: 768px) {
