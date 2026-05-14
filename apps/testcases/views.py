@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from django.db import models
+from django.utils import timezone
 import datetime
 from .models import TestCase, TestCaseStep, TestCaseAttachment, TestCaseComment
 from .serializers import (
@@ -21,7 +22,7 @@ class TestCaseListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = TestCasePagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['priority', 'test_type', 'project']
+    filterset_fields = ['priority', 'test_type', 'project', 'module']
     search_fields = ['title', 'description']
     ordering_fields = ['created_at', 'updated_at', 'priority']
     ordering = ['-created_at']
@@ -32,14 +33,8 @@ class TestCaseListCreateView(generics.ListCreateAPIView):
         return TestCaseListSerializer
     
     def get_queryset(self):
-        user = self.request.user
-        accessible_projects = Project.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
-        ).distinct()
-        
-        queryset = TestCase.objects.filter(
-            models.Q(project__in=accessible_projects) | models.Q(project__isnull=True)
-        ).select_related(
+        # 获取所有用例，不再按项目权限隔离
+        queryset = TestCase.objects.all().select_related(
             'author', 'assignee', 'project'
         ).prefetch_related(
             'versions'
@@ -89,14 +84,8 @@ class TestCaseDetailView(generics.RetrieveUpdateDestroyAPIView):
         return TestCaseSerializer
     
     def get_queryset(self):
-        user = self.request.user
-        accessible_projects = Project.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
-        ).distinct()
-        # 查询用户有权限访问的项目下的用例，以及 project 为 null 的用例（被删除项目的用例）
-        return TestCase.objects.filter(
-            models.Q(project__in=accessible_projects) | models.Q(project__isnull=True)
-        ).select_related(
+        # 获取所有用例，不再按项目权限隔离
+        return TestCase.objects.all().select_related(
             'author', 'assignee', 'project'
         ).prefetch_related(
             'versions', 'step_details', 'attachments', 'comments'
@@ -130,15 +119,8 @@ class TestCaseDetailView(generics.RetrieveUpdateDestroyAPIView):
 @permission_classes([permissions.IsAuthenticated])
 def testcase_modules(request):
     """获取所有测试用例的模块列表（去重）"""
-    user = request.user
-    accessible_projects = Project.objects.filter(
-        models.Q(owner=user) | models.Q(members=user)
-    ).distinct()
-    
-    # 获取用户有权限访问的所有用例的模块字段
-    modules = TestCase.objects.filter(
-        project__in=accessible_projects
-    ).exclude(
+    # 获取所有用例的模块字段（不按项目权限隔离，和全部用例列表保持一致）
+    modules = TestCase.objects.exclude(
         module__isnull=True
     ).exclude(
         module=''
@@ -152,20 +134,14 @@ def testcase_modules(request):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def testcase_statistics(request):
-    """获取主线用例统计数据"""
-    user = request.user
-    accessible_projects = Project.objects.filter(
-        models.Q(owner=user) | models.Q(members=user)
-    ).distinct()
+    """获取主线用例统计数据（不按项目权限隔离，展示所有用例）"""
+    # 获取所有用例，不再按项目权限过滤
+    queryset = TestCase.objects.all().select_related('author', 'project')
     
-    # 获取用户有权限访问的用例
-    queryset = TestCase.objects.filter(
-        models.Q(project__in=accessible_projects) | models.Q(project__isnull=True)
-    ).select_related('author', 'project')
-    
-    # 按项目统计
+    # 按项目统计（展示所有项目）
+    all_projects = Project.objects.all()
     project_stats = []
-    for project in accessible_projects:
+    for project in all_projects:
         project_cases = queryset.filter(project=project)
         project_stats.append({
             'project_id': project.id,
@@ -193,18 +169,26 @@ def testcase_statistics(request):
     }
     
     # 按作者统计（包含优先级细分和积分）
+    # 用例数量统计所有用例，积分只统计审核通过的用例
+    approved_queryset = queryset.filter(review_status='approved')
     author_stats = []
     from django.db.models import Count
     authors = queryset.values('author__username').annotate(count=Count('id')).order_by('-count')[:10]
     for author in authors:
         username = author['author__username']
         author_cases = queryset.filter(author__username=username)
+        # 用例数量（所有用例）
         critical = author_cases.filter(priority='critical').count()
         high = author_cases.filter(priority='high').count()
         medium = author_cases.filter(priority='medium').count()
         low = author_cases.filter(priority='low').count()
-        # 积分规则：5个P0/P1 +1分，10个P2/P3 +1分
-        score = (critical + high) // 5 + (medium + low) // 10
+        # 积分（只统计审核通过的用例）
+        approved_cases = approved_queryset.filter(author__username=username)
+        approved_critical = approved_cases.filter(priority='critical').count()
+        approved_high = approved_cases.filter(priority='high').count()
+        approved_medium = approved_cases.filter(priority='medium').count()
+        approved_low = approved_cases.filter(priority='low').count()
+        score = (approved_critical + approved_high) // 5 + (approved_medium + approved_low) // 10
         author_stats.append({
             'username': username,
             'count': author['count'],
@@ -213,6 +197,7 @@ def testcase_statistics(request):
             'medium': medium,
             'low': low,
             'score': score,
+            'all_approved': author_cases.filter(review_status='approved').count() == author_cases.count(),
         })
     
     # 按月份统计（近6个月）
@@ -234,9 +219,11 @@ def testcase_statistics(request):
         month_cases = queryset.filter(created_at__gte=month_start, created_at__lt=month_end)
         
         # 按作者统计该月新增用例（按优先级细分）
+        # 用例数量统计所有用例，积分只统计审核通过的用例
         author_detail_counts = {}
         for author in top_authors:
             author_cases = month_cases.filter(author__username=author)
+            # 用例数量（所有用例）
             author_detail_counts[author] = {
                 'critical': author_cases.filter(priority='critical').count(),
                 'high': author_cases.filter(priority='high').count(),
@@ -244,6 +231,15 @@ def testcase_statistics(request):
                 'low': author_cases.filter(priority='low').count(),
                 'total': author_cases.count(),
             }
+            # 积分（只统计审核通过的用例）
+            approved_cases = month_cases.filter(author__username=author, review_status='approved')
+            approved_critical = approved_cases.filter(priority='critical').count()
+            approved_high = approved_cases.filter(priority='high').count()
+            approved_medium = approved_cases.filter(priority='medium').count()
+            approved_low = approved_cases.filter(priority='low').count()
+            author_detail_counts[author]['score'] = (approved_critical + approved_high) // 5 + (approved_medium + approved_low) // 10
+            # 是否全部审核通过
+            author_detail_counts[author]['all_approved'] = author_cases.filter(review_status='approved').count() == author_cases.count()
         
         monthly_stats.append({
             'month': month_start.strftime('%Y-%m'),
@@ -267,7 +263,7 @@ def testcase_statistics(request):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def author_test_cases(request):
-    """获取指定作者的用例列表"""
+    """获取指定作者的用例列表（不按项目权限隔离）"""
     username = request.GET.get('username')
     priority = request.GET.get('priority', '')
     month = request.GET.get('month', '')
@@ -275,13 +271,8 @@ def author_test_cases(request):
     if not username:
         return Response({'error': 'username参数必填'}, status=400)
     
-    user = request.user
-    accessible_projects = Project.objects.filter(
-        models.Q(owner=user) | models.Q(members=user)
-    ).distinct()
-    
+    # 获取该作者的所有用例，不再按项目权限过滤
     queryset = TestCase.objects.filter(
-        models.Q(project__in=accessible_projects) | models.Q(project__isnull=True),
         author__username=username
     ).select_related('author', 'project')
     
@@ -320,12 +311,18 @@ def author_test_cases(request):
             while parent:
                 directory = f"{parent.name} / {directory}"
                 parent = parent.parent
+            # 加上所属端名称
+            if case.project:
+                directory = f"{case.project.name} / {directory}"
+        elif case.project:
+            directory = case.project.name
         
         cases.append({
             'id': case.id,
             'title': case.title,
             'priority': case.priority,
             'status': case.status,
+            'review_status': case.review_status,
             'directory': directory or '未分配',
             'menu_id': case.menu_id,
             'created_at': case.created_at.strftime('%Y-%m-%d %H:%M') if case.created_at else None,
@@ -351,8 +348,41 @@ def author_test_cases(request):
     # 按用例数量降序排列
     grouped_list.sort(key=lambda x: x['count'], reverse=True)
     
+    # 审核结果统计
+    review_stats = {
+        'approved': queryset.filter(review_status='approved').count(),
+        'rejected': queryset.filter(review_status='rejected').count(),
+        'pending': queryset.filter(review_status__in=['pending', 'none']).count(),
+    }
+    
     return Response({
         'total': queryset.count(),
         'grouped': grouped_list,
-        'cases': cases  # 保留平铺数据备用
+        'cases': cases,  # 保留平铺数据备用
+        'review_stats': review_stats,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def batch_update_review_status(request):
+    """批量修改用例审核结果"""
+    ids = request.data.get('ids', [])
+    review_status = request.data.get('review_status')
+
+    if not ids:
+        return Response({'error': 'ids参数必填'}, status=400)
+    if review_status not in ['pending', 'approved', 'rejected', 'none']:
+        return Response({'error': 'review_status参数无效'}, status=400)
+
+    updated = TestCase.objects.filter(id__in=ids).update(
+        review_status=review_status,
+        reviewer=request.user,
+        reviewed_at=timezone.now()
+    )
+
+    return Response({
+        'success': True,
+        'updated_count': updated,
+        'review_status': review_status
     })

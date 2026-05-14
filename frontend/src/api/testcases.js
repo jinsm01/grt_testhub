@@ -71,3 +71,12 @@ export function getAuthorTestCases(params) {
     params
   })
 }
+
+// 批量修改审核结果
+export function batchUpdateReviewStatus(data) {
+  return request({
+    url: '/testcases/batch-review/',
+    method: 'post',
+    data
+  })
+}

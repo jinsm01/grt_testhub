@@ -27,8 +27,8 @@ export default defineConfig({
   build: {
     target: 'es2022',
   },
-  server: {
-    port: 3000,
+    server: {
+    port: 5173,
     host: '0.0.0.0',
     headers: {
       'Cache-Control': 'no-cache, no-store, must-revalidate',

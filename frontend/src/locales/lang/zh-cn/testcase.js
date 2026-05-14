@@ -53,6 +53,15 @@ export default {
     text: '文本模式',
     step: '步骤模式',
 
+    // Review status
+    reviewStatus: '审核结果',
+    reviewComment: '审核意见',
+    reviewer: '审核人',
+    reviewPending: '待审核',
+    reviewApproved: '已通过',
+    reviewRejected: '已拒绝',
+    reviewNone: '未审核',
+
     // Placeholders
     searchPlaceholder: '搜索用例名称',
     caseTitlePlaceholder: '请输入测试用例标题',

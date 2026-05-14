@@ -62,6 +62,16 @@
                 <span class="info-value">{{ formatDate(testcase.created_at) }}</span>
               </div>
             </el-col>
+            <el-col :span="4">
+              <div class="info-item">
+                <span class="info-label">审核结果</span>
+                <span class="info-value">
+                  <el-tag :type="getReviewStatusType(testcase.review_status)" size="small">
+                    {{ testcase.review_status_display || '未审核' }}
+                  </el-tag>
+                </span>
+              </div>
+            </el-col>
           </el-row>
 
           <div class="info-item" v-if="testcase.versions && testcase.versions.length > 0">
@@ -150,7 +160,11 @@ const testcase = ref({
   versions: [],
   author: null,
   created_at: null,
-  category_path: ''
+  category_path: '',
+  review_status: 'none',
+  review_status_display: '未审核',
+  review_comment: '',
+  reviewer: null
 })
 
 const priorityType = (priority) => {
@@ -161,6 +175,16 @@ const priorityType = (priority) => {
     'critical': 'danger'
   }
   return types[priority] || 'info'
+}
+
+const getReviewStatusType = (status) => {
+  const types = {
+    'none': 'info',
+    'pending': 'warning',
+    'approved': 'success',
+    'rejected': 'danger'
+  }
+  return types[status] || 'info'
 }
 
 const priorityLabel = (priority) => {

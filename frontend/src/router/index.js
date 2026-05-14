@@ -39,6 +39,7 @@ import UiAIExecutionRecords from '@/views/ui-automation/ai/AIExecutionRecords.vu
 import UiAISuiteList from '@/views/ui-automation/ai/AISuiteList.vue'
 import UiXMindConverter from '@/views/ui-automation/ai/XMindConverter.vue'
 import TestCaseStatistics from '@/views/testcases/TestCaseStatistics.vue'
+import AuthorTestCaseDetail from '@/views/testcases/AuthorTestCaseDetail.vue'
 
 /** @type {import('vue-router').RouteRecordRaw[]} */
 const routes = [
@@ -203,6 +204,12 @@ const routes = [
         path: 'testcase-statistics',
         name: 'TestCaseStatistics',
         component: TestCaseStatistics
+      },
+      {
+        path: 'testcase-statistics/author/:author',
+        name: 'AuthorTestCaseDetail',
+        component: AuthorTestCaseDetail,
+        props: true
       },
       {
         path: 'bug-analysis',

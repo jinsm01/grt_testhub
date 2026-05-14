@@ -147,6 +147,13 @@
             </template>
           </el-table-column>
           <el-table-column prop="username" label="作者" min-width="120" />
+          <el-table-column label="是否全部审核通过" width="150" align="center">
+            <template #default="{ row }">
+              <span v-if="row.count === 0">-</span>
+              <el-tag v-else-if="row.all_approved" type="success" size="small">是</el-tag>
+              <el-tag v-else type="warning" size="small">否</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column label="P0" width="70" align="center" title="紧急">
             <template #default="{ row }">
               <span class="priority-critical">{{ row.critical || 0 }}</span>
@@ -179,106 +186,24 @@
           </el-table-column>
           <el-table-column label="操作" width="90" align="center" fixed="right">
             <template #default="{ row }">
-              <el-button type="primary" link @click="showDetail(row)">查看详情</el-button>
+              <el-button type="primary" link @click="goToAuthorDetail(row)">查看详情</el-button>
             </template>
           </el-table-column>
         </el-table>
       </el-card>
     </div>
 
-    <!-- 详情弹窗 -->
-    <el-dialog
-      v-model="detailDialogVisible"
-      :title="`用例详情 - ${currentAuthor}`"
-      width="900px"
-      destroy-on-close
-    >
-      <div class="detail-filters">
-        <el-select v-model="detailMonth" placeholder="全部时间" clearable size="default" class="month-select">
-          <el-option label="全部时间" value="" />
-          <el-option 
-            v-for="item in stats.monthly_stats" 
-            :key="item.month" 
-            :label="item.month" 
-            :value="item.month" 
-          />
-        </el-select>
-        <el-radio-group v-model="detailPriority" size="default">
-          <el-radio-button label="">全部</el-radio-button>
-          <el-radio-button label="critical">P0</el-radio-button>
-          <el-radio-button label="high">P1</el-radio-button>
-          <el-radio-button label="medium">P2</el-radio-button>
-          <el-radio-button label="low">P3</el-radio-button>
-        </el-radio-group>
-      </div>
-      <el-table 
-        :data="detailGrouped" 
-        style="width: 100%" 
-        v-loading="detailLoading" 
-        max-height="400"
-        row-key="directory"
-        default-expand-all
-      >
-        <el-table-column type="expand" width="50">
-          <template #default="{ row }">
-            <div class="expand-content">
-              <el-table 
-                :data="row.cases" 
-                style="width: 100%"
-                :show-header="true"
-                size="small"
-              >
-                <el-table-column prop="title" label="用例标题" min-width="250">
-                  <template #default="{ row: caseRow }">
-                    <span class="case-title-link" @click="goToDetail(caseRow)">
-                      {{ caseRow.title }}
-                    </span>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="priority" label="优先级" width="100" align="center">
-                  <template #default="{ row: caseRow }">
-                    <el-tag :type="getPriorityType(caseRow.priority)" size="small">
-                      {{ getPriorityLabel(caseRow.priority) }}
-                    </el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="status" label="状态" width="100" align="center">
-                  <template #default="{ row: caseRow }">
-                    <el-tag :type="getStatusType(caseRow.status)" size="small">
-                      {{ getStatusLabel(caseRow.status) }}
-                    </el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="created_at" label="创建时间" width="160" align="center" />
-              </el-table>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column prop="directory" label="归属目录" min-width="200">
-          <template #default="{ row }">
-            <div class="directory-cell">
-              <span class="directory-icon">
-                <el-icon><Folder /></el-icon>
-              </span>
-              <span class="directory-name">{{ row.directory }}</span>
-              <el-tag size="small" type="info">{{ row.count }}</el-tag>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div class="detail-summary">
-        共 {{ detailGrouped.length }} 个目录，{{ detailTotal }} 条用例
-      </div>
-    </el-dialog>
+
   </div>
+
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Odometer, PieChart, DataAnalysis, TrendCharts, Folder, User, FolderOpened } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { getTestCaseStatistics, getAuthorTestCases } from '@/api/testcases'
+import { getTestCaseStatistics } from '@/api/testcases'
 import * as echarts from 'echarts'
 
 const loading = ref(false)
@@ -293,15 +218,6 @@ const stats = ref({
   monthly_stats: []
 })
 
-// 详情弹窗
-const detailDialogVisible = ref(false)
-const currentAuthor = ref('')
-const detailMonth = ref('')
-const detailPriority = ref('')
-const detailGrouped = ref([])
-const detailTotal = ref(0)
-const detailLoading = ref(false)
-
 // 根据月份筛选作者统计数据
 const filteredAuthorStats = computed(() => {
   if (!selectedMonth.value) {
@@ -314,7 +230,8 @@ const filteredAuthorStats = computed(() => {
       high: item.high || 0,
       medium: item.medium || 0,
       low: item.low || 0,
-      score: item.score || Math.floor((item.critical + item.high) / 5) + Math.floor((item.medium + item.low) / 10)
+      score: item.score ?? (Math.floor((item.critical + item.high) / 5) + Math.floor((item.medium + item.low) / 10)),
+      all_approved: item.all_approved || false
     })).sort((a, b) => b.count - a.count)
   }
   
@@ -333,7 +250,8 @@ const filteredAuthorStats = computed(() => {
       high: detail.high,
       medium: detail.medium,
       low: detail.low,
-      score: Math.floor((detail.critical + detail.high) / 5) + Math.floor((detail.medium + detail.low) / 10)
+      score: detail.score || 0,
+      all_approved: detail.all_approved || false
     }))
     .sort((a, b) => b.count - a.count)
 })
@@ -379,50 +297,18 @@ async function loadStatistics() {
   }
 }
 
-// 查看详情
-async function showDetail(row) {
-  currentAuthor.value = row.username
-  detailMonth.value = selectedMonth.value  // 默认继承当前页面月份筛选
-  detailPriority.value = ''
-  detailDialogVisible.value = true
-  await loadDetail()
+// 跳转到作者用例详情页
+function goToAuthorDetail(row) {
+  const query = {}
+  if (selectedMonth.value) {
+    query.month = selectedMonth.value
+  }
+  router.push({
+    name: 'AuthorTestCaseDetail',
+    params: { author: row.username },
+    query
+  })
 }
-
-// 加载详情数据
-async function loadDetail() {
-  detailLoading.value = true
-  try {
-    const params = { username: currentAuthor.value }
-    if (detailMonth.value) {
-      params.month = detailMonth.value
-    }
-    if (detailPriority.value) {
-      params.priority = detailPriority.value
-    }
-    const res = await getAuthorTestCases(params)
-    detailGrouped.value = res.data.grouped || []
-    detailTotal.value = res.data.total || 0
-  } catch (error) {
-    console.error('加载详情失败:', error)
-    ElMessage.error('加载用例详情失败')
-  } finally {
-    detailLoading.value = false
-  }
-}
-
-// 监听月份筛选变化
-watch(detailMonth, () => {
-  if (detailDialogVisible.value) {
-    loadDetail()
-  }
-})
-
-// 监听优先级筛选变化
-watch(detailPriority, () => {
-  if (detailDialogVisible.value) {
-    loadDetail()
-  }
-})
 
 // 获取优先级标签
 function getPriorityLabel(priority) {
@@ -699,6 +585,10 @@ onMounted(() => {
   color: #7c3aed;
   font-weight: 700;
   font-size: 16px;
+}
+
+.no-rejected {
+  color: #c0c4cc;
 }
 
 .rank-badge {
