@@ -584,13 +584,13 @@
               </div>
               <span class="data-badge">{{ activeResponseTab.toUpperCase() }}</span>
             </div>
-            <div class="code-container" v-if="activeResponseTab !== 'assertions'">
+            <div class="code-container" v-if="activeResponseTab === 'body' || activeResponseTab === 'headers' || activeResponseTab === 'json'">
               <json-tree-viewer 
                 :data="getResponseDataRaw()" 
                 :root-path="getJsonPathRoot()"
               />
             </div>
-            <div class="assertions-container" v-else>
+            <div class="assertions-container" v-else-if="activeResponseTab === 'assertions'">
               <div class="assertion-list">
                 <div v-for="(item, idx) in currentRequestDetail.assertions_results" :key="idx" class="assertion-item" :class="item.passed ? 'passed' : 'failed'">
                   <el-icon><CircleCheck v-if="item.passed" /><CircleClose v-else /></el-icon>
@@ -614,19 +614,13 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- 变量提取 -->
-        <div v-if="currentRequestDetail.variable_results && Object.keys(currentRequestDetail.variable_results).length > 0" class="variables-section">
-          <div class="section-title-compact">
-            <el-icon><Collection /></el-icon>
-            <span>变量提取</span>
-          </div>
-          <div class="variables-grid">
-            <div v-for="(value, key) in currentRequestDetail.variable_results" :key="key" class="variable-item">
-              <span class="var-key">{{ key }}</span>
-              <span class="var-value">{{ value }}</span>
+            <div class="variables-container" v-else-if="activeResponseTab === 'variables'">
+              <div class="variables-grid">
+                <div v-for="(value, key) in currentRequestDetail.extracted_variables" :key="key" class="variable-item">
+                  <span class="var-key">{{ key }}</span>
+                  <span class="var-value">{{ value }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1346,7 +1340,7 @@ const activeDataTab = ref('request')
 const activeRequestTab = ref('body')
 const activeResponseTab = ref('body')
 
-// 响应 Tab 列表（动态包含断言 Tab）
+// 响应 Tab 列表（动态包含断言 Tab 和变量提取 Tab）
 const responseTabs = computed(() => {
   const tabs = [
     { key: 'body', label: 'BODY' },
@@ -1355,6 +1349,9 @@ const responseTabs = computed(() => {
   ]
   if (currentRequestDetail.value?.assertions_results?.length > 0) {
     tabs.push({ key: 'assertions', label: `断言(${currentRequestDetail.value.assertions_results.length})` })
+  }
+  if (currentRequestDetail.value?.extracted_variables && Object.keys(currentRequestDetail.value.extracted_variables).length > 0) {
+    tabs.push({ key: 'variables', label: '变量提取' })
   }
   return tabs
 })
@@ -4054,114 +4051,398 @@ onMounted(async () => {
   }
 }
 
+// ==================== 添加步骤抽屉现代化样式 ====================
+
+// 抽屉整体样式优化
+:deep(.add-step-drawer) {
+  .el-drawer__header {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%);
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(123, 66, 246, 0.1);
+    margin: 0;
+
+    .el-drawer__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a2e;
+      letter-spacing: -0.3px;
+    }
+
+    .el-drawer__close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      color: #64748b;
+      font-size: 18px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        color: #7b42f6;
+        background: rgba(123, 66, 246, 0.08);
+        transform: rotate(90deg);
+      }
+    }
+  }
+
+  .el-drawer__body {
+    padding: 0;
+    background: #f8fafc;
+  }
+
+  .el-drawer__footer {
+    padding: 16px 24px;
+    background: #ffffff;
+    border-top: 1px solid rgba(123, 66, 246, 0.08);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+
+    .el-button {
+      margin-left: 0 !important;
+      padding: 10px 24px;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:not(.el-button--primary) {
+        color: #64748b;
+        border-color: #e2e8f0;
+
+        &:hover {
+          color: #7b42f6;
+          border-color: #7b42f6;
+          background: rgba(123, 66, 246, 0.04);
+        }
+      }
+
+      &.el-button--primary {
+        background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+        border: none;
+        box-shadow: 0 4px 14px rgba(123, 66, 246, 0.35);
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 20px rgba(123, 66, 246, 0.45);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+      }
+    }
+  }
+}
+
 .add-request-content {
-  height: calc(100vh - 180px);
-  overflow-y: auto;
+  height: calc(100vh - 200px);
+  overflow: hidden;
 
   .add-step-tabs {
     height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    // Tab 头部样式优化
+    .el-tabs__header {
+      margin: 0;
+      background: #ffffff;
+      border-bottom: 1px solid rgba(123, 66, 246, 0.08);
+      padding: 0 24px;
+
+      .el-tabs__nav-wrap::after {
+        display: none;
+      }
+
+      .el-tabs__nav {
+        gap: 8px;
+      }
+
+      .el-tabs__item {
+        height: 48px;
+        line-height: 48px;
+        padding: 0 20px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #64748b;
+        border-radius: 8px 8px 0 0;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+        &:hover {
+          color: #7b42f6;
+        }
+
+        &.is-active {
+          color: #7b42f6;
+          font-weight: 600;
+          background: linear-gradient(180deg, rgba(123, 66, 246, 0.06) 0%, transparent 100%);
+        }
+
+        &:focus.is-active.is-focus:not(:active) {
+          box-shadow: none;
+        }
+      }
+
+      .el-tabs__active-bar {
+        height: 3px;
+        background: linear-gradient(90deg, #7b42f6 0%, #a855f7 100%);
+        border-radius: 3px 3px 0 0;
+      }
+    }
 
     .el-tabs__content {
-      height: calc(100% - 55px);
+      flex: 1;
       overflow-y: auto;
+      padding: 0;
+
+      .el-tab-pane {
+        height: 100%;
+        overflow-y: auto;
+      }
     }
+  }
+
+  // 树形选择器容器
+  .request-selector,
+  .suite-selector {
+    height: 100%;
   }
 
   .suite-selector {
     .empty-suites {
-      padding: 40px 0;
+      padding: 60px 0;
+
+      :deep(.el-empty__image) {
+        filter: grayscale(0.3);
+        opacity: 0.8;
+      }
+
+      :deep(.el-empty__description) {
+        color: #94a3b8;
+        font-size: 14px;
+      }
     }
 
     .suite-tree-node {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       flex: 1;
-      padding: 4px 0;
+      padding: 6px 8px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
 
       .el-icon {
         color: #7b42f6;
+        font-size: 16px;
       }
 
       .suite-request-count {
-        color: #909399;
+        color: #94a3b8;
         font-size: 12px;
         margin-left: auto;
+        background: #f1f5f9;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-weight: 500;
       }
 
       .node-name {
         flex: 1;
+        font-size: 14px;
+        color: #334155;
       }
 
       .group-name {
-        color: #606266;
-        font-weight: 500;
+        color: #475569;
+        font-weight: 600;
       }
 
       .request-name {
-        color: #303133;
+        color: #1e293b;
+        font-weight: 500;
       }
 
       .group-badge {
-        color: #909399;
-        font-size: 12px;
-        background: #f4f4f5;
-        padding: 2px 8px;
-        border-radius: 10px;
+        color: #7b42f6;
+        font-size: 11px;
+        background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-weight: 600;
       }
 
       .method-tag {
         font-size: 10px;
-        padding: 2px 6px;
-        border-radius: 4px;
+        padding: 3px 8px;
+        border-radius: 6px;
         color: white;
-        font-weight: bold;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
-        &.get { background: linear-gradient(135deg, #67c23a 0%, #52c41a 100%); }
-        &.post { background: linear-gradient(135deg, #409eff 0%, #7b42f6 100%); }
-        &.put { background: linear-gradient(135deg, #e6a23c 0%, #f5a623 100%); }
-        &.delete { background: linear-gradient(135deg, #f56c6c 0%, #ff4d4f 100%); }
-        &.patch { background: linear-gradient(135deg, #722ed1 0%, #531dab 100%); }
+        &.get { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+        &.post { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        &.put { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        &.delete { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        &.patch { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
       }
 
       &.is-group {
         .el-icon {
-          color: #e6a23c;
+          color: #f59e0b;
         }
       }
 
       &.is-request {
-        padding-left: 8px;
+        padding-left: 12px;
+      }
+
+      &:hover {
+        background: rgba(123, 66, 246, 0.04);
       }
     }
   }
 }
 
+// 请求树节点样式
 .request-tree-node {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex: 1;
-  padding: 4px 0;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 
   .el-icon {
     color: #7b42f6;
+    font-size: 16px;
+  }
+
+  span:not(.method-tag) {
+    font-size: 14px;
+    color: #334155;
+    font-weight: 500;
+  }
+
+  &:hover {
+    background: rgba(123, 66, 246, 0.04);
   }
 }
 
+// 方法标签样式
 .method-tag {
   font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
   color: white;
-  font-weight: bold;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-left: auto;
 
-  &.get { background: linear-gradient(135deg, #67c23a 0%, #52c41a 100%); }
-  &.post { background: linear-gradient(135deg, #409eff 0%, #7b42f6 100%); }
-  &.put { background: linear-gradient(135deg, #e6a23c 0%, #fa8c16 100%); }
-  &.delete { background: linear-gradient(135deg, #f56c6c 0%, #f5222d 100%); }
-  &.patch { background: linear-gradient(135deg, #909399 0%, #595959 100%); }
+  &.get { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+  &.post { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+  &.put { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+  &.delete { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+  &.patch { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+}
+
+// 树形组件样式优化
+:deep(.add-step-drawer) {
+  .el-tree {
+    background: transparent;
+
+    .el-tree-node {
+      margin: 2px 0;
+
+      &__content {
+        height: 40px;
+        border-radius: 8px;
+        padding: 0 8px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: rgba(123, 66, 246, 0.06);
+        }
+
+        .el-checkbox {
+          margin-right: 8px;
+
+          &__inner {
+            width: 18px;
+            height: 18px;
+            border-radius: 5px;
+            border-color: #d1d5db;
+            transition: all 0.2s ease;
+
+            &:hover {
+              border-color: #7b42f6;
+            }
+
+            &::after {
+              border-width: 2px;
+              border-left: 0;
+              border-top: 0;
+              width: 4px;
+              height: 8px;
+              left: 50%;
+              top: 45%;
+              transform: translate(-50%, -50%) rotate(45deg);
+            }
+          }
+
+          &__input.is-checked .el-checkbox__inner {
+            background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+            border-color: #7b42f6;
+          }
+
+          &__input.is-indeterminate .el-checkbox__inner {
+            background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+            border-color: #7b42f6;
+
+            &::before {
+              top: 8px;
+            }
+          }
+        }
+
+        .el-tree-node__expand-icon {
+          color: #94a3b8;
+          font-size: 14px;
+          transition: all 0.2s ease;
+
+          &.expanded {
+            transform: rotate(90deg);
+            color: #7b42f6;
+          }
+
+          &:hover {
+            color: #7b42f6;
+          }
+        }
+      }
+
+      &.is-current {
+        > .el-tree-node__content {
+          background: rgba(123, 66, 246, 0.1);
+
+          .request-tree-node span:not(.method-tag),
+          .suite-tree-node .node-name {
+            color: #7b42f6;
+            font-weight: 600;
+          }
+        }
+      }
+    }
+
+    // 子节点缩进优化
+    .el-tree-node__children {
+      padding-left: 12px;
+    }
+  }
 }
 
 .execution-detail {
@@ -4674,7 +4955,8 @@ onMounted(async () => {
   }
 
   /* 变量区域 - 简洁列表设计 */
-  .variables-section {
+  .variables-section,
+  .variables-container {
     .section-title-compact {
       display: flex;
       align-items: center;
@@ -4715,6 +4997,47 @@ onMounted(async () => {
           color: #333;
           word-break: break-all;
           font-family: 'Courier New', Consolas, Monaco, monospace;
+        }
+      }
+    }
+  }
+
+  /* 变量提取容器 - Tab 内使用 */
+  .variables-container {
+    padding: 0;
+    background: transparent;
+    height: 100%;
+    overflow-y: auto;
+
+    .variables-grid {
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+
+      .variable-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #f0f0f0;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .var-key {
+          font-size: 13px;
+          color: #7b42f6;
+          font-weight: 600;
+        }
+
+        .var-value {
+          font-size: 13px;
+          color: #333;
+          word-break: break-all;
+          font-family: 'Courier New', Consolas, Monaco, monospace;
+          line-height: 1.5;
         }
       }
     }

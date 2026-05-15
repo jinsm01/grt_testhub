@@ -264,7 +264,7 @@ export default {
     selectSuiteHint: '请选择一个测试场景查看详情',
     selectSuiteTip: '请选择一个测试场景查看详情',
     noDescription: '暂无描述',
-    noEnvironment: '未配置环境',
+    noEnvironment: '未配环境',
     creator: '创建者',
     createdAt: '创建时间',
     createTime: '创建时间',

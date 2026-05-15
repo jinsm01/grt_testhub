@@ -14,7 +14,7 @@ from django.utils import timezone
 
 from .models import (
     AutomationScenario, ScenarioStep, ScenarioExecution,
-    ApiProject, ApiCollection
+    ApiProject, ApiCollection, ApiRequest
 )
 from .scenario_engine import ScenarioExecutor
 from .apifox_importer import ApifoxCliImporter
@@ -583,6 +583,8 @@ def apifox_import_v2_validate(request):
     """
     try:
         file_obj = request.FILES.get('file')
+        project_id = request.data.get('project_id')
+
         if not file_obj:
             return Response({'error': '请上传文件'}, status=400)
 
@@ -595,27 +597,57 @@ def apifox_import_v2_validate(request):
         collection_name = info.get('name', '未命名集合')
         item_count = len(data.get('item', []))
 
-        # 统计步骤
-        def count_steps(items):
+        # 处理 wrapper 结构：如果 items[0] 有嵌套的 item 数组，提取它
+        items = data.get('item', [])
+        if items and isinstance(items[0], dict) and 'item' in items[0]:
+            items = items[0].get('item', [])
+
+        # 统计请求数量（只统计包含 request 字段的项，不包括分组）
+        def count_requests(items):
             count = 0
             for item in items:
-                count += 1
+                # 如果 item 包含 request 字段，说明是一个请求
+                if 'request' in item:
+                    count += 1
+                # 如果有嵌套的 item，递归统计
                 if 'item' in item:
-                    count += count_steps(item['item'])
+                    count += count_requests(item['item'])
             return count
 
-        total_steps = count_steps(data.get('item', []))
+        total_requests = count_requests(items)
 
         # 提取变量
         variables = [v.get('key', '') for v in data.get('variable', [])]
+
+        # 检查是否已存在同名合集
+        existing_collection = None
+        if project_id:
+            existing = ApiCollection.objects.filter(
+                project_id=project_id,
+                name=collection_name,
+                is_deleted=False
+            ).first()
+            if existing:
+                # 统计现有合集中的接口数量
+                existing_request_count = ApiRequest.objects.filter(
+                    collection=existing,
+                    is_deleted=False
+                ).count()
+                existing_collection = {
+                    'id': existing.id,
+                    'name': existing.name,
+                    'request_count': existing_request_count,
+                    'created_at': existing.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                }
 
         return Response({
             'valid': True,
             'collection_name': collection_name,
             'description': info.get('description', ''),
-            'total_steps': total_steps,
+            'total_requests': total_requests,
             'variables': variables,
-            'message': f'验证通过，共 {total_steps} 个步骤，{len(variables)} 个变量'
+            'existing_collection': existing_collection,
+            'message': f'验证通过，共 {total_requests} 个请求，{len(variables)} 个变量'
         })
 
     except json.JSONDecodeError as e:
@@ -666,7 +698,8 @@ def apifox_import_v2_execute(request):
             'suite_id': result.get('suite_id'),
             'suite_name': result.get('suite_name'),
             'stats': result.get('stats', {}),
-            'warnings': result.get('warnings', [])
+            'warnings': result.get('warnings', []),
+            'imported_requests': result.get('imported_requests', [])
         })
 
     except Exception as e:
