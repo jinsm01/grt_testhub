@@ -42,6 +42,12 @@
           </span>
           <span class="url">{{ request.override_url || request.request.url }}</span>
         </div>
+        
+        <!-- 等待时间步骤详情 -->
+        <div class="request-detail wait-detail" v-else-if="request.step_type === 'wait'">
+          <el-icon><Timer /></el-icon>
+          <span>等待 {{ request.control_config?.wait_time || 1 }} 秒</span>
+        </div>
       </div>
 
       <div class="request-meta">
@@ -108,7 +114,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { ArrowRight, ArrowDown, Edit, Delete, Check, Rank } from '@element-plus/icons-vue'
+import { ArrowRight, ArrowDown, Edit, Delete, Check, Rank, Timer } from '@element-plus/icons-vue'
 import draggable from 'vuedraggable'
 
 const props = defineProps({
@@ -211,7 +217,12 @@ const handleChildOrderChange = (data) => {
 const getTypeText = (type) => {
   const typeMap = {
     'request': '接口',
-    'group': '分组'
+    'group': '分组',
+    'wait': '等待',
+    'script': '脚本',
+    'condition': '条件',
+    'loop': '循环',
+    'scenario_ref': '引用'
   }
   return typeMap[type] || '接口'
 }
@@ -380,6 +391,31 @@ const getMethodClass = (method) => {
   color: #52c41a;
 }
 
+.request-type-badge.wait {
+  background: rgba(250, 173, 20, 0.1);
+  color: #faad14;
+}
+
+.request-type-badge.script {
+  background: rgba(114, 46, 209, 0.1);
+  color: #722ed1;
+}
+
+.request-type-badge.condition {
+  background: rgba(23, 125, 220, 0.1);
+  color: #177ddc;
+}
+
+.request-type-badge.loop {
+  background: rgba(19, 194, 194, 0.1);
+  color: #13c2c2;
+}
+
+.request-type-badge.scenario_ref {
+  background: rgba(235, 47, 150, 0.1);
+  color: #eb2f96;
+}
+
 .request-name {
   font-weight: 500;
   color: #262626;
@@ -444,6 +480,16 @@ const getMethodClass = (method) => {
   min-width: 0;
   color: #595959;
   font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+}
+
+/* 等待时间步骤详情样式 */
+.wait-detail {
+  color: #faad14;
+  font-weight: 500;
+}
+
+.wait-detail .el-icon {
+  font-size: 14px;
 }
 
 .request-meta {

@@ -1410,16 +1410,17 @@ window.addEventListener('resize', () => {
 }
 
 .count-badge {
-  display: inline-block;
-  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 24px;
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
   background: #e6f7ff;
   color: #1890ff;
   white-space: nowrap;
-  min-width: 24px;
-  text-align: center;
 
   &.bug-count {
     background: #fff7e6;
@@ -1871,7 +1872,8 @@ window.addEventListener('resize', () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 16px;
+  width: 54px;
+  height: 24px;
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;

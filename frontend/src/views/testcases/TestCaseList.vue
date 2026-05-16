@@ -42,15 +42,15 @@
         <el-icon><Delete /></el-icon>
         <span>{{ $t('testcase.batchDelete') }}</span>
       </el-button>
-      <el-button type="success" class="action-btn" @click="handleImport">
+      <el-button type="success" class="action-btn header-btn" @click="handleImport">
         <el-icon><Upload /></el-icon>
         <span>{{ $t('testcase.import') }}</span>
       </el-button>
-      <el-button type="warning" class="action-btn" @click="exportToExcel">
+      <el-button type="warning" class="action-btn header-btn" @click="exportToExcel">
         <el-icon><Download /></el-icon>
         <span>{{ $t('testcase.export') }}</span>
       </el-button>
-      <el-button type="primary" class="action-btn edit-btn" @click="$router.push('/ai-generation/testcases/create')">
+      <el-button type="primary" class="action-btn edit-btn header-btn" @click="$router.push('/ai-generation/testcases/create')">
         <el-icon><Plus /></el-icon>
         <span>{{ $t('testcase.newCase') }}</span>
       </el-button>
@@ -75,7 +75,7 @@
           </template>
         </el-table-column>
         <!-- 用例名称 -->
-        <el-table-column :label="$t('testcase.caseTitle')" min-width="400" show-overflow-tooltip header-align="center" align="left">
+        <el-table-column :label="$t('testcase.caseTitle')" min-width="300" show-overflow-tooltip header-align="center" align="left">
           <template #default="{ row }">
             <span class="case-name clickable" @click="goToTestCase(row.id)">
               {{ row.title }}
@@ -83,7 +83,7 @@
           </template>
         </el-table-column>
         <!-- 模块 -->
-        <el-table-column :label="$t('testcase.moduleLabel')" width="130" header-align="center" align="center" class-name="module-cell">
+        <el-table-column :label="$t('testcase.moduleLabel')" width="160" header-align="center" align="center" class-name="module-cell">
           <template #default="{ row }">
             <span class="module-content">{{ row.module || '-' }}</span>
           </template>
@@ -103,10 +103,18 @@
             <span v-else class="text-gray">-</span>
           </template>
         </el-table-column>
-        <!-- 创建时间 -->
-        <el-table-column :label="$t('testcase.createdAt')" width="135" header-align="center" align="center">
+        <!-- 更新时间 -->
+        <el-table-column label="更新时间" width="180" header-align="center" align="center" show-overflow-tooltip>
           <template #default="{ row }">
-            <span class="time-text">{{ formatDate(row.created_at) }}</span>
+            <span class="time-text">{{ formatDateTime(row.updated_at) }}</span>
+          </template>
+        </el-table-column>
+        <!-- 审核结果 -->
+        <el-table-column label="审核结果" width="120" header-align="center" align="center">
+          <template #default="{ row }">
+            <span class="review-badge" :class="row.review_status || 'none'">
+              {{ getReviewStatusLabel(row.review_status) }}
+            </span>
           </template>
         </el-table-column>
         <!-- 操作 -->
@@ -879,6 +887,23 @@ const formatDate = (dateString) => {
   return dayjs(dateString).format('YYYY-MM-DD')
 }
 
+const formatDateTime = (dateString) => {
+  if (!dateString) return '-'
+  return dayjs(dateString).format('YYYY-MM-DD HH:mm:ss')
+}
+
+// 获取审核结果标签
+const getReviewStatusLabel = (status) => {
+  const map = { none: '未审核', pending: '待审核', approved: '已通过', rejected: '已拒绝' }
+  return map[status] || status || '未审核'
+}
+
+// 获取审核结果类型（用于 el-tag）
+const getReviewStatusType = (status) => {
+  const map = { none: 'info', pending: 'warning', approved: 'success', rejected: 'danger' }
+  return map[status] || 'info'
+}
+
 const getVersionsTooltip = (versions) => {
   return versions.map(v => v.name + (v.is_baseline ? ' (' + t('testcase.baseline') + ')' : '')).join('、')
 }
@@ -1315,27 +1340,32 @@ onActivated(() => {
       background-color: #f8f7ff !important;
     }
 
-    // 高亮行样式
+    // 高亮行样式 - 紫色风格
     :deep(.highlighted-row) {
-      background-color: #ecf5ff !important;
+      background-color: #f5f3ff !important;
       animation: highlight-pulse 2s ease-out;
-      
+
       td {
-        background-color: #ecf5ff !important;
-        color: #409eff;
+        background-color: #f5f3ff !important;
+        color: #7b42f6;
         font-weight: 500;
+      }
+
+      // 时间文本保持正常字体，避免被截断
+      .time-text {
+        font-weight: normal;
       }
     }
 
     @keyframes highlight-pulse {
       0% {
-        background-color: #d9ecff;
+        background-color: #ede9fe;
       }
       50% {
-        background-color: #b3d8ff;
+        background-color: #ddd6fe;
       }
       100% {
-        background-color: #ecf5ff;
+        background-color: #f5f3ff;
       }
     }
 
@@ -1408,29 +1438,67 @@ onActivated(() => {
     white-space: nowrap;
     min-width: 36px;
 
-    // 低优先级 - 绿色
+    // P3 低优先级 - 绿色
     &.low {
       background: #f6ffed;
       color: #52c41a;
     }
 
-    // 中优先级 - 橙色
+    // P2 中优先级 - 蓝色
     &.medium {
+      background: #e6f7ff;
+      color: #1890ff;
+    }
+
+    // P1 高优先级 - 橙色
+    &.high {
       background: #fff7e6;
       color: #fa8c16;
     }
 
-    // 高优先级 - 红色
-    &.high {
-      background: #fff1f0;
-      color: #f5222d;
-    }
-
-    // 严重优先级 - 深红色
+    // P0 严重优先级 - 红色
     &.critical {
       background: #fff1f0;
-      color: #cf1322;
+      color: #f5222d;
       font-weight: 600;
+    }
+  }
+
+  // 审核结果徽章样式
+  .review-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    min-width: 56px;
+
+    // 未审核 - 灰色
+    &.none {
+      background: #f5f5f5;
+      color: #999;
+    }
+
+    // 待审核 - 橙色
+    &.pending {
+      background: #fff7e6;
+      color: #fa8c16;
+    }
+
+    // 已通过 - 绿色
+    &.approved {
+      background: #f6ffed;
+      color: #52c41a;
+    }
+
+    // 已拒绝 - 红色
+    &.rejected {
+      background: #fff1f0;
+      color: #f5222d;
     }
   }
 
@@ -1478,6 +1546,10 @@ onActivated(() => {
     padding: 4px 10px !important;
     border-radius: 6px;
     transition: all 0.3s ease;
+
+    &.header-btn {
+      margin-left: 2px;
+    }
 
     .el-icon {
       font-size: 14px;

@@ -3537,15 +3537,17 @@ onUnmounted(() => {
 
 /* 徽章样式 - 参考 XMindConverter 风格 */
 .count-badge {
-  display: inline-block;
-  padding: 4px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 24px;
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
   background: #e6f7ff;
   color: #1890ff;
   white-space: nowrap;
-  min-width: 24px;
 }
 
 .version-badge {
@@ -3566,7 +3568,8 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 10px;
+  width: 44px;
+  height: 24px;
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;

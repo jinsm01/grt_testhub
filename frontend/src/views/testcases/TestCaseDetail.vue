@@ -27,6 +27,9 @@
         <div class="card-header">
           <h3 class="card-title">{{ $t('testcase.basicInfo') }}</h3>
           <div class="card-tags">
+            <el-tag :type="getReviewStatusType(testcase.review_status)" class="review-tag">
+              {{ testcase.review_status_display || '未审核' }}
+            </el-tag>
             <el-tag :type="priorityType(testcase.priority)" class="priority-tag">
               {{ priorityLabel(testcase.priority) }}
             </el-tag>
@@ -60,16 +63,6 @@
               <div class="info-item">
                 <span class="info-label">{{ $t('testcase.createTime') }}</span>
                 <span class="info-value">{{ formatDate(testcase.created_at) }}</span>
-              </div>
-            </el-col>
-            <el-col :span="4">
-              <div class="info-item">
-                <span class="info-label">审核结果</span>
-                <span class="info-value">
-                  <el-tag :type="getReviewStatusType(testcase.review_status)" size="small">
-                    {{ testcase.review_status_display || '未审核' }}
-                  </el-tag>
-                </span>
               </div>
             </el-col>
           </el-row>
@@ -372,11 +365,14 @@ onMounted(() => {
     display: flex;
     gap: 8px;
 
+    .review-tag,
     .priority-tag,
     .type-tag {
       font-weight: 500;
       padding: 4px 12px;
       border-radius: 6px;
+      height: 28px;
+      line-height: 20px;
     }
   }
 }

@@ -875,15 +875,105 @@ class ApifoxCliImporter:
             if '(' in func_expr:
                 func_name = func_expr[:func_expr.index('(')].lower()  # 转为小写
                 args_str = func_expr[func_expr.index('(')+1:func_expr.rindex(')')]
-                
+
+                # String 系列函数
                 if func_name == 'string.alphanumeric':
                     length = 10
-                    if 'length=' in args_str.lower():  # 参数名也转为小写
+                    if 'length=' in args_str.lower():
                         try:
                             length = int(args_str.lower().split('length=')[1].split(',')[0].strip())
                         except:
                             pass
                     return f'${{random_string({length}, "alphanumeric", 1)}}'
+                elif func_name == 'string.numeric':
+                    length = 10
+                    if 'length=' in args_str.lower():
+                        try:
+                            length = int(args_str.lower().split('length=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_string({length}, "numeric", 1)}}'
+                elif func_name == 'string.alpha':
+                    length = 10
+                    if 'length=' in args_str.lower():
+                        try:
+                            length = int(args_str.lower().split('length=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_string({length}, "letters", 1)}}'
+                # Random 系列函数
+                elif func_name in ('random.int', 'random.integer'):
+                    min_val, max_val = 0, 1000
+                    if 'min=' in args_str.lower() and 'max=' in args_str.lower():
+                        try:
+                            min_val = int(args_str.lower().split('min=')[1].split(',')[0].strip())
+                            max_val = int(args_str.lower().split('max=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_int({min_val}, {max_val})}}'
+                elif func_name == 'random.float':
+                    min_val, max_val = 0, 1000
+                    if 'min=' in args_str.lower() and 'max=' in args_str.lower():
+                        try:
+                            min_val = float(args_str.lower().split('min=')[1].split(',')[0].strip())
+                            max_val = float(args_str.lower().split('max=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_float({min_val}, {max_val})}}'
+                elif func_name in ('random.boolean', 'random.bool'):
+                    return f'${{random_boolean()}}'
+                elif func_name in ('random.string', 'random.alphanumeric'):
+                    length = 10
+                    if 'length=' in args_str.lower():
+                        try:
+                            length = int(args_str.lower().split('length=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_string({length}, "alphanumeric", 1)}}'
+                elif func_name == 'random.alpha':
+                    length = 10
+                    if 'length=' in args_str.lower():
+                        try:
+                            length = int(args_str.lower().split('length=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_string({length}, "letters", 1)}}'
+                elif func_name == 'random.numeric':
+                    length = 10
+                    if 'length=' in args_str.lower():
+                        try:
+                            length = int(args_str.lower().split('length=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_string({length}, "numeric", 1)}}'
+                elif func_name in ('random.email', 'random.mail'):
+                    return f'${{random_email()}}'
+                elif func_name in ('random.phone', 'random.phonenumber', 'random.mobile'):
+                    return f'${{random_phone()}}'
+                elif func_name in ('random.ip', 'random.ipaddress', 'random.ipv4'):
+                    return f'${{random_ip()}}'
+                elif func_name == 'random.ipv6':
+                    return f'${{random_ipv6()}}'
+                elif func_name in ('random.mac', 'random.macaddress'):
+                    return f'${{random_mac()}}'
+                elif func_name in ('random.name', 'random.fullname'):
+                    return f'${{random_name()}}'
+                elif func_name == 'random.firstname':
+                    return f'${{random_first_name()}}'
+                elif func_name == 'random.lastname':
+                    return f'${{random_last_name()}}'
+                elif func_name == 'random.chinesename':
+                    return f'${{random_chinese_name()}}'
+                elif func_name in ('random.address', 'random.city', 'random.province', 'random.street'):
+                    # 这些函数统一映射到 random_address
+                    return f'${{random_address()}}'
+                elif func_name in ('random.company', 'random.companyname'):
+                    return f'${{random_company()}}'
+                elif func_name in ('random.bankcard', 'random.creditcard'):
+                    return f'${{random_bank_card()}}'
+                elif func_name == 'random.idcard':
+                    return f'${{random_id_card()}}'
+                # 基础函数
                 elif func_name == 'timestamp':
                     return f'${{timestamp()}}'
                 elif func_name == 'uuid':

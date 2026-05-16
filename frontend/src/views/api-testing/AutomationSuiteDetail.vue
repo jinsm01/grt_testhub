@@ -377,6 +377,42 @@
               </el-tree>
             </div>
           </el-tab-pane>
+          
+          <!-- 等待时间 Tab -->
+          <el-tab-pane label="等待时间" name="wait">
+            <div class="wait-time-config">
+              <el-form label-width="100px">
+                <el-form-item label="等待时间">
+                  <el-input-number 
+                    v-model="waitTimeConfig.wait_time" 
+                    :min="0" 
+                    :max="3600" 
+                    :step="1"
+                    style="width: 180px"
+                  >
+                    <template #suffix>秒</template>
+                  </el-input-number>
+                </el-form-item>
+                <el-form-item label="步骤名称">
+                  <el-input 
+                    v-model="waitTimeConfig.name" 
+                    placeholder="等待时间"
+                    style="width: 300px"
+                  />
+                </el-form-item>
+              </el-form>
+              <div class="wait-time-hint">
+                <el-alert type="info" :closable="false">
+                  <template #title>
+                    <div class="hint-content">
+                      <el-icon><InfoFilled /></el-icon>
+                      <span>等待指定时间后继续执行后续步骤，适用于需要延时处理的场景</span>
+                    </div>
+                  </template>
+                </el-alert>
+              </div>
+            </div>
+          </el-tab-pane>
         </el-tabs>
       </div>
       
@@ -638,7 +674,25 @@
       <el-tabs v-model="editDrawerActiveTab" class="drawer-tabs">
         <!-- 基础信息 -->
         <el-tab-pane label="基础信息" name="basic">
-          <el-form :model="editingRequestData" label-width="100px">
+          <!-- 等待时间步骤编辑表单 -->
+          <el-form v-if="editingRequestData.step_type === 'wait'" :model="editingRequestData" label-width="100px">
+            <el-form-item label="步骤名称">
+              <el-input v-model="editingRequestData.name" placeholder="输入步骤名称" />
+            </el-form-item>
+            <el-form-item label="等待时间">
+              <el-input-number 
+                v-model="editingRequestData.wait_time" 
+                :min="0" 
+                :max="3600" 
+                :step="1"
+                style="width: 180px"
+              >
+                <template #suffix>秒</template>
+              </el-input-number>
+            </el-form-item>
+          </el-form>
+          <!-- 接口请求步骤编辑表单 -->
+          <el-form v-else :model="editingRequestData" label-width="100px">
             <el-form-item label="接口名称">
               <el-input v-model="editingRequestData.name" placeholder="输入接口名称" />
             </el-form-item>
@@ -1283,6 +1337,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import draggable from 'vuedraggable'
 import api from '@/utils/api'
 import { updateTestSuiteRequest } from '@/api/api-testing'
+import { createScenarioStep } from '@/api/scenario'
 import SuiteRequestTree from './components/SuiteRequestTree.vue'
 import JsonTreeViewer from '@/components/JsonTreeViewer.vue'
 import { VideoPlay, Plus, Refresh, Folder, Document, Check, Close, RefreshLeft, Edit, Delete, Rank, CircleCheck, CircleClose, TrendCharts, List, InfoFilled, WarningFilled, Upload, Download, Collection, Timer, DocumentChecked, MagicStick, CopyDocument } from '@element-plus/icons-vue'
@@ -1305,6 +1360,12 @@ const requestTree = ref([])
 const addStepTab = ref('request')
 const availableSuites = ref([])
 const selectedSuiteIds = ref([])
+
+// 等待时间配置
+const waitTimeConfig = ref({
+  wait_time: 1,
+  name: '等待时间'
+})
 const suiteTreeRef = ref(null)
 const suiteTreeProps = {
   children: 'children',
@@ -1362,6 +1423,7 @@ const editDrawerActiveTab = ref('body')
 const savingRequestEdit = ref(false)
 const editingRequestData = ref({
   id: null,
+  step_type: 'request',
   name: '',
   method: 'GET',
   url: '',
@@ -1369,7 +1431,8 @@ const editingRequestData = ref({
   params: {},
   body: {},
   bodyType: 'json',
-  bodyContent: ''
+  bodyContent: '',
+  wait_time: 1
 })
 const editingHeadersList = ref([])
 const editingParamsList = ref([])
@@ -2630,11 +2693,54 @@ const addSelectedRequests = async () => {
   }
 }
 
-// 新的添加步骤方法（支持接口和场景）
+// 新的添加步骤方法（支持接口、场景和等待时间）
 const addSelectedSteps = async () => {
   if (!suite.value) return
   
   // 根据当前 Tab 决定添加什么
+  if (addStepTab.value === 'wait') {
+    // 添加等待时间步骤
+    if (!waitTimeConfig.value.wait_time || waitTimeConfig.value.wait_time < 0) {
+      ElMessage.warning('请输入有效的等待时间')
+      return
+    }
+
+    addingRequests.value = true
+    try {
+      // 获取当前最大的步骤编号
+      const currentSteps = suite.value.suite_requests || []
+      const maxStepNumber = currentSteps.length > 0 
+        ? Math.max(...currentSteps.map(s => s.step_number || 0))
+        : 0
+
+      const response = await api.post(`/api-testing/test-suites/${suite.value.id}/add-wait-step/`, {
+        wait_time: waitTimeConfig.value.wait_time,
+        name: waitTimeConfig.value.name || '等待时间',
+        step_number: maxStepNumber + 1
+      })
+
+      if (response.data && response.data.suite) {
+        suite.value = response.data.suite
+        // 同步更新本地套件请求列表
+        localSuiteRequests.value = suite.value.suite_requests || []
+        ElMessage.success('等待时间步骤添加成功')
+        showAddRequestDialog.value = false
+        // 重置配置
+        waitTimeConfig.value = {
+          wait_time: 1,
+          name: '等待时间'
+        }
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || error.message || '添加等待时间步骤失败'
+      ElMessage.error(errorMsg)
+      console.error('添加等待时间步骤失败:', error)
+    } finally {
+      addingRequests.value = false
+    }
+    return
+  }
+  
   if (addStepTab.value === 'request') {
     // 添加接口
     const checkedNodes = requestTreeRef.value?.getCheckedNodes() || []
@@ -2783,21 +2889,42 @@ const updateRequestEnabled = async (suiteRequest) => {
 
 // 编辑接口请求
 const editRequest = (suiteRequest) => {
+  // 检查是否是等待时间步骤
+  if (suiteRequest.step_type === 'wait') {
+    editingRequestData.value = {
+      id: suiteRequest.id,
+      step_type: 'wait',
+      name: suiteRequest.override_name || suiteRequest.name || '等待时间',
+      method: 'GET',
+      url: '',
+      headers: {},
+      params: {},
+      body: {},
+      bodyType: 'json',
+      bodyContent: '',
+      wait_time: suiteRequest.control_config?.wait_time || 1
+    }
+    editDrawerActiveTab.value = 'basic'
+    showEditRequestDialog.value = true
+    return
+  }
+
   const request = suiteRequest.request || {}
-  
+
   // 合并原始接口参数和覆盖参数（覆盖参数优先）
   const mergedHeaders = { ...(request.headers || {}), ...(suiteRequest.override_headers || {}) }
   const mergedParams = { ...(request.params || {}), ...(suiteRequest.override_params || {}) }
-  
+
   // 确定使用哪个 body：优先使用覆盖的 body，否则使用原始接口的 body
   let mergedBody = suiteRequest.override_body
   if (!mergedBody || Object.keys(mergedBody).length === 0) {
     mergedBody = request.body || {}
   }
-  
+
   // 初始化编辑数据
   editingRequestData.value = {
     id: suiteRequest.id,
+    step_type: suiteRequest.step_type || 'request',
     name: suiteRequest.override_name || request.name || '',
     method: suiteRequest.override_method || request.method || 'GET',
     url: suiteRequest.override_url || request.url || '',
@@ -2805,7 +2932,8 @@ const editRequest = (suiteRequest) => {
     params: mergedParams,
     body: mergedBody,
     bodyType: 'json',
-    bodyContent: ''
+    bodyContent: '',
+    wait_time: 1
   }
   
   // 初始化 body 内容
@@ -2944,6 +3072,23 @@ const saveRequestEdit = async () => {
   
   savingRequestEdit.value = true
   try {
+    // 处理等待时间步骤
+    if (editingRequestData.value.step_type === 'wait') {
+      const updateData = {
+        override_name: editingRequestData.value.name,
+        control_config: {
+          wait_time: editingRequestData.value.wait_time || 1
+        }
+      }
+      
+      await updateTestSuiteRequest(editingRequestData.value.id, updateData)
+      ElMessage.success('保存成功')
+      showEditRequestDialog.value = false
+      // 重新加载套件详情
+      await loadSuiteDetail()
+      return
+    }
+    
     // 转换 headers
     const headers = {}
     editingHeadersList.value.forEach(item => {
@@ -3979,6 +4124,11 @@ onMounted(async () => {
       background: #f5f5f5;
       color: #8c8c8c;
     }
+
+    &.wait {
+      background: #fff7e6;
+      color: #fa8c16;
+    }
   }
 
   // 状态徽章样式 - 用于评审状态和执行状态
@@ -4348,6 +4498,37 @@ onMounted(async () => {
   &.put { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
   &.delete { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
   &.patch { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+  &.wait { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+}
+
+// 等待时间配置样式
+.wait-time-config {
+  padding: 24px;
+
+  .el-form {
+    .el-form-item {
+      margin-bottom: 20px;
+
+      .el-form-item__label {
+        font-weight: 500;
+        color: #374151;
+      }
+    }
+  }
+
+  .wait-time-hint {
+    margin-top: 24px;
+
+    .hint-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .el-icon {
+        color: #7b42f6;
+      }
+    }
+  }
 }
 
 // 树形组件样式优化

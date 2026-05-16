@@ -12,7 +12,7 @@ from .views import (
     apifox_import_validate, apifox_import_execute, apifox_function_list
 )
 from .views_scenario import (
-    AutomationScenarioViewSet,
+    AutomationScenarioViewSet, ScenarioStepViewSet, ScenarioExecutionViewSet,
     apifox_import_v2_validate, apifox_import_v2_execute
 )
 
@@ -35,6 +35,8 @@ router.register(r'operation-logs', OperationLogViewSet)
 router.register(r'ai-service-configs', AIServiceConfigViewSet, basename='aiserviceconfig')
 # 自动化场景路由
 router.register(r'automation-scenarios', AutomationScenarioViewSet, basename='automation-scenario')
+router.register(r'scenario-steps', ScenarioStepViewSet, basename='scenario-step')
+router.register(r'scenario-executions', ScenarioExecutionViewSet, basename='scenario-execution')
 
 urlpatterns = [
     path('api-testing/', include(router.urls)),

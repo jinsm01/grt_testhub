@@ -205,6 +205,13 @@ class RequestHistorySerializer(serializers.ModelSerializer):
 
 class TestSuiteRequestSerializer(serializers.ModelSerializer):
     request = ApiRequestSerializer(read_only=True)
+    control_config = serializers.SerializerMethodField()
+
+    def get_control_config(self, obj):
+        """从关联的场景步骤获取控制配置"""
+        if hasattr(obj, 'scenario_step') and obj.scenario_step:
+            return obj.scenario_step.control_config
+        return {}
 
     class Meta:
         model = TestSuiteRequest
@@ -212,7 +219,7 @@ class TestSuiteRequestSerializer(serializers.ModelSerializer):
             'id', 'request', 'order', 'assertions', 'enabled',
             'override_name', 'override_method', 'override_url', 'override_headers', 'override_params',
             'override_body', 'pre_script', 'post_script', 'extracted_variables',
-            'parent_id', 'step_type'
+            'parent_id', 'step_type', 'control_config'
         ]
 
     def validate_assertions(self, value):
@@ -222,11 +229,18 @@ class TestSuiteRequestSerializer(serializers.ModelSerializer):
         return value
 
     def update(self, instance, validated_data):
-        """更新时处理 assertions 数据"""
+        """更新时处理 assertions 数据，并同步更新关联的场景步骤"""
         assertions = validated_data.get('assertions')
         if assertions is not None:
             assertions = convert_null_strings(assertions)
             validated_data['assertions'] = assertions
+        
+        # 同步更新关联的场景步骤
+        control_config = validated_data.pop('control_config', None)
+        if control_config is not None and hasattr(instance, 'scenario_step') and instance.scenario_step:
+            instance.scenario_step.control_config = control_config
+            instance.scenario_step.save()
+        
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):
@@ -248,6 +262,13 @@ class TestSuiteSerializer(serializers.ModelSerializer):
     created_by = UserSerializer(read_only=True)
     suite_requests = serializers.SerializerMethodField()
     environment = EnvironmentSerializer(read_only=True)
+    scenario_id = serializers.SerializerMethodField()
+
+    def get_scenario_id(self, obj):
+        """获取关联的自动化场景ID"""
+        if hasattr(obj, 'scenario') and obj.scenario:
+            return obj.scenario.id
+        return None
 
     def get_suite_requests(self, obj):
         """获取按order排序的套件请求列表（支持树形结构）"""
@@ -292,7 +313,7 @@ class TestSuiteSerializer(serializers.ModelSerializer):
         model = TestSuite
         fields = [
             'id', 'name', 'description', 'project', 'environment', 'environment_id',
-            'suite_requests', 'created_by', 'created_at', 'updated_at'
+            'suite_requests', 'scenario_id', 'created_by', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
 

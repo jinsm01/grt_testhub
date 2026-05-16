@@ -326,6 +326,11 @@ def author_test_cases(request):
             'directory': directory or '未分配',
             'menu_id': case.menu_id,
             'created_at': case.created_at.strftime('%Y-%m-%d %H:%M') if case.created_at else None,
+            'author': {
+                'id': case.author.id if case.author else None,
+                'username': case.author.username if case.author else None,
+                'name': case.author.get_full_name() if case.author else None,
+            } if case.author else None,
         })
     
     # 按目录分组

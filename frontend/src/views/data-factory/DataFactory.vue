@@ -57,51 +57,27 @@
         <div
           v-for="scenario in scenarios"
           :key="scenario.scenario"
-          class="scenario-list-container"
+          class="scenario-list-item"
+          :style="{ '--primary-color': getCategoryColor(scenario.scenario).primary, '--light-color': getCategoryColor(scenario.scenario).light, '--dark-color': getCategoryColor(scenario.scenario).dark }"
+          @click="openScenarioDrawer(scenario)"
         >
-          <div
-            class="scenario-list-item"
-            :class="{ 'is-expanded': expandedScenario === scenario.scenario }"
-            :style="{ '--primary-color': getCategoryColor(scenario.scenario).primary, '--light-color': getCategoryColor(scenario.scenario).light, '--dark-color': getCategoryColor(scenario.scenario).dark }"
-            @click="toggleScenarioExpand(scenario)"
-          >
-            <div class="scenario-list-icon-wrapper">
-              <el-icon class="scenario-list-icon" :style="{ color: getCategoryColor(scenario.scenario).primary }">
-                <component :is="getScenarioIcon(scenario.scenario)" />
-              </el-icon>
-            </div>
-            <div class="scenario-list-content">
-              <h3 class="scenario-list-title">{{ getScenarioName(scenario.scenario) }}</h3>
-              <p class="scenario-list-desc">{{ getScenarioDesc(scenario.scenario) }}</p>
-            </div>
-            <div class="scenario-list-stats">
-              <el-tag size="small" :style="{ background: getCategoryColor(scenario.scenario).light, borderColor: getCategoryColor(scenario.scenario).primary, color: getCategoryColor(scenario.scenario).primary }">
-                {{ scenario.tool_count }} 个工具
-              </el-tag>
-            </div>
-            <el-icon class="scenario-list-arrow" :class="{ 'is-expanded': expandedScenario === scenario.scenario }">
-              <ArrowDown />
+          <div class="scenario-list-icon-wrapper">
+            <el-icon class="scenario-list-icon" :style="{ color: getCategoryColor(scenario.scenario).primary }">
+              <component :is="getScenarioIcon(scenario.scenario)" />
             </el-icon>
           </div>
-          <!-- 展开的工具列表 -->
-          <div v-if="expandedScenario === scenario.scenario" class="scenario-tools-list">
-            <div
-              v-for="tool in getScenarioTools(scenario.scenario)"
-              :key="tool.name"
-              class="scenario-tool-item"
-              :style="{ '--primary-color': getCategoryColor(scenario.scenario).primary, '--light-color': getCategoryColor(scenario.scenario).light }"
-              @click="openTool(tool, getToolCategory(tool.name))"
-            >
-              <div class="scenario-tool-icon" :style="{ background: getCategoryColor(scenario.scenario).light, color: getCategoryColor(scenario.scenario).primary }">
-                <el-icon><component :is="getIcon(tool.icon || 'operation')" /></el-icon>
-              </div>
-              <div class="scenario-tool-info">
-                <h4 class="scenario-tool-name">{{ getToolDisplayName(tool.name) || tool.display_name }}</h4>
-                <p class="scenario-tool-desc">{{ getToolDescription(tool.name) || tool.description }}</p>
-              </div>
-              <el-icon class="scenario-tool-arrow"><ArrowRight /></el-icon>
-            </div>
+          <div class="scenario-list-content">
+            <h3 class="scenario-list-title">{{ getScenarioName(scenario.scenario) }}</h3>
+            <p class="scenario-list-desc">{{ getScenarioDesc(scenario.scenario) }}</p>
           </div>
+          <div class="scenario-list-stats">
+            <el-tag size="small" :style="{ background: getCategoryColor(scenario.scenario).light, borderColor: getCategoryColor(scenario.scenario).primary, color: getCategoryColor(scenario.scenario).primary }">
+              {{ scenario.tool_count }} 个工具
+            </el-tag>
+          </div>
+          <el-icon class="scenario-list-arrow">
+            <ArrowRight />
+          </el-icon>
         </div>
       </div>
     </div>
@@ -209,6 +185,34 @@
       </div>
     </div>
 
+    <!-- 场景工具抽屉 -->
+    <el-drawer
+      v-model="scenarioDrawerVisible"
+      :title="currentScenarioData ? getScenarioName(currentScenarioData.scenario) : ''"
+      size="720px"
+      :with-header="true"
+      class="scenario-drawer"
+    >
+      <div class="scenario-drawer-content">
+        <div
+          v-for="tool in scenarioTools"
+          :key="tool.name"
+          class="scenario-drawer-tool-item"
+          :style="{ '--primary-color': getCategoryColor(currentScenarioData?.scenario).primary, '--light-color': getCategoryColor(currentScenarioData?.scenario).light }"
+          @click="openToolFromDrawer(tool)"
+        >
+          <div class="scenario-drawer-tool-icon" :style="{ background: getCategoryColor(currentScenarioData?.scenario).light, color: getCategoryColor(currentScenarioData?.scenario).primary }">
+            <el-icon><component :is="getIcon(tool.icon || 'operation')" /></el-icon>
+          </div>
+          <div class="scenario-drawer-tool-info">
+            <h4 class="scenario-drawer-tool-name">{{ getToolDisplayName(tool.name) || tool.display_name }}</h4>
+            <p class="scenario-drawer-tool-desc">{{ getToolDescription(tool.name) || tool.description }}</p>
+          </div>
+          <el-icon class="scenario-drawer-tool-arrow"><ArrowRight /></el-icon>
+        </div>
+      </div>
+    </el-drawer>
+
     <!-- 编辑记录对话框 -->
     <el-dialog
       v-model="editDialogVisible"
@@ -250,13 +254,14 @@
       </template>
     </el-dialog>
 
-    <!-- 工具执行对话框 -->
-    <el-dialog
+    <!-- 工具执行抽屉 -->
+    <el-drawer
       v-model="toolDialogVisible"
       :title="getToolDisplayName(currentTool?.name) || currentTool?.display_name"
-      width="1200px"
+      size="800px"
       :close-on-click-modal="false"
       @close="resetToolForm"
+      class="tool-drawer"
     >
       <div v-if="currentTool" class="tool-execution">
         <el-alert
@@ -1038,21 +1043,23 @@
         </div>
       </div>
       <template #footer>
-        <el-button @click="toolDialogVisible = false">{{ $t('dataFactory.actions.cancel') }}</el-button>
-        <el-button
-          v-if="canExportToExcel"
-          type="success"
-          :disabled="!toolResult"
-          @click="exportToExcel"
-        >
-          <el-icon><Download /></el-icon>
-          {{ $t('dataFactory.actions.export') }}
-        </el-button>
-        <el-button type="primary" :loading="executing" @click="executeTool">
-          {{ $t('dataFactory.actions.execute') }}
-        </el-button>
+        <div class="drawer-footer">
+          <el-button @click="toolDialogVisible = false">{{ $t('dataFactory.actions.cancel') }}</el-button>
+          <el-button
+            v-if="canExportToExcel"
+            type="success"
+            :disabled="!toolResult"
+            @click="exportToExcel"
+          >
+            <el-icon><Download /></el-icon>
+            {{ $t('dataFactory.actions.export') }}
+          </el-button>
+          <el-button type="primary" :loading="executing" @click="executeTool">
+            {{ $t('dataFactory.actions.execute') }}
+          </el-button>
+        </div>
       </template>
-    </el-dialog>
+    </el-drawer>
 
   </div>
 </template>
@@ -1122,6 +1129,9 @@ const categories = ref([])
 const scenarios = ref([])
 const currentScenario = ref(null)
 const expandedScenario = ref(null)
+const scenarioDrawerVisible = ref(false)
+const currentScenarioData = ref(null)
+const scenarioTools = ref([])
 const toolDialogVisible = ref(false)
 const currentTool = ref(null)
 const currentCategory = ref('')
@@ -2275,6 +2285,17 @@ const filterByScenario = (scenario) => {
   ElMessage.success(`${t('dataFactory.messages.filtered')}: ${scenario.name}`)
 }
 
+const openScenarioDrawer = (scenario) => {
+  currentScenarioData.value = scenario
+  scenarioTools.value = getScenarioTools(scenario.scenario)
+  scenarioDrawerVisible.value = true
+}
+
+const openToolFromDrawer = (tool) => {
+  scenarioDrawerVisible.value = false
+  openTool(tool, tool.category)
+}
+
 const toggleScenarioExpand = (scenario) => {
   if (expandedScenario.value === scenario.scenario) {
     expandedScenario.value = null
@@ -3213,8 +3234,8 @@ onMounted(() => {
 
 .scenario-view {
   .scenario-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     padding: 0 8px;
   }
@@ -3302,16 +3323,6 @@ onMounted(() => {
       color: #94a3b8;
       transition: all 0.3s ease;
       flex-shrink: 0;
-
-      &.is-expanded {
-        transform: rotate(180deg);
-        color: var(--primary-color);
-      }
-    }
-
-    &.is-expanded {
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 1px var(--primary-color) inset;
     }
   }
 
@@ -3416,9 +3427,148 @@ onMounted(() => {
   }
 }
 
+// 场景工具抽屉样式
+.scenario-drawer {
+  .scenario-drawer-content {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .scenario-drawer-tool-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 12px;
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.04),
+      0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      background: #ffffff;
+      border-color: var(--primary-color);
+      box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.08),
+        0 0 0 1px var(--primary-color) inset,
+        0 0 20px var(--light-color);
+      transform: translateY(-2px);
+    }
+
+    .scenario-drawer-tool-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: linear-gradient(145deg, #ffffff, #f1f5f9);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.3s ease;
+
+      .el-icon {
+        font-size: 24px;
+        transition: all 0.3s ease;
+      }
+    }
+
+    .scenario-drawer-tool-info {
+      flex: 1;
+      min-width: 0;
+
+      .scenario-drawer-tool-name {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 4px 0;
+        color: #1e293b;
+        line-height: 1.4;
+      }
+
+      .scenario-drawer-tool-desc {
+        font-size: 13px;
+        color: #64748b;
+        margin: 0;
+        line-height: 1.5;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .scenario-drawer-tool-arrow {
+      font-size: 20px;
+      color: #94a3b8;
+      flex-shrink: 0;
+      transition: all 0.3s ease;
+    }
+
+    &:hover .scenario-drawer-tool-arrow {
+      color: var(--primary-color);
+      transform: translateX(4px);
+    }
+  }
+}
+
+// 工具执行抽屉样式
+.tool-drawer {
+  .el-drawer__body {
+    padding: 20px;
+    overflow-y: auto;
+  }
+
+  .el-drawer__footer {
+    padding: 16px 20px;
+    border-top: 1px solid #e4e7ed;
+
+    .drawer-footer {
+      display: flex;
+      justify-content: flex-start;
+      gap: 0.5px;
+
+      .el-button:not(.el-button--primary):not(.el-button--success) {
+        &:hover {
+          background-color: #f5f7fa;
+          color: #606266;
+          border-color: #dcdfe6;
+        }
+
+        &:focus {
+          background-color: #ffffff;
+          color: #606266;
+          border-color: #dcdfe6;
+        }
+      }
+
+      .el-button--primary {
+        background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+        border: none;
+
+        &:hover {
+          background: linear-gradient(135deg, #8a5af7 0%, #6b42b8 100%);
+          box-shadow: 0 4px 12px rgba(123, 66, 246, 0.3);
+        }
+      }
+
+      .el-button--success {
+        background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
+        border: none;
+
+        &:hover {
+          background: linear-gradient(135deg, #6bd936 0%, #4ab520 100%);
+          box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+        }
+      }
+    }
+  }
+}
+
 .tool-execution {
-  max-height: calc(100vh - 200px);
-  overflow-y: auto;
   padding-right: 10px;
 
   .tool-alert {

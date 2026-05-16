@@ -1038,6 +1038,28 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
                 current_step_index = suite_request.order
                 api_request = suite_request.request
 
+                # 处理等待时间步骤
+                if suite_request.step_type == 'wait':
+                    # 从关联的场景步骤获取 control_config
+                    control_config = {}
+                    if hasattr(suite_request, 'scenario_step') and suite_request.scenario_step:
+                        control_config = suite_request.scenario_step.control_config or {}
+                    wait_time = control_config.get('wait_time', 1)
+                    step_name = suite_request.override_name or '等待时间'
+                    logger.info(f"DEBUG - 执行等待步骤: order={current_step_index}, name={step_name}, wait_time={wait_time}")
+                    time.sleep(wait_time)
+                    results.append({
+                        'name': step_name,
+                        'method': 'WAIT',
+                        'url': f'等待 {wait_time} 秒',
+                        'passed': True,
+                        'duration': wait_time * 1000,  # 转换为毫秒
+                        'status_code': None,
+                        'response_time': wait_time * 1000
+                    })
+                    passed_count += 1
+                    continue
+
                 # 跳过分组类型步骤（group 只是容器，不是真正的接口请求）
                 if suite_request.step_type == 'group' or api_request is None:
                     step_name = api_request.name if api_request else '未命名分组'
@@ -1869,6 +1891,80 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['post'], url_path='add-wait-step')
+    def add_wait_step(self, request, pk=None):
+        """添加等待时间步骤到测试套件"""
+        test_suite = self.get_object()
+        wait_time = request.data.get('wait_time', 1)
+        name = request.data.get('name', '等待时间')
+        step_number = request.data.get('step_number')
+
+        try:
+            # 获取关联的自动化场景
+            scenario = None
+            if hasattr(test_suite, 'scenario'):
+                scenario = test_suite.scenario
+            else:
+                # 创建新的自动化场景
+                from .models import AutomationScenario
+                scenario = AutomationScenario.objects.create(
+                    name=test_suite.name,
+                    description=test_suite.description,
+                    project=test_suite.project,
+                    environment=test_suite.environment,
+                    legacy_test_suite=test_suite,
+                    created_by=request.user
+                )
+
+            # 创建 TestSuiteRequest
+            current_order = TestSuiteRequest.objects.filter(test_suite=test_suite).count()
+            suite_request = TestSuiteRequest.objects.create(
+                test_suite=test_suite,
+                request=None,
+                order=current_order,
+                enabled=True,
+                step_type='wait',
+                override_name=name,
+                assertions=[],
+                extracted_variables={}
+            )
+
+            # 创建关联的 ScenarioStep
+            from .models import ScenarioStep
+            # 获取当前场景下最大的步骤编号
+            existing_steps = ScenarioStep.objects.filter(scenario=scenario).values_list('step_number', flat=True)
+            next_step = max(existing_steps, default=0) + 1
+            # 使用传入的 step_number 或自动计算的 next_step
+            final_step_number = step_number if step_number and step_number > 0 else next_step
+            # 如果传入的 step_number 已存在，使用自动计算的
+            if final_step_number in existing_steps:
+                final_step_number = next_step
+
+            scenario_step = ScenarioStep.objects.create(
+                scenario=scenario,
+                step_type='wait',
+                step_number=final_step_number,
+                name=name,
+                api_request=None,
+                override_enabled=True,
+                override_name=name,
+                control_config={'wait_time': wait_time},
+                order=current_order,
+                legacy_suite_request=suite_request
+            )
+
+            # 更新套件的 updated_at 时间戳
+            test_suite.save(update_fields=['updated_at'])
+
+            serializer = self.get_serializer(test_suite)
+            return Response({
+                'message': '等待时间步骤添加成功',
+                'suite': serializer.data
+            })
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=True, methods=['get'])
     def reviews(self, request, pk=None):
         """获取测试套件的评审记录"""
@@ -2597,6 +2693,7 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
         .method-tag.put {{ background: #fef3c7; color: #d97706; }}
         .method-tag.delete {{ background: #fee2e2; color: #dc2626; }}
         .method-tag.patch {{ background: #f3e8ff; color: #9333ea; }}
+        .method-tag.wait {{ background: #fef3c7; color: #d97706; }}
 
         .test-name {{
             font-weight: 600;
@@ -3448,6 +3545,7 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
         .method-tag.put {{ background: #ffedd5; color: #9a3412; }}
         .method-tag.delete {{ background: #fee2e2; color: #b91c1c; }}
         .method-tag.patch {{ background: #f3e8ff; color: #7c3aed; }}
+        .method-tag.wait {{ background: #ffedd5; color: #9a3412; }}
         
         .test-url {{
             font-size: 13px;
