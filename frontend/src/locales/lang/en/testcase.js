@@ -50,6 +50,15 @@ export default {
     text: 'Text Mode',
     step: 'Step Mode',
 
+    // Review status
+    reviewStatus: 'Review Status',
+    reviewComment: 'Review Comment',
+    reviewer: 'Reviewer',
+    reviewPending: 'Pending',
+    reviewApproved: 'Approved',
+    reviewRejected: 'Rejected',
+    reviewNone: 'Not Reviewed',
+
     // Placeholders
     searchPlaceholder: 'Search case title',
     caseTitlePlaceholder: 'Enter test case title',

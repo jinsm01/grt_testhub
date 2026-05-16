@@ -10,7 +10,7 @@
           <span class="logo-text">TestHub</span>
         </div>
         <el-menu
-          :default-active="$route.path"
+          :default-active="activeMenuIndex"
           :default-openeds="defaultOpeneds"
           router
           text-color="#fff"
@@ -56,8 +56,10 @@
             <!-- 主线用例 - 按端分组，显示完整目录树 -->
             <el-sub-menu index="testcases">
               <template #title>
-                <el-icon><Document /></el-icon>
-                <span>{{ $t('menu.testCases') }}</span>
+                <div @click.stop="router.push('/ai-generation/testcase-statistics')" class="clickable-menu-title">
+                  <el-icon><Document /></el-icon>
+                  <span>{{ $t('menu.testCases') }}</span>
+                </div>
               </template>
               <!-- 端管理 -->
               <el-menu-item index="/ai-generation/projects">
@@ -67,10 +69,6 @@
               <el-menu-item index="/ai-generation/testcases">
                 <el-icon><List /></el-icon>
                 <span>全部用例</span>
-              </el-menu-item>
-              <el-menu-item index="/ai-generation/testcase-statistics">
-                <el-icon><DataAnalysis /></el-icon>
-                <span>用例统计</span>
               </el-menu-item>
               <!-- 目录树：端 > 菜单层级 -->
               <template v-for="project in projects" :key="project.id">
@@ -530,6 +528,16 @@ const currentModule = computed(() => {
   return ''
 })
 
+// 计算菜单激活状态，支持带 query 参数的菜单匹配
+const activeMenuIndex = computed(() => {
+  // 如果有 menu query 参数，构建完整的菜单索引
+  if (route.query.menu) {
+    return `/ai-generation/testcases?menu=${route.query.menu}`
+  }
+  // 否则使用路径
+  return route.path
+})
+
 // 默认展开的子菜单
 const defaultOpeneds = computed(() => {
   const opened = []
@@ -539,13 +547,50 @@ const defaultOpeneds = computed(() => {
   // 主线用例模块默认展开目录树
   if (currentModule.value === 'ai-generation') {
     opened.push('testcases')  // 展开主线用例子菜单
-    // 默认展开所有项目目录
-    projects.value.forEach(p => {
-      opened.push(`project-${p.id}`)
-    })
+    
+    const currentMenuId = route.query.menu
+    if (currentMenuId) {
+      // 如果有 menu 参数，展开对应的项目目录
+      const menuId = parseInt(currentMenuId)
+      for (const project of projects.value) {
+        if (findMenuInProject(project, menuId)) {
+          opened.push(`project-${project.id}`)
+          break
+        }
+      }
+    } else {
+      // 没有 menu 参数时，展开所有项目目录
+      projects.value.forEach(p => {
+        opened.push(`project-${p.id}`)
+      })
+    }
   }
   return opened
 })
+
+// 在项目菜单中查找指定菜单
+function findMenuInProject(project, menuId) {
+  if (!project.menus) return false
+  for (const menu of project.menus) {
+    if (findMenuRecursive(menu, menuId)) {
+      return true
+    }
+  }
+  return false
+}
+
+// 递归查找菜单
+function findMenuRecursive(menu, menuId) {
+  if (menu.id === menuId) return true
+  if (menu.children) {
+    for (const child of menu.children) {
+      if (findMenuRecursive(child, menuId)) {
+        return true
+      }
+    }
+  }
+  return false
+}
 
 const moduleName = computed(() => {
   // Bug 分析相关页面特殊处理
@@ -646,6 +691,11 @@ const breadcrumbTitle = computed(() => {
   // 端详情页
   if (path.match(/^\/ai-generation\/projects\/\d+$/)) {
     return t('project.aiProjectDetail')
+  }
+
+  // 作者用例详情页
+  if (path.match(/^\/ai-generation\/testcase-statistics\/author\/[^/]+$/)) {
+    return `${route.params.author || route.query.author || ''} 的用例`
   }
 
   // 处理 view query 参数（可能是字符串或数组）
@@ -767,6 +817,22 @@ const handleCommand = async (command) => {
 </script>
 
 <style lang="scss" scoped>
+.clickable-menu-title {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  cursor: pointer;
+  width: 100%;
+
+  .el-icon {
+    margin-right: 4px;
+  }
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
 .layout {
   height: 100vh;
   width: 100vw;

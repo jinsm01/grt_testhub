@@ -25,11 +25,8 @@ class ProjectListCreateView(generics.ListCreateAPIView):
         return ProjectSerializer
     
     def get_queryset(self):
-        # 默认只显示用户参与的项目或自己创建的项目
-        user = self.request.user
-        return Project.objects.filter(
-            models.Q(owner=user) | models.Q(members=user)
-        ).distinct()
+        # 显示所有项目，和用例列表保持一致
+        return Project.objects.all().distinct()
 
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])

@@ -24,6 +24,13 @@ class TestCase(models.Model):
         ('step', '步骤模式'),
     ]
     
+    REVIEW_STATUS_CHOICES = [
+        ('none', '未审核'),
+        ('pending', '待审核'),
+        ('approved', '已通过'),
+        ('rejected', '已拒绝'),
+    ]
+    
     project = models.ForeignKey(Project, on_delete=models.SET_NULL, null=True, blank=True, related_name='testcases')
     menu = models.ForeignKey(ProjectMenu, on_delete=models.SET_NULL, null=True, blank=True, related_name='testcases', verbose_name='所属菜单')
     versions = models.ManyToManyField(Version, blank=True, related_name='testcases', verbose_name='关联版本')
@@ -41,6 +48,18 @@ class TestCase(models.Model):
     assignee = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_testcases', verbose_name='指派人')
     created_at = models.DateTimeField(default=timezone.now, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+    
+    # 审核结果字段
+    review_status = models.CharField(
+        max_length=20, 
+        choices=REVIEW_STATUS_CHOICES, 
+        default='pending', 
+        verbose_name='审核结果',
+        help_text='用例的审核状态：none-未审核, pending-待审核, approved-已通过, rejected-已拒绝'
+    )
+    review_comment = models.TextField(blank=True, verbose_name='审核意见', help_text='审核人员的意见')
+    reviewer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_testcases', verbose_name='审核人')
+    reviewed_at = models.DateTimeField(null=True, blank=True, verbose_name='审核时间')
     
     def __str__(self):
         return self.title

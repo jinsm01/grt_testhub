@@ -8,4 +8,5 @@ urlpatterns = [
     path('modules/', views.testcase_modules, name='testcase-modules'),
     path('statistics/', views.testcase_statistics, name='testcase-statistics'),
     path('author-cases/', views.author_test_cases, name='author-test-cases'),
+    path('batch-review/', views.batch_update_review_status, name='batch-update-review'),
 ]

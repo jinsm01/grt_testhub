@@ -35,6 +35,24 @@ class TestCaseSerializer(serializers.ModelSerializer):
     attachments = TestCaseAttachmentSerializer(many=True, read_only=True)
     comments = TestCaseCommentSerializer(many=True, read_only=True)
     category_path = serializers.SerializerMethodField()
+    reviewer = UserSerializer(read_only=True)
+    
+    review_status_display = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = TestCase
+        fields = '__all__'
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_review_status_display(self, obj):
+        """获取审核状态的中文显示"""
+        status_map = {
+            'none': '未审核',
+            'pending': '待审核',
+            'approved': '已通过',
+            'rejected': '已拒绝',
+        }
+        return status_map.get(obj.review_status, obj.review_status)
 
     class Meta:
         model = TestCase
@@ -65,6 +83,9 @@ class TestCaseListSerializer(serializers.ModelSerializer):
     versions = serializers.SerializerMethodField()
     menu = serializers.SerializerMethodField()
     category_path = serializers.SerializerMethodField()
+    reviewer = serializers.SerializerMethodField()
+    
+    review_status_display = serializers.SerializerMethodField()
 
     class Meta:
         model = TestCase
@@ -72,9 +93,22 @@ class TestCaseListSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'preconditions', 'steps', 'expected_result',
             'priority', 'test_type', 'module',
             'author', 'assignee', 'project', 'versions', 'tags', 'created_at', 'updated_at',
-            'menu', 'category_path'
+            'menu', 'category_path', 'review_status', 'review_status_display', 'review_comment', 'reviewer'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_reviewer(self, obj):
+        return {'id': obj.reviewer.id, 'username': obj.reviewer.username} if obj.reviewer else None
+    
+    def get_review_status_display(self, obj):
+        """获取审核状态的中文显示"""
+        status_map = {
+            'none': '未审核',
+            'pending': '待审核',
+            'approved': '已通过',
+            'rejected': '已拒绝',
+        }
+        return status_map.get(obj.review_status, obj.review_status)
 
     def get_author(self, obj):
         return {'id': obj.author.id, 'username': obj.author.username} if obj.author else None
@@ -255,7 +289,7 @@ class TestCaseUpdateSerializer(serializers.ModelSerializer):
         model = TestCase
         fields = [
             'title', 'description', 'preconditions', 'steps', 'expected_result',
-            'priority', 'test_type', 'module', 'tags', 'project_id', 'version_ids'
+            'priority', 'test_type', 'module', 'tags', 'project_id', 'version_ids', 'review_status'
         ]
 
     def update(self, instance, validated_data):

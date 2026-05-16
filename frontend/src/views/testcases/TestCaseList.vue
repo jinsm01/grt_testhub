@@ -64,6 +64,7 @@
         v-loading="loading"
         stripe
         style="width: 100%"
+        :row-class-name="getRowClassName"
         @selection-change="handleSelectionChange">
         <!-- 复选框 -->
         <el-table-column type="selection" width="55" header-align="center" align="center" class-name="selection-cell"></el-table-column>
@@ -280,6 +281,7 @@ const moduleFilter = ref('')
 const priorityFilter = ref('')
 const projectFilter = ref('')
 const menuFilter = ref('') // 当前选中的菜单ID
+const highlightId = ref(null) // 需要高亮的用例ID
 const selectedTestCases = ref([])
 const isDeleting = ref(false)
 
@@ -707,16 +709,21 @@ const fetchTestCases = async () => {
   try {
     const params = {
       page: currentPage.value,
-      page_size: pageSize.value,
-      search: searchText.value,
-      module: moduleFilter.value,
-      priority: priorityFilter.value
+      page_size: pageSize.value
     }
-    // 如果有端筛选，添加 project 参数
+    // 只传递非空参数，避免 DjangoFilterBackend 对空字符串进行过滤
+    if (searchText.value) {
+      params.search = searchText.value
+    }
+    if (moduleFilter.value) {
+      params.module = moduleFilter.value
+    }
+    if (priorityFilter.value) {
+      params.priority = priorityFilter.value
+    }
     if (projectFilter.value) {
       params.project = projectFilter.value
     }
-    // 如果有菜单筛选，添加 menu 参数（后端会递归获取该菜单及所有子菜单的用例）
     if (menuFilter.value) {
       params.menu = menuFilter.value
     }
@@ -996,27 +1003,78 @@ const exportToExcel = async () => {
   }
 }
 
-// 监听路由参数变化，当从菜单点击不同端时自动筛选
-watch(() => route.query.project, (newProjectId) => {
+// 统一监听路由参数变化，避免多个 watch 同时触发导致请求冲突
+watch(() => route.query, (newQuery) => {
+  const newProjectId = newQuery.project
+  const newMenuId = newQuery.menu
+  const newHighlightId = newQuery.highlight
+  
+  // 处理高亮参数
+  if (newHighlightId) {
+    highlightId.value = Array.isArray(newHighlightId) ? newHighlightId[0] : newHighlightId
+  } else {
+    highlightId.value = null
+  }
+  
+  // 处理项目筛选
   if (newProjectId) {
     projectFilter.value = Array.isArray(newProjectId) ? newProjectId[0] : newProjectId
+    // 清空其他筛选条件，避免叠加
+    menuFilter.value = ''
+    moduleFilter.value = ''
+    priorityFilter.value = ''
+    searchText.value = ''
   } else {
     projectFilter.value = ''
   }
-  currentPage.value = 1
-  fetchTestCases()
-}, { immediate: true })
-
-// 监听路由参数变化，当从菜单树点击不同菜单时自动筛选
-watch(() => route.query.menu, (newMenuId) => {
+  
+  // 处理菜单筛选
   if (newMenuId) {
     menuFilter.value = Array.isArray(newMenuId) ? newMenuId[0] : newMenuId
+    // 清空其他筛选条件，避免叠加
+    projectFilter.value = ''
+    moduleFilter.value = ''
+    priorityFilter.value = ''
+    searchText.value = ''
   } else {
     menuFilter.value = ''
   }
+  
   currentPage.value = 1
-  fetchTestCases()
-}, { immediate: true })
+  fetchTestCases().then(() => {
+    // 数据加载完成后，如果有高亮参数，滚动到高亮行
+    if (highlightId.value) {
+      nextTick(() => {
+        scrollToHighlightedRow()
+      })
+    }
+  })
+}, { immediate: true, deep: true })
+
+
+// 获取行样式类名，用于高亮指定行
+function getRowClassName({ row }) {
+  if (highlightId.value && row.id && String(row.id) === String(highlightId.value)) {
+    return 'highlighted-row'
+  }
+  return ''
+}
+
+// 滚动到高亮行
+function scrollToHighlightedRow() {
+  if (!tableRef.value || !highlightId.value) return
+  
+  const table = tableRef.value
+  const rows = table.$el.querySelectorAll('.el-table__body-wrapper tr')
+  
+  for (const row of rows) {
+    const rowData = row.__vnode?.props?.['data-row-key']
+    if (rowData && String(rowData) === String(highlightId.value)) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      break
+    }
+  }
+}
 
 onMounted(() => {
   fetchAllModules()
@@ -1255,6 +1313,30 @@ onActivated(() => {
     // 覆盖表格行的 hover 样式
     :deep(.el-table__row:hover) {
       background-color: #f8f7ff !important;
+    }
+
+    // 高亮行样式
+    :deep(.highlighted-row) {
+      background-color: #ecf5ff !important;
+      animation: highlight-pulse 2s ease-out;
+      
+      td {
+        background-color: #ecf5ff !important;
+        color: #409eff;
+        font-weight: 500;
+      }
+    }
+
+    @keyframes highlight-pulse {
+      0% {
+        background-color: #d9ecff;
+      }
+      50% {
+        background-color: #b3d8ff;
+      }
+      100% {
+        background-color: #ecf5ff;
+      }
     }
 
     // 直接覆盖表头单元格样式
