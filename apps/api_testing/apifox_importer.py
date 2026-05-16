@@ -891,7 +891,10 @@ class ApifoxCliImporter:
                 else:
                     return f'${{{func_expr}}}'
             else:
-                return f'${{{func_expr}}}'
+                # 处理没有括号的动态变量，如 {{$date.timestamp}}
+                # 需要调用 _convert_apifox_dollar_variables 来转换
+                converted = self._convert_apifox_dollar_variables(f'${{{func_expr}}}')
+                return converted
         
         pattern = r'\{\{\$(.+?)\}\}'
         result = re.sub(pattern, replace_func, text, flags=re.DOTALL)
