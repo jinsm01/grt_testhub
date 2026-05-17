@@ -154,8 +154,9 @@
       <el-table :data="filteredAuthorStats" style="width: 100%" v-loading="loading" class="direct-table">
         <el-table-column type="index" label="排名" width="80" align="center">
           <template #default="{ $index }">
-            <div class="rank-badge" :class="{ 'top-3': $index < 3 }">
-              {{ $index + 1 }}
+            <div class="rank-badge" :class="{ 'has-medal': $index < 3, 'no-medal': $index >= 3 }">
+              <span v-if="$index < 3" class="rank-icon">{{ ['🥇', '🥈', '🥉'][$index] }}</span>
+              <span v-else class="rank-number">{{ $index + 1 }}</span>
             </div>
           </template>
         </el-table-column>
@@ -652,19 +653,44 @@ onMounted(() => {
 }
 
 .rank-badge {
-  width: 28px;
-  height: 28px;
-  line-height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  font-size: 16px;
+  margin: 0 auto;
   color: #6b7280;
   font-weight: 600;
-  font-size: 13px;
-  display: inline-block;
 
-  &.top-3 {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    color: #d97706;
+  .rank-icon {
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .rank-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  // 4名以后显示圆形灰色背景
+  &.no-medal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    border: 1px solid #e5e7eb;
+    font-size: 12px;
+    color: #6b7280;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8);
+    line-height: 1;
   }
 }
 
