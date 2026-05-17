@@ -3,11 +3,24 @@
     <el-card class="main-card">
       <!-- 头部区域 -->
       <div class="page-header">
+        <!-- 模式切换标签 -->
+        <div class="mode-tabs">
+          <div
+            v-for="mode in modeList"
+            :key="mode.key"
+            class="mode-tab"
+            :class="{ active: currentMode === mode.key }"
+            @click="switchMode(mode.key)"
+          >
+            <el-icon class="mode-icon"><component :is="mode.icon" /></el-icon>
+            <span class="mode-label">{{ mode.label }}</span>
+          </div>
+        </div>
         <div class="header-spacer"></div>
       </div>
 
-      <!-- 步骤卡片 -->
-      <div class="step-cards">
+      <!-- 智能填充模式：步骤卡片 -->
+      <div v-if="currentMode === 'smart'" class="step-cards">
         <div
           v-for="(step, index) in stepList"
           :key="index"
@@ -49,21 +62,10 @@
             </div>
           </el-upload>
         </div>
-
-        <div class="template-container">
-          <div class="template-tips">
-            <h4><el-icon><InfoFilled /></el-icon> 模板要求</h4>
-            <ul>
-              <li>第一行为字段名称，建议使用中文描述字段含义</li>
-              <li>系统会自动识别字段类型（如姓名、手机号、邮箱等）</li>
-              <li>支持包含"填写须知"说明行的模板</li>
-            </ul>
-          </div>
-        </div>
       </div>
 
-      <!-- 步骤2: 字段分析 -->
-      <div v-if="currentStep === 1" class="step-content">
+      <!-- 步骤2: 字段分析 (仅在智能填充模式下显示) -->
+      <div v-if="currentStep === 1 && currentMode === 'smart'" class="step-content">
         <div class="analysis-container">
           <div class="analysis-result">
             <!-- 多Sheet切换 -->
@@ -127,8 +129,8 @@
         </div>
       </div>
 
-      <!-- 步骤3: 生成数据 -->
-      <div v-if="currentStep === 2" class="step-content">
+      <!-- 步骤3: 生成数据 (仅在智能填充模式下显示) -->
+      <div v-if="currentStep === 2 && currentMode === 'smart'" class="step-content">
         <div class="generate-container">
           <div class="generate-section">
             <div class="generate-config">
@@ -207,7 +209,113 @@
             </div>
           </div>
         </div>
+      </div>
 
+      <!-- 模块课程生成模式 -->
+      <div v-if="currentMode === 'module'" class="module-course-section">
+        <!-- 生成配置卡片 -->
+        <div class="module-config-card">
+          <div class="config-header">
+            <h3 class="section-title">
+              <el-icon><Setting /></el-icon>
+              生成配置
+            </h3>
+            <div class="data-count-badge" :class="{ 'warning': moduleConfig.primaryCount * moduleConfig.secondaryCount > 2000 }">
+              {{ moduleConfig.primaryCount }} × {{ moduleConfig.secondaryCount }} = {{ moduleConfig.primaryCount * moduleConfig.secondaryCount }} 条
+            </div>
+          </div>
+
+          <div class="config-form">
+            <!-- 第一行：前缀配置 -->
+            <div class="config-row">
+              <div class="config-item">
+                <label class="config-label">
+                  <span class="label-text">一级模块前缀</span>
+                  <el-tooltip content="一级模块名称前缀，自动追加序号（如：基础001）" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </label>
+                <el-input v-model="moduleConfig.primaryPrefix" placeholder="如：基础课程" maxlength="50" show-word-limit size="default" />
+              </div>
+              <div class="config-item">
+                <label class="config-label">
+                  <span class="label-text">二级模块前缀</span>
+                  <el-tooltip content="二级模块名称前缀，自动追加全局序号（如：第001）" placement="top">
+                    <el-icon class="help-icon"><QuestionFilled /></el-icon>
+                  </el-tooltip>
+                </label>
+                <el-input v-model="moduleConfig.secondaryPrefix" placeholder="如：第" maxlength="50" show-word-limit size="default" />
+              </div>
+            </div>
+
+            <!-- 第二行：数量与长度配置 -->
+            <div class="config-row four-cols">
+              <div class="config-item">
+                <label class="config-label">一级模块数</label>
+                <el-input-number v-model="moduleConfig.primaryCount" :min="1" :max="100" :step="5" size="default" />
+              </div>
+              <div class="config-item">
+                <label class="config-label">二级模块/一级</label>
+                <el-input-number v-model="moduleConfig.secondaryCount" :min="1" :max="50" :step="5" size="default" />
+              </div>
+              <div class="config-item">
+                <label class="config-label">一级最大长度</label>
+                <el-input-number v-model="moduleConfig.primaryMaxLength" :min="5" :max="50" :step="5" size="default" />
+              </div>
+              <div class="config-item">
+                <label class="config-label">二级最大长度</label>
+                <el-input-number v-model="moduleConfig.secondaryMaxLength" :min="5" :max="50" :step="5" size="default" />
+              </div>
+            </div>
+
+            <!-- 点播课ID录入 -->
+            <div class="course-ids-section">
+              <div class="section-header">
+                <h4 class="section-subtitle">
+                  <el-icon><Document /></el-icon>
+                  点播课ID录入
+                </h4>
+                <el-switch v-model="moduleConfig.enableCourseIds" />
+              </div>
+              <div v-if="moduleConfig.enableCourseIds" class="course-ids-input">
+                <el-input v-model="moduleConfig.courseIdsText" type="textarea" :rows="5" :placeholder="`请输入 ${moduleConfig.primaryCount * moduleConfig.secondaryCount} 个点播课ID，每行一个`" resize="vertical" />
+                <div class="course-ids-stats">
+                  <span :class="{ 'text-warning': courseIdsCount > moduleConfig.primaryCount * moduleConfig.secondaryCount }">
+                    已录入 {{ courseIdsCount }} / {{ moduleConfig.primaryCount * moduleConfig.secondaryCount }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="config-actions">
+              <el-button type="primary" size="large" :loading="modulePreviewLoading" @click="previewModuleData">
+                <el-icon><View /></el-icon>预览数据
+              </el-button>
+              <el-button type="success" size="large" :loading="moduleDownloadLoading" :disabled="moduleConfig.primaryCount * moduleConfig.secondaryCount > 2000" @click="downloadModuleData">
+                <el-icon><Download /></el-icon>下载Excel
+              </el-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 数据预览 -->
+        <div v-if="modulePreviewData.length > 0" class="module-preview-card">
+          <h3 class="section-title">
+            <el-icon><View /></el-icon>
+            数据预览（前 {{ modulePreviewData.length }} 条）
+          </h3>
+          <el-table :data="modulePreviewData" border style="width: 100%" size="small">
+            <el-table-column type="index" label="序号" width="50" align="center" />
+            <el-table-column prop="primary_module" label="一级模块" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="secondary_module" label="二级模块" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="course_id" label="点播课ID" min-width="200" show-overflow-tooltip>
+              <template #default="{ row }">
+                <span :class="{ 'empty-cell': !row.course_id }">{{ row.course_id || '-' }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
 
       </div>
     </el-card>
@@ -242,7 +350,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   Document,
@@ -251,13 +359,32 @@ import {
   QuestionFilled,
   View,
   Download,
-  Check
+  Check,
+  FolderOpened,
+  Setting,
+  Operation
 } from '@element-plus/icons-vue'
 import {
   analyzeExcelTemplate,
   previewFilledData,
-  fillExcelData
+  fillExcelData,
+  generateModuleCourseData
 } from '@/api/data-factory'
+
+// 模式列表
+const modeList = [
+  { key: 'smart', label: '业务导入动态字段', icon: 'Operation' },
+  { key: 'module', label: '业务引用点播课', icon: 'FolderOpened' }
+]
+const currentMode = ref('smart')
+
+// 切换模式
+const switchMode = (mode) => {
+  currentMode.value = mode
+  // 重置状态
+  reset()
+  resetModuleConfig()
+}
 
 const currentStep = ref(0)
 const showHelp = ref(false)
@@ -345,6 +472,133 @@ const generateConfig = reactive({
   rowCount: 10,
   previewCount: 5
 })
+
+// ========== 模块课程数据生成 ==========
+
+// 模块课程配置
+const moduleConfig = reactive({
+  primaryCount: 50,
+  secondaryCount: 30,
+  primaryMaxLength: 20,
+  secondaryMaxLength: 20,
+  dataStartRow: 3,
+  primaryPrefix: '一级模块',
+  secondaryPrefix: '二级模块',
+  enableCourseIds: true,
+  courseIdsText: ''
+})
+
+// 计算录入的点播课ID数量
+const courseIdsCount = computed(() => {
+  if (!moduleConfig.courseIdsText) return 0
+  return moduleConfig.courseIdsText
+    .split('\n')
+    .map(id => id.trim())
+    .filter(id => id.length > 0)
+    .length
+})
+
+// 获取点播课ID列表
+const getCourseIdsList = () => {
+  if (!moduleConfig.enableCourseIds || !moduleConfig.courseIdsText) return []
+  return moduleConfig.courseIdsText
+    .split('\n')
+    .map(id => id.trim())
+    .filter(id => id.length > 0)
+}
+
+  // 模块课程预览数据
+  const modulePreviewData = ref([])
+const modulePreviewLoading = ref(false)
+const moduleDownloadLoading = ref(false)
+
+// 重置模块课程配置
+const resetModuleConfig = () => {
+  moduleConfig.primaryCount = 50
+  moduleConfig.secondaryCount = 30
+  moduleConfig.primaryMaxLength = 20
+  moduleConfig.secondaryMaxLength = 20
+  moduleConfig.dataStartRow = 3
+  moduleConfig.primaryPrefix = '一级模块'
+  moduleConfig.secondaryPrefix = '二级模块'
+  modulePreviewData.value = []
+}
+
+// 预览模块课程数据
+const previewModuleData = async () => {
+  modulePreviewLoading.value = true
+  try {
+    const response = await generateModuleCourseData({
+      primary_count: moduleConfig.primaryCount,
+      secondary_count: moduleConfig.secondaryCount,
+      primary_max_length: moduleConfig.primaryMaxLength,
+      secondary_max_length: moduleConfig.secondaryMaxLength,
+      data_start_row: moduleConfig.dataStartRow,
+      primary_prefix: moduleConfig.primaryPrefix,
+      secondary_prefix: moduleConfig.secondaryPrefix,
+      course_ids: getCourseIdsList(),
+      action: 'preview'
+    })
+
+    const data = response.data || response
+    if (data.success) {
+      modulePreviewData.value = data.preview_data || []
+      ElMessage.success(`预览数据生成成功，共 ${data.total_rows} 条数据`)
+    } else {
+      ElMessage.error(data.error || '预览失败')
+    }
+  } catch (error) {
+    console.error('预览错误:', error)
+    ElMessage.error('预览失败：' + (error.message || '未知错误'))
+  } finally {
+    modulePreviewLoading.value = false
+  }
+}
+
+// 下载模块课程数据
+const downloadModuleData = async () => {
+  moduleDownloadLoading.value = true
+  try {
+    const response = await generateModuleCourseData({
+      primary_count: moduleConfig.primaryCount,
+      secondary_count: moduleConfig.secondaryCount,
+      primary_max_length: moduleConfig.primaryMaxLength,
+      secondary_max_length: moduleConfig.secondaryMaxLength,
+      data_start_row: moduleConfig.dataStartRow,
+      primary_prefix: moduleConfig.primaryPrefix,
+      secondary_prefix: moduleConfig.secondaryPrefix,
+      course_ids: getCourseIdsList(),
+      action: 'download'
+    })
+
+    // 从响应头中获取文件名
+    let filename = `按模块导入点播课_${moduleConfig.primaryCount}一级_${moduleConfig.secondaryCount}二级_${new Date().getTime()}.xlsx`
+    const contentDisposition = response.headers?.['content-disposition']
+    if (contentDisposition) {
+      const filenameStarMatch = contentDisposition.match(/filename\*=UTF-8''(.+)/)
+      if (filenameStarMatch) {
+        filename = decodeURIComponent(filenameStarMatch[1])
+      }
+    }
+
+    // 从 response.data 获取 blob 数据
+    const blobData = response.data || response
+    const blob = new Blob([blobData], { type: 'application/vnd.ms-excel' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    ElMessage.success('文件下载成功')
+  } catch (error) {
+    console.error('下载错误:', error)
+    ElMessage.error('下载失败：' + (error.message || '未知错误'))
+  } finally {
+    moduleDownloadLoading.value = false
+  }
+}
 
 const supportedTypes = [
   { type: '姓名', keywords: '姓名、名字、name', example: '张伟' },
@@ -1521,6 +1775,301 @@ const reset = () => {
   &.gender {
     background: #fff0f6;
     color: #eb2f96;
+  }
+}
+
+// ========== 模式切换标签样式 ==========
+.mode-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  background: rgba(147, 112, 219, 0.08);
+  border-radius: 10px;
+
+  .mode-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #666;
+    font-size: 14px;
+    font-weight: 500;
+
+    .mode-icon {
+      font-size: 16px;
+    }
+
+    &:hover {
+      background: rgba(147, 112, 219, 0.1);
+      color: #7b42f6;
+    }
+
+    &.active {
+      background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(123, 66, 246, 0.3);
+    }
+  }
+}
+
+// ========== 模块课程生成样式 ==========
+.module-course-section {
+  padding: 24px;
+
+  .module-config-card,
+  .module-preview-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(147, 112, 219, 0.1);
+    box-shadow: 0 2px 12px rgba(147, 112, 219, 0.05);
+  }
+
+  // 配置头部
+  .config-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin: 0;
+
+      .el-icon {
+        color: #7b42f6;
+        font-size: 18px;
+      }
+    }
+
+    .data-count-badge {
+      padding: 6px 12px;
+      background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+      color: white;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 16px;
+
+      &.warning {
+        background: linear-gradient(135deg, #f56c6c 0%, #e64c4c 100%);
+      }
+    }
+  }
+
+  .config-form {
+    .config-row {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 16px;
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      // 四列布局：用于数量/长度配置行
+      &.four-cols {
+        .config-item {
+          flex: 1;
+          min-width: 0;
+        }
+
+        @media (max-width: 992px) {
+          flex-wrap: wrap;
+
+          .config-item {
+            flex: 0 0 calc(50% - 10px);
+          }
+        }
+
+        @media (max-width: 576px) {
+          .config-item {
+            flex: 1 1 100%;
+          }
+        }
+      }
+    }
+
+    .config-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+
+      .config-label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 13px;
+        color: #666;
+        font-weight: 500;
+        white-space: nowrap;
+
+        .help-icon {
+          color: #bbb;
+          font-size: 13px;
+          cursor: help;
+
+          &:hover {
+            color: #7b42f6;
+          }
+        }
+      }
+
+      :deep(.el-input-number) {
+        width: 100%;
+
+        .el-input__wrapper {
+          border-radius: 6px;
+        }
+      }
+
+      :deep(.el-input__wrapper) {
+        border-radius: 6px;
+      }
+    }
+
+    // 点播课ID录入区域样式
+    .course-ids-section {
+      margin: 12px 0;
+      padding: 14px 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border: 1px solid rgba(147, 112, 219, 0.08);
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+
+        .section-subtitle {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          color: #555;
+          font-weight: 500;
+          margin: 0;
+
+          .el-icon {
+            color: #7b42f6;
+            font-size: 14px;
+          }
+        }
+      }
+
+      .course-ids-input {
+        :deep(.el-textarea__inner) {
+          font-family: monospace;
+          font-size: 12px;
+          padding: 10px 12px;
+          border-radius: 6px;
+        }
+
+        .course-ids-stats {
+          margin-top: 6px;
+          font-size: 12px;
+          color: #999;
+          text-align: right;
+
+          .text-warning {
+            color: #e6a23c;
+            font-weight: 500;
+          }
+        }
+      }
+    }
+
+    .config-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+
+      .el-button {
+        flex: 1;
+        height: 40px;
+        font-size: 14px;
+        font-weight: 500;
+        border-radius: 8px;
+
+        .el-icon {
+          margin-right: 4px;
+        }
+
+        // 预览按钮 - 紫色主题
+        &.el-button--primary {
+          background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+          border: none;
+
+          &:hover {
+            background: linear-gradient(135deg, #8a5af7 0%, #6a42b3 100%);
+          }
+
+          &:active {
+            background: linear-gradient(135deg, #6a35d9 0%, #4a2891 100%);
+          }
+        }
+
+        // 下载按钮 - 绿色主题
+        &.el-button--success {
+          background: linear-gradient(135deg, #67c23a 0%, #529b2d 100%);
+          border: none;
+
+          &:hover {
+            background: linear-gradient(135deg, #85ce61 0%, #6eb04a 100%);
+          }
+
+          &:active {
+            background: linear-gradient(135deg, #5daf34 0%, #458a28 100%);
+          }
+
+          &.is-disabled {
+            background: linear-gradient(135deg, #b3e19d 0%, #a4d68c 100%);
+          }
+        }
+      }
+    }
+  }
+
+  // 预览卡片
+  .module-preview-card {
+    margin-top: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid rgba(147, 112, 219, 0.1);
+    box-shadow: 0 2px 12px rgba(147, 112, 219, 0.05);
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 16px;
+
+      .el-icon {
+        color: #7b42f6;
+      }
+    }
+
+    .el-table {
+      .empty-cell {
+        color: #bbb;
+      }
+    }
   }
 }
 </style>

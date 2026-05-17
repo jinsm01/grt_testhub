@@ -141,6 +141,41 @@ export function fillExcelData(file, rowCount = 10, customFields = {}) {
   })
 }
 
+// ========== 模块课程数据生成 ==========
+
+/**
+ * 生成模块课程测试数据（按模块导入点播课）
+ * @param {Object} params - 生成参数
+ * @param {number} params.primary_count - 一级模块数量
+ * @param {number} params.secondary_count - 每个一级模块下的二级模块数量
+ * @param {number} params.primary_max_length - 一级模块名称最大长度
+ * @param {number} params.secondary_max_length - 二级模块名称最大长度
+ * @param {number} params.data_start_row - 数据起始行号
+ * @param {string} params.primary_prefix - 一级模块名称前缀
+ * @param {string} params.secondary_prefix - 二级模块名称前缀
+ * @param {string[]} params.course_ids - 点播课ID列表（可选）
+ * @param {string} params.action - 'preview' 或 'download'
+ * @returns {Promise} - 预览数据或下载文件
+ */
+export function generateModuleCourseData(params) {
+  const { action = 'preview', ...otherParams } = params
+
+  if (action === 'download') {
+    return request({
+      url: '/data-factory/module-course/generate/',
+      method: 'post',
+      data: { ...otherParams, action: 'download' },
+      responseType: 'blob'
+    })
+  }
+
+  return request({
+    url: '/data-factory/module-course/generate/',
+    method: 'post',
+    data: { ...otherParams, action: 'preview' }
+  })
+}
+
 // ========== Bug分析 ==========
 
 /**
