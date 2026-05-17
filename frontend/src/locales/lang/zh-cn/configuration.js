@@ -139,7 +139,7 @@ export default {
 
   // AI 模型配置 (测试用例生成)
   aiModel: {
-    title: '🤖 AI用例生成模型配置',
+    title: 'AI用例生成模型配置',
     description: '配置用于测试用例生成和评审的AI模型',
     configList: '模型配置列表',
     addConfig: '添加配置',
@@ -184,11 +184,12 @@ export default {
       other: '其他'
     },
     roles: {
-      writer: '测试用例编写专家',
-      reviewer: '测试评审专家',
+      writer: '测试用例编写',
+      reviewer: '测试用例评审',
       knowledge_base: '知识库问答',
-      bug_analyzer: 'Bug 分析专家',
-      assertion_generator: 'AI断言生成'
+      bug_analyzer: 'Bug 分析',
+      assertion_generator: 'AI断言生成',
+      scene_generator: 'AI场景生成'
     },
     messages: {
       loadFailed: '加载配置失败',

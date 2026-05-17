@@ -633,8 +633,10 @@ def execute_test_suite(test_suite, environment, executed_by):
         
         # 获取套件中的请求
         suite_requests = test_suite.testsuiterequest_set.filter(enabled=True).order_by('order')
-        
-        execution.total_requests = suite_requests.count()
+
+        # 统计实际请求数（排除分组类型）
+        actual_request_count = sum(1 for sr in suite_requests if sr.step_type != 'group' and sr.request is not None)
+        execution.total_requests = actual_request_count
         execution.save()
         
         results = []

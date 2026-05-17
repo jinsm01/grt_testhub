@@ -14,10 +14,11 @@ from django.utils import timezone
 
 from .models import (
     AutomationScenario, ScenarioStep, ScenarioExecution,
-    ApiProject, ApiCollection, ApiRequest
+    ApiProject, ApiCollection, ApiRequest, Environment
 )
 from .scenario_engine import ScenarioExecutor
 from .apifox_importer import ApifoxCliImporter
+from .ai_scene_generator import AISceneGenerator
 
 
 class AutomationScenarioViewSet(viewsets.ModelViewSet):
@@ -295,6 +296,60 @@ class AutomationScenarioViewSet(viewsets.ModelViewSet):
 
         return Response({'message': '评审已重置'})
 
+    @action(detail=False, methods=['post'])
+    def ai_generate(self, request):
+        """AI生成场景步骤"""
+        request_ids = request.data.get('request_ids', [])
+        environment_id = request.data.get('environment_id')
+        business_description = request.data.get('business_description', '')
+
+        print(f"[AI生成] 接收到的参数: request_ids={request_ids}, environment_id={environment_id}, business_description={business_description}")
+
+        if not request_ids:
+            return Response(
+                {'error': '请选择至少一个接口'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # 获取环境
+            environment = None
+            if environment_id:
+                try:
+                    environment = Environment.objects.get(id=environment_id)
+                    print(f"[AI生成] 找到环境: {environment.name}, 变量: {environment.variables}")
+                except Environment.DoesNotExist:
+                    print(f"[AI生成] 环境不存在: {environment_id}")
+
+            # 创建生成器
+            generator = AISceneGenerator(environment=environment)
+
+            # 生成场景（支持业务描述）
+            result = generator.generate_scene(request_ids, business_description)
+
+            if result['success']:
+                print(f"[AI生成] 生成成功，步骤数: {len(result.get('steps', []))}")
+                return Response({
+                    'success': True,
+                    'scene_name': result['scene_name'],
+                    'steps': result['steps']
+                })
+            else:
+                return Response(
+                    {'error': result.get('error', '生成失败')},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+        except Exception as e:
+            import traceback
+            return Response(
+                {
+                    'error': str(e),
+                    'traceback': traceback.format_exc()
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 class ScenarioStepViewSet(viewsets.ModelViewSet):
     """场景步骤视图集"""
@@ -426,8 +481,46 @@ class ScenarioStepViewSet(viewsets.ModelViewSet):
         """创建步骤"""
         data = request.data
 
-        # 获取最大步骤编号
+        # 获取场景ID（支持直接传 scenario_id 或通过 test_suite_id 自动查找）
         scenario_id = data.get('scenario_id')
+        test_suite_id = data.get('test_suite_id')
+
+        if not scenario_id and test_suite_id:
+            # 通过 test_suite_id 查找关联的 AutomationScenario
+            try:
+                from apps.api_testing.models import TestSuite
+                test_suite = TestSuite.objects.get(id=test_suite_id)
+                if hasattr(test_suite, 'scenario') and test_suite.scenario:
+                    scenario_id = test_suite.scenario.id
+                else:
+                    # 如果没有关联的场景，创建一个
+                    from apps.api_testing.models import AutomationScenario
+                    scenario = AutomationScenario.objects.create(
+                        project=test_suite.project,
+                        name=test_suite.name,
+                        description=test_suite.description or '',
+                        environment=test_suite.environment,
+                        global_variables={},
+                        pre_script='',
+                        post_script='',
+                        flow_control={},
+                        legacy_test_suite=test_suite,
+                        created_by=request.user
+                    )
+                    scenario_id = scenario.id
+            except TestSuite.DoesNotExist:
+                return Response(
+                    {'error': f'测试套件 {test_suite_id} 不存在'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        if not scenario_id:
+            return Response(
+                {'error': '必须提供 scenario_id 或 test_suite_id'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 获取最大步骤编号
         max_step = ScenarioStep.objects.filter(
             scenario_id=scenario_id
         ).values_list('step_number', flat=True)
@@ -456,6 +549,27 @@ class ScenarioStepViewSet(viewsets.ModelViewSet):
             control_config=data.get('control_config', {}),
             order=next_step
         )
+
+        # 如果通过 test_suite_id 创建，同时创建 TestSuiteRequest 以保持兼容性
+        if test_suite_id and data.get('api_request_id'):
+            try:
+                from apps.api_testing.models import TestSuite, TestSuiteRequest
+                test_suite = TestSuite.objects.get(id=test_suite_id)
+                # 检查是否已存在
+                existing = TestSuiteRequest.objects.filter(
+                    test_suite=test_suite,
+                    request_id=data.get('api_request_id')
+                ).first()
+                if not existing:
+                    TestSuiteRequest.objects.create(
+                        test_suite=test_suite,
+                        request_id=data.get('api_request_id'),
+                        order=next_step,
+                        assertions=data.get('override_assertions', []),
+                        extracted_variables={}
+                    )
+            except Exception as e:
+                logger.warning(f"创建 TestSuiteRequest 失败: {str(e)}")
 
         return Response({
             'id': step.id,

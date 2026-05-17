@@ -153,7 +153,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Search, Plus, View, Document, Check, Delete, Operation, Folder, Loading, Warning
 } from '@element-plus/icons-vue'
-import loader from '@monaco-editor/loader'
+import * as monaco from 'monaco-editor'
+import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
+import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
+import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
+import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
+import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 
 import {
   getUiProjects,
@@ -289,6 +294,27 @@ const countElements = (tree) => {
   return count
 }
 
+// 配置 Monaco Editor workers
+if (typeof self !== 'undefined') {
+  self.MonacoEnvironment = {
+    getWorker(_, label) {
+      if (label === 'json') {
+        return new jsonWorker()
+      }
+      if (label === 'css' || label === 'scss' || label === 'less') {
+        return new cssWorker()
+      }
+      if (label === 'html' || label === 'handlebars' || label === 'razor') {
+        return new htmlWorker()
+      }
+      if (label === 'typescript' || label === 'javascript') {
+        return new tsWorker()
+      }
+      return new editorWorker()
+    }
+  }
+}
+
 // 初始化 Monaco Editor
 const initMonacoEditor = async () => {
   if (!monacoEditor.value) return
@@ -297,14 +323,6 @@ const initMonacoEditor = async () => {
   editorError.value = false
 
   try {
-    // 配置 loader 使用 CDN
-    loader.config({
-      paths: {
-        vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.53.0/min/vs'
-      }
-    })
-
-    const monaco = await loader.init()
     monacoRef.value = monaco
 
     editor.value = monaco.editor.create(monacoEditor.value, {
@@ -358,10 +376,10 @@ const initMonacoEditor = async () => {
 
 // 更新编辑器语言
 const updateEditorLanguage = () => {
-  if (editor.value && monacoRef.value) {
+  if (editor.value) {
     const model = editor.value.getModel()
     if (model) {
-      monacoRef.value.editor.setModelLanguage(model, scriptLanguage.value === 'javascript' ? 'javascript' : 'python')
+      monaco.editor.setModelLanguage(model, scriptLanguage.value === 'javascript' ? 'javascript' : 'python')
     }
   }
 }
@@ -426,7 +444,7 @@ const insertElementCode = (element) => {
 }
 
 const insertCodeAtCursor = (code) => {
-  if (!editor.value || !monacoRef.value) return
+  if (!editor.value) return
 
   // 获取当前光标位置，如果没有则默认在第一行第一列
   let position = editor.value.getPosition()
@@ -444,7 +462,7 @@ const insertCodeAtCursor = (code) => {
   } else {
     // 非空时在光标位置插入
     editor.value.executeEdits('insert-element', [{
-      range: new monacoRef.value.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+      range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
       text: code
     }])
   }

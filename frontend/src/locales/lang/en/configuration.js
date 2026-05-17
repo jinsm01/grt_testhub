@@ -188,7 +188,8 @@ export default {
       reviewer: 'Test Reviewer',
       knowledge_base: 'Knowledge Base Q&A',
       bug_analyzer: 'Bug Analyzer',
-      assertion_generator: 'AI Assertion Generator'
+      assertion_generator: 'AI Assertion Generator',
+      scene_generator: 'AI Scene Generator'
     },
     messages: {
       loadFailed: 'Failed to load configurations',

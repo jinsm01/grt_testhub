@@ -52,29 +52,16 @@
                 <span class="summary-name">{{ row.name || '未命名汇总' }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="关联文件" min-width="200" show-overflow-tooltip header-align="center" align="left">
+            <el-table-column label="关联文件" min-width="200" show-overflow-tooltip header-align="center" align="center">
               <template #default="{ row }">
-                <div class="file-tags">
-                  <el-tag
-                    v-for="(file, index) in (row.related_files || []).slice(0, 3)"
-                    :key="file.id"
-                    size="small"
-                    class="file-tag"
-                    type="info"
-                    effect="plain"
-                  >
-                    {{ file.file_name }}
-                  </el-tag>
-                  <el-tag
-                    v-if="(row.related_files || []).length > 3"
-                    size="small"
-                    class="file-tag-more"
-                    type="info"
-                  >
-                    +{{ row.related_files.length - 3 }}
-                  </el-tag>
-                  <span v-if="!(row.related_files || []).length" class="text-gray">-</span>
-                </div>
+                <span
+                  v-if="(row.related_files || []).length"
+                  class="file-names"
+                  :title="formatFileNames(row.related_files)"
+                >
+                  {{ formatFileNames(row.related_files) }}
+                </span>
+                <span v-else class="text-gray">-</span>
               </template>
             </el-table-column>
             <el-table-column prop="record_count" label="文件数" width="100" header-align="center" align="center">
@@ -1013,6 +1000,12 @@ const formatGroupBy = (groupBy) => {
   return groupMap[groupBy] || groupBy
 }
 
+// 格式化文件名列表，用顿号分隔
+const formatFileNames = (files) => {
+  if (!files || files.length === 0) return '-'
+  return files.map(f => f.file_name).join('、')
+}
+
 // 监听窗口大小变化，调整图表
 window.addEventListener('resize', () => {
   trendChart?.resize()
@@ -1444,39 +1437,15 @@ window.addEventListener('resize', () => {
   color: #909399;
 }
 
-/* 文件标签样式 */
-.file-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-
-.file-tag {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
+/* 文件名样式 */
+.file-names {
   font-size: 13px;
-  font-weight: 500;
-  background: #f0e6ff;
-  color: #7b42f6;
+  color: #606266;
   white-space: nowrap;
-  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
-  border: none;
-}
-
-.file-tag-more {
+  max-width: 180px;
   display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  background: #f5f5f5;
-  color: #666;
-  white-space: nowrap;
-  border: none;
 }
 
 .time-text {

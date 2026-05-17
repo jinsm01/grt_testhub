@@ -1,39 +1,19 @@
 <template>
   <div class="automation-suite-detail">
     <div class="content" v-loading="loading">
-      <!-- 套件信息卡片 - 放在最上面 -->
-      <div class="suite-info-section" v-if="suite">
-        <div class="info-grid">
-          <div class="info-item">
-            <div class="info-label">{{ $t('apiTesting.automation.executionEnvironment') }}</div>
-            <div class="info-value">{{ getEnvironmentName(suite.environment) }}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">{{ $t('apiTesting.automation.requestCount') }}</div>
-            <div class="info-value">{{ suite.suite_requests?.length || 0 }}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">{{ $t('apiTesting.automation.creator') }}</div>
-            <div class="info-value">{{ suite.created_by?.username }}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">{{ $t('apiTesting.automation.createTime') }}</div>
-            <div class="info-value">{{ formatDate(suite.created_at) }}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">{{ $t('apiTesting.automation.updateTime') }}</div>
-            <div class="info-value">{{ formatDate(suite.updated_at) }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 标题和操作按钮 - 放在卡片下面 -->
+      <!-- 标题和操作按钮 -->
       <div class="header">
         <div class="header-left">
           <span class="page-title">{{ suite?.name || $t('apiTesting.automation.suiteDetail') }}</span>
           <!-- 评审状态徽章 -->
           <span v-if="reviewSummary" class="review-status-badge" :class="reviewSummary?.overall_status">
             {{ getReviewStatusText(reviewSummary?.overall_status) }}
+          </span>
+          <!-- 创建者、创建时间、更新时间 -->
+          <span class="suite-meta-info" v-if="suite">
+            <span class="meta-item">创建者: {{ suite.created_by?.username }}</span>
+            <span class="meta-item">创建于: {{ formatDate(suite.created_at) }}</span>
+            <span class="meta-item">更新于: {{ formatDate(suite.updated_at) }}</span>
           </span>
         </div>
         <div class="header-actions" v-if="suite">
@@ -72,6 +52,11 @@
             <el-button type="warning" @click="showAddRequest">
               <el-icon><Plus /></el-icon>
               {{ $t('apiTesting.automation.addRequest') }}
+            </el-button>
+            <!-- AI智能生成按钮 -->
+            <el-button type="primary" @click="openAIGenerateDialog" :loading="aiGenerating">
+              <el-icon><MagicStick /></el-icon>
+              AI智能生成
             </el-button>
             <!-- 评审按钮 - 只有未评审且不是创建者时显示 -->
             <template v-if="reviewSummary && !userHasReviewed && !isCreator">
@@ -1326,6 +1311,97 @@
         </div>
       </template>
     </el-drawer>
+
+    <!-- AI智能生成弹窗 -->
+    <el-dialog
+      v-model="showAIGenerate"
+      title="AI智能生成场景"
+      width="700px"
+      :close-on-click-modal="false"
+    >
+      <div class="ai-generate-content">
+        <el-alert
+          title="AI将根据您选择的接口和业务描述生成场景步骤"
+          type="info"
+          :closable="false"
+          style="margin-bottom: 20px;"
+        />
+
+        <!-- 业务描述输入 -->
+        <div class="business-description">
+          <div class="section-title">业务描述（可选）</div>
+          <el-input
+            v-model="aiBusinessDescription"
+            type="textarea"
+            :rows="3"
+            placeholder="请描述接口之间的业务关系和依赖，例如：先登录获取token，然后创建智能体获取agentId，最后查询智能体详情"
+            style="margin-bottom: 20px;"
+          />
+        </div>
+
+        <!-- 接口选择 -->
+        <div class="interface-selection">
+          <div class="section-title">选择接口（按执行顺序勾选）</div>
+          <el-tree
+            ref="aiRequestTreeRef"
+            :data="requestTree"
+            :props="requestTreeProps"
+            show-checkbox
+            node-key="id"
+            :check-strictly="false"
+            :default-expand-all="true"
+            class="ai-request-tree"
+          >
+            <template #default="{ node, data }">
+              <div class="request-tree-node">
+                <el-icon v-if="data.type === 'collection'"><Folder /></el-icon>
+                <el-icon v-else><Document /></el-icon>
+                <span>{{ data.name }}</span>
+                <span v-if="data.type === 'request'" class="method-tag" :class="data.method?.toLowerCase()">
+                  {{ data.method }}
+                </span>
+              </div>
+            </template>
+          </el-tree>
+        </div>
+
+        <!-- 生成结果预览 -->
+        <div v-if="aiGeneratedSteps.length > 0" class="generated-preview">
+          <div class="section-title">生成结果预览</div>
+          <el-timeline>
+            <el-timeline-item
+              v-for="(step, index) in aiGeneratedSteps"
+              :key="index"
+              :type="step.use_vars?.length > 0 ? 'primary' : 'info'"
+              :hollow="step.use_vars?.length > 0 ? false : true"
+            >
+              <div class="step-preview-item">
+                <div class="step-header">
+                  <span class="step-number">步骤 {{ step.step_number }}</span>
+                  <span class="step-name">{{ step.request_name }}</span>
+                </div>
+                <div v-if="step.extract_vars?.length > 0" class="step-vars">
+                  <el-tag size="small" type="success">提取变量: {{ step.extract_vars.map(v => v.var_name).join(', ') }}</el-tag>
+                </div>
+                <div v-if="step.use_vars?.length > 0" class="step-vars">
+                  <el-tag size="small" type="warning">使用变量: {{ step.use_vars.map(v => v.value).join(', ') }}</el-tag>
+                </div>
+              </div>
+            </el-timeline-item>
+          </el-timeline>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="showAIGenerate = false">取消</el-button>
+        <el-button v-if="aiGeneratedSteps.length === 0" type="primary" @click="generateSceneByAI" :loading="aiGenerating">
+          开始生成
+        </el-button>
+        <el-button v-else type="success" @click="applyAIGeneratedSteps" :loading="aiApplying">
+          应用到场景
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -1395,6 +1471,14 @@ const submitting = ref(false)
 const addingRequests = ref(false)
 const currentExecution = ref(null)
 const currentRequestDetail = ref(null)
+
+// AI智能生成相关
+const showAIGenerate = ref(false)
+const aiGenerating = ref(false)
+const aiApplying = ref(false)
+const aiGeneratedSteps = ref([])
+const aiBusinessDescription = ref('')
+const aiRequestTreeRef = ref(null)
 
 // 请求详情抽屉状态
 const activeDataTab = ref('request')
@@ -1684,15 +1768,21 @@ const getAllRequestsFlat = (requests) => {
   return result
 }
 
+// 计算总请求数（包含分组内的请求）
+const totalRequestCount = computed(() => {
+  if (!suite.value || !suite.value.suite_requests) return 0
+  return getAllRequestsFlat(suite.value.suite_requests).length
+})
+
 // 获取前置接口列表（在同集合中，排在当前接口之前的接口）
 const previousRequests = computed(() => {
   if (!suite.value || !suite.value.suite_requests || !currentEditingRequestId.value) return []
-  
+
   // 获取扁平化的所有请求列表
   const flatRequests = getAllRequestsFlat(suite.value.suite_requests)
   const currentIndex = flatRequests.findIndex(r => r.id === currentEditingRequestId.value)
   if (currentIndex === -1) return []
-  
+
   // 返回当前接口之前的所有接口
   return flatRequests.slice(0, currentIndex)
 })
@@ -2056,7 +2146,7 @@ const getStatusText = (status) => {
 
 const getPassRate = (execution) => {
   if (!execution || execution.total_requests === 0) return 0
-  return Math.round((execution.passed_requests / execution.total_requests) * 100)
+  return ((execution.passed_requests / execution.total_requests) * 100).toFixed(1)
 }
 
 const getAverageExecutionTime = (execution) => {
@@ -2651,6 +2741,143 @@ const showAddRequest = async () => {
 
 const onRequestCheck = () => {
   // 请求选择变化处理
+}
+
+// ========== AI智能生成相关方法 ==========
+const openAIGenerateDialog = async () => {
+  // 重置状态
+  aiGeneratedSteps.value = []
+  aiBusinessDescription.value = ''
+
+  // 加载接口树
+  await loadRequestTree()
+
+  showAIGenerate.value = true
+
+  // 默认不选中任何接口
+  nextTick(() => {
+    setTimeout(() => {
+      if (aiRequestTreeRef.value) {
+        aiRequestTreeRef.value.setCheckedKeys([], false)
+      }
+    }, 200)
+  })
+}
+
+const generateSceneByAI = async () => {
+  if (!suite.value) return
+
+  const checkedNodes = aiRequestTreeRef.value.getCheckedNodes()
+  const requestIds = checkedNodes
+    .filter(node => node.type === 'request')
+    .map(node => parseInt(node.id.replace('request_', '')))
+
+  if (requestIds.length === 0) {
+    ElMessage.warning('请至少选择一个接口')
+    return
+  }
+
+  if (requestIds.length < 2) {
+    ElMessage.warning('请至少选择两个接口以分析依赖关系')
+    return
+  }
+
+  aiGenerating.value = true
+  try {
+    const response = await api.post('/api-testing/automation-scenarios/ai_generate/', {
+      request_ids: requestIds,
+      environment_id: suite.value.environment?.id || suite.value.environment,
+      business_description: aiBusinessDescription.value
+    })
+
+    if (response.data.success) {
+      aiGeneratedSteps.value = response.data.steps || []
+      ElMessage.success('AI场景生成成功')
+    } else {
+      ElMessage.error(response.data.error || '生成失败')
+    }
+  } catch (error) {
+    console.error('AI生成失败:', error)
+    // 错误提示已由全局拦截器处理，这里不再重复显示
+    // 只有当没有响应数据时才显示默认错误
+    if (!error.response?.data?.error) {
+      ElMessage.error('AI生成失败')
+    }
+  } finally {
+    aiGenerating.value = false
+  }
+}
+
+const applyAIGeneratedSteps = async () => {
+  if (!suite.value || aiGeneratedSteps.value.length === 0) return
+
+  aiApplying.value = true
+  try {
+    // 将生成的步骤添加到场景
+    for (const step of aiGeneratedSteps.value) {
+      // 处理变量使用 - 构建 override_headers, override_params, override_body
+      const overrideHeaders = {}
+      const overrideParams = {}
+      let overrideBody = null
+
+      if (step.use_vars && step.use_vars.length > 0) {
+        for (const useVar of step.use_vars) {
+          const param = useVar.param || ''
+          let value = useVar.value || ''
+
+          // 将 ${变量名} 转换为 {{变量名}} 格式，以便执行器正确解析
+          value = value.replace(/\$\{(\w+)\}/g, '{{$1}}')
+
+          if (param.startsWith('header.')) {
+            // Header 参数
+            const headerName = param.replace('header.', '')
+            overrideHeaders[headerName] = value
+          } else if (param.startsWith('params.')) {
+            // URL 参数
+            const paramName = param.replace('params.', '')
+            overrideParams[paramName] = value
+          } else if (param.startsWith('body.')) {
+            // Body 参数 - 简化为替换整个 body 中的对应字段
+            if (!overrideBody) overrideBody = {}
+            const bodyPath = param.replace('body.', '')
+            overrideBody[bodyPath] = value
+          }
+        }
+      }
+
+      const stepData = {
+        test_suite_id: suite.value.id,  // 使用 test_suite_id，后端会自动找到或创建对应的 AutomationScenario
+        step_type: 'request',
+        name: step.request_name,
+        api_request_id: step.request_id,
+        override_enabled: true,
+        // 变量提取配置
+        override_extractors: step.extract_vars?.map(v => ({
+          name: v.var_name,
+          extractor_type: 'json_path',
+          extractor_config: { json_path: v.json_path },
+          variable_name: v.var_name
+        })) || [],
+        // 变量使用配置 - 使用空对象而不是 undefined/null
+        override_headers: Object.keys(overrideHeaders).length > 0 ? overrideHeaders : {},
+        override_params: Object.keys(overrideParams).length > 0 ? overrideParams : {},
+        override_body: overrideBody || {}
+      }
+
+      await createScenarioStep(stepData)
+    }
+
+    ElMessage.success('场景步骤添加成功')
+    showAIGenerate.value = false
+
+    // 刷新场景数据
+    await loadSuiteDetail()
+  } catch (error) {
+    console.error('应用生成步骤失败:', error)
+    ElMessage.error('应用生成步骤失败')
+  } finally {
+    aiApplying.value = false
+  }
 }
 
 const addSelectedRequests = async () => {
@@ -3582,6 +3809,20 @@ onMounted(async () => {
   &.pending {
     background: rgba(250, 140, 22, 0.1);
     color: #fa8c16;
+  }
+}
+
+.suite-meta-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 16px;
+  font-size: 12px;
+  color: #666;
+
+  .meta-item {
+    display: inline-flex;
+    align-items: center;
   }
 }
 

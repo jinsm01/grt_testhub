@@ -167,10 +167,10 @@ export default {
     failed: '失败',
 
     // Status Display
-    statusPending: '需求分析中',
-    statusGenerating: '用例编写中',
-    statusReviewing: '用例评审中',
-    statusRevising: '用例修订中',
+    statusPending: '分析中',
+    statusGenerating: '编写中',
+    statusReviewing: '评审中',
+    statusRevising: '修订中',
     statusCompleted: '已完成',
     statusFailed: '失败',
     statusCancelled: '已取消',
@@ -178,10 +178,10 @@ export default {
     statusActive: '启用',
 
     // Actions
-    batchDelete: '🗑️ 批量删除({count})',
-    deleting: '🗑️ 删除中...',
-    refresh: '🔄 刷新',
-    loading: '🔄 加载中...',
+    batchDelete: '批量删除({count})',
+    deleting: '删除中...',
+    refresh: '刷新',
+    loading: '加载中...',
 
     // Stats
     totalTasks: '任务总数',

@@ -12,4 +12,8 @@ declare global {
     ELEMENTS_DEBUG?: any
     debugTreeData?: any
   }
+
+  interface MonacoEnvironment {
+    getWorker: (moduleId: string, label: string) => Worker
+  }
 }

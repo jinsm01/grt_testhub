@@ -1011,8 +1011,10 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
                 test_suite=test_suite,
                 enabled=True
             ).select_related('request').order_by('order')
-            
-            execution.total_requests = suite_requests.count()
+
+            # 统计实际请求数（排除分组类型）
+            actual_request_count = sum(1 for sr in suite_requests if sr.step_type != 'group' and sr.request is not None)
+            execution.total_requests = actual_request_count
             execution.save()
             
             results = []

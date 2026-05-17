@@ -326,6 +326,9 @@ def author_test_cases(request):
             'directory': directory or '未分配',
             'menu_id': case.menu_id,
             'created_at': case.created_at.strftime('%Y-%m-%d %H:%M') if case.created_at else None,
+            'precondition': case.preconditions,
+            'steps': case.steps,
+            'expected_result': case.expected_result,
             'author': {
                 'id': case.author.id if case.author else None,
                 'username': case.author.username if case.author else None,

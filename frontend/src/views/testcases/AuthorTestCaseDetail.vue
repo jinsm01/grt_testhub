@@ -1,6 +1,42 @@
 <template>
   <div class="author-testcase-detail-container">
 
+    <!-- 全局筛选栏 - 白底容器 -->
+    <div class="global-filter-bar">
+      <div class="filter-left">
+        <el-select v-model="globalPriorityFilter" placeholder="优先级筛选" clearable @change="handleGlobalPriorityFilterChange" style="width: 150px;">
+          <el-option label="全部" value="" />
+          <el-option label="P0" value="P0" />
+          <el-option label="P1" value="P1" />
+          <el-option label="P2" value="P2" />
+          <el-option label="P3" value="P3" />
+        </el-select>
+        <el-select v-model="globalReviewFilter" placeholder="审核结果筛选" clearable @change="handleGlobalReviewFilterChange" style="width: 150px;">
+          <el-option label="全部" value="" />
+          <el-option label="已通过" value="approved" />
+          <el-option label="已拒绝" value="rejected" />
+          <el-option label="待审核" value="pending" />
+        </el-select>
+      </div>
+      <!-- 全局批量操作按钮 -->
+      <div class="filter-right" v-if="hasSelectedCases">
+        <el-button
+          class="action-btn preview-btn"
+          @click="openGlobalBatchPreviewDrawer"
+        >
+          <el-icon><List /></el-icon>
+          <span>批量审核</span>
+        </el-button>
+        <el-button
+          type="success"
+          class="action-btn"
+          @click="handleGlobalBatchReview('approved')"
+        >
+          <el-icon><CircleCheckFilled /></el-icon>
+          <span>一键通过</span>
+        </el-button>
+      </div>
+    </div>
 
     <!-- 目录列表 - 可展开收起 -->
     <div class="directory-tree-container">
@@ -10,53 +46,34 @@
         class="directory-group"
         :class="{ expanded: expandedDirectories.includes(group.directory) }"
       >
-        <!-- 目录头部 - 点击展开/收起 -->
+        <!-- 目录卡片 - 点击展开/收起 -->
         <div
-          class="directory-header-row"
+          class="directory-card"
           @click="toggleDirectory(group.directory)"
         >
-          <div class="directory-header-left">
-            <el-icon class="expand-icon">
-              <ArrowRight v-if="!expandedDirectories.includes(group.directory)" />
-              <ArrowDown v-else />
+          <div class="directory-card-content">
+            <el-icon class="directory-icon">
+              <Folder />
             </el-icon>
             <span class="directory-name">{{ getDirectoryName(group.directory) }}</span>
-            <span class="case-count">{{ group.count || 0 }} 个用例</span>
+            <span class="directory-count">({{ group.cases.length }} 个用例)</span>
           </div>
-          <div class="directory-header-right">
-            <el-dropdown v-if="group.cases && group.cases.length > 0" @command="(cmd) => handleBatchReviewForDirectory(cmd, group)" @click.stop>
-              <el-button link size="small" class="batch-action-btn" @click.stop>
-                <el-icon><Operation /></el-icon>
-                <span>批量操作</span>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="approved">
-                    <span class="dropdown-status approved">批量通过</span>
-                  </el-dropdown-item>
-                  <el-dropdown-item command="rejected">
-                    <span class="dropdown-status rejected">批量拒绝</span>
-                  </el-dropdown-item>
-                  <el-dropdown-item command="pending">
-                    <span class="dropdown-status pending">批量待审</span>
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </div>
+          <el-icon class="expand-arrow" :class="{ 'is-expanded': expandedDirectories.includes(group.directory) }">
+            <ArrowRight />
+          </el-icon>
         </div>
 
         <!-- 展开后的用例列表 -->
         <div v-show="expandedDirectories.includes(group.directory)" class="case-list-wrapper">
           <el-table
-            :data="group.cases || []"
+            :data="getFilteredCases(group)"
             style="width: 100%"
             v-loading="loading"
             row-key="id"
             @selection-change="(selection) => handleSelectionChange(selection, group.directory)"
             :ref="(el) => setTableRef(el, group.directory)"
           >
-            <el-table-column type="selection" width="55" align="center" />
+            <el-table-column type="selection" width="55" align="center" :reserve-selection="true" />
             <el-table-column prop="title" label="用例标题" min-width="400">
               <template #default="{ row }">
                 <span class="case-title-link" @click="goToDetail(row)">
@@ -95,32 +112,6 @@
                 <span class="time-text">{{ formatDate(row.created_at) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="210" align="center" fixed="right">
-              <template #default="{ row }">
-                <div class="action-buttons">
-                  <el-button
-                    v-if="row.review_status !== 'approved' && row.author?.id !== currentUser?.id"
-                    size="small"
-                    type="success"
-                    class="action-btn run-btn"
-                    @click="handleReviewStatusChange('approved', row)"
-                  >
-                    <el-icon><Check /></el-icon>
-                    <span>通过</span>
-                  </el-button>
-                  <el-button
-                    v-if="row.review_status !== 'rejected' && row.author?.id !== currentUser?.id"
-                    size="small"
-                    type="danger"
-                    class="action-btn delete-btn"
-                    @click="handleReviewStatusChange('rejected', row)"
-                  >
-                    <el-icon><Close /></el-icon>
-                    <span>拒绝</span>
-                  </el-button>
-                </div>
-              </template>
-            </el-table-column>
           </el-table>
         </div>
       </div>
@@ -128,14 +119,119 @@
       <!-- 空状态 -->
       <el-empty v-if="groupedCases.length === 0" description="暂无数据" />
     </div>
+
+    <!-- 批量预览抽屉 -->
+    <el-drawer
+      v-model="batchPreviewDrawerVisible"
+      title="批量审核"
+      size="60%"
+      :destroy-on-close="true"
+      :close-on-click-modal="false"
+      class="batch-review-drawer"
+    >
+      <div class="batch-preview-container">
+        <div v-for="testCase in previewCases" :key="testCase.id" class="preview-case-item">
+          <div class="preview-case-header">
+            <h4 class="preview-case-title">{{ testCase.title }}</h4>
+            <div class="preview-case-actions">
+              <!-- 已通过状态：只显示拒绝按钮 -->
+              <template v-if="testCase.review_status === 'approved'">
+                <el-button
+                  size="small"
+                  type="default"
+                  @click="handlePreviewCaseReview('rejected', testCase)"
+                >
+                  <el-icon><Close /></el-icon>
+                  <span>拒绝</span>
+                </el-button>
+              </template>
+              <!-- 已拒绝状态：只显示通过按钮 -->
+              <template v-else-if="testCase.review_status === 'rejected'">
+                <el-button
+                  size="small"
+                  type="success"
+                  @click="handlePreviewCaseReview('approved', testCase)"
+                >
+                  <el-icon><Check /></el-icon>
+                  <span>通过</span>
+                </el-button>
+              </template>
+              <!-- 待审核状态：显示通过和拒绝两个按钮 -->
+              <template v-else>
+                <el-button
+                  size="small"
+                  type="success"
+                  @click="handlePreviewCaseReview('approved', testCase)"
+                >
+                  <el-icon><Check /></el-icon>
+                  <span>通过</span>
+                </el-button>
+                <el-button
+                  size="small"
+                  type="danger"
+                  @click="handlePreviewCaseReview('rejected', testCase)"
+                >
+                  <el-icon><Close /></el-icon>
+                  <span>拒绝</span>
+                </el-button>
+              </template>
+            </div>
+          </div>
+          <div class="preview-case-meta">
+            <span class="meta-item">
+              <span class="meta-label">优先级:</span>
+              <span class="badge" :class="`badge-priority-${testCase.priority}`">
+                {{ getPriorityLabel(testCase.priority) }}
+              </span>
+            </span>
+            <span class="meta-item">
+              <span class="meta-label">状态:</span>
+              <span class="badge" :class="`badge-status-${testCase.status}`">
+                {{ getStatusLabel(testCase.status) }}
+              </span>
+            </span>
+            <span class="meta-item">
+              <span class="meta-label">审核:</span>
+              <span class="badge" :class="`badge-review-${testCase.review_status || 'pending'}`">
+                {{ getReviewStatusLabel(testCase.review_status) }}
+              </span>
+            </span>
+          </div>
+          <div class="preview-case-content">
+            <!-- 用例详情表格：前置条件、测试步骤、预期结果 -->
+            <div class="content-section case-detail-section" v-if="testCase.precondition || testCase.steps || testCase.expected_result">
+              <div class="case-detail-table" :style="{ '--row-span': getStepCount(testCase.steps, testCase.expected_result) }">
+                <div class="table-header">
+                  <div class="header-cell precondition-cell">前置条件</div>
+                  <div class="header-cell steps-cell">测试步骤</div>
+                  <div class="header-cell result-cell">预期结果</div>
+                </div>
+                <div class="table-body">
+                  <template v-for="(row, index) in parseCaseDetail(testCase.precondition, testCase.steps, testCase.expected_result)" :key="index">
+                    <div class="table-row">
+                      <!-- 第一行显示前置条件，跨所有行 -->
+                      <div v-if="index === 0 && testCase.precondition" class="table-cell precondition-cell">
+                        <pre>{{ testCase.precondition }}</pre>
+                      </div>
+                      <div class="table-cell steps-cell">{{ row.step || '-' }}</div>
+                      <div class="table-cell result-cell">{{ row.result || '-' }}</div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, Folder, ArrowDown, ArrowRight, Operation, Check, Close } from '@element-plus/icons-vue'
+import { ArrowLeft, Folder, ArrowDown, ArrowRight, Operation, Check, Close, View, List, CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
 import { getAuthorTestCases, getTestCaseStatistics, updateTestCase, batchUpdateReviewStatus } from '@/api/testcases'
 import { useUserStore } from '@/stores/user'
 import dayjs from 'dayjs'
@@ -160,9 +256,41 @@ const reviewStats = ref({ approved: 0, rejected: 0, pending: 0 })
 const expandedDirectories = ref([])
 const tableRefs = ref({})
 const selectedCasesByDirectory = ref({})
+const priorityFilter = ref({})
+const globalPriorityFilter = ref('')
+const globalReviewFilter = ref('')
+
+// 批量预览抽屉
+const batchPreviewDrawerVisible = ref(false)
+const previewCases = ref([])
+const currentPreviewDirectory = ref('')
 
 // 计算目录数量
 const directoryCount = computed(() => groupedCases.value.length)
+
+// 计算是否有选中的用例（全局）
+const hasSelectedCases = computed(() => {
+  return Object.values(selectedCasesByDirectory.value).some(cases => cases && cases.length > 0)
+})
+
+// 获取所有选中的用例（全局）
+const getAllSelectedCases = computed(() => {
+  const allCases = []
+  const selectedIds = allSelectedCaseIds.value
+  if (selectedIds.length === 0) {
+    return allCases
+  }
+  // 从 groupedCases 中查找对应的用例对象
+  groupedCases.value.forEach(group => {
+    const cases = group.cases || []
+    cases.forEach(testCase => {
+      if (selectedIds.includes(testCase.id)) {
+        allCases.push(testCase)
+      }
+    })
+  })
+  return allCases
+})
 
 // 设置表格引用
 function setTableRef(el, directory) {
@@ -209,13 +337,16 @@ async function loadMonthStats() {
 }
 
 // 加载数据
-async function loadData() {
+async function loadData(keepExpanded = false) {
   if (!author.value) {
     ElMessage.error('未指定作者')
     return
   }
 
   loading.value = true
+  // 保存当前展开的目录状态
+  const currentExpandedDirs = keepExpanded ? [...expandedDirectories.value] : []
+
   try {
     const params = { username: author.value }
     if (selectedMonth.value) {
@@ -226,14 +357,20 @@ async function loadData() {
     }
 
     const res = await getAuthorTestCases(params)
-    groupedCases.value = res.data.grouped || []
+    // 过滤掉"能力点"目录
+    groupedCases.value = (res.data.grouped || []).filter(group => {
+      const dirName = getDirectoryName(group.directory)
+      return dirName !== '能力点'
+    })
     totalCases.value = res.data.total || 0
     priorityStats.value = res.data.priority_stats || {}
     reviewStats.value = res.data.review_stats || {}
 
-    // 默认展开第一个目录
-    if (groupedCases.value.length > 0) {
-      expandedDirectories.value = [groupedCases.value[0].directory]
+    // 恢复展开的目录状态，或者默认收起所有目录
+    if (keepExpanded) {
+      expandedDirectories.value = currentExpandedDirs
+    } else {
+      expandedDirectories.value = []
     }
   } catch (error) {
     console.error('加载失败:', error)
@@ -250,20 +387,83 @@ function goBack() {
 
 // 跳转用例详情
 function goToDetail(row) {
-  if (row.menu_id) {
-    router.push({
-      name: 'TestCases',
-      query: {
-        menu: row.menu_id,
-        highlight: row.id
+  router.push({
+    name: 'TestCaseDetail',
+    params: { id: row.id }
+  })
+}
+
+// 处理优先级筛选变化
+function handlePriorityFilterChange(directory, priority) {
+  // 筛选后清空当前目录的选中状态
+  if (selectedCasesByDirectory.value[directory]) {
+    selectedCasesByDirectory.value[directory] = []
+  }
+  // 使用 nextTick 确保表格数据更新后再清空选中状态
+  nextTick(() => {
+    const tableRef = tableRefs.value[directory]
+    if (tableRef) {
+      tableRef.clearSelection()
+    }
+  })
+}
+
+// 全局优先级筛选变化处理
+function handleGlobalPriorityFilterChange(priority) {
+  // 同步到所有目录的筛选器
+  groupedCases.value.forEach(group => {
+    priorityFilter.value[group.directory] = priority
+    // 清空选中状态
+    if (selectedCasesByDirectory.value[group.directory]) {
+      selectedCasesByDirectory.value[group.directory] = []
+    }
+    nextTick(() => {
+      const tableRef = tableRefs.value[group.directory]
+      if (tableRef) {
+        tableRef.clearSelection()
       }
     })
-  } else {
-    router.push({
-      name: 'TestCases',
-      query: { highlight: row.id }
+  })
+}
+
+// 全局审核结果筛选变化处理
+function handleGlobalReviewFilterChange(reviewStatus) {
+  // 清空选中状态
+  groupedCases.value.forEach(group => {
+    if (selectedCasesByDirectory.value[group.directory]) {
+      selectedCasesByDirectory.value[group.directory] = []
+    }
+    nextTick(() => {
+      const tableRef = tableRefs.value[group.directory]
+      if (tableRef) {
+        tableRef.clearSelection()
+      }
+    })
+  })
+}
+
+// 获取筛选后的用例列表
+function getFilteredCases(group) {
+  const cases = group.cases || []
+  const priorityFilterValue = priorityFilter.value[group.directory]
+  const reviewFilterValue = globalReviewFilter.value
+
+  let filteredCases = cases
+
+  // 优先级筛选
+  if (priorityFilterValue) {
+    filteredCases = filteredCases.filter(c => getPriorityLabel(c.priority) === priorityFilterValue)
+  }
+
+  // 审核结果筛选
+  if (reviewFilterValue) {
+    filteredCases = filteredCases.filter(c => {
+      const status = c.review_status || 'none'
+      return status === reviewFilterValue
     })
   }
+
+  return filteredCases
 }
 
 // 获取优先级标签
@@ -358,7 +558,51 @@ async function handleBatchReviewForDirectory(command, group) {
     if (tableRef && tableRef.clearSelection) {
       tableRef.clearSelection()
     }
-    await loadData()
+    await loadData(true)
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('批量审核失败:', error)
+      ElMessage.error('批量审核失败')
+    }
+  }
+}
+
+// 全局批量审核
+async function handleGlobalBatchReview(command) {
+  const allSelectedIds = getAllSelectedCases.value.map(c => c.id)
+  if (allSelectedIds.length === 0) {
+    ElMessage.warning('请先选择用例')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定将选中的 ${allSelectedIds.length} 条用例审核结果设为「${getReviewStatusLabel(command)}」吗？`,
+      '批量审核确认',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+
+    await batchUpdateReviewStatus({
+      ids: allSelectedIds,
+      review_status: command
+    })
+
+    ElMessage.success('批量审核成功')
+    // 清空所有选中状态
+    Object.keys(selectedCasesByDirectory.value).forEach(key => {
+      selectedCasesByDirectory.value[key] = []
+    })
+    // 清除所有表格选中状态
+    Object.values(tableRefs.value).forEach(tableRef => {
+      if (tableRef && tableRef.clearSelection) {
+        tableRef.clearSelection()
+      }
+    })
+    await loadData(true)
   } catch (error) {
     if (error !== 'cancel') {
       console.error('批量审核失败:', error)
@@ -380,6 +624,138 @@ async function handleReviewStatusChange(newStatus, caseRow) {
     await loadData()
   }
 }
+
+// 打开批量预览抽屉
+function openBatchPreviewDrawer(group) {
+  const selectedIds = selectedCasesByDirectory.value[group.directory] || []
+  if (selectedIds.length === 0) {
+    ElMessage.warning('请先选择用例')
+    return
+  }
+
+  // 获取选中的用例完整数据
+  previewCases.value = group.cases.filter(testCase => selectedIds.includes(testCase.id))
+  currentPreviewDirectory.value = group.directory
+  batchPreviewDrawerVisible.value = true
+}
+
+// 打开全局批量预览抽屉
+function openGlobalBatchPreviewDrawer() {
+  const allCases = getAllSelectedCases.value
+  if (allCases.length === 0) {
+    ElMessage.warning('请先选择用例')
+    return
+  }
+
+  // 获取所有选中的用例完整数据
+  const allSelectedCases = []
+  groupedCases.value.forEach(group => {
+    const selectedIds = selectedCasesByDirectory.value[group.directory] || []
+    const cases = group.cases.filter(testCase => selectedIds.includes(testCase.id))
+    allSelectedCases.push(...cases)
+  })
+
+  previewCases.value = allSelectedCases
+  currentPreviewDirectory.value = 'all'
+  batchPreviewDrawerVisible.value = true
+}
+
+// 处理预览中的单个用例审核
+async function handlePreviewCaseReview(status, testCase) {
+  try {
+    await updateTestCase(testCase.id, { review_status: status })
+    testCase.review_status = status
+    ElMessage.success('审核状态已更新')
+    
+    // 同步更新主列表中的数据
+    const group = groupedCases.value.find(g => g.directory === currentPreviewDirectory.value)
+    if (group) {
+      const caseInGroup = group.cases.find(c => c.id === testCase.id)
+      if (caseInGroup) {
+        caseInGroup.review_status = status
+      }
+    }
+  } catch (error) {
+    console.error('更新审核状态失败:', error)
+    ElMessage.error('更新审核状态失败')
+  }
+}
+
+// 解析带序号的行，返回 { index: number, content: string }
+function parseNumberedLines(text) {
+  if (!text) return []
+  const lines = text.split('\n').filter(s => s.trim())
+  const result = []
+  for (const line of lines) {
+    const match = line.match(/^(\d+)\.\s*(.*)$/)
+    if (match) {
+      result.push({
+        index: parseInt(match[1]),
+        content: match[2].trim()
+      })
+    } else {
+      result.push({
+        index: result.length + 1,
+        content: line.trim()
+      })
+    }
+  }
+  return result
+}
+
+// 解析测试步骤和预期结果为表格数据
+function parseStepsAndResults(steps, expectedResult) {
+  const stepList = parseNumberedLines(steps)
+  const resultList = parseNumberedLines(expectedResult)
+
+  // 找出最大的序号
+  const maxStepIndex = stepList.length > 0 ? Math.max(...stepList.map(s => s.index)) : 0
+  const maxResultIndex = resultList.length > 0 ? Math.max(...resultList.map(r => r.index)) : 0
+  const maxIndex = Math.max(maxStepIndex, maxResultIndex)
+
+  const result = []
+  for (let i = 1; i <= maxIndex; i++) {
+    const step = stepList.find(s => s.index === i)
+    const res = resultList.find(r => r.index === i)
+    result.push({
+      step: step ? `${i}. ${step.content}` : '-',
+      result: res ? `${i}. ${res.content}` : '-'
+    })
+  }
+
+  return result
+}
+
+// 解析用例详情（前置条件、测试步骤、预期结果）为表格数据
+function parseCaseDetail(precondition, steps, expectedResult) {
+  const stepList = parseNumberedLines(steps)
+  const resultList = parseNumberedLines(expectedResult)
+
+  // 找出最大的序号
+  const maxStepIndex = stepList.length > 0 ? Math.max(...stepList.map(s => s.index)) : 0
+  const maxResultIndex = resultList.length > 0 ? Math.max(...resultList.map(r => r.index)) : 0
+  const maxIndex = Math.max(maxStepIndex, maxResultIndex)
+
+  const result = []
+  for (let i = 1; i <= maxIndex; i++) {
+    const step = stepList.find(s => s.index === i)
+    const res = resultList.find(r => r.index === i)
+    result.push({
+      precondition: i === 1 ? (precondition || '') : '',
+      step: step ? `${i}. ${step.content}` : '-',
+      result: res ? `${i}. ${res.content}` : '-'
+    })
+  }
+
+  return result
+}
+
+// 获取步骤数量用于计算前置条件跨行数
+function getStepCount(steps, expectedResult) {
+  const stepList = steps ? steps.split('\n').filter(s => s.trim()) : []
+  const resultList = expectedResult ? expectedResult.split('\n').filter(r => r.trim()) : []
+  return Math.max(stepList.length, resultList.length)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -390,6 +766,76 @@ async function handleReviewStatusChange(newStatus, caseRow) {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+// 全局筛选栏 - 参考 XMindConverter 风格
+.global-filter-bar {
+  padding: 20px 24px;
+  background: #ffffff;
+  border: 1px solid rgba(147, 112, 219, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  .filter-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .filter-right {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: translateY(-1px);
+      }
+
+      .el-icon {
+        font-size: 16px;
+      }
+
+      // 批量预览按钮 - 紫色主题
+      &.preview-btn {
+        background: #7c3aed;
+        border-color: #7c3aed;
+        color: #ffffff;
+
+        &:hover {
+          background: #6d28d9;
+          border-color: #6d28d9;
+        }
+
+        &:active {
+          background: #5b21b6;
+          border-color: #5b21b6;
+        }
+
+        .el-icon {
+          color: #ffffff;
+        }
+
+        span {
+          color: #ffffff;
+        }
+      }
+    }
+  }
 }
 
 // 单行头部统计卡片 - 参考 XMindConverter 风格
@@ -516,15 +962,83 @@ async function handleReviewStatusChange(newStatus, caseRow) {
   gap: 12px;
 
   .directory-group {
+    margin-bottom: 12px;
+
+    &.expanded {
+      .directory-card {
+        border-color: #7c3aed;
+        background: #faf5ff;
+      }
+    }
+  }
+
+  // 目录卡片样式
+  .directory-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
     background: #ffffff;
     border: 1px solid rgba(147, 112, 219, 0.12);
     border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
-    overflow: hidden;
-    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(147, 112, 219, 0.06);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    z-index: 1;
 
-    &.expanded {
-      box-shadow: 0 8px 24px rgba(147, 112, 219, 0.12);
+    &:hover {
+      border-color: #a78bfa;
+      box-shadow: 0 4px 16px rgba(147, 112, 219, 0.12);
+      transform: translateY(-2px);
+    }
+
+    // 展开状态下底部圆角去掉，与列表连接
+    .directory-group.expanded & {
+      border-radius: 12px 12px 0 0;
+      border-bottom-color: transparent;
+    }
+
+    .directory-card-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .directory-icon {
+        font-size: 48px;
+        color: #a78bfa;
+        background: rgba(167, 139, 250, 0.1);
+        padding: 16px;
+        border-radius: 14px;
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .directory-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #4b5563;
+        letter-spacing: 0.3px;
+      }
+
+      .directory-count {
+        font-size: 13px;
+        color: #9ca3af;
+        font-weight: 400;
+      }
+    }
+
+    .expand-arrow {
+      font-size: 16px;
+      color: #a78bfa;
+      transition: transform 0.3s ease;
+
+      &.is-expanded {
+        transform: rotate(90deg);
+      }
     }
   }
 
@@ -533,43 +1047,92 @@ async function handleReviewStatusChange(newStatus, caseRow) {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 18px 24px;
+    padding: 12px 0;
     cursor: pointer;
-    background: #ffffff;
+    background: transparent;
     border-bottom: 1px solid rgba(147, 112, 219, 0.08);
     transition: all 0.2s ease;
 
     &:hover {
-      background: #faf9ff;
+      border-bottom-color: rgba(147, 112, 219, 0.15);
     }
 
     .directory-header-left {
       display: flex;
       align-items: center;
-      gap: 12px;
-      flex: 1;
+      gap: 10px;
+      flex-shrink: 0;
 
       .expand-icon {
-        font-size: 12px;
-        color: #9ca3af;
+        font-size: 11px;
+        color: #a78bfa;
         transition: all 0.2s ease;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        background: rgba(167, 139, 250, 0.08);
+
+        &:hover {
+          background: rgba(167, 139, 250, 0.15);
+        }
       }
 
       .directory-name {
         font-size: 14px;
-        font-weight: 500;
-        color: #374151;
+        font-weight: 600;
+        color: #4b5563;
+        flex-shrink: 0;
+        letter-spacing: 0.3px;
       }
+    }
 
-      .case-count {
-        font-size: 12px;
-        color: #9ca3af;
-        font-weight: 400;
+    .directory-header-filter {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+
+      :deep(.el-radio-group) {
+        display: flex;
+        gap: 4px;
+        padding: 3px;
+        background: #f3f4f6;
+        border-radius: 6px;
+
+        .el-radio-button {
+          .el-radio-button__inner {
+            padding: 5px 14px;
+            font-size: 12px;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+
+            &:hover {
+              color: #7c3aed;
+              background: rgba(255, 255, 255, 0.5);
+            }
+          }
+
+          &.is-active .el-radio-button__inner {
+            background: #ffffff;
+            color: #7c3aed;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            font-weight: 500;
+          }
+        }
       }
     }
 
     .directory-header-right {
       flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
 
       .batch-action-btn {
         color: #7b42f6;
@@ -581,6 +1144,45 @@ async function handleReviewStatusChange(newStatus, caseRow) {
 
         .el-icon {
           margin-right: 4px;
+        }
+      }
+
+      .batch-btn {
+        font-size: 11px;
+        padding: 5px 12px;
+        border: none;
+        border-radius: 5px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+
+        &.approved {
+          background: #d1fae5;
+          color: #059669;
+
+          &:hover {
+            background: #a7f3d0;
+            transform: translateY(-1px);
+          }
+        }
+
+        &.rejected {
+          background: #fee2e2;
+          color: #dc2626;
+
+          &:hover {
+            background: #fecaca;
+            transform: translateY(-1px);
+          }
+        }
+
+        &.pending {
+          background: #fef3c7;
+          color: #d97706;
+
+          &:hover {
+            background: #fde68a;
+            transform: translateY(-1px);
+          }
         }
       }
     }
@@ -604,7 +1206,14 @@ async function handleReviewStatusChange(newStatus, caseRow) {
 
   // 用例列表包装器
   .case-list-wrapper {
-    padding: 0;
+    padding: 16px 24px;
+    background: #ffffff;
+    border: 1px solid rgba(147, 112, 219, 0.12);
+    border-top: none;
+    border-radius: 12px;
+    margin-top: -1px;
+    position: relative;
+    z-index: 0;
     animation: slideDown 0.3s ease;
 
     @keyframes slideDown {
@@ -856,6 +1465,314 @@ async function handleReviewStatusChange(newStatus, caseRow) {
 
   &.pending {
     color: #d97706;
+  }
+}
+
+// 批量预览抽屉样式
+.batch-preview-container {
+  padding: 8px 4px;
+
+  .preview-case-item {
+    background: linear-gradient(145deg, #ffffff 0%, #fafbfc 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    margin-bottom: 20px;
+    padding: 24px;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.02),
+      0 4px 12px rgba(0, 0, 0, 0.04),
+      0 0 0 1px rgba(0, 0, 0, 0.02);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      box-shadow:
+        0 4px 6px rgba(0, 0, 0, 0.02),
+        0 8px 24px rgba(0, 0, 0, 0.06),
+        0 0 0 1px rgba(0, 0, 0, 0.02);
+      transform: translateY(-2px);
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .preview-case-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      gap: 16px;
+
+      .preview-case-title {
+        font-size: 17px;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0;
+        flex: 1;
+        line-height: 1.5;
+        letter-spacing: -0.01em;
+      }
+
+      .preview-case-actions {
+        display: flex;
+        gap: 10px;
+        flex-shrink: 0;
+
+        .el-button {
+          border-radius: 10px;
+          padding: 8px 16px;
+          font-weight: 500;
+          transition: all 0.2s ease;
+
+          .el-icon {
+            margin-right: 6px;
+          }
+
+          // 默认状态（未选中）
+          &.el-button--default {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+
+            &:hover {
+              background: #e2e8f0;
+              border-color: #cbd5e1;
+              color: #475569;
+            }
+          }
+
+          // 通过按钮（绿色）
+          &.el-button--success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+            color: #fff;
+
+            &:hover {
+              background: linear-gradient(135deg, #059669 0%, #047857 100%);
+              box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+              transform: translateY(-1px);
+            }
+          }
+
+          // 拒绝按钮（红色）
+          &.el-button--danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            border: none;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+            color: #fff;
+
+            &:hover {
+              background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+              box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+              transform: translateY(-1px);
+            }
+          }
+        }
+      }
+    }
+
+    .preview-case-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 14px 16px;
+      background: rgba(248, 250, 252, 0.8);
+      border-radius: 12px;
+      border: 1px solid rgba(226, 232, 240, 0.6);
+
+      .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        padding: 4px 0;
+
+        .meta-label {
+          color: #64748b;
+          font-weight: 500;
+        }
+
+        .badge {
+          font-weight: 600;
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 12px;
+        }
+      }
+    }
+
+    .preview-case-content {
+      .content-section {
+        margin-bottom: 20px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        h5 {
+          font-size: 12px;
+          font-weight: 600;
+          color: #475569;
+          margin: 0 0 10px 0;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+        }
+
+        pre {
+          background: #f8fafc;
+          border-radius: 10px;
+          padding: 14px 16px;
+          margin: 0;
+          font-size: 13px;
+          line-height: 1.7;
+          color: #334155;
+          white-space: pre-wrap;
+          word-wrap: break-word;
+          font-family: inherit;
+          border: 1px solid rgba(226, 232, 240, 0.6);
+        }
+
+        // 用例详情表格样式（前置条件、测试步骤、预期结果）
+        &.case-detail-section {
+          background: #ffffff;
+          border-radius: 14px;
+          border: 1px solid rgba(226, 232, 240, 0.8);
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+
+          .case-detail-table {
+            display: grid;
+            grid-template-columns: 28% 1fr 1fr;
+
+            .table-header {
+              display: contents;
+
+              .header-cell {
+                padding: 14px 16px;
+                font-size: 12px;
+                font-weight: 600;
+                color: #475569;
+                background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                border-bottom: 1px solid #e2e8f0;
+
+                &:first-child {
+                  border-radius: 0;
+                }
+
+                &:last-child {
+                  border-radius: 0;
+                }
+              }
+            }
+
+            .table-body {
+              display: contents;
+
+              .table-row {
+                display: contents;
+
+                &:not(:last-child) .table-cell {
+                  border-bottom: 1px solid #f1f5f9;
+                }
+
+                .table-cell {
+                  padding: 14px 16px;
+                  font-size: 13px;
+                  line-height: 1.7;
+                  color: #475569;
+
+                  &.precondition-cell {
+                    color: #64748b;
+                    grid-row: span var(--row-span, 1);
+                    display: flex;
+                    align-items: flex-start;
+                    background: rgba(248, 250, 252, 0.5);
+                    border-right: 1px solid #f1f5f9;
+
+                    pre {
+                      margin: 0;
+                      padding: 0;
+                      background: transparent;
+                      border: none;
+                      font-family: inherit;
+                      font-size: 13px;
+                      line-height: 1.7;
+                      color: #64748b;
+                      white-space: pre-wrap;
+                      word-wrap: break-word;
+                    }
+                  }
+
+                  &.steps-cell {
+                    border-right: 1px solid #f1f5f9;
+                    color: #334155;
+                  }
+
+                  &.result-cell {
+                    color: #334155;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// 批量预览按钮样式
+.batch-btn {
+  &.preview {
+    background: #e0e7ff;
+    color: #4f46e5;
+
+    &:hover {
+      background: #c7d2fe;
+    }
+  }
+}
+
+// 抽屉自定义样式
+:deep(.batch-review-drawer) {
+  .el-drawer__header {
+    padding: 20px 24px;
+    margin-bottom: 0;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+
+    .el-drawer__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1e293b;
+      letter-spacing: -0.01em;
+    }
+
+    .el-drawer__close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.04);
+        transform: rotate(90deg);
+      }
+
+      .el-icon {
+        font-size: 18px;
+        color: #64748b;
+      }
+    }
+  }
+
+  .el-drawer__body {
+    padding: 24px;
+    background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   }
 }
 </style>

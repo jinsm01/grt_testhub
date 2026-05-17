@@ -213,6 +213,7 @@ class AIModelConfig(models.Model):
         ('knowledge_base', '知识库问答'),
         ('bug_analyzer', 'Bug 分析专家'),
         ('assertion_generator', 'AI断言生成'),
+        ('scene_generator', 'AI场景生成'),
     ]
 
     name = models.CharField(max_length=100, verbose_name='配置名称')
