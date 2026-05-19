@@ -3,6 +3,7 @@
 自动化场景 API 视图
 """
 import json
+import logging
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
@@ -18,7 +19,8 @@ from .models import (
 )
 from .scenario_engine import ScenarioExecutor
 from .apifox_importer import ApifoxCliImporter
-from .ai_scene_generator import AISceneGenerator
+
+logger = logging.getLogger(__name__)
 
 
 class AutomationScenarioViewSet(viewsets.ModelViewSet):
@@ -296,60 +298,6 @@ class AutomationScenarioViewSet(viewsets.ModelViewSet):
 
         return Response({'message': '评审已重置'})
 
-    @action(detail=False, methods=['post'])
-    def ai_generate(self, request):
-        """AI生成场景步骤"""
-        request_ids = request.data.get('request_ids', [])
-        environment_id = request.data.get('environment_id')
-        business_description = request.data.get('business_description', '')
-
-        print(f"[AI生成] 接收到的参数: request_ids={request_ids}, environment_id={environment_id}, business_description={business_description}")
-
-        if not request_ids:
-            return Response(
-                {'error': '请选择至少一个接口'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            # 获取环境
-            environment = None
-            if environment_id:
-                try:
-                    environment = Environment.objects.get(id=environment_id)
-                    print(f"[AI生成] 找到环境: {environment.name}, 变量: {environment.variables}")
-                except Environment.DoesNotExist:
-                    print(f"[AI生成] 环境不存在: {environment_id}")
-
-            # 创建生成器
-            generator = AISceneGenerator(environment=environment)
-
-            # 生成场景（支持业务描述）
-            result = generator.generate_scene(request_ids, business_description)
-
-            if result['success']:
-                print(f"[AI生成] 生成成功，步骤数: {len(result.get('steps', []))}")
-                return Response({
-                    'success': True,
-                    'scene_name': result['scene_name'],
-                    'steps': result['steps']
-                })
-            else:
-                return Response(
-                    {'error': result.get('error', '生成失败')},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-
-        except Exception as e:
-            import traceback
-            return Response(
-                {
-                    'error': str(e),
-                    'traceback': traceback.format_exc()
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
 
 class ScenarioStepViewSet(viewsets.ModelViewSet):
     """场景步骤视图集"""
@@ -560,14 +508,32 @@ class ScenarioStepViewSet(viewsets.ModelViewSet):
                     test_suite=test_suite,
                     request_id=data.get('api_request_id')
                 ).first()
+                
+                # 转换 override_extractors 格式：列表 -> 字典
+                override_extractors = data.get('override_extractors', [])
+                extracted_variables_dict = {}
+                if isinstance(override_extractors, list):
+                    for extractor in override_extractors:
+                        if isinstance(extractor, dict) and extractor.get('variable_name'):
+                            extracted_variables_dict[extractor['variable_name']] = extractor.get('json_path', '')
+                elif isinstance(override_extractors, dict):
+                    extracted_variables_dict = override_extractors
+                
                 if not existing:
-                    TestSuiteRequest.objects.create(
+                    suite_request = TestSuiteRequest.objects.create(
                         test_suite=test_suite,
                         request_id=data.get('api_request_id'),
                         order=next_step,
                         assertions=data.get('override_assertions', []),
-                        extracted_variables={}
+                        extracted_variables=extracted_variables_dict
                     )
+                    # 建立 ScenarioStep 和 TestSuiteRequest 的关联
+                    step.legacy_suite_request = suite_request
+                    step.save()
+                else:
+                    # 如果已存在，建立关联
+                    step.legacy_suite_request = existing
+                    step.save()
             except Exception as e:
                 logger.warning(f"创建 TestSuiteRequest 失败: {str(e)}")
 

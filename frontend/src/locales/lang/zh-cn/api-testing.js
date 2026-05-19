@@ -889,6 +889,7 @@ export default {
     success: {
       create: '创建成功',
       update: '更新成功',
+      updateSuccess: '更新成功',
       delete: '删除成功',
       save: '保存成功',
       saveSuccess: '保存成功',

@@ -764,6 +764,7 @@ export default {
     success: {
       create: 'Created successfully',
       update: 'Updated successfully',
+      updateSuccess: 'Updated successfully',
       delete: 'Deleted successfully',
       save: 'Saved successfully',
       saveSuccess: 'Saved successfully',

@@ -206,12 +206,50 @@ class RequestHistorySerializer(serializers.ModelSerializer):
 class TestSuiteRequestSerializer(serializers.ModelSerializer):
     request = ApiRequestSerializer(read_only=True)
     control_config = serializers.SerializerMethodField()
+    override_assertions = serializers.SerializerMethodField()
+    override_extractors = serializers.SerializerMethodField()
 
     def get_control_config(self, obj):
         """从关联的场景步骤获取控制配置"""
-        if hasattr(obj, 'scenario_step') and obj.scenario_step:
-            return obj.scenario_step.control_config
+        try:
+            if obj.scenario_step:
+                return obj.scenario_step.control_config
+        except:
+            pass
         return {}
+
+    def get_override_assertions(self, obj):
+        """从关联的场景步骤获取覆盖断言规则"""
+        try:
+            if obj.scenario_step:
+                return obj.scenario_step.override_assertions
+        except:
+            pass
+        return []
+
+    def get_override_extractors(self, obj):
+        """从关联的场景步骤获取覆盖变量提取规则，如果没有关联则从 extracted_variables 转换"""
+        # 优先从关联的 ScenarioStep 获取
+        try:
+            if obj.scenario_step:
+                return obj.scenario_step.override_extractors
+        except:
+            pass
+        # 如果没有关联的 ScenarioStep，从 extracted_variables 转换格式
+        extracted_variables = obj.extracted_variables
+        if isinstance(extracted_variables, list):
+            return extracted_variables
+        elif isinstance(extracted_variables, dict) and extracted_variables:
+            return [
+                {
+                    'name': key,
+                    'variable_name': key,
+                    'source': 'json_body',
+                    'json_path': value
+                }
+                for key, value in extracted_variables.items()
+            ]
+        return []
 
     class Meta:
         model = TestSuiteRequest
@@ -219,7 +257,7 @@ class TestSuiteRequestSerializer(serializers.ModelSerializer):
             'id', 'request', 'order', 'assertions', 'enabled',
             'override_name', 'override_method', 'override_url', 'override_headers', 'override_params',
             'override_body', 'pre_script', 'post_script', 'extracted_variables',
-            'parent_id', 'step_type', 'control_config'
+            'parent_id', 'step_type', 'control_config', 'override_assertions', 'override_extractors'
         ]
 
     def validate_assertions(self, value):
@@ -234,13 +272,33 @@ class TestSuiteRequestSerializer(serializers.ModelSerializer):
         if assertions is not None:
             assertions = convert_null_strings(assertions)
             validated_data['assertions'] = assertions
-        
+
         # 同步更新关联的场景步骤
         control_config = validated_data.pop('control_config', None)
-        if control_config is not None and hasattr(instance, 'scenario_step') and instance.scenario_step:
-            instance.scenario_step.control_config = control_config
-            instance.scenario_step.save()
-        
+        extracted_variables = validated_data.get('extracted_variables')
+        assertions_data = validated_data.get('assertions')
+
+        try:
+            if instance.scenario_step:
+                if control_config is not None:
+                    instance.scenario_step.control_config = control_config
+                # 同步更新 override_extractors 和 override_assertions
+                if extracted_variables is not None:
+                    # 将 extracted_variables 转换为 override_extractors 格式
+                    if isinstance(extracted_variables, list):
+                        instance.scenario_step.override_extractors = extracted_variables
+                    elif isinstance(extracted_variables, dict):
+                        # 如果是字典格式，转换为列表格式
+                        instance.scenario_step.override_extractors = [
+                            {'name': k, 'variable_name': k, 'source': 'json_body', 'json_path': v}
+                            for k, v in extracted_variables.items()
+                        ]
+                if assertions_data is not None:
+                    instance.scenario_step.override_assertions = assertions_data
+                instance.scenario_step.save()
+        except:
+            pass
+
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):

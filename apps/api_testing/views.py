@@ -665,6 +665,138 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    @action(detail=False, methods=['post'])
+    def execute_single(self, request):
+        """执行单个API请求（无需保存接口）"""
+        try:
+            # 获取请求参数
+            method = request.data.get('method', 'GET')
+            url = request.data.get('url', '')
+            headers = request.data.get('headers', {})
+            params = request.data.get('params', {})
+            body = request.data.get('body')
+            environment_id = request.data.get('environment_id')
+
+            if not url:
+                return Response(
+                    {'error': 'URL不能为空'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # 创建变量解析器
+            resolver = VariableResolver()
+
+            # 解析环境变量
+            variables = {}
+            if environment_id:
+                try:
+                    env = Environment.objects.get(id=environment_id)
+                    variables.update(env.variables)
+                except Environment.DoesNotExist:
+                    pass
+
+            # 替换URL中的变量
+            final_url = self._replace_variables(url, variables)
+            final_url = resolver.resolve(final_url)
+
+            # 如果URL是相对路径，自动拼接base_url
+            if final_url and not final_url.startswith(('http://', 'https://')):
+                base_url = None
+                if environment_id:
+                    base_url_var = variables.get('base_url') or variables.get('baseUrl')
+                    if isinstance(base_url_var, dict):
+                        base_url = str(
+                            base_url_var.get('current_value', '') or
+                            base_url_var.get('currentValue', '') or
+                            base_url_var.get('initial_value', '') or
+                            base_url_var.get('initialValue', '')
+                        )
+                    elif base_url_var:
+                        base_url = str(base_url_var)
+
+                if base_url:
+                    base_url = base_url.rstrip('/')
+                    final_url = final_url.lstrip('/')
+                    final_url = f"{base_url}/{final_url}"
+
+            # 准备请求头
+            final_headers = {}
+            if isinstance(headers, dict):
+                for key, value in headers.items():
+                    final_headers[key] = resolver.resolve(self._replace_variables(str(value), variables))
+
+            # 准备请求参数
+            final_params = {}
+            if isinstance(params, dict):
+                for key, value in params.items():
+                    final_params[key] = resolver.resolve(self._replace_variables(str(value), variables))
+
+            # 准备请求体
+            body_data = None
+            if body and method in ['POST', 'PUT', 'PATCH']:
+                if isinstance(body, dict):
+                    body_data = self._replace_variables_in_dict(body, variables)
+                    body_data = self._resolve_variables_in_dict(body_data, resolver)
+                else:
+                    body_data = resolver.resolve(self._replace_variables(str(body), variables))
+
+            # 执行请求
+            start_time = time.time()
+
+            request_kwargs = {
+                'method': method.upper(),
+                'url': final_url,
+                'headers': final_headers,
+                'params': final_params,
+                'timeout': 30
+            }
+
+            if body_data is not None:
+                if isinstance(body_data, dict):
+                    request_kwargs['json'] = body_data
+                else:
+                    request_kwargs['data'] = body_data
+
+            # 发送请求
+            response = requests.request(**request_kwargs)
+
+            end_time = time.time()
+            response_time = (end_time - start_time) * 1000  # 转换为毫秒
+
+            # 解析响应
+            response_headers = dict(response.headers)
+            response_body = response.text
+
+            # 尝试解析JSON响应
+            try:
+                response_json = response.json()
+            except:
+                response_json = None
+
+            return Response({
+                'status_code': response.status_code,
+                'response_time': response_time,
+                'response_data': {
+                    'headers': response_headers,
+                    'body': response_body,
+                    'json': response_json
+                },
+                'request_data': {
+                    'method': method,
+                    'url': final_url,
+                    'headers': final_headers,
+                    'params': final_params,
+                    'body': body_data
+                }
+            })
+
+        except Exception as e:
+            logger.error(f"执行单个请求失败: {e}", exc_info=True)
+            return Response(
+                {'error': f'执行请求失败: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
 
 class EnvironmentViewSet(viewsets.ModelViewSet):
     queryset = Environment.objects.all()

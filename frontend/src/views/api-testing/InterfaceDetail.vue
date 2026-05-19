@@ -871,9 +871,31 @@ const responseBodyJson = computed(() => {
 })
 
 // 复制 JSON Path 到剪贴板
-const copyJsonPath = (path) => {
-  navigator.clipboard.writeText(path)
-  ElMessage.success(`已复制 JSON Path: ${path}`)
+const copyJsonPath = async (path) => {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(path)
+      ElMessage.success(`已复制 JSON Path: ${path}`)
+    } else {
+      // 降级方案：使用传统的复制方法
+      const textarea = document.createElement('textarea')
+      textarea.value = path
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      const success = document.execCommand('copy')
+      document.body.removeChild(textarea)
+      if (success) {
+        ElMessage.success(`已复制 JSON Path: ${path}`)
+      } else {
+        ElMessage.error('复制失败，请手动复制')
+      }
+    }
+  } catch (error) {
+    console.error('复制失败:', error)
+    ElMessage.error('复制失败，请手动复制')
+  }
 }
 
 onMounted(async () => {

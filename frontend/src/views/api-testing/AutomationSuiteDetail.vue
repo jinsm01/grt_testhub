@@ -53,11 +53,6 @@
               <el-icon><Plus /></el-icon>
               {{ $t('apiTesting.automation.addRequest') }}
             </el-button>
-            <!-- AI智能生成按钮 -->
-            <el-button type="primary" @click="openAIGenerateDialog" :loading="aiGenerating">
-              <el-icon><MagicStick /></el-icon>
-              AI智能生成
-            </el-button>
             <!-- 评审按钮 - 只有未评审且不是创建者时显示 -->
             <template v-if="reviewSummary && !userHasReviewed && !isCreator">
               <el-button type="success" @click="submitReview('approved')">
@@ -585,6 +580,7 @@
               <json-tree-viewer 
                 :data="getRequestDataRaw()" 
                 :root-path="getRequestJsonPathRoot()"
+                @copy-path="copyJsonPathToClipboard"
               />
             </div>
           </div>
@@ -609,6 +605,7 @@
               <json-tree-viewer 
                 :data="getResponseDataRaw()" 
                 :root-path="getJsonPathRoot()"
+                @copy-path="copyJsonPathToClipboard"
               />
             </div>
             <div class="assertions-container" v-else-if="activeResponseTab === 'assertions'">
@@ -889,10 +886,43 @@
         <!-- 断言 -->
         <el-tab-pane label="断言" name="assertions">
           <div class="assertions-editor">
-            <div class="assertions-header" style="margin-bottom: 16px; display: flex; gap: 12px;">
+            <div class="assertions-header" style="margin-bottom: 16px; display: flex; gap: 2px; justify-content: flex-end;">
               <el-button size="small" type="primary" @click="addEditingAssertion">
                 <el-icon><Plus /></el-icon> 添加断言
               </el-button>
+              <el-button
+                size="small"
+                type="success"
+                @click="testExecuteForAIAssertion"
+                :loading="testingForAssertion"
+                :disabled="!editingRequestData.url"
+              >
+                <el-icon><VideoPlay /></el-icon> 测试执行
+              </el-button>
+              <el-button
+                v-if="editingTestResponse"
+                size="small"
+                type="warning"
+                @click="generateAIAssertionsForEditing"
+                :loading="generatingAIAssertions"
+              >
+                <el-icon><MagicStick /></el-icon> AI生成断言
+              </el-button>
+            </div>
+
+            <!-- 测试执行响应展示 -->
+            <div v-if="editingTestResponse" class="test-response-preview" style="margin-bottom: 16px; border: 1px solid #e4e7ed; border-radius: 8px; overflow: hidden;">
+              <!-- 状态栏 -->
+              <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #fafafa; border-bottom: 1px solid #e4e7ed;">
+                <el-tag :type="editingTestResponse.status_code >= 200 && editingTestResponse.status_code < 300 ? 'success' : 'danger'" size="small" effect="light">
+                  {{ editingTestResponse.status_code }}
+                </el-tag>
+                <span style="font-size: 13px; color: #606266;">{{ editingTestResponse.response_time?.toFixed(0) }}ms</span>
+              </div>
+              <!-- JSON 内容 -->
+              <div style="max-height: 300px; overflow: auto; background: #fff;">
+                <pre style="margin: 0; padding: 16px; font-size: 13px; line-height: 1.6; font-family: 'Monaco', 'Menlo', 'Consolas', monospace;" v-html="formatJSONWithSyntaxHighlight(editingTestResponse.response_data?.json || editingTestResponse.response_data?.body)"></pre>
+              </div>
             </div>
             <div class="assertions-table" v-if="editingAssertionsList && editingAssertionsList.length > 0">
               <div class="assertions-table-header" style="display: flex; padding: 8px; background: #f5f7fa; font-weight: 500; font-size: 13px;">
@@ -1312,96 +1342,6 @@
       </template>
     </el-drawer>
 
-    <!-- AI智能生成弹窗 -->
-    <el-dialog
-      v-model="showAIGenerate"
-      title="AI智能生成场景"
-      width="700px"
-      :close-on-click-modal="false"
-    >
-      <div class="ai-generate-content">
-        <el-alert
-          title="AI将根据您选择的接口和业务描述生成场景步骤"
-          type="info"
-          :closable="false"
-          style="margin-bottom: 20px;"
-        />
-
-        <!-- 业务描述输入 -->
-        <div class="business-description">
-          <div class="section-title">业务描述（可选）</div>
-          <el-input
-            v-model="aiBusinessDescription"
-            type="textarea"
-            :rows="3"
-            placeholder="请描述接口之间的业务关系和依赖，例如：先登录获取token，然后创建智能体获取agentId，最后查询智能体详情"
-            style="margin-bottom: 20px;"
-          />
-        </div>
-
-        <!-- 接口选择 -->
-        <div class="interface-selection">
-          <div class="section-title">选择接口（按执行顺序勾选）</div>
-          <el-tree
-            ref="aiRequestTreeRef"
-            :data="requestTree"
-            :props="requestTreeProps"
-            show-checkbox
-            node-key="id"
-            :check-strictly="false"
-            :default-expand-all="true"
-            class="ai-request-tree"
-          >
-            <template #default="{ node, data }">
-              <div class="request-tree-node">
-                <el-icon v-if="data.type === 'collection'"><Folder /></el-icon>
-                <el-icon v-else><Document /></el-icon>
-                <span>{{ data.name }}</span>
-                <span v-if="data.type === 'request'" class="method-tag" :class="data.method?.toLowerCase()">
-                  {{ data.method }}
-                </span>
-              </div>
-            </template>
-          </el-tree>
-        </div>
-
-        <!-- 生成结果预览 -->
-        <div v-if="aiGeneratedSteps.length > 0" class="generated-preview">
-          <div class="section-title">生成结果预览</div>
-          <el-timeline>
-            <el-timeline-item
-              v-for="(step, index) in aiGeneratedSteps"
-              :key="index"
-              :type="step.use_vars?.length > 0 ? 'primary' : 'info'"
-              :hollow="step.use_vars?.length > 0 ? false : true"
-            >
-              <div class="step-preview-item">
-                <div class="step-header">
-                  <span class="step-number">步骤 {{ step.step_number }}</span>
-                  <span class="step-name">{{ step.request_name }}</span>
-                </div>
-                <div v-if="step.extract_vars?.length > 0" class="step-vars">
-                  <el-tag size="small" type="success">提取变量: {{ step.extract_vars.map(v => v.var_name).join(', ') }}</el-tag>
-                </div>
-                <div v-if="step.use_vars?.length > 0" class="step-vars">
-                  <el-tag size="small" type="warning">使用变量: {{ step.use_vars.map(v => v.value).join(', ') }}</el-tag>
-                </div>
-              </div>
-            </el-timeline-item>
-          </el-timeline>
-        </div>
-      </div>
-
-      <template #footer>
-        <el-button @click="showAIGenerate = false">取消</el-button>
-        <el-button v-if="aiGeneratedSteps.length === 0" type="primary" @click="generateSceneByAI" :loading="aiGenerating">
-          开始生成
-        </el-button>
-        <el-button v-else type="success" @click="applyAIGeneratedSteps" :loading="aiApplying">
-          应用到场景
-        </el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -1472,14 +1412,6 @@ const addingRequests = ref(false)
 const currentExecution = ref(null)
 const currentRequestDetail = ref(null)
 
-// AI智能生成相关
-const showAIGenerate = ref(false)
-const aiGenerating = ref(false)
-const aiApplying = ref(false)
-const aiGeneratedSteps = ref([])
-const aiBusinessDescription = ref('')
-const aiRequestTreeRef = ref(null)
-
 // 请求详情抽屉状态
 const activeDataTab = ref('request')
 const activeRequestTab = ref('body')
@@ -1522,6 +1454,11 @@ const editingHeadersList = ref([])
 const editingParamsList = ref([])
 const editingExtractorsList = ref([])
 const editingAssertionsList = ref([])
+
+// 接口编辑时的测试执行和AI断言相关
+const testingForAssertion = ref(false)
+const generatingAIAssertions = ref(false)
+const editingTestResponse = ref(null)
 
 // ========== 变量选择器相关 ==========
 const showVariablePickerDialog = ref(false)
@@ -1987,7 +1924,7 @@ const getVariablePreviewRoot = () => {
   return `$.${requestRef}.${selectedVarType.value}`
 }
 
-// 点击 JSON 字段复制路径
+// 点击 JSON 字段复制路径（用于变量提取器）
 const onJsonPathCopy = (fullPath) => {
   // 从完整路径中提取 JSON Path 部分
   // 例如: $.2.response.body.data.id -> data.id
@@ -1996,6 +1933,34 @@ const onJsonPathCopy = (fullPath) => {
     jsonPath.value = match[3]
   } else if (match) {
     jsonPath.value = ''
+  }
+}
+
+// 复制 JSON Path 到剪贴板（用于请求执行详情弹窗）
+const copyJsonPathToClipboard = async (path) => {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(path)
+      ElMessage.success(`已复制 JSON Path: ${path}`)
+    } else {
+      // 降级方案：使用传统的复制方法
+      const textarea = document.createElement('textarea')
+      textarea.value = path
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      const success = document.execCommand('copy')
+      document.body.removeChild(textarea)
+      if (success) {
+        ElMessage.success(`已复制 JSON Path: ${path}`)
+      } else {
+        ElMessage.error('复制失败，请手动复制')
+      }
+    }
+  } catch (error) {
+    console.error('复制失败:', error)
+    ElMessage.error('复制失败，请手动复制')
   }
 }
 
@@ -2743,143 +2708,6 @@ const onRequestCheck = () => {
   // 请求选择变化处理
 }
 
-// ========== AI智能生成相关方法 ==========
-const openAIGenerateDialog = async () => {
-  // 重置状态
-  aiGeneratedSteps.value = []
-  aiBusinessDescription.value = ''
-
-  // 加载接口树
-  await loadRequestTree()
-
-  showAIGenerate.value = true
-
-  // 默认不选中任何接口
-  nextTick(() => {
-    setTimeout(() => {
-      if (aiRequestTreeRef.value) {
-        aiRequestTreeRef.value.setCheckedKeys([], false)
-      }
-    }, 200)
-  })
-}
-
-const generateSceneByAI = async () => {
-  if (!suite.value) return
-
-  const checkedNodes = aiRequestTreeRef.value.getCheckedNodes()
-  const requestIds = checkedNodes
-    .filter(node => node.type === 'request')
-    .map(node => parseInt(node.id.replace('request_', '')))
-
-  if (requestIds.length === 0) {
-    ElMessage.warning('请至少选择一个接口')
-    return
-  }
-
-  if (requestIds.length < 2) {
-    ElMessage.warning('请至少选择两个接口以分析依赖关系')
-    return
-  }
-
-  aiGenerating.value = true
-  try {
-    const response = await api.post('/api-testing/automation-scenarios/ai_generate/', {
-      request_ids: requestIds,
-      environment_id: suite.value.environment?.id || suite.value.environment,
-      business_description: aiBusinessDescription.value
-    })
-
-    if (response.data.success) {
-      aiGeneratedSteps.value = response.data.steps || []
-      ElMessage.success('AI场景生成成功')
-    } else {
-      ElMessage.error(response.data.error || '生成失败')
-    }
-  } catch (error) {
-    console.error('AI生成失败:', error)
-    // 错误提示已由全局拦截器处理，这里不再重复显示
-    // 只有当没有响应数据时才显示默认错误
-    if (!error.response?.data?.error) {
-      ElMessage.error('AI生成失败')
-    }
-  } finally {
-    aiGenerating.value = false
-  }
-}
-
-const applyAIGeneratedSteps = async () => {
-  if (!suite.value || aiGeneratedSteps.value.length === 0) return
-
-  aiApplying.value = true
-  try {
-    // 将生成的步骤添加到场景
-    for (const step of aiGeneratedSteps.value) {
-      // 处理变量使用 - 构建 override_headers, override_params, override_body
-      const overrideHeaders = {}
-      const overrideParams = {}
-      let overrideBody = null
-
-      if (step.use_vars && step.use_vars.length > 0) {
-        for (const useVar of step.use_vars) {
-          const param = useVar.param || ''
-          let value = useVar.value || ''
-
-          // 将 ${变量名} 转换为 {{变量名}} 格式，以便执行器正确解析
-          value = value.replace(/\$\{(\w+)\}/g, '{{$1}}')
-
-          if (param.startsWith('header.')) {
-            // Header 参数
-            const headerName = param.replace('header.', '')
-            overrideHeaders[headerName] = value
-          } else if (param.startsWith('params.')) {
-            // URL 参数
-            const paramName = param.replace('params.', '')
-            overrideParams[paramName] = value
-          } else if (param.startsWith('body.')) {
-            // Body 参数 - 简化为替换整个 body 中的对应字段
-            if (!overrideBody) overrideBody = {}
-            const bodyPath = param.replace('body.', '')
-            overrideBody[bodyPath] = value
-          }
-        }
-      }
-
-      const stepData = {
-        test_suite_id: suite.value.id,  // 使用 test_suite_id，后端会自动找到或创建对应的 AutomationScenario
-        step_type: 'request',
-        name: step.request_name,
-        api_request_id: step.request_id,
-        override_enabled: true,
-        // 变量提取配置
-        override_extractors: step.extract_vars?.map(v => ({
-          name: v.var_name,
-          extractor_type: 'json_path',
-          extractor_config: { json_path: v.json_path },
-          variable_name: v.var_name
-        })) || [],
-        // 变量使用配置 - 使用空对象而不是 undefined/null
-        override_headers: Object.keys(overrideHeaders).length > 0 ? overrideHeaders : {},
-        override_params: Object.keys(overrideParams).length > 0 ? overrideParams : {},
-        override_body: overrideBody || {}
-      }
-
-      await createScenarioStep(stepData)
-    }
-
-    ElMessage.success('场景步骤添加成功')
-    showAIGenerate.value = false
-
-    // 刷新场景数据
-    await loadSuiteDetail()
-  } catch (error) {
-    console.error('应用生成步骤失败:', error)
-    ElMessage.error('应用生成步骤失败')
-  } finally {
-    aiApplying.value = false
-  }
-}
-
 const addSelectedRequests = async () => {
   if (!suite.value) return
   
@@ -3192,21 +3020,38 @@ const editRequest = (suiteRequest) => {
     editingParamsList.value.push({ key: '', value: '' })
   }
   
-  // 初始化提取变量列表 - 优先使用 suite_request 的 extracted_variables，否则使用 request 的 variable_extractors
-  let extractors = suiteRequest.extracted_variables
-  // 如果为空对象或空数组，则使用 request 的 variable_extractors
+  // 初始化提取变量列表 - 优先使用 suite_request 的 override_extractors，其次是 extracted_variables，最后是 request 的 variable_extractors
+  let extractors = suiteRequest.override_extractors
+  // 如果为空数组，则使用 extracted_variables
+  if (!extractors || (Array.isArray(extractors) && extractors.length === 0)) {
+    extractors = suiteRequest.extracted_variables
+  }
+  // 如果仍为空，则使用 request 的 variable_extractors
   if (!extractors || (Array.isArray(extractors) && extractors.length === 0) || (typeof extractors === 'object' && Object.keys(extractors).length === 0)) {
     extractors = request.variable_extractors
+  }
+  // 处理不同格式：如果是字典格式，转换为数组格式
+  if (extractors && typeof extractors === 'object' && !Array.isArray(extractors)) {
+    extractors = Object.entries(extractors).map(([key, value]) => ({
+      name: key,
+      variable_name: key,
+      source: 'json_body',
+      json_path: value
+    }))
   }
   // 确保是数组类型
   if (!Array.isArray(extractors)) {
     extractors = []
   }
   editingExtractorsList.value = extractors.map(extractor => ({ ...extractor }))
-  
-  // 初始化断言列表 - 优先使用 suite_request 的 assertions，否则使用 request 的 assertions
-  let assertions = suiteRequest.assertions
-  // 如果为空数组，则使用 request 的 assertions
+
+  // 初始化断言列表 - 优先使用 suite_request 的 override_assertions，其次是 assertions，最后是 request 的 assertions
+  let assertions = suiteRequest.override_assertions
+  // 如果为空数组，则使用 assertions
+  if (!assertions || (Array.isArray(assertions) && assertions.length === 0)) {
+    assertions = suiteRequest.assertions
+  }
+  // 如果仍为空，则使用 request 的 assertions
   if (!assertions || (Array.isArray(assertions) && assertions.length === 0)) {
     assertions = request.assertions
   }
@@ -3215,10 +3060,13 @@ const editRequest = (suiteRequest) => {
     assertions = []
   }
   editingAssertionsList.value = assertions.map(assertion => ({ ...assertion }))
-  
+
+  // 重置测试执行相关数据
+  editingTestResponse.value = null
+
   const method = suiteRequest.override_method || request.method || 'GET'
   editDrawerActiveTab.value = ['POST', 'PUT', 'PATCH'].includes(method) ? 'body' : 'basic'
-  
+
   showEditRequestDialog.value = true
 }
 
@@ -3278,6 +3126,154 @@ const onEditingAssertionTypeChange = (assertion) => {
     assertion.expected = 200
   } else if (assertion.type === 'response_time') {
     assertion.expected = 1000
+  }
+}
+
+// JSON 语法高亮
+const formatJSONWithSyntaxHighlight = (data) => {
+  if (!data) return ''
+  try {
+    const json = typeof data === 'string' ? JSON.parse(data) : data
+    const jsonStr = JSON.stringify(json, null, 2)
+    return jsonStr
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/(".*?"):/g, '<span style="color: #881391;">$1</span>:')
+      .replace(/: (".*?")/g, ': <span style="color: #1a1aa6;">$1</span>')
+      .replace(/: (true|false)/g, ': <span style="color: #1c00cf;">$1</span>')
+      .replace(/: (null)/g, ': <span style="color: #1c00cf;">$1</span>')
+      .replace(/: (\d+)/g, ': <span style="color: #1c00cf;">$1</span>')
+  } catch {
+    return String(data)
+  }
+}
+
+// 复制响应内容到剪贴板
+const copyResponseToClipboard = async () => {
+  if (!editingTestResponse.value) return
+  try {
+    const data = editingTestResponse.value.response_data?.json || editingTestResponse.value.response_data?.body
+    const text = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data)
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('已复制到剪贴板')
+  } catch (error) {
+    ElMessage.error('复制失败')
+  }
+}
+
+// 测试执行（用于AI断言生成）
+const testExecuteForAIAssertion = async () => {
+  if (!editingRequestData.value.url) {
+    ElMessage.warning('请先填写请求URL')
+    return
+  }
+
+  // 检查是否需要环境
+  if (!editingRequestData.value.url.startsWith('http') && !suite.value?.environment) {
+    ElMessage.warning('当前接口使用相对路径URL，但场景未配置环境，请先配置环境')
+    return
+  }
+
+  testingForAssertion.value = true
+  try {
+    // 转换 headers
+    const headers = {}
+    editingHeadersList.value.forEach(item => {
+      if (item.key.trim()) headers[item.key.trim()] = item.value
+    })
+
+    // 转换 params
+    const params = {}
+    editingParamsList.value.forEach(item => {
+      if (item.key.trim()) params[item.key.trim()] = item.value
+    })
+
+    // 转换 body
+    let body = null
+    if (['POST', 'PUT', 'PATCH'].includes(editingRequestData.value.method)) {
+      if (editingRequestData.value.bodyType === 'json') {
+        try {
+          body = JSON.parse(editingRequestData.value.bodyContent)
+        } catch {
+          body = editingRequestData.value.bodyContent
+        }
+      } else {
+        body = editingRequestData.value.bodyContent
+      }
+    }
+
+    // 获取环境ID
+    const environmentId = suite.value?.environment?.id || suite.value?.environment
+
+    // 发送测试请求
+    const res = await api.post('/api-testing/requests/execute_single/', {
+      method: editingRequestData.value.method,
+      url: editingRequestData.value.url,
+      headers: headers,
+      params: params,
+      body: body,
+      environment_id: environmentId
+    })
+
+    editingTestResponse.value = res.data
+    ElMessage.success('测试执行成功')
+  } catch (error) {
+    console.error('Test execute error:', error)
+    ElMessage.error(error.response?.data?.error || '测试执行失败')
+  } finally {
+    testingForAssertion.value = false
+  }
+}
+
+// AI生成断言（用于接口编辑）
+const generateAIAssertionsForEditing = async () => {
+  if (!editingTestResponse.value) {
+    ElMessage.warning('请先执行测试获取响应数据')
+    return
+  }
+
+  generatingAIAssertions.value = true
+
+  // 显示加载提示
+  const loadingMessage = ElMessage.info({
+    message: 'AI正在分析响应数据并生成断言，请稍候...',
+    duration: 0,
+    showClose: true
+  })
+
+  try {
+    const res = await api.post('/api-testing/requests/generate_assertions/', {
+      status_code: editingTestResponse.value.status_code,
+      response_body: editingTestResponse.value.response_data?.json || editingTestResponse.value.response_data?.body,
+      response_headers: editingTestResponse.value.response_data?.headers || {},
+      response_time: editingTestResponse.value.response_time
+    })
+
+    loadingMessage.close()
+
+    if (res.data.assertions && res.data.assertions.length > 0) {
+      // 将生成的断言添加到现有断言列表
+      const newAssertions = res.data.assertions.map(assertion => ({
+        name: assertion.name || 'AI生成断言',
+        type: assertion.type || 'json_path',
+        expected: assertion.expected,
+        json_path: assertion.json_path || '',
+        header_name: assertion.header_name || '',
+        expected_value: assertion.expected_value || ''
+      }))
+
+      editingAssertionsList.value = [...editingAssertionsList.value, ...newAssertions]
+      ElMessage.success(`成功生成 ${res.data.assertions.length} 个断言`)
+    } else {
+      ElMessage.warning('未能生成断言，请检查响应数据')
+    }
+  } catch (error) {
+    console.error('Generate AI assertions error:', error)
+    ElMessage.error(error.response?.data?.error || '生成断言失败，请稍后重试')
+  } finally {
+    generatingAIAssertions.value = false
+    loadingMessage.close()
   }
 }
 
