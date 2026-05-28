@@ -189,7 +189,7 @@ export default {
       knowledge_base: '知识库问答',
       bug_analyzer: 'Bug 分析',
       assertion_generator: 'AI断言生成',
-      scene_generator: 'AI场景生成'
+      knowledge_graph: '知识图谱构建'
     },
     messages: {
       loadFailed: '加载配置失败',

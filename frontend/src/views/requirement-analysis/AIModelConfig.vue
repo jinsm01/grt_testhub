@@ -106,7 +106,7 @@
             <el-option value="knowledge_base" :label="$t('configuration.aiModel.roles.knowledge_base')" />
             <el-option value="bug_analyzer" :label="$t('configuration.aiModel.roles.bug_analyzer')" />
             <el-option value="assertion_generator" :label="$t('configuration.aiModel.roles.assertion_generator')" />
-            <el-option value="scene_generator" :label="$t('configuration.aiModel.roles.scene_generator')" />
+            <el-option value="knowledge_graph" :label="$t('configuration.aiModel.roles.knowledge_graph')" />
           </el-select>
           <div v-if="formErrors.role" class="error-message">{{ formErrors.role }}</div>
         </el-form-item>
@@ -734,7 +734,7 @@ export default {
   color: #13c2c2;
 }
 
-.role-badge.scene_generator {
+.role-badge.knowledge_graph {
   background: #e6f7ff;
   color: #1890ff;
 }

@@ -189,7 +189,7 @@ export default {
       knowledge_base: 'Knowledge Base Q&A',
       bug_analyzer: 'Bug Analyzer',
       assertion_generator: 'AI Assertion Generator',
-      scene_generator: 'AI Scene Generator'
+      knowledge_graph: 'Knowledge Graph Builder'
     },
     messages: {
       loadFailed: 'Failed to load configurations',

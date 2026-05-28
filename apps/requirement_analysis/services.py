@@ -4,18 +4,20 @@ import time
 import uuid
 import asyncio
 import logging
+import base64
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
+# docling 文档解析支持 - 统一使用 docling 处理所有格式
 try:
-    from PyPDF2 import PdfReader
+    from docling.document_converter import DocumentConverter
+    from docling.datamodel.base_models import InputFormat
+    from docling.datamodel.document import ConversionResult
+    DOCLING_AVAILABLE = True
 except ImportError:
-    from PyPDF2 import PdfFileReader as PdfReader
-    
-try:
-    import docx
-except ImportError:
-    docx = None
+    DOCLING_AVAILABLE = False
+    DocumentConverter = None
+
 from django.conf import settings
 from django.core.files.storage import default_storage
 
@@ -24,66 +26,392 @@ from .models import RequirementDocument, RequirementAnalysis, BusinessRequiremen
 logger = logging.getLogger(__name__)
 
 
+class ImageFlowchartProcessor:
+    """图片流程图解析服务 - 使用多模态 AI 理解流程图"""
+
+    @staticmethod
+    def is_image_file(file_path: str) -> bool:
+        """检查是否为图片文件"""
+        image_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'}
+        ext = os.path.splitext(file_path.lower())[1]
+        return ext in image_extensions
+
+    @staticmethod
+    def encode_image_to_base64(file_path: str) -> str:
+        """将图片转换为 base64 编码"""
+        with open(file_path, 'rb') as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
+
+    @staticmethod
+    async def analyze_flowchart_with_vision(file_path: str, config: Optional[Any] = None) -> str:
+        """
+        使用多模态 AI 分析流程图图片
+
+        Args:
+            file_path: 图片文件路径
+            config: AI 模型配置（已废弃，自动使用 qwen-vl-plus）
+
+        Returns:
+            结构化文本描述
+        """
+        try:
+            logger.info(f"开始分析图片流程图: {file_path}")
+
+            # 获取图片 base64
+            base64_image = ImageFlowchartProcessor.encode_image_to_base64(file_path)
+            logger.info(f"图片已转换为 base64，长度: {len(base64_image)}")
+
+            # 自动使用 qwen-vl-plus，不需要配置
+            logger.info("自动使用 qwen-vl-plus 分析图片")
+
+            # 获取 API Key（从环境变量或默认配置）
+            api_key = os.environ.get('DASHSCOPE_API_KEY') or os.environ.get('OPENAI_API_KEY')
+            if not api_key:
+                # 尝试从 AIModelConfig 获取任意可用的 API Key
+                from .models import AIModelConfig
+                any_config = AIModelConfig.objects.filter(is_active=True).first()
+                if any_config:
+                    api_key = any_config.api_key
+
+            if not api_key:
+                logger.error("未找到可用的 API Key")
+                return "错误：未找到可用的 API Key，请配置 AI 模型"
+
+            # 构建提示词
+            system_prompt = """你是一个专业的流程图分析专家。请仔细分析用户上传的流程图图片，并提取以下信息：
+
+1. **流程节点**：识别图中的所有节点（方框、菱形、圆形等），包括：
+   - 节点名称/标签
+   - 节点类型（开始/结束、处理、判断、输入/输出等）
+   - 节点描述
+
+2. **流程关系**：识别节点之间的连接关系，包括：
+   - 源节点 → 目标节点
+   - 连接条件（如判断分支的"是"/"否"）
+   - 流程方向
+
+3. **整体结构**：
+   - 流程的起点和终点
+   - 主流程路径
+   - 分支和循环
+   - 并行流程（如果有）
+
+请以结构化的方式输出，使用以下格式：
+
+## 流程概述
+[简要描述这个流程的整体功能和目的]
+
+## 节点列表
+1. **节点名称** (类型: [开始/结束/处理/判断/输入/输出])
+   - 描述: [详细说明]
+
+2. **节点名称** (类型: [开始/结束/处理/判断/输入/输出])
+   - 描述: [详细说明]
+
+## 流程关系
+- [节点A] → [节点B] ([条件/说明])
+- [节点B] → [节点C] ([条件/说明])
+
+## 主流程路径
+[描述从起点到终点的主要流程路径]
+
+## 分支和循环
+[描述所有的分支判断和循环结构]
+
+请确保：
+- 使用图片中显示的实际文本内容
+- 保持原始语言（如果是中文图片，输出中文）
+- 尽可能详细和准确
+- 对于无法识别的内容，标注为"未识别"""
+
+            # 调用 qwen-vl-plus 多模态 API（硬编码，不依赖配置）
+            logger.info("开始调用 qwen-vl-plus 多模态 API")
+            result = await ImageFlowchartProcessor._call_qwen_vision_with_key(
+                api_key, base64_image, system_prompt
+            )
+
+            logger.info(f"流程图分析完成，结果长度: {len(result)}")
+            return result
+
+        except Exception as e:
+            logger.error(f"流程图分析失败: {e}")
+            import traceback
+            logger.error(f"错误堆栈: {traceback.format_exc()}")
+            return f"流程图分析失败: {str(e)}"
+
+    @staticmethod
+    async def _call_qwen_vision_with_key(api_key: str, base64_image: str, system_prompt: str) -> str:
+        """调用通义千问多模态 API（直接使用 API Key，硬编码使用 qwen-vl-plus）"""
+        import aiohttp
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": "qwen-vl-plus",  # 硬编码使用 qwen-vl-plus
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{base64_image}"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "请详细分析这张流程图，提取所有节点和关系。"
+                        }
+                    ]
+                }
+            ],
+            "max_tokens": 4096,
+            "temperature": 0.7
+        }
+
+        async with aiohttp.ClientSession() as session:
+            url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+            logger.info(f"调用通义千问 qwen-vl-plus API: {url}")
+            async with session.post(
+                url,
+                headers=headers,
+                json=payload
+            ) as response:
+                response_text = await response.text()
+                logger.info(f"API 响应状态: {response.status}")
+                if response.status == 200:
+                    result = json.loads(response_text)
+                    content = result['choices'][0]['message']['content']
+                    logger.info(f"API 调用成功，返回内容长度: {len(content)}")
+                    return content
+                else:
+                    logger.error(f"API 调用失败: {response.status}, {response_text}")
+                    raise Exception(f"API 调用失败: {response.status}, {response_text}")
+
+    @staticmethod
+    async def _call_qwen_vision(config, base64_image: str, system_prompt: str) -> str:
+        """调用通义千问多模态 API（兼容旧版本，使用配置对象）"""
+        return await ImageFlowchartProcessor._call_qwen_vision_with_key(
+            config.api_key, base64_image, system_prompt
+        )
+
+    @staticmethod
+    async def _call_deepseek_vision(config, base64_image: str, system_prompt: str) -> str:
+        """调用 DeepSeek 多模态 API"""
+        import aiohttp
+
+        headers = {
+            "Authorization": f"Bearer {config.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": config.model_name or "deepseek-vl",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{base64_image}"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "请详细分析这张流程图，提取所有节点和关系。"
+                        }
+                    ]
+                }
+            ],
+            "max_tokens": config.max_tokens or 4096,
+            "temperature": config.temperature or 0.7
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                config.base_url or "https://api.deepseek.com/v1/chat/completions",
+                headers=headers,
+                json=payload
+            ) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    return result['choices'][0]['message']['content']
+                else:
+                    error_text = await response.text()
+                    raise Exception(f"API 调用失败: {response.status}, {error_text}")
+
+    @staticmethod
+    async def _call_zhipu_vision(config, base64_image: str, system_prompt: str) -> str:
+        """调用智谱 GLM-4V API"""
+        import aiohttp
+
+        headers = {
+            "Authorization": f"Bearer {config.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": config.model_name or "glm-4v",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{base64_image}"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "请详细分析这张流程图，提取所有节点和关系。"
+                        }
+                    ]
+                }
+            ],
+            "max_tokens": config.max_tokens or 4096,
+            "temperature": config.temperature or 0.7
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                config.base_url or "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+                headers=headers,
+                json=payload
+            ) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    return result['choices'][0]['message']['content']
+                else:
+                    error_text = await response.text()
+                    raise Exception(f"API 调用失败: {response.status}, {error_text}")
+
+    @staticmethod
+    async def _call_openai_vision(config, base64_image: str, system_prompt: str) -> str:
+        """调用 OpenAI 兼容接口的多模态 API"""
+        import aiohttp
+
+        headers = {
+            "Authorization": f"Bearer {config.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": config.model_name or "gpt-4o",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/png;base64,{base64_image}"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": "请详细分析这张流程图，提取所有节点和关系。"
+                        }
+                    ]
+                }
+            ],
+            "max_tokens": config.max_tokens or 4096,
+            "temperature": config.temperature or 0.7
+        }
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{config.base_url}/chat/completions",
+                headers=headers,
+                json=payload
+            ) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    return result['choices'][0]['message']['content']
+                else:
+                    error_text = await response.text()
+                    raise Exception(f"API 调用失败: {response.status}, {error_text}")
+
+
 class DocumentProcessor:
-    """文档处理服务"""
-    
+    """文档处理服务 - 统一使用 docling 解析所有格式，图片使用多模态 AI"""
+
     @staticmethod
-    def extract_text_from_pdf(file_path: str) -> str:
-        """从PDF文件提取文本"""
+    def extract_text_with_docling(file_path: str) -> str:
+        """使用 docling 提取文档文本（支持多种格式）"""
+        if not DOCLING_AVAILABLE:
+            return "docling 未安装，无法解析此格式"
+
         try:
-            text = ""
-            with open(file_path, 'rb') as file:
-                pdf_reader = PdfReader(file)
-                for page in pdf_reader.pages:
-                    text += page.extract_text() + "\n"
-            return text.strip()
+            converter = DocumentConverter()
+            result = converter.convert(file_path)
+
+            if result.status.value == 'success':
+                # 导出为 markdown 格式文本，保留表格结构
+                text = result.document.export_to_markdown()
+                return text.strip()
+            else:
+                return f"文档解析失败: {result.status.value}"
         except Exception as e:
-            logger.error(f"PDF文本提取失败: {e}")
-            return f"PDF文本提取失败: {str(e)}"
-    
-    @staticmethod
-    def extract_text_from_docx(file_path: str) -> str:
-        """从Word文档提取文本"""
-        try:
-            doc = docx.Document(file_path)
-            text = ""
-            for paragraph in doc.paragraphs:
-                text += paragraph.text + "\n"
-            return text.strip()
-        except Exception as e:
-            logger.error(f"Word文档文本提取失败: {e}")
-            return f"Word文档文本提取失败: {str(e)}"
-    
-    @staticmethod
-    def extract_text_from_txt(file_path: str) -> str:
-        """从文本文件提取文本"""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                return file.read().strip()
-        except UnicodeDecodeError:
-            try:
-                with open(file_path, 'r', encoding='gbk') as file:
-                    return file.read().strip()
-            except Exception as e:
-                logger.error(f"文本文件读取失败: {e}")
-                return f"文本文件读取失败: {str(e)}"
-        except Exception as e:
-            logger.error(f"文本文件读取失败: {e}")
-            return f"文本文件读取失败: {str(e)}"
-    
+            logger.error(f"docling 文档解析失败: {e}")
+            return f"文档解析失败: {str(e)}"
+
     @classmethod
     def extract_text(cls, document: RequirementDocument) -> str:
-        """根据文档类型提取文本"""
+        """根据文档类型提取文本 - 图片使用多模态 AI，其他使用 docling"""
         file_path = document.file.path
-        
-        if document.document_type == 'pdf':
-            return cls.extract_text_from_pdf(file_path)
-        elif document.document_type == 'docx':
-            return cls.extract_text_from_docx(file_path)
-        elif document.document_type == 'txt':
-            return cls.extract_text_from_txt(file_path)
-        else:
-            return "不支持的文档类型"
+        logger.info(f"DocumentProcessor.extract_text 被调用: {file_path}")
+
+        # 检查是否为图片文件
+        is_image = ImageFlowchartProcessor.is_image_file(file_path)
+        logger.info(f"是否为图片文件: {is_image}, 扩展名: {os.path.splitext(file_path.lower())[1]}")
+
+        if is_image:
+            logger.info(f"检测到图片文件: {file_path}，将使用多模态 AI 分析流程图")
+            # 图片文件返回特殊标记，由调用方异步处理
+            return "__IMAGE_FLOWCHART__"
+
+        # 非图片文件使用 docling 解析
+        if not DOCLING_AVAILABLE:
+            return "docling 未安装，无法解析文档"
+
+        return cls.extract_text_with_docling(file_path)
+
+    @classmethod
+    async def extract_text_async(cls, document: RequirementDocument, config: Optional[Any] = None) -> str:
+        """异步提取文档文本 - 图片使用多模态 AI 分析"""
+        file_path = document.file.path
+
+        # 检查是否为图片文件
+        if ImageFlowchartProcessor.is_image_file(file_path):
+            logger.info(f"使用多模态 AI 分析图片流程图: {file_path}")
+            return await ImageFlowchartProcessor.analyze_flowchart_with_vision(file_path, config)
+
+        # 非图片文件使用 docling 解析
+        if not DOCLING_AVAILABLE:
+            return "docling 未安装，无法解析文档"
+
+        return cls.extract_text_with_docling(file_path)
 
 
 class AIService:
