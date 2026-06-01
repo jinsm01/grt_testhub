@@ -15,6 +15,11 @@ from .views_scenario import (
     AutomationScenarioViewSet,
     apifox_import_v2_validate, apifox_import_v2_execute
 )
+from .apifox_check_views import (
+    apifox_check_config, apifox_check_generate,
+    apifox_check_task_status, apifox_check_reports,
+    apifox_check_report_detail, apifox_check_report_delete
+)
 
 router = DefaultRouter()
 router.register(r'dashboard', ApiDashboardViewSet, basename='dashboard')
@@ -48,6 +53,18 @@ urlpatterns = [
     path('api-testing/apifox/v2/import/', apifox_import_v2_execute, name='apifox-import-v2-execute'),
     # 兼容前端调用的 URL
     path('api-testing/apifox/import-v2/', apifox_import_v2_execute, name='apifox-import-v2-execute-alt'),
+    # Apifox 场景检查 - 配置管理
+    path('api-testing/apifox-check/config/', apifox_check_config, name='apifox-check-config'),
+    # Apifox 场景检查 - 生成报告
+    path('api-testing/apifox-check/generate/', apifox_check_generate, name='apifox-check-generate'),
+    # Apifox 场景检查 - 任务状态
+    path('api-testing/apifox-check/task/<str:task_id>/', apifox_check_task_status, name='apifox-check-task-status'),
+    # Apifox 场景检查 - 报告列表
+    path('api-testing/apifox-check/reports/', apifox_check_reports, name='apifox-check-reports'),
+    # Apifox 场景检查 - 删除报告 (必须在详情前面，避免被详情模式匹配)
+    path('api-testing/apifox-check/report/<str:filename>/delete/', apifox_check_report_delete, name='apifox-check-report-delete'),
+    # Apifox 场景检查 - 报告详情 (HTML)
+    path('api-testing/apifox-check/report/<str:filename>/', apifox_check_report_detail, name='apifox-check-report-detail'),
 ]
 
 # 添加媒体文件路由

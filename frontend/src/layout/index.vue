@@ -178,6 +178,10 @@
               <el-icon><Bell /></el-icon>
               <span>{{ $t('menu.notificationList') }}</span>
             </el-menu-item>
+            <el-menu-item index="/api-testing/apifox-scene-check">
+              <el-icon><DataAnalysis /></el-icon>
+              <span>Apifox 场景检查</span>
+            </el-menu-item>
           </template>
 
           <!-- UI自动化测试模块菜单 -->
@@ -406,6 +410,10 @@
                 <template v-else>
                   <el-breadcrumb-item :to="{ path: '/home' }">{{ $t('nav.home') }}</el-breadcrumb-item>
                   <el-breadcrumb-item v-if="moduleName" :to="moduleRoute">{{ moduleName }}</el-breadcrumb-item>
+                  <!-- 动态菜单层级路径 -->
+                  <template v-for="item in menuBreadcrumbPath" :key="item.id">
+                    <el-breadcrumb-item :to="`/ai-generation/testcases?menu=${item.id}`">{{ item.name }}</el-breadcrumb-item>
+                  </template>
                   <el-breadcrumb-item>{{ breadcrumbTitle }}</el-breadcrumb-item>
                 </template>
               </el-breadcrumb>
@@ -591,6 +599,40 @@ function findMenuRecursive(menu, menuId) {
   }
   return false
 }
+
+// 根据菜单ID查找从根到该菜单的完整路径
+function findMenuPathRecursive(menu, menuId, path = []) {
+  if (menu.id === menuId) {
+    return [...path, { id: menu.id, name: menu.name }]
+  }
+  if (menu.children) {
+    for (const child of menu.children) {
+      const result = findMenuPathRecursive(child, menuId, [...path, { id: menu.id, name: menu.name }])
+      if (result) return result
+    }
+  }
+  return null
+}
+
+// 获取当前菜单的完整面包屑路径（不含最后一项，最后一项由 breadcrumbTitle 显示）
+const menuBreadcrumbPath = computed(() => {
+  const currentMenuId = route.query.menu
+  if (!currentMenuId) return []
+
+  const menuId = parseInt(currentMenuId)
+  for (const project of projects.value) {
+    if (!project.menus) continue
+    for (const menu of project.menus) {
+      // 查找完整路径
+      const fullPath = findMenuPathRecursive(menu, menuId)
+      if (fullPath) {
+        // 返回除最后一项外的所有祖先节点（最后一项就是当前页面，由 breadcrumbTitle 处理）
+        return fullPath.slice(0, -1)
+      }
+    }
+  }
+  return []
+})
 
 const moduleName = computed(() => {
   // Bug 分析相关页面特殊处理
@@ -796,8 +838,34 @@ const breadcrumbTitle = computed(() => {
 
     '/profile': t('nav.profile')
   }
+
+  // 如果有 menu query 参数，尝试从菜单树中获取当前菜单名称
+  const currentMenuId = route.query.menu
+  if (currentMenuId && path === '/ai-generation/testcases') {
+    const menuId = parseInt(currentMenuId)
+    for (const project of projects.value) {
+      if (!project.menus) continue
+      for (const menu of project.menus) {
+        const found = findMenuById(menu, menuId)
+        if (found) return found.name
+      }
+    }
+  }
+
   return routeMap[route.path] || route.meta.title || ''
 })
+
+// 在菜单树中根据ID查找菜单节点
+function findMenuById(menu, menuId) {
+  if (menu.id === menuId) return menu
+  if (menu.children) {
+    for (const child of menu.children) {
+      const found = findMenuById(child, menuId)
+      if (found) return found
+    }
+  }
+  return null
+}
 
 // 跳转到汇总分析列表页
 // 跳转到汇总分析列表页

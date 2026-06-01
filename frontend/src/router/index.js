@@ -21,6 +21,7 @@ import ApiReportView from '@/views/api-testing/ReportView.vue'
 import ApiScheduledTasks from '@/views/api-testing/ScheduledTasks.vue'
 import ApiAIServiceConfig from '@/views/api-testing/AIServiceConfig.vue'
 import ApiTeamStatistics from '@/views/api-testing/TeamStatistics.vue'
+import ApiApifoxSceneCheck from '@/views/api-testing/ApifoxSceneCheck.vue'
 import NotificationLogs from '@/views/notification/NotificationLogs.vue'
 import UiDashboard from '@/views/ui-automation/dashboard/Dashboard.vue'
 import UiProjectList from '@/views/ui-automation/projects/ProjectList.vue'
@@ -311,6 +312,11 @@ const routes = [
         path: 'notification-logs',
         name: 'ApiNotificationLogs',
         component: NotificationLogs
+      },
+      {
+        path: 'apifox-scene-check',
+        name: 'ApifoxSceneCheck',
+        component: ApiApifoxSceneCheck
       }
     ]
   },

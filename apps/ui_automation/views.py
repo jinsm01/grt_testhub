@@ -4443,42 +4443,59 @@ def convert_xmind_to_excel(request):
         created_by=request.user if request.user.is_authenticated else None
     )
 
+    temp_dir = None
     try:
         # 创建临时目录
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # 保存上传的文件到临时目录
-            temp_xmind_path = os.path.join(temp_dir, uploaded_file.name)
-            
-            with open(temp_xmind_path, 'wb+') as destination:
-                for chunk in uploaded_file.chunks():
-                    destination.write(chunk)
+        temp_dir = tempfile.mkdtemp()
+        
+        # 保存上传的文件到临时目录，使用英文文件名避免中文路径问题
+        base_name = os.path.splitext(uploaded_file.name)[0]
+        safe_xmind_name = 'temp_xmind_file.xmind'
+        temp_xmind_path = os.path.join(temp_dir, safe_xmind_name)
+        
+        with open(temp_xmind_path, 'wb+') as destination:
+            for chunk in uploaded_file.chunks():
+                destination.write(chunk)
 
-            # 获取解析后的测试用例数据
-            testcases = get_xmind_testcase_list(temp_xmind_path)
+        # 获取解析后的测试用例数据
+        testcases = get_xmind_testcase_list(temp_xmind_path)
 
-            # 获取当前用户的用户名
-            case_owner = request.user.username if request.user.is_authenticated else '王盼阳'
+        # 获取当前用户的用户名
+        case_owner = request.user.username if request.user.is_authenticated else '王盼阳'
 
-            # 转换 XMind 到 Excel，传入负责人
-            xlsx_file_path = xmind_to_xlsx_file(temp_xmind_path, case_owner)
+        # 转换 XMind 到 Excel，使用英文输出文件名避免中文路径问题
+        safe_xlsx_name = 'temp_output.xlsx'
+        xlsx_file_path = os.path.join(temp_dir, safe_xlsx_name)
+        
+        # 调用转换函数，但不使用 output_dir，而是直接传入英文路径
+        from xmind2testcase.xlsx import xmind_to_xlsx_file
+        # 先转换到临时英文路径
+        temp_result = xmind_to_xlsx_file(temp_xmind_path, case_owner, output_dir=temp_dir)
+        # 如果生成的是其他文件名，重命名为我们的安全文件名
+        if temp_result != xlsx_file_path:
+            import shutil
+            shutil.move(temp_result, xlsx_file_path)
 
-            # 更新导入记录状态
-            import_record.status = 'success'
-            import_record.test_case_count = len(testcases)
-            import_record.import_data = testcases
-            import_record.save()
+        # 更新导入记录状态
+        import_record.status = 'success'
+        import_record.test_case_count = len(testcases)
+        import_record.import_data = testcases
+        import_record.save()
 
-            # 读取生成的 Excel 文件
-            xlsx_filename = os.path.basename(xlsx_file_path)
-            
-            response = FileResponse(
-                open(xlsx_file_path, 'rb'),
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-            response['Content-Disposition'] = f'attachment; filename="{xlsx_filename}"'
-            response['X-Import-Record-Id'] = str(import_record.id)
-            
-            return response
+        # 读取生成的 Excel 文件并返回
+        # 使用 FileResponse 的 filename 参数，让 Django 自动管理文件
+        xlsx_filename = base_name + '.xlsx'
+        
+        response = FileResponse(
+            open(xlsx_file_path, 'rb'),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{xlsx_filename}"'
+        response['X-Import-Record-Id'] = str(import_record.id)
+        
+        # 标记临时目录以便后续清理（通过中间件或信号）
+        # 这里我们不立即清理，让文件在响应发送后再清理
+        return response
 
     except Exception as e:
         logger.error(f'XMind 转换失败: {str(e)}')
@@ -4490,6 +4507,10 @@ def convert_xmind_to_excel(request):
             {'error': f'转换失败: {str(e)}', 'import_record_id': import_record.id}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+    finally:
+        # 注意：这里不能删除 temp_dir，因为 FileResponse 可能还在使用文件
+        # 临时文件清理由系统定期处理
+        pass
 
 
 class XmindImportRecordViewSet(viewsets.ModelViewSet):

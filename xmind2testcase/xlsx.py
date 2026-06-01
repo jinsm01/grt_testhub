@@ -15,8 +15,14 @@ This module provides functionality to convert XMind testcase files to Excel XLSX
 which is widely used in various test management systems and tools.
 """
 
-def xmind_to_xlsx_file(xmind_file, case_owner='王盼阳'):
-    """Convert XMind file to a XLSX file"""
+def xmind_to_xlsx_file(xmind_file, case_owner='王盼阳', output_dir=None):
+    """Convert XMind file to a XLSX file
+    
+    Args:
+        xmind_file: XMind文件路径
+        case_owner: 用例负责人
+        output_dir: 输出目录，如果不指定则使用XMind文件所在目录
+    """
     xmind_file = get_absolute_path(xmind_file)
     logging.info('Start converting XMind file(%s) to XLSX file...', xmind_file)
     testcases = get_xmind_testcase_list(xmind_file)
@@ -64,12 +70,36 @@ def xmind_to_xlsx_file(xmind_file, case_owner='王盼阳'):
     adjust_column_widths(ws)
     adjust_row_heights(ws)
     
-    # 保存文件
-    xlsx_file = xmind_file[:-6] + '.xlsx'
-    if os.path.exists(xlsx_file):
-        os.remove(xlsx_file)
-        
-    wb.save(xlsx_file)
+    # 确定输出路径
+    if output_dir:
+        # 使用指定的输出目录，避免中文路径问题
+        base_name = os.path.splitext(os.path.basename(xmind_file))[0]
+        xlsx_file = os.path.join(output_dir, base_name + '.xlsx')
+    else:
+        # 默认使用XMind文件所在目录
+        xlsx_file = xmind_file[:-6] + '.xlsx'
+    
+    # 使用 openpyxl 的 save 方法保存时，如果文件已存在可能会出现问题
+    # 先尝试删除已存在的文件
+    try:
+        if os.path.exists(xlsx_file):
+            os.remove(xlsx_file)
+    except OSError:
+        pass  # 文件不存在或无法删除，忽略
+    
+    # 使用临时文件名保存，避免中文路径问题
+    # openpyxl 在 Windows 上处理中文路径可能有问题，使用英文临时文件名
+    import tempfile as tf
+    temp_xlsx = tf.mktemp(suffix='.xlsx', dir=output_dir or os.path.dirname(xmind_file))
+    wb.save(temp_xlsx)
+    
+    # 重命名为最终文件名
+    try:
+        os.rename(temp_xlsx, xlsx_file)
+    except OSError:
+        # 如果重命名失败（例如中文路径问题），保留临时文件名
+        xlsx_file = temp_xlsx
+    
     logging.info('Convert XMind file(%s) to a XLSX file(%s) successfully!', xmind_file, xlsx_file)
     
     return xlsx_file
