@@ -48,14 +48,30 @@
               </el-button>
             </template>
           </el-input>
-          <el-upload
-            v-else
-            :auto-upload="false"
-            :show-file-list="false"
-            @change="(file) => handleFileChange(index, file)"
-          >
-            <el-button size="small">{{ $t('apiTesting.component.keyValueEditor.selectFile') }}</el-button>
-          </el-upload>
+          <div v-else class="file-upload-wrapper">
+            <el-upload
+              :auto-upload="false"
+              :show-file-list="false"
+              @change="(uploadFile) => handleFileChange(index, uploadFile)"
+              class="file-upload"
+            >
+              <el-button size="small" class="file-select-btn">
+                <el-icon><Upload /></el-icon>
+                {{ row.file ? $t('apiTesting.component.keyValueEditor.reselectFile') : (row.value ? $t('apiTesting.component.keyValueEditor.reselectFile') : $t('apiTesting.component.keyValueEditor.selectFile')) }}
+              </el-button>
+            </el-upload>
+            <span v-if="row.file" class="file-name" :title="row.file.name">
+              <el-icon><Document /></el-icon>
+              {{ row.file.name }}
+              <span class="file-size">({{ formatFileSize(row.file.size) }})</span>
+            </span>
+            <span v-else-if="row.value" class="file-name file-name-saved" :title="row.value">
+              <el-icon><Document /></el-icon>
+              {{ row.value }}
+              <span class="file-hint">({{ $t('apiTesting.component.keyValueEditor.pleaseReselect') }})</span>
+            </span>
+            <span v-else class="file-placeholder">{{ $t('apiTesting.component.keyValueEditor.noFileSelected') }}</span>
+          </div>
           <el-tooltip :content="$t('apiTesting.component.keyValueEditor.insertDynamicVariable')" placement="top" v-if="!showFile || row.type !== 'file'">
             <el-button
               size="small"
@@ -65,7 +81,6 @@
               <el-icon><MagicStick /></el-icon>
             </el-button>
           </el-tooltip>
-          <span v-if="row.file" class="file-name">{{ row.file.name }}</span>
         </div>
 
         <div class="column type-column">
@@ -245,7 +260,7 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Plus, Delete, MagicStick } from '@element-plus/icons-vue'
+import { Plus, Delete, MagicStick, Upload, Document } from '@element-plus/icons-vue'
 import DataFactorySelector from '@/components/DataFactorySelector.vue'
 import { ElMessage } from 'element-plus'
 
@@ -504,20 +519,22 @@ const initializeRows = () => {
 
 const updateValue = () => {
   // 发送完整的行数据数组，而不是简化的key-value对象
-  const result = rows.value.filter(row => row.key || row.value || row.description).map(row => ({
+  // 过滤条件：只要有key、value、description中的任意一个，或者是file类型
+  const result = rows.value.filter(row => row.key || row.value || row.description || row.type === 'file').map(row => ({
     key: row.key || '',
     value: row.value || '',
     description: row.description || '',
     enabled: row.enabled !== false,
-    type: row.type || 'string'
+    type: row.type || 'string',
+    file: row.file || undefined
   }))
-  
+
   console.log('KeyValueEditor updateValue result (full format):', result)
   emit('update:modelValue', result)
-  
+
   // 如果最后一行有内容，自动添加新行
   const lastRow = rows.value[rows.value.length - 1]
-  if (lastRow.key || lastRow.value) {
+  if (lastRow.key || lastRow.value || lastRow.type === 'file') {
     addRow()
   }
 }
@@ -548,9 +565,23 @@ const updateGlobalHeader = (index, row) => {
 }
 
 const handleFileChange = (index, file) => {
-  rows.value[index].file = file
+  console.log('DEBUG - handleFileChange called:', { index, file, raw: file?.raw, name: file?.name })
+  rows.value[index].file = file.raw
   rows.value[index].value = file.name
+  console.log('DEBUG - after setting:', { row: rows.value[index] })
   updateValue()
+}
+
+const formatFileSize = (size) => {
+  if (!size) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  let index = 0
+  let fileSize = size
+  while (fileSize >= 1024 && index < units.length - 1) {
+    fileSize /= 1024
+    index++
+  }
+  return `${fileSize.toFixed(2)} ${units[index]}`
 }
 
 const openDataFactorySelector = (index) => {
@@ -752,10 +783,76 @@ defineExpose({
   box-shadow: 0 4px 12px rgba(103, 194, 58, 0.4);
 }
 
-.file-name {
-  font-size: 12px;
+.file-upload-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.file-upload {
+  flex-shrink: 0;
+}
+
+.file-select-btn {
+  background-color: #f5f7fa;
+  border: 1px solid #dcdfe6;
   color: #606266;
-  margin-left: 8px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: #e4e7ed;
+    border-color: #c0c4cc;
+    color: #606266;
+  }
+
+  &:active {
+    background-color: #dcdfe6;
+    border-color: #909399;
+    color: #303133;
+  }
+
+  .el-icon {
+    margin-right: 4px;
+  }
+}
+
+.file-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #606266;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  .el-icon {
+    color: #409eff;
+    flex-shrink: 0;
+  }
+
+  .file-size {
+    color: #909399;
+    font-size: 12px;
+  }
+
+  .file-hint {
+    color: #e6a23c;
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  &.file-name-saved {
+    color: #409eff;
+  }
+}
+
+.file-placeholder {
+  font-size: 13px;
+  color: #909399;
+  font-style: italic;
 }
 
 .footer {

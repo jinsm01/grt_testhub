@@ -1,0 +1,1374 @@
+{
+  "PRD<SEP>苗宁": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031646,
+    "update_time": 1780031646,
+    "_id": "PRD<SEP>苗宁"
+  },
+  "AI速练<SEP>苗宁": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031646,
+    "update_time": 1780031646,
+    "_id": "AI速练<SEP>苗宁"
+  },
+  "AI速练<SEP>GRT研发中心的团队": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031646,
+    "update_time": 1780031646,
+    "_id": "AI速练<SEP>GRT研发中心的团队"
+  },
+  "AI自测<SEP>AI速练": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031646,
+    "update_time": 1780031646,
+    "_id": "AI自测<SEP>AI速练"
+  },
+  "AI速练<SEP>需求评审": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031646,
+    "update_time": 1780031646,
+    "_id": "AI速练<SEP>需求评审"
+  },
+  "AI速练<SEP>文件管理": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031647,
+    "update_time": 1780031647,
+    "_id": "AI速练<SEP>文件管理"
+  },
+  "AI速练<SEP>平台管理端": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 2,
+    "create_time": 1780031647,
+    "update_time": 1780031647,
+    "_id": "AI速练<SEP>平台管理端"
+  },
+  "AI速练<SEP>租户管理端": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 2,
+    "create_time": 1780031647,
+    "update_time": 1780031647,
+    "_id": "AI速练<SEP>租户管理端"
+  },
+  "AI速练<SEP>租户运营端": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 2,
+    "create_time": 1780031648,
+    "update_time": 1780031648,
+    "_id": "AI速练<SEP>租户运营端"
+  },
+  "AI速练<SEP>学员端": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 2,
+    "create_time": 1780031648,
+    "update_time": 1780031648,
+    "_id": "AI速练<SEP>学员端"
+  },
+  "AI速练<SEP>视频播放页": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031648,
+    "update_time": 1780031648,
+    "_id": "AI速练<SEP>视频播放页"
+  },
+  "AI速练<SEP>学习公社6.0": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031649,
+    "update_time": 1780031649,
+    "_id": "AI速练<SEP>学习公社6.0"
+  },
+  "AI速练<SEP>中教网院": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031649,
+    "update_time": 1780031649,
+    "_id": "AI速练<SEP>中教网院"
+  },
+  "AI速练<SEP>后台原型": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031649,
+    "update_time": 1780031649,
+    "_id": "AI速练<SEP>后台原型"
+  },
+  "AI速练<SEP>学员端原型图": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031649,
+    "update_time": 1780031649,
+    "_id": "AI速练<SEP>学员端原型图"
+  },
+  "AI速练<SEP>UI设计稿": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031649,
+    "update_time": 1780031649,
+    "_id": "AI速练<SEP>UI设计稿"
+  },
+  "AI速练<SEP>应用升级": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031650,
+    "update_time": 1780031650,
+    "_id": "AI速练<SEP>应用升级"
+  },
+  "AI速练<SEP>应用安装": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031650,
+    "update_time": 1780031650,
+    "_id": "AI速练<SEP>应用安装"
+  },
+  "AI速练<SEP>场景化页面跳转规则": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031650,
+    "update_time": 1780031650,
+    "_id": "AI速练<SEP>场景化页面跳转规则"
+  },
+  "AI速练<SEP>学习理解偏差": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031651,
+    "update_time": 1780031651,
+    "_id": "AI速练<SEP>学习理解偏差"
+  },
+  "AI速练<SEP>复习动作": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031651,
+    "update_time": 1780031651,
+    "_id": "AI速练<SEP>复习动作"
+  },
+  "AI速练<SEP>系统化引导": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031651,
+    "update_time": 1780031651,
+    "_id": "AI速练<SEP>系统化引导"
+  },
+  "AI速练<SEP>随学随测": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031651,
+    "update_time": 1780031651,
+    "_id": "AI速练<SEP>随学随测"
+  },
+  "AI自测<SEP>【PRD】AI速练": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031651,
+    "update_time": 1780031651,
+    "_id": "AI自测<SEP>【PRD】AI速练"
+  },
+  "【PRD】AI速练<SEP>需求评审纪要": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031651,
+    "update_time": 1780031651,
+    "_id": "【PRD】AI速练<SEP>需求评审纪要"
+  },
+  "AI速练<SEP>学员自主练习": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031652,
+    "update_time": 1780031652,
+    "_id": "AI速练<SEP>学员自主练习"
+  },
+  "【PRD】AI速练<SEP>修订记录": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031652,
+    "update_time": 1780031652,
+    "_id": "【PRD】AI速练<SEP>修订记录"
+  },
+  "【PRD】AI速练<SEP>后台原型": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031652,
+    "update_time": 1780031652,
+    "_id": "【PRD】AI速练<SEP>后台原型"
+  },
+  "AI速练<SEP>即时反馈": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031652,
+    "update_time": 1780031652,
+    "_id": "AI速练<SEP>即时反馈"
+  },
+  "【PRD】AI速练<SEP>学员端原型图": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031652,
+    "update_time": 1780031652,
+    "_id": "【PRD】AI速练<SEP>学员端原型图"
+  },
+  "AI速练<SEP>平台管理端--应用配置": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031652,
+    "update_time": 1780031652,
+    "_id": "AI速练<SEP>平台管理端--应用配置"
+  },
+  "UI设计稿<SEP>【PRD】AI速练": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031652,
+    "update_time": 1780031652,
+    "_id": "UI设计稿<SEP>【PRD】AI速练"
+  },
+  "AI速练<SEP>租户管理端--运营配置": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031652,
+    "update_time": 1780031652,
+    "_id": "AI速练<SEP>租户管理端--运营配置"
+  },
+  "AI速练<SEP>AI速练功能开启": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031652,
+    "update_time": 1780031652,
+    "_id": "AI速练<SEP>AI速练功能开启"
+  },
+  "【PRD】AI速练<SEP>应用升级": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031652,
+    "update_time": 1780031652,
+    "_id": "【PRD】AI速练<SEP>应用升级"
+  },
+  "AI速练<SEP>AI速练功能关闭": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031653,
+    "update_time": 1780031653,
+    "_id": "AI速练<SEP>AI速练功能关闭"
+  },
+  "【PRD】AI速练<SEP>应用安装": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031653,
+    "update_time": 1780031653,
+    "_id": "【PRD】AI速练<SEP>应用安装"
+  },
+  "【PRD】AI速练<SEP>场景化页面跳转规则": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031653,
+    "update_time": 1780031653,
+    "_id": "【PRD】AI速练<SEP>场景化页面跳转规则"
+  },
+  "【PRD】AI速练<SEP>学习理解偏差": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031653,
+    "update_time": 1780031653,
+    "_id": "【PRD】AI速练<SEP>学习理解偏差"
+  },
+  "【PRD】AI速练<SEP>复习动作": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031653,
+    "update_time": 1780031653,
+    "_id": "【PRD】AI速练<SEP>复习动作"
+  },
+  "倾听<SEP>学生": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031653,
+    "update_time": 1780031653,
+    "_id": "倾听<SEP>学生"
+  },
+  "执行状态<SEP>生成成功": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184",
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 2,
+    "create_time": 1780031653,
+    "update_time": 1780031653,
+    "_id": "执行状态<SEP>生成成功"
+  },
+  "【PRD】AI速练<SEP>系统化引导": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031653,
+    "update_time": 1780031653,
+    "_id": "【PRD】AI速练<SEP>系统化引导"
+  },
+  "执行状态<SEP>生成失败": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184",
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 2,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "执行状态<SEP>生成失败"
+  },
+  "生成成功<SEP>进入练习": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184",
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 2,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "生成成功<SEP>进入练习"
+  },
+  "【PRD】AI速练<SEP>随学随测": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "【PRD】AI速练<SEP>随学随测"
+  },
+  "生成失败<SEP>重新生成": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184",
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 2,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "生成失败<SEP>重新生成"
+  },
+  "生成中<SEP>页面呈现": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "生成中<SEP>页面呈现"
+  },
+  "【PRD】AI速练<SEP>学员自主练习": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "【PRD】AI速练<SEP>学员自主练习"
+  },
+  "【PRD】AI速练<SEP>即时反馈": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "【PRD】AI速练<SEP>即时反馈"
+  },
+  "生成失败<SEP>页面呈现": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "生成失败<SEP>页面呈现"
+  },
+  "卡片状态<SEP>生成中": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "卡片状态<SEP>生成中"
+  },
+  "【PRD】AI速练<SEP>平台管理端--应用配置": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "【PRD】AI速练<SEP>平台管理端--应用配置"
+  },
+  "临时存储时间<SEP>数据存储规则": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "临时存储时间<SEP>数据存储规则"
+  },
+  "生成成功<SEP>页面呈现": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "生成成功<SEP>页面呈现"
+  },
+  "用户A<SEP>视频B": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "用户A<SEP>视频B"
+  },
+  "场景化页面跳转规则<SEP>题目正在生成状态": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "场景化页面跳转规则<SEP>题目正在生成状态"
+  },
+  "【PRD】AI速练<SEP>租户管理端--运营配置": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "【PRD】AI速练<SEP>租户管理端--运营配置"
+  },
+  "场景化页面跳转规则<SEP>题目生成失败状态": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "场景化页面跳转规则<SEP>题目生成失败状态"
+  },
+  "卡片状态<SEP>生成成功": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "卡片状态<SEP>生成成功"
+  },
+  "卡片状态<SEP>生成失败": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "卡片状态<SEP>生成失败"
+  },
+  "AI速练封面页<SEP>开始练习": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 2,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "AI速练封面页<SEP>开始练习"
+  },
+  "第4题做题页<SEP>继续练习": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "第4题做题页<SEP>继续练习"
+  },
+  "场景化页面跳转规则<SEP>第一题做题页": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "场景化页面跳转规则<SEP>第一题做题页"
+  },
+  "第5题做题页<SEP>继续练习": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 2,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "第5题做题页<SEP>继续练习"
+  },
+  "AI速练封面页<SEP>【开始练习】": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "AI速练封面页<SEP>【开始练习】"
+  },
+  "场景化页面跳转规则<SEP>第4题做题页": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "场景化页面跳转规则<SEP>第4题做题页"
+  },
+  "【进入练习】<SEP>第一题做题页": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "【进入练习】<SEP>第一题做题页"
+  },
+  "【继续练习】<SEP>第4题做题页": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "【继续练习】<SEP>第4题做题页"
+  },
+  "场景化页面跳转规则<SEP>第4题的解析页": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "场景化页面跳转规则<SEP>第4题的解析页"
+  },
+  "AI速练功能<SEP>视频内容管理页面": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "AI速练功能<SEP>视频内容管理页面"
+  },
+  "场景化页面跳转规则<SEP>继续练习": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "场景化页面跳转规则<SEP>继续练习"
+  },
+  "开始练习<SEP>触发操作": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "开始练习<SEP>触发操作"
+  },
+  "AI速练功能<SEP>知识图谱tab": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031655,
+    "update_time": 1780031655,
+    "_id": "AI速练功能<SEP>知识图谱tab"
+  },
+  "【继续练习】<SEP>第5题做题页": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "【继续练习】<SEP>第5题做题页"
+  },
+  "生成知识点<SEP>知识点": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "生成知识点<SEP>知识点"
+  },
+  "生成知识点<SEP>题目": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "生成知识点<SEP>题目"
+  },
+  "生成题目<SEP>答案及解析": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "生成题目<SEP>答案及解析"
+  },
+  "AI速练tab<SEP>场景化页面跳转规则": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "AI速练tab<SEP>场景化页面跳转规则"
+  },
+  "答案及解析<SEP>视频原文": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "答案及解析<SEP>视频原文"
+  },
+  "AI速练功能<SEP>Toast提示": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "AI速练功能<SEP>Toast提示"
+  },
+  "APP<SEP>场景化页面跳转规则": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "APP<SEP>场景化页面跳转规则"
+  },
+  "开始练习<SEP>生成知识点": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "开始练习<SEP>生成知识点"
+  },
+  "AI速练功能<SEP>PC": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "AI速练功能<SEP>PC"
+  },
+  "生成题目<SEP>视频原文": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "生成题目<SEP>视频原文"
+  },
+  "题目解析<SEP>题目选项": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "题目解析<SEP>题目选项"
+  },
+  "AI速练功能<SEP>APP": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "AI速练功能<SEP>APP"
+  },
+  "生成知识点<SEP>视频原文": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "生成知识点<SEP>视频原文"
+  },
+  "知识颗粒度规则<SEP>题目生成规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031656,
+    "update_time": 1780031656,
+    "_id": "知识颗粒度规则<SEP>题目生成规则"
+  },
+  "AI速练功能<SEP>H5": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "AI速练功能<SEP>H5"
+  },
+  "字幕噪音处理规则<SEP>题目生成规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "字幕噪音处理规则<SEP>题目生成规则"
+  },
+  "出题导向<SEP>成人培训": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "出题导向<SEP>成人培训"
+  },
+  "知识要点<SEP>视频原文": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "知识要点<SEP>视频原文"
+  },
+  "知识要点<SEP>题目选项": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "知识要点<SEP>题目选项"
+  },
+  "AI速练功能<SEP>模型生成的最新状态": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "AI速练功能<SEP>模型生成的最新状态"
+  },
+  "场景化要求<SEP>题目生成规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "场景化要求<SEP>题目生成规则"
+  },
+  "出题导向<SEP>题目难度要求": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "出题导向<SEP>题目难度要求"
+  },
+  "选项内容要求<SEP>错误选项": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "选项内容要求<SEP>错误选项"
+  },
+  "题目生成规则<SEP>题目表达风格": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "题目生成规则<SEP>题目表达风格"
+  },
+  "正确选项<SEP>选项内容要求": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "正确选项<SEP>选项内容要求"
+  },
+  "解析<SEP>错误选项": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "解析<SEP>错误选项"
+  },
+  "题目生成规则<SEP>题目类型分布规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "题目生成规则<SEP>题目类型分布规则"
+  },
+  "学员选择<SEP>正确答案": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "学员选择<SEP>正确答案"
+  },
+  "正确选项<SEP>错误选项": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "正确选项<SEP>错误选项"
+  },
+  "知识要点<SEP>题干": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031657,
+    "update_time": 1780031657,
+    "_id": "知识要点<SEP>题干"
+  },
+  "单选题<SEP>题目生成规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "单选题<SEP>题目生成规则"
+  },
+  "触发操作<SEP>输入": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "触发操作<SEP>输入"
+  },
+  "正确答案<SEP>选项": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "正确答案<SEP>选项"
+  },
+  "执行状态<SEP>提交": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "执行状态<SEP>提交"
+  },
+  "多选题<SEP>题目生成规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "多选题<SEP>题目生成规则"
+  },
+  "生成成功<SEP>输出": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "生成成功<SEP>输出"
+  },
+  "提交<SEP>生成失败": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "提交<SEP>生成失败"
+  },
+  "第4题的解析页<SEP>退出": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "第4题的解析页<SEP>退出"
+  },
+  "判断题<SEP>题目生成规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "判断题<SEP>题目生成规则"
+  },
+  "多选题<SEP>解析": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "多选题<SEP>解析"
+  },
+  "输入<SEP>输出": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "输入<SEP>输出"
+  },
+  "最后一题解析页<SEP>退出": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "最后一题解析页<SEP>退出"
+  },
+  "第4题的解析页<SEP>继续练习": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "第4题的解析页<SEP>继续练习"
+  },
+  "AI速练<SEP>视频播放页-AI速练-全流程": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "AI速练<SEP>视频播放页-AI速练-全流程"
+  },
+  "第4题的解析页<SEP>第5题做题页": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "第4题的解析页<SEP>第5题做题页"
+  },
+  "开始练习<SEP>最后一题解析页": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "开始练习<SEP>最后一题解析页"
+  },
+  "PC端<SEP>视频播放页-AI速练-全流程": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "PC端<SEP>视频播放页-AI速练-全流程"
+  },
+  "AI速练<SEP>AI速练测试记录": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "AI速练<SEP>AI速练测试记录"
+  },
+  "保持在最后一题的解析页<SEP>第5题做题页": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "保持在最后一题的解析页<SEP>第5题做题页"
+  },
+  "AI速练封面页<SEP>PC刷新页面后进入AI速练tab/APP：退出重新进入AI速练": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031658,
+    "update_time": 1780031658,
+    "_id": "AI速练封面页<SEP>PC刷新页面后进入AI速练tab/APP：退出重新进入AI速练"
+  },
+  "AI速练<SEP>AI速练平滑推动效果.html": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031659,
+    "update_time": 1780031659,
+    "_id": "AI速练<SEP>AI速练平滑推动效果.html"
+  },
+  "倾听的四个核心维度<SEP>辅导员": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031659,
+    "update_time": 1780031659,
+    "_id": "倾听的四个核心维度<SEP>辅导员"
+  },
+  "H5端<SEP>视频播放页-AI速练-全流程": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031659,
+    "update_time": 1780031659,
+    "_id": "H5端<SEP>视频播放页-AI速练-全流程"
+  },
+  "AI速练<SEP>AI速练封面页": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031659,
+    "update_time": 1780031659,
+    "_id": "AI速练<SEP>AI速练封面页"
+  },
+  "倾听的四个核心维度<SEP>学生经历": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031659,
+    "update_time": 1780031659,
+    "_id": "倾听的四个核心维度<SEP>学生经历"
+  },
+  "app--学习公社6.0<SEP>视频播放页-AI速练-全流程": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031659,
+    "update_time": 1780031659,
+    "_id": "app--学习公社6.0<SEP>视频播放页-AI速练-全流程"
+  },
+  "APP--中教网院(新)<SEP>视频播放页-AI速练-全流程": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031659,
+    "update_time": 1780031659,
+    "_id": "APP--中教网院(新)<SEP>视频播放页-AI速练-全流程"
+  },
+  "倾听的四个核心维度<SEP>学生想法": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031659,
+    "update_time": 1780031659,
+    "_id": "倾听的四个核心维度<SEP>学生想法"
+  },
+  "倾听的四个核心维度<SEP>学生行为表现": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031659,
+    "update_time": 1780031659,
+    "_id": "倾听的四个核心维度<SEP>学生行为表现"
+  },
+  "标准答案<SEP>课程": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031659,
+    "update_time": 1780031659,
+    "_id": "标准答案<SEP>课程"
+  },
+  "倾听的四个核心维度<SEP>学生情绪": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "倾听的四个核心维度<SEP>学生情绪"
+  },
+  "课程<SEP>选项解析": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "课程<SEP>选项解析"
+  },
+  "倾听的四个核心维度<SEP>选项A": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "倾听的四个核心维度<SEP>选项A"
+  },
+  "多选题<SEP>学员": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "多选题<SEP>学员"
+  },
+  "核心判断原则<SEP>综合解析": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "核心判断原则<SEP>综合解析"
+  },
+  "课程<SEP>题型": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "课程<SEP>题型"
+  },
+  "PC端进入的页面<SEP>场景化页面跳转规则": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "PC端进入的页面<SEP>场景化页面跳转规则"
+  },
+  "倾听的四个核心维度<SEP>选项B": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "倾听的四个核心维度<SEP>选项B"
+  },
+  "综合解析<SEP>题目内容": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "综合解析<SEP>题目内容"
+  },
+  "倾听的四个核心维度<SEP>选项C": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "倾听的四个核心维度<SEP>选项C"
+  },
+  "综合解析<SEP>选项逐项解析": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "综合解析<SEP>选项逐项解析"
+  },
+  "场景化页面跳转规则<SEP>移动端进入的页面": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "场景化页面跳转规则<SEP>移动端进入的页面"
+  },
+  "倾听的四个核心维度<SEP>选项D": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "倾听的四个核心维度<SEP>选项D"
+  },
+  "教学引导感<SEP>综合解析": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "教学引导感<SEP>综合解析"
+  },
+  "倾听的四个核心维度<SEP>课程": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031660,
+    "update_time": 1780031660,
+    "_id": "倾听的四个核心维度<SEP>课程"
+  },
+  "核心判断标准<SEP>综合解析": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031661,
+    "update_time": 1780031661,
+    "_id": "核心判断标准<SEP>综合解析"
+  }
+}

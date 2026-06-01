@@ -1,0 +1,179 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "默认模块",
+    "description": "分类管理的创建和查询接口测试场景",
+    "version": "1.0.0"
+  },
+  "tags": [],
+  "paths": {
+    "/api/grt-ragflow/v1/grt/document/upload": {
+      "post": {
+        "summary": "知识库_上传文件",
+        "deprecated": false,
+        "description": "",
+        "tags": [],
+        "parameters": [
+          {
+            "name": "TenantId",
+            "in": "header",
+            "description": "迁移阿里",
+            "required": false,
+            "example": "2019938478880792577",
+            "schema": {
+              "type": "string",
+              "default": "2019938478880792577"
+            }
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "description": "18710430125的token",
+            "example": "{{auth_token}}",
+            "schema": {
+              "type": "string",
+              "default": "{{auth_token}}"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kb_id": {
+                    "example": "97f09a40235e11f1a3284e99908744cf",
+                    "type": "string"
+                  },
+                  "file": {
+                    "format": "binary",
+                    "type": "string",
+                    "example": "cmMtdXBsb2FkLTE3NzkyNDI1MjYxMDAtNQ==/评课报告.pdf"
+                  }
+                }
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "created_by": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "kb_id": {
+                            "type": "string"
+                          },
+                          "location": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "parser_config": {
+                            "type": "object",
+                            "properties": {
+                              "pages": {
+                                "type": "array",
+                                "items": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "integer"
+                                  }
+                                }
+                              }
+                            },
+                            "required": [
+                              "pages"
+                            ]
+                          },
+                          "parser_id": {
+                            "type": "string"
+                          },
+                          "size": {
+                            "type": "integer"
+                          },
+                          "suffix": {
+                            "type": "string"
+                          },
+                          "thumbnail": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "data",
+                    "message"
+                  ]
+                },
+                "example": {
+                  "code": 0,
+                  "data": [
+                    {
+                      "created_by": "484a55462fda11f0aaa91091d17c8b24",
+                      "id": "62e2976650f611f1b53e4e99908744cf",
+                      "kb_id": "97f09a40235e11f1a3284e99908744cf",
+                      "location": "高校新教师教案撰写规范与常见误区仿真复盘报告.docx",
+                      "name": "高校新教师教案撰写规范与常见误区仿真复盘报告.docx",
+                      "parser_config": {
+                        "pages": [
+                          [
+                            1,
+                            1000000
+                          ]
+                        ]
+                      },
+                      "parser_id": "naive",
+                      "size": 40035,
+                      "suffix": "docx",
+                      "thumbnail": "",
+                      "type": "doc"
+                    }
+                  ],
+                  "message": "success"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "responses": {},
+    "securitySchemes": {}
+  },
+  "servers": [],
+  "security": []
+}

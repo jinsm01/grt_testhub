@@ -1,39 +1,19 @@
 <template>
   <div class="automation-suite-detail">
     <div class="content" v-loading="loading">
-      <!-- 套件信息卡片 - 放在最上面 -->
-      <div class="suite-info-section" v-if="suite">
-        <div class="info-grid">
-          <div class="info-item">
-            <div class="info-label">{{ $t('apiTesting.automation.executionEnvironment') }}</div>
-            <div class="info-value">{{ getEnvironmentName(suite.environment) }}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">{{ $t('apiTesting.automation.requestCount') }}</div>
-            <div class="info-value">{{ suite.suite_requests?.length || 0 }}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">{{ $t('apiTesting.automation.creator') }}</div>
-            <div class="info-value">{{ suite.created_by?.username }}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">{{ $t('apiTesting.automation.createTime') }}</div>
-            <div class="info-value">{{ formatDate(suite.created_at) }}</div>
-          </div>
-          <div class="info-item">
-            <div class="info-label">{{ $t('apiTesting.automation.updateTime') }}</div>
-            <div class="info-value">{{ formatDate(suite.updated_at) }}</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 标题和操作按钮 - 放在卡片下面 -->
+      <!-- 标题和操作按钮 -->
       <div class="header">
         <div class="header-left">
           <span class="page-title">{{ suite?.name || $t('apiTesting.automation.suiteDetail') }}</span>
           <!-- 评审状态徽章 -->
           <span v-if="reviewSummary" class="review-status-badge" :class="reviewSummary?.overall_status">
             {{ getReviewStatusText(reviewSummary?.overall_status) }}
+          </span>
+          <!-- 创建者、创建时间、更新时间 -->
+          <span class="suite-meta-info" v-if="suite">
+            <span class="meta-item">创建者: {{ suite.created_by?.username }}</span>
+            <span class="meta-item">创建于: {{ formatDate(suite.created_at) }}</span>
+            <span class="meta-item">更新于: {{ formatDate(suite.updated_at) }}</span>
           </span>
         </div>
         <div class="header-actions" v-if="suite">
@@ -377,6 +357,42 @@
               </el-tree>
             </div>
           </el-tab-pane>
+          
+          <!-- 等待时间 Tab -->
+          <el-tab-pane label="等待时间" name="wait">
+            <div class="wait-time-config">
+              <el-form label-width="100px">
+                <el-form-item label="等待时间">
+                  <el-input-number 
+                    v-model="waitTimeConfig.wait_time" 
+                    :min="0" 
+                    :max="3600" 
+                    :step="1"
+                    style="width: 180px"
+                  >
+                    <template #suffix>秒</template>
+                  </el-input-number>
+                </el-form-item>
+                <el-form-item label="步骤名称">
+                  <el-input 
+                    v-model="waitTimeConfig.name" 
+                    placeholder="等待时间"
+                    style="width: 300px"
+                  />
+                </el-form-item>
+              </el-form>
+              <div class="wait-time-hint">
+                <el-alert type="info" :closable="false">
+                  <template #title>
+                    <div class="hint-content">
+                      <el-icon><InfoFilled /></el-icon>
+                      <span>等待指定时间后继续执行后续步骤，适用于需要延时处理的场景</span>
+                    </div>
+                  </template>
+                </el-alert>
+              </div>
+            </div>
+          </el-tab-pane>
         </el-tabs>
       </div>
       
@@ -564,6 +580,7 @@
               <json-tree-viewer 
                 :data="getRequestDataRaw()" 
                 :root-path="getRequestJsonPathRoot()"
+                @copy-path="copyJsonPathToClipboard"
               />
             </div>
           </div>
@@ -584,13 +601,14 @@
               </div>
               <span class="data-badge">{{ activeResponseTab.toUpperCase() }}</span>
             </div>
-            <div class="code-container" v-if="activeResponseTab !== 'assertions'">
+            <div class="code-container" v-if="activeResponseTab === 'body' || activeResponseTab === 'headers' || activeResponseTab === 'json'">
               <json-tree-viewer 
                 :data="getResponseDataRaw()" 
                 :root-path="getJsonPathRoot()"
+                @copy-path="copyJsonPathToClipboard"
               />
             </div>
-            <div class="assertions-container" v-else>
+            <div class="assertions-container" v-else-if="activeResponseTab === 'assertions'">
               <div class="assertion-list">
                 <div v-for="(item, idx) in currentRequestDetail.assertions_results" :key="idx" class="assertion-item" :class="item.passed ? 'passed' : 'failed'">
                   <el-icon><CircleCheck v-if="item.passed" /><CircleClose v-else /></el-icon>
@@ -614,19 +632,13 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- 变量提取 -->
-        <div v-if="currentRequestDetail.variable_results && Object.keys(currentRequestDetail.variable_results).length > 0" class="variables-section">
-          <div class="section-title-compact">
-            <el-icon><Collection /></el-icon>
-            <span>变量提取</span>
-          </div>
-          <div class="variables-grid">
-            <div v-for="(value, key) in currentRequestDetail.variable_results" :key="key" class="variable-item">
-              <span class="var-key">{{ key }}</span>
-              <span class="var-value">{{ value }}</span>
+            <div class="variables-container" v-else-if="activeResponseTab === 'variables'">
+              <div class="variables-grid">
+                <div v-for="(value, key) in currentRequestDetail.extracted_variables" :key="key" class="variable-item">
+                  <span class="var-key">{{ key }}</span>
+                  <span class="var-value">{{ value }}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -644,7 +656,25 @@
       <el-tabs v-model="editDrawerActiveTab" class="drawer-tabs">
         <!-- 基础信息 -->
         <el-tab-pane label="基础信息" name="basic">
-          <el-form :model="editingRequestData" label-width="100px">
+          <!-- 等待时间步骤编辑表单 -->
+          <el-form v-if="editingRequestData.step_type === 'wait'" :model="editingRequestData" label-width="100px">
+            <el-form-item label="步骤名称">
+              <el-input v-model="editingRequestData.name" placeholder="输入步骤名称" />
+            </el-form-item>
+            <el-form-item label="等待时间">
+              <el-input-number 
+                v-model="editingRequestData.wait_time" 
+                :min="0" 
+                :max="3600" 
+                :step="1"
+                style="width: 180px"
+              >
+                <template #suffix>秒</template>
+              </el-input-number>
+            </el-form-item>
+          </el-form>
+          <!-- 接口请求步骤编辑表单 -->
+          <el-form v-else :model="editingRequestData" label-width="100px">
             <el-form-item label="接口名称">
               <el-input v-model="editingRequestData.name" placeholder="输入接口名称" />
             </el-form-item>
@@ -730,8 +760,10 @@
               <el-radio-group v-model="editingRequestData.bodyType" size="small">
                 <el-radio-button label="json">JSON</el-radio-button>
                 <el-radio-button label="raw">Raw</el-radio-button>
+                <el-radio-button label="form-data">form-data</el-radio-button>
               </el-radio-group>
-              <el-button 
+              <el-button
+                v-if="editingRequestData.bodyType !== 'form-data'"
                 size="small"
                 @click="openVariablePicker('body')"
                 title="插入变量"
@@ -740,13 +772,22 @@
                 插入变量
               </el-button>
             </div>
-            <div class="body-input-wrapper">
+            <div class="body-input-wrapper" v-if="editingRequestData.bodyType !== 'form-data'">
               <el-input
                 ref="bodyInputRef"
                 v-model="editingRequestData.bodyContent"
                 type="textarea"
                 :rows="15"
                 placeholder="输入请求体内容，支持 {{$env.variable}} 语法引用环境变量"
+              />
+            </div>
+            <div class="body-input-wrapper" v-else>
+              <KeyValueEditor
+                v-model="editingRequestData.formData"
+                :show-file="true"
+                :show-section-title="false"
+                placeholder-key="参数名"
+                placeholder-value="参数值"
               />
             </div>
           </div>
@@ -856,10 +897,43 @@
         <!-- 断言 -->
         <el-tab-pane label="断言" name="assertions">
           <div class="assertions-editor">
-            <div class="assertions-header" style="margin-bottom: 16px; display: flex; gap: 12px;">
+            <div class="assertions-header" style="margin-bottom: 16px; display: flex; gap: 2px; justify-content: flex-end;">
               <el-button size="small" type="primary" @click="addEditingAssertion">
                 <el-icon><Plus /></el-icon> 添加断言
               </el-button>
+              <el-button
+                size="small"
+                type="success"
+                @click="testExecuteForAIAssertion"
+                :loading="testingForAssertion"
+                :disabled="!editingRequestData.url"
+              >
+                <el-icon><VideoPlay /></el-icon> 测试执行
+              </el-button>
+              <el-button
+                v-if="editingTestResponse"
+                size="small"
+                type="warning"
+                @click="generateAIAssertionsForEditing"
+                :loading="generatingAIAssertions"
+              >
+                <el-icon><MagicStick /></el-icon> AI生成断言
+              </el-button>
+            </div>
+
+            <!-- 测试执行响应展示 -->
+            <div v-if="editingTestResponse" class="test-response-preview" style="margin-bottom: 16px; border: 1px solid #e4e7ed; border-radius: 8px; overflow: hidden;">
+              <!-- 状态栏 -->
+              <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #fafafa; border-bottom: 1px solid #e4e7ed;">
+                <el-tag :type="editingTestResponse.status_code >= 200 && editingTestResponse.status_code < 300 ? 'success' : 'danger'" size="small" effect="light">
+                  {{ editingTestResponse.status_code }}
+                </el-tag>
+                <span style="font-size: 13px; color: #606266;">{{ editingTestResponse.response_time?.toFixed(0) }}ms</span>
+              </div>
+              <!-- JSON 内容 -->
+              <div style="max-height: 300px; overflow: auto; background: #fff;">
+                <pre style="margin: 0; padding: 16px; font-size: 13px; line-height: 1.6; font-family: 'Monaco', 'Menlo', 'Consolas', monospace;" v-html="formatJSONWithSyntaxHighlight(editingTestResponse.response_data?.json || editingTestResponse.response_data?.body)"></pre>
+              </div>
             </div>
             <div class="assertions-table" v-if="editingAssertionsList && editingAssertionsList.length > 0">
               <div class="assertions-table-header" style="display: flex; padding: 8px; background: #f5f7fa; font-weight: 500; font-size: 13px;">
@@ -1030,7 +1104,7 @@
     <el-drawer
       v-model="showVariablePickerDialog"
       title="插入动态值"
-      size="550px"
+      size="800px"
       direction="rtl"
       :close-on-click-modal="false"
       append-to-body
@@ -1084,46 +1158,74 @@
               </el-radio-group>
             </div>
 
-            <!-- 执行结果展示区域 -->
-            <div v-if="selectedPrevRequest && selectedVarType && previewData" class="execution-preview-section">
-              <div class="section-title">
-                点击字段复制路径
-                <el-tag v-if="selectedPrevRequestExecution" size="small" :type="selectedPrevRequestExecution.passed ? 'success' : 'danger'">
-                  {{ selectedPrevRequestExecution.passed ? '通过' : '失败' }}
-                </el-tag>
-              </div>
-              <div class="preview-data-container">
-                <json-tree-viewer
-                  :data="previewData"
-                  :root-path="getVariablePreviewRoot()"
-                  @copy-path="onJsonPathCopy"
-                />
-              </div>
-            </div>
-
             <div v-if="selectedPrevRequest && loadingExecution" class="execution-loading">
               <el-skeleton :rows="3" animated />
             </div>
 
+            <!-- 无执行记录时的提示 -->
             <div v-if="selectedPrevRequest && executionError" class="execution-error">
               <el-alert
                 :title="executionError"
                 type="warning"
                 :closable="false"
                 show-icon
+                description="您可以在右侧手动输入响应体数据，然后点击左侧字段选择路径"
               />
             </div>
 
+            <!-- 执行结果展示区域和手动输入（左右结构） -->
+            <div v-if="selectedPrevRequest && selectedVarType && (previewData || (executionError && selectedVarType?.includes('body')))" class="data-preview-layout">
+              <!-- 左侧：JSON 树形展示 -->
+              <div class="preview-left">
+                <div class="section-title">
+                  <span>点击字段复制路径</span>
+                  <el-tag v-if="selectedPrevRequestExecution" size="small" :type="selectedPrevRequestExecution.passed ? 'success' : 'danger'">
+                    {{ selectedPrevRequestExecution.passed ? '通过' : '失败' }}
+                  </el-tag>
+                  <el-tag v-else-if="previewData" size="small" type="info">手动输入</el-tag>
+                </div>
+                <div class="preview-data-container">
+                  <json-tree-viewer
+                    v-if="previewData"
+                    :data="previewData"
+                    :root-path="getVariablePreviewRoot()"
+                    @copy-path="onJsonPathCopy"
+                  />
+                  <el-empty v-else description="暂无数据" />
+                </div>
+              </div>
+
+              <!-- 右侧：手动输入（仅在无执行记录且选择 body 类型时显示） -->
+              <div v-if="executionError && selectedVarType?.includes('body')" class="preview-right">
+                <div class="section-title">
+                  <span>手动输入响应体</span>
+                  <el-tooltip content="请输入预期的响应体JSON数据，用于选择字段路径">
+                    <el-icon><InfoFilled /></el-icon>
+                  </el-tooltip>
+                </div>
+                <div class="manual-input-container">
+                  <el-input
+                    v-model="manualResponseData"
+                    type="textarea"
+                    :rows="15"
+                    placeholder="请输入JSON格式的响应体数据，例如：&#10;{&#10;  &quot;code&quot;: 200,&#10;  &quot;data&quot;: {&#10;    &quot;id&quot;: 123,&#10;    &quot;name&quot;: &quot;test&quot;&#10;  }&#10;}"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- JSON Path 输入 -->
             <div v-if="selectedPrevRequest && needsJsonPath" class="json-path-section">
               <div class="section-title">
-                JSON Path（已自动填充，可手动修改）
-                <el-tooltip content="例如: $.data.id 或 $.list[0].name">
+                <span>JSON Path</span>
+                <el-tag size="small" type="info">{{ selectedPrevRequestExecution ? '自动填充' : '手动输入' }}</el-tag>
+                <el-tooltip content="例如: data.id 或 list[0].name">
                   <el-icon><InfoFilled /></el-icon>
                 </el-tooltip>
               </div>
               <el-input
                 v-model="jsonPath"
-                placeholder="点击上方字段自动生成"
+                :placeholder="selectedPrevRequestExecution ? '点击上方字段自动生成' : '请输入JSON Path，如：data.id'"
                 clearable
               />
             </div>
@@ -1278,6 +1380,7 @@
         </div>
       </template>
     </el-drawer>
+
   </div>
 </template>
 
@@ -1289,8 +1392,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import draggable from 'vuedraggable'
 import api from '@/utils/api'
 import { updateTestSuiteRequest } from '@/api/api-testing'
+import { createScenarioStep } from '@/api/scenario'
 import SuiteRequestTree from './components/SuiteRequestTree.vue'
 import JsonTreeViewer from '@/components/JsonTreeViewer.vue'
+import KeyValueEditor from './components/KeyValueEditor.vue'
 import { VideoPlay, Plus, Refresh, Folder, Document, Check, Close, RefreshLeft, Edit, Delete, Rank, CircleCheck, CircleClose, TrendCharts, List, InfoFilled, WarningFilled, Upload, Download, Collection, Timer, DocumentChecked, MagicStick, CopyDocument } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -1311,6 +1416,12 @@ const requestTree = ref([])
 const addStepTab = ref('request')
 const availableSuites = ref([])
 const selectedSuiteIds = ref([])
+
+// 等待时间配置
+const waitTimeConfig = ref({
+  wait_time: 1,
+  name: '等待时间'
+})
 const suiteTreeRef = ref(null)
 const suiteTreeProps = {
   children: 'children',
@@ -1346,7 +1457,7 @@ const activeDataTab = ref('request')
 const activeRequestTab = ref('body')
 const activeResponseTab = ref('body')
 
-// 响应 Tab 列表（动态包含断言 Tab）
+// 响应 Tab 列表（动态包含断言 Tab 和变量提取 Tab）
 const responseTabs = computed(() => {
   const tabs = [
     { key: 'body', label: 'BODY' },
@@ -1355,6 +1466,9 @@ const responseTabs = computed(() => {
   ]
   if (currentRequestDetail.value?.assertions_results?.length > 0) {
     tabs.push({ key: 'assertions', label: `断言(${currentRequestDetail.value.assertions_results.length})` })
+  }
+  if (currentRequestDetail.value?.extracted_variables && Object.keys(currentRequestDetail.value.extracted_variables).length > 0) {
+    tabs.push({ key: 'variables', label: '变量提取' })
   }
   return tabs
 })
@@ -1365,6 +1479,7 @@ const editDrawerActiveTab = ref('body')
 const savingRequestEdit = ref(false)
 const editingRequestData = ref({
   id: null,
+  step_type: 'request',
   name: '',
   method: 'GET',
   url: '',
@@ -1372,12 +1487,19 @@ const editingRequestData = ref({
   params: {},
   body: {},
   bodyType: 'json',
-  bodyContent: ''
+  bodyContent: '',
+  formData: [{ key: '', value: '', type: 'string', enabled: true, description: '' }],
+  wait_time: 1
 })
 const editingHeadersList = ref([])
 const editingParamsList = ref([])
 const editingExtractorsList = ref([])
 const editingAssertionsList = ref([])
+
+// 接口编辑时的测试执行和AI断言相关
+const testingForAssertion = ref(false)
+const generatingAIAssertions = ref(false)
+const editingTestResponse = ref(null)
 
 // ========== 变量选择器相关 ==========
 const showVariablePickerDialog = ref(false)
@@ -1573,32 +1695,50 @@ const selectedPrevRequestExecution = ref(null)
 const loadingExecution = ref(false)
 const executionError = ref('')
 
+// 用户手动输入的响应体数据（当没有执行记录时使用）
+const manualResponseData = ref('')
+
 // 获取预览数据（用于 JSON 树形展示）
 const previewData = computed(() => {
-  if (!selectedPrevRequestExecution.value) return null
-
   const dataType = selectedVarType.value
-  const requestData = selectedPrevRequestExecution.value.request_data || {}
-  const responseData = selectedPrevRequestExecution.value.response_data || {}
 
-  switch (dataType) {
-    case 'request.body':
-      return requestData.body || {}
-    case 'request.headers':
-      return requestData.headers || {}
-    case 'request.params':
-      return requestData.params || {}
-    case 'response.body':
-      return responseData.body || responseData.json || {}
-    case 'response.headers':
-      return responseData.headers || {}
-    case 'response.status_code':
-      return responseData.status_code
-    case 'response.response_time':
-      return selectedPrevRequestExecution.value.response_time
-    default:
-      return null
+  // 如果有执行记录，优先使用执行记录的数据
+  if (selectedPrevRequestExecution.value) {
+    const requestData = selectedPrevRequestExecution.value.request_data || {}
+    const responseData = selectedPrevRequestExecution.value.response_data || {}
+
+    switch (dataType) {
+      case 'request.body':
+        return requestData.body || {}
+      case 'request.headers':
+        return requestData.headers || {}
+      case 'request.params':
+        return requestData.params || {}
+      case 'response.body':
+        return responseData.body || responseData.json || {}
+      case 'response.headers':
+        return responseData.headers || {}
+      case 'response.status_code':
+        return responseData.status_code
+      case 'response.response_time':
+        return selectedPrevRequestExecution.value.response_time
+      default:
+        return null
+    }
   }
+
+  // 如果没有执行记录，但有手动输入的数据，尝试解析并使用
+  if (manualResponseData.value && dataType.includes('body')) {
+    try {
+      const parsed = JSON.parse(manualResponseData.value)
+      return parsed
+    } catch (e) {
+      // JSON 解析失败，返回空对象
+      return {}
+    }
+  }
+
+  return null
 })
 
 // 获取所有实际请求（排除分组/文件夹节点）的扁平列表
@@ -1624,15 +1764,21 @@ const getAllRequestsFlat = (requests) => {
   return result
 }
 
+// 计算总请求数（包含分组内的请求）
+const totalRequestCount = computed(() => {
+  if (!suite.value || !suite.value.suite_requests) return 0
+  return getAllRequestsFlat(suite.value.suite_requests).length
+})
+
 // 获取前置接口列表（在同集合中，排在当前接口之前的接口）
 const previousRequests = computed(() => {
   if (!suite.value || !suite.value.suite_requests || !currentEditingRequestId.value) return []
-  
+
   // 获取扁平化的所有请求列表
   const flatRequests = getAllRequestsFlat(suite.value.suite_requests)
   const currentIndex = flatRequests.findIndex(r => r.id === currentEditingRequestId.value)
   if (currentIndex === -1) return []
-  
+
   // 返回当前接口之前的所有接口
   return flatRequests.slice(0, currentIndex)
 })
@@ -1769,6 +1915,8 @@ const closeVariablePicker = () => {
   // 清空执行记录
   selectedPrevRequestExecution.value = null
   executionError.value = ''
+  // 清空手动输入的数据
+  manualResponseData.value = ''
   // 重置动态函数选择
   selectedFunctionCategory.value = ''
   selectedFunction.value = ''
@@ -1788,6 +1936,8 @@ const onPrevRequestChange = async () => {
   loadingExecution.value = true
   executionError.value = ''
   selectedPrevRequestExecution.value = null
+  // 切换接口时清空手动输入的数据
+  manualResponseData.value = ''
 
   try {
     // request 可能是对象 {id: xxx, ...} 或直接的 ID
@@ -1837,7 +1987,7 @@ const getVariablePreviewRoot = () => {
   return `$.${requestRef}.${selectedVarType.value}`
 }
 
-// 点击 JSON 字段复制路径
+// 点击 JSON 字段复制路径（用于变量提取器）
 const onJsonPathCopy = (fullPath) => {
   // 从完整路径中提取 JSON Path 部分
   // 例如: $.2.response.body.data.id -> data.id
@@ -1846,6 +1996,34 @@ const onJsonPathCopy = (fullPath) => {
     jsonPath.value = match[3]
   } else if (match) {
     jsonPath.value = ''
+  }
+}
+
+// 复制 JSON Path 到剪贴板（用于请求执行详情弹窗）
+const copyJsonPathToClipboard = async (path) => {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(path)
+      ElMessage.success(`已复制 JSON Path: ${path}`)
+    } else {
+      // 降级方案：使用传统的复制方法
+      const textarea = document.createElement('textarea')
+      textarea.value = path
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      const success = document.execCommand('copy')
+      document.body.removeChild(textarea)
+      if (success) {
+        ElMessage.success(`已复制 JSON Path: ${path}`)
+      } else {
+        ElMessage.error('复制失败，请手动复制')
+      }
+    }
+  } catch (error) {
+    console.error('复制失败:', error)
+    ElMessage.error('复制失败，请手动复制')
   }
 }
 
@@ -1996,7 +2174,7 @@ const getStatusText = (status) => {
 
 const getPassRate = (execution) => {
   if (!execution || execution.total_requests === 0) return 0
-  return Math.round((execution.passed_requests / execution.total_requests) * 100)
+  return ((execution.passed_requests / execution.total_requests) * 100).toFixed(1)
 }
 
 const getAverageExecutionTime = (execution) => {
@@ -2633,11 +2811,54 @@ const addSelectedRequests = async () => {
   }
 }
 
-// 新的添加步骤方法（支持接口和场景）
+// 新的添加步骤方法（支持接口、场景和等待时间）
 const addSelectedSteps = async () => {
   if (!suite.value) return
   
   // 根据当前 Tab 决定添加什么
+  if (addStepTab.value === 'wait') {
+    // 添加等待时间步骤
+    if (!waitTimeConfig.value.wait_time || waitTimeConfig.value.wait_time < 0) {
+      ElMessage.warning('请输入有效的等待时间')
+      return
+    }
+
+    addingRequests.value = true
+    try {
+      // 获取当前最大的步骤编号
+      const currentSteps = suite.value.suite_requests || []
+      const maxStepNumber = currentSteps.length > 0 
+        ? Math.max(...currentSteps.map(s => s.step_number || 0))
+        : 0
+
+      const response = await api.post(`/api-testing/test-suites/${suite.value.id}/add-wait-step/`, {
+        wait_time: waitTimeConfig.value.wait_time,
+        name: waitTimeConfig.value.name || '等待时间',
+        step_number: maxStepNumber + 1
+      })
+
+      if (response.data && response.data.suite) {
+        suite.value = response.data.suite
+        // 同步更新本地套件请求列表
+        localSuiteRequests.value = suite.value.suite_requests || []
+        ElMessage.success('等待时间步骤添加成功')
+        showAddRequestDialog.value = false
+        // 重置配置
+        waitTimeConfig.value = {
+          wait_time: 1,
+          name: '等待时间'
+        }
+      }
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || error.message || '添加等待时间步骤失败'
+      ElMessage.error(errorMsg)
+      console.error('添加等待时间步骤失败:', error)
+    } finally {
+      addingRequests.value = false
+    }
+    return
+  }
+  
   if (addStepTab.value === 'request') {
     // 添加接口
     const checkedNodes = requestTreeRef.value?.getCheckedNodes() || []
@@ -2786,21 +3007,43 @@ const updateRequestEnabled = async (suiteRequest) => {
 
 // 编辑接口请求
 const editRequest = (suiteRequest) => {
+  // 检查是否是等待时间步骤
+  if (suiteRequest.step_type === 'wait') {
+    editingRequestData.value = {
+      id: suiteRequest.id,
+      step_type: 'wait',
+      name: suiteRequest.override_name || suiteRequest.name || '等待时间',
+      method: 'GET',
+      url: '',
+      headers: {},
+      params: {},
+      body: {},
+      bodyType: 'json',
+      bodyContent: '',
+      formData: [{ key: '', value: '', type: 'string', enabled: true, description: '' }],
+      wait_time: suiteRequest.control_config?.wait_time || 1
+    }
+    editDrawerActiveTab.value = 'basic'
+    showEditRequestDialog.value = true
+    return
+  }
+
   const request = suiteRequest.request || {}
-  
+
   // 合并原始接口参数和覆盖参数（覆盖参数优先）
   const mergedHeaders = { ...(request.headers || {}), ...(suiteRequest.override_headers || {}) }
   const mergedParams = { ...(request.params || {}), ...(suiteRequest.override_params || {}) }
-  
+
   // 确定使用哪个 body：优先使用覆盖的 body，否则使用原始接口的 body
   let mergedBody = suiteRequest.override_body
   if (!mergedBody || Object.keys(mergedBody).length === 0) {
     mergedBody = request.body || {}
   }
-  
+
   // 初始化编辑数据
   editingRequestData.value = {
     id: suiteRequest.id,
+    step_type: suiteRequest.step_type || 'request',
     name: suiteRequest.override_name || request.name || '',
     method: suiteRequest.override_method || request.method || 'GET',
     url: suiteRequest.override_url || request.url || '',
@@ -2808,9 +3051,11 @@ const editRequest = (suiteRequest) => {
     params: mergedParams,
     body: mergedBody,
     bodyType: 'json',
-    bodyContent: ''
+    bodyContent: '',
+    formData: [{ key: '', value: '', type: 'string', enabled: true, description: '' }],
+    wait_time: 1
   }
-  
+
   // 初始化 body 内容
   const body = editingRequestData.value.body
   if (body && typeof body === 'object') {
@@ -2819,6 +3064,20 @@ const editRequest = (suiteRequest) => {
     if (bodyType === 'json' || bodyType === 'raw') {
       editingRequestData.value.bodyType = bodyType
       editingRequestData.value.bodyContent = typeof bodyData === 'string' ? bodyData : JSON.stringify(bodyData, null, 2)
+    } else if (bodyType === 'form-data') {
+      editingRequestData.value.bodyType = 'form-data'
+      // 转换 form-data 数组格式
+      if (Array.isArray(bodyData)) {
+        editingRequestData.value.formData = bodyData.map(item => ({
+          key: item.key || '',
+          value: item.value || '',
+          type: item.type || 'string',
+          enabled: item.enabled !== false,
+          description: item.description || ''
+        }))
+      } else {
+        editingRequestData.value.formData = [{ key: '', value: '', type: 'string', enabled: true, description: '' }]
+      }
     } else {
       editingRequestData.value.bodyType = 'json'
       editingRequestData.value.bodyContent = JSON.stringify(body, null, 2)
@@ -2840,21 +3099,38 @@ const editRequest = (suiteRequest) => {
     editingParamsList.value.push({ key: '', value: '' })
   }
   
-  // 初始化提取变量列表 - 优先使用 suite_request 的 extracted_variables，否则使用 request 的 variable_extractors
-  let extractors = suiteRequest.extracted_variables
-  // 如果为空对象或空数组，则使用 request 的 variable_extractors
+  // 初始化提取变量列表 - 优先使用 suite_request 的 override_extractors，其次是 extracted_variables，最后是 request 的 variable_extractors
+  let extractors = suiteRequest.override_extractors
+  // 如果为空数组，则使用 extracted_variables
+  if (!extractors || (Array.isArray(extractors) && extractors.length === 0)) {
+    extractors = suiteRequest.extracted_variables
+  }
+  // 如果仍为空，则使用 request 的 variable_extractors
   if (!extractors || (Array.isArray(extractors) && extractors.length === 0) || (typeof extractors === 'object' && Object.keys(extractors).length === 0)) {
     extractors = request.variable_extractors
+  }
+  // 处理不同格式：如果是字典格式，转换为数组格式
+  if (extractors && typeof extractors === 'object' && !Array.isArray(extractors)) {
+    extractors = Object.entries(extractors).map(([key, value]) => ({
+      name: key,
+      variable_name: key,
+      source: 'json_body',
+      json_path: value
+    }))
   }
   // 确保是数组类型
   if (!Array.isArray(extractors)) {
     extractors = []
   }
   editingExtractorsList.value = extractors.map(extractor => ({ ...extractor }))
-  
-  // 初始化断言列表 - 优先使用 suite_request 的 assertions，否则使用 request 的 assertions
-  let assertions = suiteRequest.assertions
-  // 如果为空数组，则使用 request 的 assertions
+
+  // 初始化断言列表 - 优先使用 suite_request 的 override_assertions，其次是 assertions，最后是 request 的 assertions
+  let assertions = suiteRequest.override_assertions
+  // 如果为空数组，则使用 assertions
+  if (!assertions || (Array.isArray(assertions) && assertions.length === 0)) {
+    assertions = suiteRequest.assertions
+  }
+  // 如果仍为空，则使用 request 的 assertions
   if (!assertions || (Array.isArray(assertions) && assertions.length === 0)) {
     assertions = request.assertions
   }
@@ -2863,10 +3139,13 @@ const editRequest = (suiteRequest) => {
     assertions = []
   }
   editingAssertionsList.value = assertions.map(assertion => ({ ...assertion }))
-  
+
+  // 重置测试执行相关数据
+  editingTestResponse.value = null
+
   const method = suiteRequest.override_method || request.method || 'GET'
   editDrawerActiveTab.value = ['POST', 'PUT', 'PATCH'].includes(method) ? 'body' : 'basic'
-  
+
   showEditRequestDialog.value = true
 }
 
@@ -2929,6 +3208,154 @@ const onEditingAssertionTypeChange = (assertion) => {
   }
 }
 
+// JSON 语法高亮
+const formatJSONWithSyntaxHighlight = (data) => {
+  if (!data) return ''
+  try {
+    const json = typeof data === 'string' ? JSON.parse(data) : data
+    const jsonStr = JSON.stringify(json, null, 2)
+    return jsonStr
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/(".*?"):/g, '<span style="color: #881391;">$1</span>:')
+      .replace(/: (".*?")/g, ': <span style="color: #1a1aa6;">$1</span>')
+      .replace(/: (true|false)/g, ': <span style="color: #1c00cf;">$1</span>')
+      .replace(/: (null)/g, ': <span style="color: #1c00cf;">$1</span>')
+      .replace(/: (\d+)/g, ': <span style="color: #1c00cf;">$1</span>')
+  } catch {
+    return String(data)
+  }
+}
+
+// 复制响应内容到剪贴板
+const copyResponseToClipboard = async () => {
+  if (!editingTestResponse.value) return
+  try {
+    const data = editingTestResponse.value.response_data?.json || editingTestResponse.value.response_data?.body
+    const text = typeof data === 'object' ? JSON.stringify(data, null, 2) : String(data)
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('已复制到剪贴板')
+  } catch (error) {
+    ElMessage.error('复制失败')
+  }
+}
+
+// 测试执行（用于AI断言生成）
+const testExecuteForAIAssertion = async () => {
+  if (!editingRequestData.value.url) {
+    ElMessage.warning('请先填写请求URL')
+    return
+  }
+
+  // 检查是否需要环境
+  if (!editingRequestData.value.url.startsWith('http') && !suite.value?.environment) {
+    ElMessage.warning('当前接口使用相对路径URL，但场景未配置环境，请先配置环境')
+    return
+  }
+
+  testingForAssertion.value = true
+  try {
+    // 转换 headers
+    const headers = {}
+    editingHeadersList.value.forEach(item => {
+      if (item.key.trim()) headers[item.key.trim()] = item.value
+    })
+
+    // 转换 params
+    const params = {}
+    editingParamsList.value.forEach(item => {
+      if (item.key.trim()) params[item.key.trim()] = item.value
+    })
+
+    // 转换 body
+    let body = null
+    if (['POST', 'PUT', 'PATCH'].includes(editingRequestData.value.method)) {
+      if (editingRequestData.value.bodyType === 'json') {
+        try {
+          body = JSON.parse(editingRequestData.value.bodyContent)
+        } catch {
+          body = editingRequestData.value.bodyContent
+        }
+      } else {
+        body = editingRequestData.value.bodyContent
+      }
+    }
+
+    // 获取环境ID
+    const environmentId = suite.value?.environment?.id || suite.value?.environment
+
+    // 发送测试请求
+    const res = await api.post('/api-testing/requests/execute_single/', {
+      method: editingRequestData.value.method,
+      url: editingRequestData.value.url,
+      headers: headers,
+      params: params,
+      body: body,
+      environment_id: environmentId
+    })
+
+    editingTestResponse.value = res.data
+    ElMessage.success('测试执行成功')
+  } catch (error) {
+    console.error('Test execute error:', error)
+    ElMessage.error(error.response?.data?.error || '测试执行失败')
+  } finally {
+    testingForAssertion.value = false
+  }
+}
+
+// AI生成断言（用于接口编辑）
+const generateAIAssertionsForEditing = async () => {
+  if (!editingTestResponse.value) {
+    ElMessage.warning('请先执行测试获取响应数据')
+    return
+  }
+
+  generatingAIAssertions.value = true
+
+  // 显示加载提示
+  const loadingMessage = ElMessage.info({
+    message: 'AI正在分析响应数据并生成断言，请稍候...',
+    duration: 0,
+    showClose: true
+  })
+
+  try {
+    const res = await api.post('/api-testing/requests/generate_assertions/', {
+      status_code: editingTestResponse.value.status_code,
+      response_body: editingTestResponse.value.response_data?.json || editingTestResponse.value.response_data?.body,
+      response_headers: editingTestResponse.value.response_data?.headers || {},
+      response_time: editingTestResponse.value.response_time
+    })
+
+    loadingMessage.close()
+
+    if (res.data.assertions && res.data.assertions.length > 0) {
+      // 将生成的断言添加到现有断言列表
+      const newAssertions = res.data.assertions.map(assertion => ({
+        name: assertion.name || 'AI生成断言',
+        type: assertion.type || 'json_path',
+        expected: assertion.expected,
+        json_path: assertion.json_path || '',
+        header_name: assertion.header_name || '',
+        expected_value: assertion.expected_value || ''
+      }))
+
+      editingAssertionsList.value = [...editingAssertionsList.value, ...newAssertions]
+      ElMessage.success(`成功生成 ${res.data.assertions.length} 个断言`)
+    } else {
+      ElMessage.warning('未能生成断言，请检查响应数据')
+    }
+  } catch (error) {
+    console.error('Generate AI assertions error:', error)
+    ElMessage.error(error.response?.data?.error || '生成断言失败，请稍后重试')
+  } finally {
+    generatingAIAssertions.value = false
+    loadingMessage.close()
+  }
+}
+
 // 获取预期值的占位符
 const getExpectedPlaceholder = (assertion) => {
   if (assertion.expected === 'not_null') {
@@ -2947,6 +3374,23 @@ const saveRequestEdit = async () => {
   
   savingRequestEdit.value = true
   try {
+    // 处理等待时间步骤
+    if (editingRequestData.value.step_type === 'wait') {
+      const updateData = {
+        override_name: editingRequestData.value.name,
+        control_config: {
+          wait_time: editingRequestData.value.wait_time || 1
+        }
+      }
+      
+      await updateTestSuiteRequest(editingRequestData.value.id, updateData)
+      ElMessage.success('保存成功')
+      showEditRequestDialog.value = false
+      // 重新加载套件详情
+      await loadSuiteDetail()
+      return
+    }
+    
     // 转换 headers
     const headers = {}
     editingHeadersList.value.forEach(item => {
@@ -2968,6 +3412,18 @@ const saveRequestEdit = async () => {
         } catch {
           body = { type: 'raw', data: editingRequestData.value.bodyContent }
         }
+      } else if (editingRequestData.value.bodyType === 'form-data') {
+        // 转换 form-data 数据，过滤掉空 key 的项
+        const formDataItems = editingRequestData.value.formData
+          .filter(item => item.key.trim())
+          .map(item => ({
+            key: item.key.trim(),
+            value: item.type === 'file' ? (item.file?.name || item.value) : item.value,
+            type: item.type || 'string',
+            enabled: item.enabled !== false,
+            description: item.description || ''
+          }))
+        body = { type: 'form-data', data: formDataItems }
       } else {
         body = { type: 'raw', data: editingRequestData.value.bodyContent }
       }
@@ -3440,6 +3896,20 @@ onMounted(async () => {
   &.pending {
     background: rgba(250, 140, 22, 0.1);
     color: #fa8c16;
+  }
+}
+
+.suite-meta-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 16px;
+  font-size: 12px;
+  color: #666;
+
+  .meta-item {
+    display: inline-flex;
+    align-items: center;
   }
 }
 
@@ -3982,6 +4452,11 @@ onMounted(async () => {
       background: #f5f5f5;
       color: #8c8c8c;
     }
+
+    &.wait {
+      background: #fff7e6;
+      color: #fa8c16;
+    }
   }
 
   // 状态徽章样式 - 用于评审状态和执行状态
@@ -4054,114 +4529,429 @@ onMounted(async () => {
   }
 }
 
+// ==================== 添加步骤抽屉现代化样式 ====================
+
+// 抽屉整体样式优化
+:deep(.add-step-drawer) {
+  .el-drawer__header {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%);
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(123, 66, 246, 0.1);
+    margin: 0;
+
+    .el-drawer__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a2e;
+      letter-spacing: -0.3px;
+    }
+
+    .el-drawer__close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      color: #64748b;
+      font-size: 18px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        color: #7b42f6;
+        background: rgba(123, 66, 246, 0.08);
+        transform: rotate(90deg);
+      }
+    }
+  }
+
+  .el-drawer__body {
+    padding: 0;
+    background: #f8fafc;
+  }
+
+  .el-drawer__footer {
+    padding: 16px 24px;
+    background: #ffffff;
+    border-top: 1px solid rgba(123, 66, 246, 0.08);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+
+    .el-button {
+      margin-left: 0 !important;
+      padding: 10px 24px;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:not(.el-button--primary) {
+        color: #64748b;
+        border-color: #e2e8f0;
+
+        &:hover {
+          color: #7b42f6;
+          border-color: #7b42f6;
+          background: rgba(123, 66, 246, 0.04);
+        }
+      }
+
+      &.el-button--primary {
+        background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+        border: none;
+        box-shadow: 0 4px 14px rgba(123, 66, 246, 0.35);
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 20px rgba(123, 66, 246, 0.45);
+        }
+
+        &:active {
+          transform: translateY(0);
+        }
+      }
+    }
+  }
+}
+
 .add-request-content {
-  height: calc(100vh - 180px);
-  overflow-y: auto;
+  height: calc(100vh - 200px);
+  overflow: hidden;
 
   .add-step-tabs {
     height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    // Tab 头部样式优化
+    .el-tabs__header {
+      margin: 0;
+      background: #ffffff;
+      border-bottom: 1px solid rgba(123, 66, 246, 0.08);
+      padding: 0 24px;
+
+      .el-tabs__nav-wrap::after {
+        display: none;
+      }
+
+      .el-tabs__nav {
+        gap: 8px;
+      }
+
+      .el-tabs__item {
+        height: 48px;
+        line-height: 48px;
+        padding: 0 20px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #64748b;
+        border-radius: 8px 8px 0 0;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+        &:hover {
+          color: #7b42f6;
+        }
+
+        &.is-active {
+          color: #7b42f6;
+          font-weight: 600;
+          background: linear-gradient(180deg, rgba(123, 66, 246, 0.06) 0%, transparent 100%);
+        }
+
+        &:focus.is-active.is-focus:not(:active) {
+          box-shadow: none;
+        }
+      }
+
+      .el-tabs__active-bar {
+        height: 3px;
+        background: linear-gradient(90deg, #7b42f6 0%, #a855f7 100%);
+        border-radius: 3px 3px 0 0;
+      }
+    }
 
     .el-tabs__content {
-      height: calc(100% - 55px);
+      flex: 1;
       overflow-y: auto;
+      padding: 0;
+
+      .el-tab-pane {
+        height: 100%;
+        overflow-y: auto;
+      }
     }
+  }
+
+  // 树形选择器容器
+  .request-selector,
+  .suite-selector {
+    height: 100%;
   }
 
   .suite-selector {
     .empty-suites {
-      padding: 40px 0;
+      padding: 60px 0;
+
+      :deep(.el-empty__image) {
+        filter: grayscale(0.3);
+        opacity: 0.8;
+      }
+
+      :deep(.el-empty__description) {
+        color: #94a3b8;
+        font-size: 14px;
+      }
     }
 
     .suite-tree-node {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       flex: 1;
-      padding: 4px 0;
+      padding: 6px 8px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
 
       .el-icon {
         color: #7b42f6;
+        font-size: 16px;
       }
 
       .suite-request-count {
-        color: #909399;
+        color: #94a3b8;
         font-size: 12px;
         margin-left: auto;
+        background: #f1f5f9;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-weight: 500;
       }
 
       .node-name {
         flex: 1;
+        font-size: 14px;
+        color: #334155;
       }
 
       .group-name {
-        color: #606266;
-        font-weight: 500;
+        color: #475569;
+        font-weight: 600;
       }
 
       .request-name {
-        color: #303133;
+        color: #1e293b;
+        font-weight: 500;
       }
 
       .group-badge {
-        color: #909399;
-        font-size: 12px;
-        background: #f4f4f5;
-        padding: 2px 8px;
-        border-radius: 10px;
+        color: #7b42f6;
+        font-size: 11px;
+        background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-weight: 600;
       }
 
       .method-tag {
         font-size: 10px;
-        padding: 2px 6px;
-        border-radius: 4px;
+        padding: 3px 8px;
+        border-radius: 6px;
         color: white;
-        font-weight: bold;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
-        &.get { background: linear-gradient(135deg, #67c23a 0%, #52c41a 100%); }
-        &.post { background: linear-gradient(135deg, #409eff 0%, #7b42f6 100%); }
-        &.put { background: linear-gradient(135deg, #e6a23c 0%, #f5a623 100%); }
-        &.delete { background: linear-gradient(135deg, #f56c6c 0%, #ff4d4f 100%); }
-        &.patch { background: linear-gradient(135deg, #722ed1 0%, #531dab 100%); }
+        &.get { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+        &.post { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+        &.put { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        &.delete { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+        &.patch { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
       }
 
       &.is-group {
         .el-icon {
-          color: #e6a23c;
+          color: #f59e0b;
         }
       }
 
       &.is-request {
-        padding-left: 8px;
+        padding-left: 12px;
+      }
+
+      &:hover {
+        background: rgba(123, 66, 246, 0.04);
       }
     }
   }
 }
 
+// 请求树节点样式
 .request-tree-node {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex: 1;
-  padding: 4px 0;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 
   .el-icon {
     color: #7b42f6;
+    font-size: 16px;
+  }
+
+  span:not(.method-tag) {
+    font-size: 14px;
+    color: #334155;
+    font-weight: 500;
+  }
+
+  &:hover {
+    background: rgba(123, 66, 246, 0.04);
   }
 }
 
+// 方法标签样式
 .method-tag {
   font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
   color: white;
-  font-weight: bold;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-left: auto;
 
-  &.get { background: linear-gradient(135deg, #67c23a 0%, #52c41a 100%); }
-  &.post { background: linear-gradient(135deg, #409eff 0%, #7b42f6 100%); }
-  &.put { background: linear-gradient(135deg, #e6a23c 0%, #fa8c16 100%); }
-  &.delete { background: linear-gradient(135deg, #f56c6c 0%, #f5222d 100%); }
-  &.patch { background: linear-gradient(135deg, #909399 0%, #595959 100%); }
+  &.get { background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); }
+  &.post { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+  &.put { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+  &.delete { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+  &.patch { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); }
+  &.wait { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+}
+
+// 等待时间配置样式
+.wait-time-config {
+  padding: 24px;
+
+  .el-form {
+    .el-form-item {
+      margin-bottom: 20px;
+
+      .el-form-item__label {
+        font-weight: 500;
+        color: #374151;
+      }
+    }
+  }
+
+  .wait-time-hint {
+    margin-top: 24px;
+
+    .hint-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .el-icon {
+        color: #7b42f6;
+      }
+    }
+  }
+}
+
+// 树形组件样式优化
+:deep(.add-step-drawer) {
+  .el-tree {
+    background: transparent;
+
+    .el-tree-node {
+      margin: 2px 0;
+
+      &__content {
+        height: 40px;
+        border-radius: 8px;
+        padding: 0 8px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: rgba(123, 66, 246, 0.06);
+        }
+
+        .el-checkbox {
+          margin-right: 8px;
+
+          &__inner {
+            width: 18px;
+            height: 18px;
+            border-radius: 5px;
+            border-color: #d1d5db;
+            transition: all 0.2s ease;
+
+            &:hover {
+              border-color: #7b42f6;
+            }
+
+            &::after {
+              border-width: 2px;
+              border-left: 0;
+              border-top: 0;
+              width: 4px;
+              height: 8px;
+              left: 50%;
+              top: 45%;
+              transform: translate(-50%, -50%) rotate(45deg);
+            }
+          }
+
+          &__input.is-checked .el-checkbox__inner {
+            background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+            border-color: #7b42f6;
+          }
+
+          &__input.is-indeterminate .el-checkbox__inner {
+            background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+            border-color: #7b42f6;
+
+            &::before {
+              top: 8px;
+            }
+          }
+        }
+
+        .el-tree-node__expand-icon {
+          color: #94a3b8;
+          font-size: 14px;
+          transition: all 0.2s ease;
+
+          &.expanded {
+            transform: rotate(90deg);
+            color: #7b42f6;
+          }
+
+          &:hover {
+            color: #7b42f6;
+          }
+        }
+      }
+
+      &.is-current {
+        > .el-tree-node__content {
+          background: rgba(123, 66, 246, 0.1);
+
+          .request-tree-node span:not(.method-tag),
+          .suite-tree-node .node-name {
+            color: #7b42f6;
+            font-weight: 600;
+          }
+        }
+      }
+    }
+
+    // 子节点缩进优化
+    .el-tree-node__children {
+      padding-left: 12px;
+    }
+  }
 }
 
 .execution-detail {
@@ -4674,7 +5464,8 @@ onMounted(async () => {
   }
 
   /* 变量区域 - 简洁列表设计 */
-  .variables-section {
+  .variables-section,
+  .variables-container {
     .section-title-compact {
       display: flex;
       align-items: center;
@@ -4715,6 +5506,47 @@ onMounted(async () => {
           color: #333;
           word-break: break-all;
           font-family: 'Courier New', Consolas, Monaco, monospace;
+        }
+      }
+    }
+  }
+
+  /* 变量提取容器 - Tab 内使用 */
+  .variables-container {
+    padding: 0;
+    background: transparent;
+    height: 100%;
+    overflow-y: auto;
+
+    .variables-grid {
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+
+      .variable-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #f0f0f0;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .var-key {
+          font-size: 13px;
+          color: #7b42f6;
+          font-weight: 600;
+        }
+
+        .var-value {
+          font-size: 13px;
+          color: #333;
+          word-break: break-all;
+          font-family: 'Courier New', Consolas, Monaco, monospace;
+          line-height: 1.5;
         }
       }
     }
@@ -5861,38 +6693,161 @@ onMounted(async () => {
       margin-top: 16px;
     }
 
-    .var-type-section,
-    .json-path-section {
+    .var-type-section {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px dashed #e5e7eb;
+    }
+
+    .execution-loading {
       margin-top: 20px;
     }
 
-    // 执行结果预览区域
-    .execution-preview-section {
-      margin-top: 20px;
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-      .section-title {
-        padding: 14px 18px;
-        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-        border-bottom: 1px solid #e5e7eb;
-        margin-bottom: 0;
-        font-weight: 500;
-      }
-
-      .preview-data-container {
-        max-height: 280px;
-        overflow-y: auto;
-        padding: 16px;
-        background: #fff;
-      }
-    }
-
-    .execution-loading,
+    // 执行错误提示区域
     .execution-error {
       margin-top: 16px;
+      margin-bottom: 16px;
+
+      :deep(.el-alert) {
+        padding: 12px 16px;
+        border-radius: 8px;
+
+        .el-alert__title {
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        .el-alert__description {
+          margin-top: 6px;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+      }
+    }
+
+    // 左右布局容器
+    .data-preview-layout {
+      display: flex;
+      gap: 16px;
+      margin-top: 16px;
+      min-height: 400px;
+
+      .preview-left {
+        flex: 1;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+
+        .section-title {
+          padding: 12px 16px;
+          background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+          border-bottom: 1px solid #e5e7eb;
+          margin-bottom: 0;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 14px;
+        }
+
+        .preview-data-container {
+          flex: 1;
+          overflow-y: auto;
+          padding: 16px;
+          background: #fff;
+          min-height: 350px;
+        }
+      }
+
+      .preview-right {
+        width: 380px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        background: #fafafa;
+
+        .section-title {
+          padding: 12px 16px;
+          background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+          border-bottom: 1px solid #ddd6fe;
+          margin-bottom: 0;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          color: #7c3aed;
+
+          .el-icon {
+            color: #8b5cf6;
+            font-size: 14px;
+          }
+        }
+
+        .manual-input-container {
+          flex: 1;
+          padding: 12px;
+          background: #fff;
+
+          :deep(.el-textarea) {
+            height: 100%;
+          }
+
+          :deep(.el-textarea__inner) {
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            padding: 8px 12px;
+            background: #fff;
+            border: 1px solid #dcdfe6;
+            height: 100%;
+            min-height: 320px;
+            box-shadow: none !important;
+            outline: none !important;
+
+            &:hover {
+              border-color: #c0c4cc;
+            }
+
+            &:focus {
+              border-color: #7c3aed;
+              box-shadow: none !important;
+              outline: none !important;
+            }
+          }
+        }
+      }
+    }
+
+    // JSON Path 输入区域
+    .json-path-section {
+      margin-top: 20px;
+      padding: 16px;
+      background: #f9fafb;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+
+      .section-title {
+        margin-bottom: 12px;
+        font-weight: 500;
+        color: #374151;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+
+        .el-icon {
+          color: #9ca3af;
+          font-size: 14px;
+        }
+      }
     }
 
     .request-option {

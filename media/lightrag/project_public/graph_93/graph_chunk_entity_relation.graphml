@@ -1,0 +1,3166 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d13" for="edge" attr.name="truncate" attr.type="string"/>
+<key id="d12" for="edge" attr.name="created_at" attr.type="long"/>
+<key id="d11" for="edge" attr.name="file_path" attr.type="string"/>
+<key id="d10" for="edge" attr.name="source_id" attr.type="string"/>
+<key id="d9" for="edge" attr.name="keywords" attr.type="string"/>
+<key id="d8" for="edge" attr.name="description" attr.type="string"/>
+<key id="d7" for="edge" attr.name="weight" attr.type="double"/>
+<key id="d6" for="node" attr.name="truncate" attr.type="string"/>
+<key id="d5" for="node" attr.name="created_at" attr.type="long"/>
+<key id="d4" for="node" attr.name="file_path" attr.type="string"/>
+<key id="d3" for="node" attr.name="source_id" attr.type="string"/>
+<key id="d2" for="node" attr.name="description" attr.type="string"/>
+<key id="d1" for="node" attr.name="entity_type" attr.type="string"/>
+<key id="d0" for="node" attr.name="entity_id" attr.type="string"/>
+<graph edgedefault="undirected"><node id="PRD">
+  <data key="d0">PRD</data>
+  <data key="d1">content</data>
+  <data key="d2">PRD是产品需求文档，用于描述AI速练的功能和配置要求。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="AI速练">
+  <data key="d0">AI速练</data>
+  <data key="d1">concept</data>
+  <data key="d2">AI速练是一种基于人工智能的快速练习功能，允许用户在视频学习后进行知识点和题目的练习。&lt;SEP&gt;AI速练是一种在视频学习过程中提供即时测试的功能，旨在提升学员自主练习能力。&lt;SEP&gt;AI速练是一种基于人工智能的练习模式，提供题目和解析。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb&lt;SEP&gt;chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="苗宁">
+  <data key="d0">苗宁</data>
+  <data key="d1">person</data>
+  <data key="d2">苗宁是文档的创建者和修订人，负责补充文档内容和规则。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="GRT研发中心的团队">
+  <data key="d0">GRT研发中心的团队</data>
+  <data key="d1">organization</data>
+  <data key="d2">GRT研发中心的团队是文档的分享人，与AI应用相关项目有关联。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="AI自测">
+  <data key="d0">AI自测</data>
+  <data key="d1">content</data>
+  <data key="d2">AI自测是产品方案的名称，与AI速练功能相关。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="需求评审">
+  <data key="d0">需求评审</data>
+  <data key="d1">event</data>
+  <data key="d2">需求评审是关于AI速练的会议记录，日期为2026年5月12日。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="移动端">
+  <data key="d0">移动端</data>
+  <data key="d1">location</data>
+  <data key="d2">移动端是UI设计稿的访问平台之一。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="PC端">
+  <data key="d0">PC端</data>
+  <data key="d1">location</data>
+  <data key="d2">PC端是UI设计稿的访问平台之一。&lt;SEP&gt;PC端是指个人电脑端，是AI速练的一个使用平台。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f&lt;SEP&gt;chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="H5">
+  <data key="d0">H5</data>
+  <data key="d1">location</data>
+  <data key="d2">H5是学员端AI速练功能的移动端网页形式。&lt;SEP&gt;H5是涉及页面的一部分，与AI速练功能相关。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="开放课">
+  <data key="d0">开放课</data>
+  <data key="d1">location</data>
+  <data key="d2">开放课是AI速练功能在学员端的页面范围之一。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="视频课">
+  <data key="d0">视频课</data>
+  <data key="d1">location</data>
+  <data key="d2">视频课是AI速练功能在学员端的页面范围之一。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="项目内点播课">
+  <data key="d0">项目内点播课</data>
+  <data key="d1">location</data>
+  <data key="d2">项目内点播课是AI速练功能在学员端的页面范围之一。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="视频播放页">
+  <data key="d0">视频播放页</data>
+  <data key="d1">location</data>
+  <data key="d2">视频播放页是AI速练功能在学员端的具体页面。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="文件管理">
+  <data key="d0">文件管理</data>
+  <data key="d1">artifact</data>
+  <data key="d2">文件管理是应用中的一个功能模块，用于配置AI速练功能的开关。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="AI速练(开关)">
+  <data key="d0">AI速练(开关)</data>
+  <data key="d1">concept</data>
+  <data key="d2">AI速练(开关)是文件管理中新增的配置项，用于开启或关闭AI速练功能。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="平台管理端">
+  <data key="d0">平台管理端</data>
+  <data key="d1">location</data>
+  <data key="d2">平台管理端是负责配置和管理AI速练功能的系统部分。&lt;SEP&gt;平台管理端是配置AI速练功能的地点之一。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="租户管理端">
+  <data key="d0">租户管理端</data>
+  <data key="d1">location</data>
+  <data key="d2">租户管理端是用于配置和管理AI速练功能的另一个系统部分。&lt;SEP&gt;租户管理端是配置AI速练功能的地点之一。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="租户运营端">
+  <data key="d0">租户运营端</data>
+  <data key="d1">location</data>
+  <data key="d2">租户运营端是用于管理和操作AI速练功能的系统部分。&lt;SEP&gt;租户运营端是配置AI速练功能的地点之一。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="学员端">
+  <data key="d0">学员端</data>
+  <data key="d1">location</data>
+  <data key="d2">学员端是用户使用AI速练功能的终端界面。&lt;SEP&gt;学员端是AI速练功能的使用端，支持学员完成速练。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="学习公社6.0">
+  <data key="d0">学习公社6.0</data>
+  <data key="d1">artifact</data>
+  <data key="d2">学习公社6.0是应用的版本之一，与AI速练功能相关。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="中教网院">
+  <data key="d0">中教网院</data>
+  <data key="d1">artifact</data>
+  <data key="d2">中教网院是应用的版本之一，与AI速练功能相关。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031639</data>
+  <data key="d6"></data>
+</node>
+<node id="后台原型">
+  <data key="d0">后台原型</data>
+  <data key="d1">artifact</data>
+  <data key="d2">后台原型是AI速练功能的原型链接，由苗宁分享。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="学员端原型图">
+  <data key="d0">学员端原型图</data>
+  <data key="d1">artifact</data>
+  <data key="d2">学员端原型图是AI速练功能的原型设计，通过Figma访问。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="需求评审纪要">
+  <data key="d0">需求评审纪要</data>
+  <data key="d1">content</data>
+  <data key="d2">需求评审纪要是关于AI速练功能的评审记录，包含修改内容和日期。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="修订记录">
+  <data key="d0">修订记录</data>
+  <data key="d1">content</data>
+  <data key="d2">修订记录是文档的更新历史，包括修订人、修改内容和日期。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="平台">
+  <data key="d0">平台</data>
+  <data key="d1">location</data>
+  <data key="d2">平台是涉及三端之一，包括PC、app和H5。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="app">
+  <data key="d0">app</data>
+  <data key="d1">location</data>
+  <data key="d2">app是涉及三端之一，包括学习公社6.0和中教网院。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="UI设计稿">
+  <data key="d0">UI设计稿</data>
+  <data key="d1">content</data>
+  <data key="d2">UI设计稿是AI速练功能的界面设计文档，包含移动端和PC端链接。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="应用升级">
+  <data key="d0">应用升级</data>
+  <data key="d1">concept</data>
+  <data key="d2">应用升级是文档中提到的规则之一，涉及文件管理的配置。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="应用安装">
+  <data key="d0">应用安装</data>
+  <data key="d1">concept</data>
+  <data key="d2">应用安装是文档中提到的规则之一，涉及文件管理的配置。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="场景化页面跳转规则">
+  <data key="d0">场景化页面跳转规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">场景化页面跳转规则是文档中提到的补充内容，包含文字描述。&lt;SEP&gt;场景化页面跳转规则定义了不同状态下用户操作后进入的页面内容，适用于PC端和移动端。&lt;SEP&gt;场景化页面跳转规则描述了不同状态下用户操作后进入的页面类型和行为。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f&lt;SEP&gt;chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="学习理解偏差">
+  <data key="d0">学习理解偏差</data>
+  <data key="d1">concept</data>
+  <data key="d2">学习理解偏差是当前视频学习页缺少“学习中即时检验”闭环的问题之一。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="复习动作">
+  <data key="d0">复习动作</data>
+  <data key="d1">concept</data>
+  <data key="d2">复习动作是当前视频学习页缺少“学习中即时检验”闭环的问题之一。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="系统化引导">
+  <data key="d0">系统化引导</data>
+  <data key="d1">concept</data>
+  <data key="d2">系统化引导是当前视频学习页缺少“学习中即时检验”闭环的问题之一。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="随学随测">
+  <data key="d0">随学随测</data>
+  <data key="d1">concept</data>
+  <data key="d2">随学随测是AI速练的目标之一，旨在提升学员自主练习能力。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="学员自主练习">
+  <data key="d0">学员自主练习</data>
+  <data key="d1">concept</data>
+  <data key="d2">学员自主练习是AI速练的目标之一，允许学员在不离开当前页面的情况下发起练习。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="即时反馈">
+  <data key="d0">即时反馈</data>
+  <data key="d1">concept</data>
+  <data key="d2">即时反馈是AI速练的功能之一，系统基于当前课程内容自动出题并即时反馈。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="平台管理端--应用配置">
+  <data key="d0">平台管理端--应用配置</data>
+  <data key="d1">location</data>
+  <data key="d2">平台管理端--应用配置是AI速练功能开启或关闭的配置位置。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="租户管理端--运营配置">
+  <data key="d0">租户管理端--运营配置</data>
+  <data key="d1">location</data>
+  <data key="d2">租户管理端--运营配置是AI速练功能开启或关闭的配置位置。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="AI速练功能开启">
+  <data key="d0">AI速练功能开启</data>
+  <data key="d1">concept</data>
+  <data key="d2">AI速练功能开启是平台管理端和租户管理端配置的结果。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="AI速练功能关闭">
+  <data key="d0">AI速练功能关闭</data>
+  <data key="d1">concept</data>
+  <data key="d2">AI速练功能关闭是平台管理端和租户管理端配置的结果。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="【PRD】AI速练">
+  <data key="d0">【PRD】AI速练</data>
+  <data key="d1">content</data>
+  <data key="d2">【PRD】AI速练是产品需求文档的标题，描述了AI速练功能的配置和实现方式。</data>
+  <data key="d3">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="学生">
+  <data key="d0">学生</data>
+  <data key="d1">person</data>
+  <data key="d2">学生是教育过程中被关注的对象，其问题需要被理解而非仅凭标签判断。</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="倾听">
+  <data key="d0">倾听</data>
+  <data key="d1">concept</data>
+  <data key="d2">倾听是一种针对当下情境的沟通方式，强调对当前问题的理解而非基于标签的判断。</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="生成成功">
+  <data key="d0">生成成功</data>
+  <data key="d1">event</data>
+  <data key="d2">生成成功是页面呈现的一种状态，用户可点击【进入练习】继续操作。&lt;SEP&gt;生成成功表示页面内容已成功生成，用户可点击【进入练习】。&lt;SEP&gt;生成成功表示系统已成功生成解析。</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184&lt;SEP&gt;chunk-a0d6678d20e38131c14ac6f12ebe0bf0&lt;SEP&gt;chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="生成失败">
+  <data key="d0">生成失败</data>
+  <data key="d1">event</data>
+  <data key="d2">生成失败是页面呈现的一种状态，卡片上会显示提示文案并支持重新生成。&lt;SEP&gt;生成失败表示页面内容生成过程中出现错误，需重新生成。&lt;SEP&gt;生成失败表示系统未能生成解析。</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184&lt;SEP&gt;chunk-a0d6678d20e38131c14ac6f12ebe0bf0&lt;SEP&gt;chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="执行状态">
+  <data key="d0">执行状态</data>
+  <data key="d1">event</data>
+  <data key="d2">执行状态是系统用于描述页面生成过程的机制，包括生成中、生成成功和生成失败等状态。&lt;SEP&gt;执行状态表示页面内容生成的过程状态，如“正在生成”、“生成成功”或“生成失败”。&lt;SEP&gt;执行状态是系统当前的操作状态。</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184&lt;SEP&gt;chunk-a0d6678d20e38131c14ac6f12ebe0bf0&lt;SEP&gt;chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="进入练习">
+  <data key="d0">进入练习</data>
+  <data key="d1">action</data>
+  <data key="d2">进入练习是用户在生成成功后可执行的操作，用于开始学习内容。&lt;SEP&gt;进入练习是用户在生成成功后可执行的操作。</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184&lt;SEP&gt;chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="重新生成">
+  <data key="d0">重新生成</data>
+  <data key="d1">action</data>
+  <data key="d2">重新生成是用户在生成失败后可执行的操作，用于尝试再次生成页面内容。&lt;SEP&gt;重新生成是用户在生成失败后可执行的操作。</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184&lt;SEP&gt;chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="页面呈现">
+  <data key="d0">页面呈现</data>
+  <data key="d1">concept</data>
+  <data key="d2">页面呈现是系统在生成过程中展示给用户的状态界面，包含生成中、生成成功和生成失败等状态。</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="卡片状态">
+  <data key="d0">卡片状态</data>
+  <data key="d1">concept</data>
+  <data key="d2">卡片状态是页面生成过程中的一种视觉反馈机制，用于提示用户当前操作的进展。</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="用户可点击【进入练习】">
+  <data key="d0">用户可点击【进入练习】</data>
+  <data key="d1">action</data>
+  <data key="d2">用户可点击【进入练习】是生成成功后的一项交互操作，用于进入后续学习流程。</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031640</data>
+  <data key="d6"></data>
+</node>
+<node id="文案提示">
+  <data key="d0">文案提示</data>
+  <data key="d1">content</data>
+  <data key="d2">文案提示是生成失败时卡片上显示的文本信息，用于指导用户进行重新生成操作。</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="支持重新生成">
+  <data key="d0">支持重新生成</data>
+  <data key="d1">feature</data>
+  <data key="d2">支持重新生成是系统提供的一项功能，允许用户在生成失败后尝试重新生成内容。</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="低质量选项">
+  <data key="d0">低质量选项</data>
+  <data key="d1">concept</data>
+  <data key="d2">低质量选项是指在题目设计中不符合要求的选项，通常具有语义重复或缺乏区分度。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="语义重复">
+  <data key="d0">语义重复</data>
+  <data key="d1">concept</data>
+  <data key="d2">语义重复指选项之间在含义上存在重复，降低了题目的有效性。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="错误选项">
+  <data key="d0">错误选项</data>
+  <data key="d1">concept</data>
+  <data key="d2">错误选项是干扰项，需具有迷惑性，来源于真实常见误区，与正确答案有一定相似性。&lt;SEP&gt;错误选项是指与正确选项在关键点上存在分歧的选项，选择它意味着选择了错误的路径。&lt;SEP&gt;错误选项是不符合题目要求的选项，应具备一定迷惑性且来源于真实常见误区。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925&lt;SEP&gt;chunk-399bea09d83a82edfa20b044057b1766&lt;SEP&gt;chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="正确选项">
+  <data key="d0">正确选项</data>
+  <data key="d1">concept</data>
+  <data key="d2">正确选项是符合课程核心知识的答案，不使用绝对化表达，不引入课程外知识。&lt;SEP&gt;正确选项是符合题目要求和逻辑的选项，与其他选项存在本质区别。&lt;SEP&gt;正确选项是与课程核心知识严格一致的选项，不使用绝对化表达且不引入课程外知识。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925&lt;SEP&gt;chunk-399bea09d83a82edfa20b044057b1766&lt;SEP&gt;chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="单选题">
+  <data key="d0">单选题</data>
+  <data key="d1">concept</data>
+  <data key="d2">单选题是一种题目类型，要求从多个选项中选择一个正确答案。&lt;SEP&gt;单选题是一种需要从多个选项中做出唯一决策的题型，适用于场景判断、方法选择类知识。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925&lt;SEP&gt;chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="多选题">
+  <data key="d0">多选题</data>
+  <data key="d1">concept</data>
+  <data key="d2">多选题是一种题目类型，要求从多个选项中选择一个或多个正确答案。&lt;SEP&gt;多选题是一种需要选择多个正确答案的题目类型。&lt;SEP&gt;多选题是一种包含多个并列要素、特征或维度的题型，适用于多要素识别、特征归纳类知识。&lt;SEP&gt;多选题是一种需要选择多个正确选项的题目类型，学员在解答时可能因理解偏差而出现误选或漏选。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925&lt;SEP&gt;chunk-399bea09d83a82edfa20b044057b1766&lt;SEP&gt;chunk-a0d6678d20e38131c14ac6f12ebe0bf0&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="判断题">
+  <data key="d0">判断题</data>
+  <data key="d1">concept</data>
+  <data key="d2">判断题是一种题目类型，要求判断陈述是否正确。&lt;SEP&gt;判断题是一种存在常见误判或容易混淆陈述的题型，适用于概念辨析、误区识别类知识。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925&lt;SEP&gt;chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="标准答案">
+  <data key="d0">标准答案</data>
+  <data key="d1">concept</data>
+  <data key="d2">标准答案是题目正确选项的官方认定，此处为选项A。&lt;SEP&gt;标准答案是明确唯一且与题目严格对应的答案，基于课程原文且不扩展课程外知识。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925&lt;SEP&gt;chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="题目解析">
+  <data key="d0">题目解析</data>
+  <data key="d1">concept</data>
+  <data key="d2">题目解析是对题目各个选项的详细解释，字数控制在30-100字之间。&lt;SEP&gt;题目解析是对题目答案的详细解释，需提炼核心考点并解释判断逻辑。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="选项解析">
+  <data key="d0">选项解析</data>
+  <data key="d1">concept</data>
+  <data key="d2">选项解析是对各选项正确或错误原因的详细说明。&lt;SEP&gt;选项解析是对每个选项的独立分析，需解释正确选项的逻辑并指出错误选项的误区。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925&lt;SEP&gt;chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="教学性">
+  <data key="d0">教学性</data>
+  <data key="d1">concept</data>
+  <data key="d2">教学性是指解析需具备教学感，能帮助学员理解、掌握和复盘。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="题目类型分布规则">
+  <data key="d0">题目类型分布规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">题目类型分布规则要求每次生成的题目中至少包含两种不同题型。&lt;SEP&gt;题目类型分布规则规定每次生成的题目中必须包含至少2种不同题型。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925&lt;SEP&gt;chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="题型选择依据">
+  <data key="d0">题型选择依据</data>
+  <data key="d1">concept</data>
+  <data key="d2">题型选择依据是根据知识点内容特征选择最适合的题型。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="核心知识">
+  <data key="d0">核心知识</data>
+  <data key="d1">concept</data>
+  <data key="d2">核心知识是课程中重点讲解的内容，正确选项必须严格一致。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="课程原文">
+  <data key="d0">课程原文</data>
+  <data key="d1">concept</data>
+  <data key="d2">课程原文是标准答案的依据，不允许引入课程外知识。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="常见误区">
+  <data key="d0">常见误区</data>
+  <data key="d1">concept</data>
+  <data key="d2">常见误区是错误选项的来源，需与正确答案存在一定相似性。&lt;SEP&gt;常见误区是学员在答题时容易出现的错误思路。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="思维偏差">
+  <data key="d0">思维偏差</data>
+  <data key="d1">concept</data>
+  <data key="d2">思维偏差是学员在解题过程中可能产生的错误思路，需在解析中识别并引导纠正。&lt;SEP&gt;思维偏差是学员在解题过程中可能存在的错误思维方式。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="解析目标">
+  <data key="d0">解析目标</data>
+  <data key="d1">concept</data>
+  <data key="d2">解析目标包括帮助学员理解答案、掌握判断方法、识别误区和形成正确思路。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="教学感">
+  <data key="d0">教学感</data>
+  <data key="d1">concept</data>
+  <data key="d2">教学感是指解析语言自然流畅，具有真实教师讲题的感觉。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="错题复盘">
+  <data key="d0">错题复盘</data>
+  <data key="d1">concept</data>
+  <data key="d2">错题复盘是指通过解析帮助学员回顾错误，提升学习效果。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="选项独立解析">
+  <data key="d0">选项独立解析</data>
+  <data key="d1">concept</data>
+  <data key="d2">选项独立解析要求每个选项都有单独的解析，而非统一解析。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="对比分析">
+  <data key="d0">对比分析</data>
+  <data key="d1">concept</data>
+  <data key="d2">对比分析要求每个选项解析中明确与其他选项的关键差异。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="视角差异">
+  <data key="d0">视角差异</data>
+  <data key="d1">concept</data>
+  <data key="d2">视角差异是指不同选项在看待问题时的角度不同。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="立场差异">
+  <data key="d0">立场差异</data>
+  <data key="d1">concept</data>
+  <data key="d2">立场差异是指不同选项在立场上的区别。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="逻辑差异">
+  <data key="d0">逻辑差异</data>
+  <data key="d1">concept</data>
+  <data key="d2">逻辑差异是指不同选项在逻辑推理上的不同。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="定性差异">
+  <data key="d0">定性差异</data>
+  <data key="d1">concept</data>
+  <data key="d2">定性差异是指不同选项在性质上的区别。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="歧路">
+  <data key="d0">歧路</data>
+  <data key="d1">concept</data>
+  <data key="d2">歧路是指选择错误选项意味着走上了错误的思路或方向。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="生动性话语">
+  <data key="d0">生动性话语</data>
+  <data key="d1">concept</data>
+  <data key="d2">生动性话语是指使用比喻、场景代入等方法使解析更贴近真实教学。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="生活化比喻">
+  <data key="d0">生活化比喻</data>
+  <data key="d1">concept</data>
+  <data key="d2">生活化比喻是用日常生活中的例子来帮助学员理解抽象概念。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="场景代入">
+  <data key="d0">场景代入</data>
+  <data key="d1">concept</data>
+  <data key="d2">场景代入是通过设定具体情境让学员更容易理解题目。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031641</data>
+  <data key="d6"></data>
+</node>
+<node id="情感化表达">
+  <data key="d0">情感化表达</data>
+  <data key="d1">concept</data>
+  <data key="d2">情感化表达是通过带有情感的语言增强解析的感染力。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="对比式反问">
+  <data key="d0">对比式反问</data>
+  <data key="d1">concept</data>
+  <data key="d2">对比式反问是通过对比和提问的方式引导学员思考。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="自然流畅">
+  <data key="d0">自然流畅</data>
+  <data key="d1">concept</data>
+  <data key="d2">自然流畅是指解析语言要像真实老师讲课一样自然、连贯。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="避免模板化">
+  <data key="d0">避免模板化</data>
+  <data key="d1">concept</data>
+  <data key="d2">避免模板化是指不要使用固定格式或生硬表达。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="机械化表达">
+  <data key="d0">机械化表达</data>
+  <data key="d1">concept</data>
+  <data key="d2">机械化表达是指过于死板、缺乏灵活性的表达方式。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="教学价值">
+  <data key="d0">教学价值</data>
+  <data key="d1">concept</data>
+  <data key="d2">教学价值是指解析对学员学习的帮助程度。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="阅读体验">
+  <data key="d0">阅读体验</data>
+  <data key="d1">concept</data>
+  <data key="d2">阅读体验是指解析的可读性和吸引力。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="知识理解">
+  <data key="d0">知识理解</data>
+  <data key="d1">concept</data>
+  <data key="d2">知识理解是指学员对题目所涉知识点的掌握程度。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="做题技巧">
+  <data key="d0">做题技巧</data>
+  <data key="d1">concept</data>
+  <data key="d2">做题技巧是指解答题目所需的方法和策略。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="错题复盘价值">
+  <data key="d0">错题复盘价值</data>
+  <data key="d1">concept</data>
+  <data key="d2">错题复盘价值是指解析对学员复习和巩固的作用。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="核心考点">
+  <data key="d0">核心考点</data>
+  <data key="d1">concept</data>
+  <data key="d2">核心考点是题目考查的重点知识内容。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="判断逻辑">
+  <data key="d0">判断逻辑</data>
+  <data key="d1">concept</data>
+  <data key="d2">判断逻辑是解析中用于说明答案正确性的推理过程。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="正确思路">
+  <data key="d0">正确思路</data>
+  <data key="d1">concept</data>
+  <data key="d2">正确思路是学员应建立的合理解题方法。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="稳定思路">
+  <data key="d0">稳定思路</data>
+  <data key="d1">concept</data>
+  <data key="d2">稳定思路是指学员在解题时应保持的正确思维模式。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="解析教学性">
+  <data key="d0">解析教学性</data>
+  <data key="d1">concept</data>
+  <data key="d2">解析教学性是指解析对教学的辅助作用。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="自然度">
+  <data key="d0">自然度</data>
+  <data key="d1">concept</data>
+  <data key="d2">自然度是指解析语言的自然流畅程度。</data>
+  <data key="d3">chunk-8c5bcbd045b5c1c625aac45f8790a925</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="数据存储规则">
+  <data key="d0">数据存储规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">数据存储规则规定了模型生成的题目原文和学员答题快照的临时存储时间及存储方式。&lt;SEP&gt;数据存储规则涉及模型生成的题目原文和学员临时答题快照的存储时间设置，以及用户数据的存储策略。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="临时存储时间">
+  <data key="d0">临时存储时间</data>
+  <data key="d1">data</data>
+  <data key="d2">临时存储时间是指系统为题目原文和学员答题快照设定的有效存储期限，通常为48小时。&lt;SEP&gt;临时存储时间是指模型生成的题目原文和学员答题快照的存储时长，为48小时。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="用户A">
+  <data key="d0">用户A</data>
+  <data key="d1">person</data>
+  <data key="d2">用户A是特定的学员，其视频B的数据仅保存最新一份。&lt;SEP&gt;用户A是特定用户，其在视频B中的数据仅保存最新一份。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="视频B">
+  <data key="d0">视频B</data>
+  <data key="d1">content</data>
+  <data key="d2">视频B是用户A观看的特定教学内容，其数据仅保留最新版本。&lt;SEP&gt;视频B是用户A相关的数据内容，其数据仅保留最新版本。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="AI速练封面页">
+  <data key="d0">AI速练封面页</data>
+  <data key="d1">location</data>
+  <data key="d2">AI速练封面页是用户进入AI速练功能时的首页界面。&lt;SEP&gt;AI速练封面页是用户开始练习前的初始页面。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="题目正在生成状态">
+  <data key="d0">题目正在生成状态</data>
+  <data key="d1">concept</data>
+  <data key="d2">题目正在生成状态表示题目尚未完成生成，用户进入该状态时显示相应页面。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="题目生成失败状态">
+  <data key="d0">题目生成失败状态</data>
+  <data key="d1">concept</data>
+  <data key="d2">题目生成失败状态表示题目生成过程中出现错误，用户进入该状态时显示相应页面。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="开始练习">
+  <data key="d0">开始练习</data>
+  <data key="d1">method</data>
+  <data key="d2">开始练习是用户启动AI速练功能的操作事件。&lt;SEP&gt;开始练习是用户点击按钮后触发模型执行任务的操作。&lt;SEP&gt;“开始练习”是按钮名称，用于启动新一轮练习任务。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb&lt;SEP&gt;chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="第一题做题页">
+  <data key="d0">第一题做题页</data>
+  <data key="d1">location</data>
+  <data key="d2">第一题做题页是用户在练习过程中进行答题的页面。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="继续练习">
+  <data key="d0">继续练习</data>
+  <data key="d1">method</data>
+  <data key="d2">继续练习是用户在退出后重新进入AI速练时继续之前练习的操作。&lt;SEP&gt;“继续练习”是按钮名称，用于引导学员继续进行练习。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031642</data>
+  <data key="d6"></data>
+</node>
+<node id="第4题做题页">
+  <data key="d0">第4题做题页</data>
+  <data key="d1">location</data>
+  <data key="d2">第4题做题页是用户在练习到第4题时的答题页面。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="第4题的解析页">
+  <data key="d0">第4题的解析页</data>
+  <data key="d1">location</data>
+  <data key="d2">第4题的解析页是用户提交第4题后查看答案解析的页面。&lt;SEP&gt;第4题的解析页是学员在完成第4题后所处的页面。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="8道题">
+  <data key="d0">8道题</data>
+  <data key="d1">data</data>
+  <data key="d2">8道题是AI速练中包含的题目总数。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="最后一道">
+  <data key="d0">最后一道</data>
+  <data key="d1">concept</data>
+  <data key="d2">最后一道表示练习中的最后一题。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="AI速练tab">
+  <data key="d0">AI速练tab</data>
+  <data key="d1">location</data>
+  <data key="d2">AI速练tab是用户在PC端进入AI速练功能的页面标签。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="APP">
+  <data key="d0">APP</data>
+  <data key="d1">location</data>
+  <data key="d2">APP是学员端AI速练功能的移动端应用形式。&lt;SEP&gt;APP是用户在移动端进入AI速练功能的应用程序。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="【开始练习】">
+  <data key="d0">【开始练习】</data>
+  <data key="d1">method</data>
+  <data key="d2">【开始练习】是用户点击后触发模型执行任务的操作按钮。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="【进入练习】">
+  <data key="d0">【进入练习】</data>
+  <data key="d1">method</data>
+  <data key="d2">【进入练习】是用户点击后进入第一题做题页的操作按钮。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="【继续练习】">
+  <data key="d0">【继续练习】</data>
+  <data key="d1">method</data>
+  <data key="d2">【继续练习】是用户在退出后重新进入AI速练时继续之前练习的操作按钮。</data>
+  <data key="d3">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="视频内容管理页面">
+  <data key="d0">视频内容管理页面</data>
+  <data key="d1">location</data>
+  <data key="d2">视频内容管理页面是用于管理已进行AI视频内容提取的视频的功能页面。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="知识图谱tab">
+  <data key="d0">知识图谱tab</data>
+  <data key="d1">content</data>
+  <data key="d2">知识图谱tab是学员端AI速练功能的一个入口位置。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="AI速练功能">
+  <data key="d0">AI速练功能</data>
+  <data key="d1">concept</data>
+  <data key="d2">AI速练功能是一种允许用户通过视频进行快速练习的系统功能。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="模型">
+  <data key="d0">模型</data>
+  <data key="d1">artifact</data>
+  <data key="d2">模型是指生成知识点、题目及解析的人工智能系统。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="视频原文">
+  <data key="d0">视频原文</data>
+  <data key="d1">content</data>
+  <data key="d2">视频原文是生成知识点、题目及解析的输入内容。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="知识点">
+  <data key="d0">知识点</data>
+  <data key="d1">concept</data>
+  <data key="d2">知识点是从视频原文中提取出的核心学习内容。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="题目">
+  <data key="d0">题目</data>
+  <data key="d1">content</data>
+  <data key="d2">题目是根据知识点生成的测试问题。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="解析">
+  <data key="d0">解析</data>
+  <data key="d1">content</data>
+  <data key="d2">解析是对题目答案的详细解释。&lt;SEP&gt;解析是对选项进行详细说明，指出错误选项与正确选项之间的差异。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb&lt;SEP&gt;chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="触发操作">
+  <data key="d0">触发操作</data>
+  <data key="d1">concept</data>
+  <data key="d2">触发操作是指用户点击【开始练习】以启动AI速练流程。&lt;SEP&gt;触发操作是指用户执行的某个动作，如点击按钮。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb&lt;SEP&gt;chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="生成知识点">
+  <data key="d0">生成知识点</data>
+  <data key="d1">method</data>
+  <data key="d2">生成知识点是模型根据视频原文提取核心学习内容的过程。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="生成题目">
+  <data key="d0">生成题目</data>
+  <data key="d1">method</data>
+  <data key="d2">生成题目是模型根据知识点创建测试问题的过程。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="答案及解析">
+  <data key="d0">答案及解析</data>
+  <data key="d1">content</data>
+  <data key="d2">答案及解析是针对题目提供的正确答案和详细解释。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="Toast提示">
+  <data key="d0">Toast提示</data>
+  <data key="d1">content</data>
+  <data key="d2">Toast提示是系统在特定操作时显示的简短提示信息，例如“暂未开通此功能”。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="PC">
+  <data key="d0">PC</data>
+  <data key="d1">location</data>
+  <data key="d2">PC是学员端AI速练功能的一个使用设备类型。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="知识要点">
+  <data key="d0">知识要点</data>
+  <data key="d1">concept</data>
+  <data key="d2">知识要点是从视频原文中提取出的核心知识点，数量根据视频时长而变化。&lt;SEP&gt;知识要点是题目所涉及的核心知识点。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb&lt;SEP&gt;chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="题目选项">
+  <data key="d0">题目选项</data>
+  <data key="d1">content</data>
+  <data key="d2">题目选项是题目中提供的多个选择项，每个选项有独立解析。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="模型生成的最新状态">
+  <data key="d0">模型生成的最新状态</data>
+  <data key="d1">data</data>
+  <data key="d2">模型生成的最新状态是进入AI速练页面所需获取的系统数据。</data>
+  <data key="d3">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="知识颗粒度规则">
+  <data key="d0">知识颗粒度规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">知识颗粒度规则规定了知识点的划分标准，确保每个知识点能够独立形成一次学习，并对应明确结论、方法或原则。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="字幕噪音处理规则">
+  <data key="d0">字幕噪音处理规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">字幕噪音处理规则用于自动忽略口头禅、重复表达、识别错误等无关信息，确保教学内容清晰。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="成人培训">
+  <data key="d0">成人培训</data>
+  <data key="d1">concept</data>
+  <data key="d2">成人培训是面向成年学习者的教育形式，题目设计需符合实际工作场景和应用能力考察。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="题目难度要求">
+  <data key="d0">题目难度要求</data>
+  <data key="d1">concept</data>
+  <data key="d2">题目难度要求强调中等难度，偏重理解与应用，避免学生考试风格和偏题难题。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="出题导向">
+  <data key="d0">出题导向</data>
+  <data key="d1">concept</data>
+  <data key="d2">出题导向规定题目应优先考察实际工作中的应用能力、方法判断能力和场景分析能力。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="学员角色意识">
+  <data key="d0">学员角色意识</data>
+  <data key="d1">concept</data>
+  <data key="d2">学员角色意识要求根据课程内容判断学习者角色，如管理类、教学类、企业培训类等。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="场景化要求">
+  <data key="d0">场景化要求</data>
+  <data key="d1">concept</data>
+  <data key="d2">场景化要求建议增加工作、教学、业务等场景，帮助学员代入实际工作情境。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="题目表达风格">
+  <data key="d0">题目表达风格</data>
+  <data key="d1">concept</data>
+  <data key="d2">题目表达风格要求语言专业、清晰、自然，避免学生化或应试化表达。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="题目生成规则">
+  <data key="d0">题目生成规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">题目生成规则规定每个知识点必须生成一道自测题，题目需紧扣知识点并具备真实测试价值。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031643</data>
+  <data key="d6"></data>
+</node>
+<node id="题目要求">
+  <data key="d0">题目要求</data>
+  <data key="d1">concept</data>
+  <data key="d2">题目要求包括紧扣知识点、中等难度、考察理解与应用能力，避免纯记忆式提问。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="题目标题规则">
+  <data key="d0">题目标题规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">题目标题规则规定标题字数在10-50字之间，表达完整清晰，体现真实业务或学习场景。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="题目选项规则">
+  <data key="d0">题目选项规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">题目选项规则规定选项数量、格式、内容要求，确保选项具有迷惑性且不重复。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="选项数量规则">
+  <data key="d0">选项数量规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">选项数量规则规定了不同题型的选项数量范围，如单选题和多选题需4-6个选项，判断题需2个选项。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="选项内容要求">
+  <data key="d0">选项内容要求</data>
+  <data key="d1">concept</data>
+  <data key="d2">选项内容要求规定了选项的格式、字数、表达清晰度及避免重复和低质量选项。</data>
+  <data key="d3">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="学员选择">
+  <data key="d0">学员选择</data>
+  <data key="d1">concept</data>
+  <data key="d2">学员选择是指学员在答题时所做出的选择，可能包含正确或错误的选项。&lt;SEP&gt;学员选择是学员在答题过程中所做出的具体选项选择，可能包含正确、错误或遗漏的选项。</data>
+  <data key="d3">chunk-a0d6678d20e38131c14ac6f12ebe0bf0&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="题干">
+  <data key="d0">题干</data>
+  <data key="d1">content</data>
+  <data key="d2">题干是题目中给出的问题描述和背景信息。</data>
+  <data key="d3">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="选项">
+  <data key="d0">选项</data>
+  <data key="d1">content</data>
+  <data key="d2">选项是题目中提供的可选答案。</data>
+  <data key="d3">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="正确答案">
+  <data key="d0">正确答案</data>
+  <data key="d1">concept</data>
+  <data key="d2">正确答案是题目中唯一正确的选项。&lt;SEP&gt;正确答案是题目中唯一或多个符合标准的正确选项，用于判断学员答题的准确性。</data>
+  <data key="d3">chunk-a0d6678d20e38131c14ac6f12ebe0bf0&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="输入">
+  <data key="d0">输入</data>
+  <data key="d1">data</data>
+  <data key="d2">输入是用户提供的题目相关信息。</data>
+  <data key="d3">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="输出">
+  <data key="d0">输出</data>
+  <data key="d1">data</data>
+  <data key="d2">输出是系统生成的解析内容。</data>
+  <data key="d3">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="示例效果">
+  <data key="d0">示例效果</data>
+  <data key="d1">content</data>
+  <data key="d2">示例效果是展示解析结果的一个例子。</data>
+  <data key="d3">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="正在生成">
+  <data key="d0">正在生成</data>
+  <data key="d1">event</data>
+  <data key="d2">正在生成表示系统正在处理请求。</data>
+  <data key="d3">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="提交">
+  <data key="d0">提交</data>
+  <data key="d1">event</data>
+  <data key="d2">提交是用户执行的动作，用于触发解析生成。</data>
+  <data key="d3">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="解析生成失败">
+  <data key="d0">解析生成失败</data>
+  <data key="d1">event</data>
+  <data key="d2">解析生成失败表示系统在生成解析时遇到问题。</data>
+  <data key="d3">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="退出">
+  <data key="d0">退出</data>
+  <data key="d1">content</data>
+  <data key="d2">“退出”是按钮名称，用于让学员退出当前练习。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="第5题做题页">
+  <data key="d0">第5题做题页</data>
+  <data key="d1">location</data>
+  <data key="d2">第5题做题页是学员在完成第4题后进入的页面，用于解答第5题。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec&lt;SEP&gt;chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="最后一题解析页">
+  <data key="d0">最后一题解析页</data>
+  <data key="d1">location</data>
+  <data key="d2">最后一题解析页是学员完成所有题目后所处的页面。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="视频播放页-AI速练-全流程">
+  <data key="d0">视频播放页-AI速练-全流程</data>
+  <data key="d1">location</data>
+  <data key="d2">视频播放页-AI速练-全流程是AI速练流程中的一个页面，包含完整的练习流程。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="H5端">
+  <data key="d0">H5端</data>
+  <data key="d1">location</data>
+  <data key="d2">H5端是指基于HTML5技术的移动端，是AI速练的一个使用平台。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="app--学习公社6.0">
+  <data key="d0">app--学习公社6.0</data>
+  <data key="d1">organization</data>
+  <data key="d2">app--学习公社6.0是一个应用程序，是AI速练的使用平台之一。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="APP--中教网院(新)">
+  <data key="d0">APP--中教网院(新)</data>
+  <data key="d1">organization</data>
+  <data key="d2">APP--中教网院(新)是一个应用程序，是AI速练的使用平台之一。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="AI速练测试记录">
+  <data key="d0">AI速练测试记录</data>
+  <data key="d1">data</data>
+  <data key="d2">AI速练测试记录是一个链接，用于查看AI速练的测试数据。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031644</data>
+  <data key="d6"></data>
+</node>
+<node id="AI速练平滑推动效果.html">
+  <data key="d0">AI速练平滑推动效果.html</data>
+  <data key="d1">content</data>
+  <data key="d2">AI速练平滑推动效果.html是一个文件，用于展示学员端查看解析时的交互效果。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="8道题，当前已提交第4题，停留在第4题的解析页">
+  <data key="d0">8道题，当前已提交第4题，停留在第4题的解析页</data>
+  <data key="d1">location</data>
+  <data key="d2">描述学员当前所处的页面状态，即已完成4道题，正在第4题的解析页。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="保持在最后一题的解析页">
+  <data key="d0">保持在最后一题的解析页</data>
+  <data key="d1">location</data>
+  <data key="d2">描述学员在特定操作后仍停留在最后一题的解析页。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="PC刷新页面后进入AI速练tab/APP：退出重新进入AI速练">
+  <data key="d0">PC刷新页面后进入AI速练tab/APP：退出重新进入AI速练</data>
+  <data key="d1">event</data>
+  <data key="d2">描述用户在PC端刷新页面后，通过退出并重新进入AI速练的交互行为。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="学员进入第5题做题页，无需记录选项">
+  <data key="d0">学员进入第5题做题页，无需记录选项</data>
+  <data key="d1">location</data>
+  <data key="d2">描述学员进入第5题做题页时的操作要求，即不需要记录选项。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="点击退出">
+  <data key="d0">点击退出</data>
+  <data key="d1">content</data>
+  <data key="d2">“点击退出”是用户操作指令，用于退出当前练习。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="退出后，点击继续练习">
+  <data key="d0">退出后，点击继续练习</data>
+  <data key="d1">event</data>
+  <data key="d2">描述用户在退出后再次点击“继续练习”的操作行为。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="学员进入第5题做题页">
+  <data key="d0">学员进入第5题做题页</data>
+  <data key="d1">location</data>
+  <data key="d2">描述学员在完成第4题后进入第5题做题页的状态。</data>
+  <data key="d3">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="倾听的四个核心维度">
+  <data key="d0">倾听的四个核心维度</data>
+  <data key="d1">concept</data>
+  <data key="d2">倾听的四个核心维度包括学生的经历、想法、行为表现和情绪，用于全面了解学生的心理状态。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="学生经历">
+  <data key="d0">学生经历</data>
+  <data key="d1">concept</data>
+  <data key="d2">学生经历指学生在特定时间、地点发生的事件及其影响，用于把握事件的来龙去脉。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="学生想法">
+  <data key="d0">学生想法</data>
+  <data key="d1">concept</data>
+  <data key="d2">学生想法包括学生对事件的认识、看法、态度和主张，用于理解学生如何看待问题及可能采取的行动。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="学生行为表现">
+  <data key="d0">学生行为表现</data>
+  <data key="d1">concept</data>
+  <data key="d2">学生行为表现涉及学生当时的行动、接下来的打算以及自我克制努力，用于把握行为模式和意志努力程度。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="学生情绪">
+  <data key="d0">学生情绪</data>
+  <data key="d1">concept</data>
+  <data key="d2">学生情绪是比言语更能反映内心真实想法和状态的因素，用于真切体会学生的内在心理状态。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="辅导员">
+  <data key="d0">辅导员</data>
+  <data key="d1">person</data>
+  <data key="d2">辅导员是负责倾听学生并关注其心理状态的专业人员。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="选项A">
+  <data key="d0">选项A</data>
+  <data key="d1">content</data>
+  <data key="d2">选项A包含学生经历、想法、行为表现和情绪，是倾听时应关注的核心维度。&lt;SEP&gt;选项A是题目中的一个备选答案，可能被学员误选或正确选择。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="选项B">
+  <data key="d0">选项B</data>
+  <data key="d1">content</data>
+  <data key="d2">选项B包含学生家庭背景、经济状况、社交圈层和外貌特征，不属于倾听的核心维度。&lt;SEP&gt;选项B是题目中的一个备选答案，可能被学员误选或正确选择。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="选项C">
+  <data key="d0">选项C</data>
+  <data key="d1">content</data>
+  <data key="d2">选项C包含学生学业排名、竞赛获奖、社团职位和入党进度，不属于倾听的核心维度。&lt;SEP&gt;选项C是题目中的一个备选答案，可能被学员误选或正确选择。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="选项D">
+  <data key="d0">选项D</data>
+  <data key="d1">content</data>
+  <data key="d2">选项D包含学生性格类型、兴趣爱好、职业规划和恋爱状态，不属于倾听的核心维度。&lt;SEP&gt;选项D是题目中的一个备选答案，可能被学员误选或正确选择。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="单选">
+  <data key="d0">单选</data>
+  <data key="d1">event</data>
+  <data key="d2">单选是一种题型，要求从多个选项中选择一个正确答案。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="课程">
+  <data key="d0">课程</data>
+  <data key="d1">content</data>
+  <data key="d2">课程是关于辅导员倾听技巧的教育内容，包含对倾听四个核心维度的详细讲解。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="题型">
+  <data key="d0">题型</data>
+  <data key="d1">concept</data>
+  <data key="d2">题型是指题目类型，此处为单选题。</data>
+  <data key="d3">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="学员">
+  <data key="d0">学员</data>
+  <data key="d1">person</data>
+  <data key="d2">学员是参与答题的学生，其答题行为可能反映出对知识点的理解偏差和思维倾向。</data>
+  <data key="d3">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="综合解析">
+  <data key="d0">综合解析</data>
+  <data key="d1">content</data>
+  <data key="d2">综合解析是对学员答题情况的整体分析，旨在帮助学员理解自身思维偏差和认知误区。</data>
+  <data key="d3">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="核心判断原则">
+  <data key="d0">核心判断原则</data>
+  <data key="d1">concept</data>
+  <data key="d2">核心判断原则是综合解析中提炼出的关键认知标准，用于指导学员未来的答题策略。</data>
+  <data key="d3">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="PC端进入的页面">
+  <data key="d0">PC端进入的页面</data>
+  <data key="d1">location</data>
+  <data key="d2">PC端进入的页面是指用户在使用个人电脑时进入的具体页面，其内容根据设计图而定。</data>
+  <data key="d3">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="移动端进入的页面">
+  <data key="d0">移动端进入的页面</data>
+  <data key="d1">location</data>
+  <data key="d2">移动端进入的页面是指用户在使用移动设备时进入的具体页面，其内容根据设计图而定。</data>
+  <data key="d3">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="题目内容">
+  <data key="d0">题目内容</data>
+  <data key="d1">content</data>
+  <data key="d2">题目内容是考试或练习中提供的具体问题描述，用于学员解答。</data>
+  <data key="d3">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="选项逐项解析">
+  <data key="d0">选项逐项解析</data>
+  <data key="d1">content</data>
+  <data key="d2">选项逐项解析是对每个选项的详细分析，帮助学员理解正确与错误的原因。</data>
+  <data key="d3">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="教学引导感">
+  <data key="d0">教学引导感</data>
+  <data key="d1">concept</data>
+  <data key="d2">教学引导感是指解析内容中体现出的教师指导风格，使学员感觉像在与老师面对面交流。</data>
+  <data key="d3">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="核心判断标准">
+  <data key="d0">核心判断标准</data>
+  <data key="d1">concept</data>
+  <data key="d2">核心判断标准是综合解析中提炼出的关键认知原则，用于指导学员未来的答题策略。</data>
+  <data key="d3">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031645</data>
+  <data key="d6"></data>
+</node>
+<node id="生成中">
+  <data key="d0">生成中</data>
+  <data key="d3">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d2">页面呈现显示生成中的状态，向用户提供当前操作的反馈信息。</data>
+  <data key="d1">UNKNOWN</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780031654</data>
+  <data key="d6"></data>
+</node>
+<edge source="PRD" target="苗宁">
+  <data key="d7">1.0</data>
+  <data key="d8">苗宁是PRD文档的创建者和修订者，负责补充文档内容和规则。</data>
+  <data key="d9">修订者,文档创建者</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031646</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="苗宁">
+  <data key="d7">1.0</data>
+  <data key="d8">苗宁是AI速练功能的设计者和文档修订者。</data>
+  <data key="d9">功能设计者,文档修订者</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031646</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="GRT研发中心的团队">
+  <data key="d7">1.0</data>
+  <data key="d8">GRT研发中心的团队是AI速练功能的协作团队，并分享了相关文档。</data>
+  <data key="d9">团队协作,文档分享</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031646</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="AI自测">
+  <data key="d7">1.0</data>
+  <data key="d8">AI自测是AI速练功能的产品方案。</data>
+  <data key="d9">产品方案,功能关联</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031646</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="需求评审">
+  <data key="d7">1.0</data>
+  <data key="d8">需求评审是对AI速练功能的评审过程。</data>
+  <data key="d9">功能评审,需求确认</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031646</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="文件管理">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能通过文件管理进行配置。</data>
+  <data key="d9">功能配置,应用管理</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031647</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="平台管理端">
+  <data key="d7">2.0</data>
+  <data key="d8">AI速练功能可以在平台管理端进行开启或关闭配置。&lt;SEP&gt;AI速练功能在平台管理端进行配置。</data>
+  <data key="d9">configuration,control,功能配置,管理端操作</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031647</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="租户管理端">
+  <data key="d7">2.0</data>
+  <data key="d8">AI速练功能可以在租户管理端进行开启或关闭配置。&lt;SEP&gt;AI速练功能在租户管理端进行配置。</data>
+  <data key="d9">configuration,control,功能配置,管理端操作</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031647</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="租户运营端">
+  <data key="d7">2.0</data>
+  <data key="d8">AI速练功能可以在租户运营端进行开启或关闭配置。&lt;SEP&gt;AI速练功能在租户运营端进行配置。</data>
+  <data key="d9">configuration,control,功能配置,管理端操作</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031648</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="学员端">
+  <data key="d7">2.0</data>
+  <data key="d8">学员端是用户访问AI速练功能的界面。&lt;SEP&gt;AI速练功能在学员端供学员使用。</data>
+  <data key="d9">access,interface,功能使用,用户端操作</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f&lt;SEP&gt;chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031648</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="视频播放页">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能集成在视频播放页中。</data>
+  <data key="d9">功能展示,页面集成</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031648</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="学习公社6.0">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能适配于学习公社6.0应用。</data>
+  <data key="d9">功能适配,应用版本</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031649</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="中教网院">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能适配于中教网院应用。</data>
+  <data key="d9">功能适配,应用版本</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031649</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="后台原型">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能的后台原型提供了设计参考。</data>
+  <data key="d9">功能原型,设计参考</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031649</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="学员端原型图">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能的学员端原型图提供了设计参考。</data>
+  <data key="d9">功能原型,设计参考</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031649</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="UI设计稿">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能的UI设计稿展示了界面布局。</data>
+  <data key="d9">功能设计,界面展示</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031649</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="应用升级">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能的配置规则涉及应用升级。</data>
+  <data key="d9">功能配置,更新规则</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031650</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="应用安装">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能的配置规则涉及应用安装。</data>
+  <data key="d9">初始设置,功能配置</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031650</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="场景化页面跳转规则">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能的页面跳转规则被补充说明。</data>
+  <data key="d9">功能配置,页面逻辑</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031650</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="学习理解偏差">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能旨在解决学习理解偏差问题。</data>
+  <data key="d9">功能目标,问题描述</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031651</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="复习动作">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能旨在解决复习动作依赖记忆的问题。</data>
+  <data key="d9">功能目标,问题描述</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031651</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="系统化引导">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能旨在提供系统化引导。</data>
+  <data key="d9">功能目标,问题描述</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031651</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="随学随测">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能的目标是实现随学随测。</data>
+  <data key="d9">功能目标,学习方式</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031651</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="学员自主练习">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能的目标是提升学员自主练习能力。</data>
+  <data key="d9">功能目标,学习方式</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031652</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="即时反馈">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能提供即时反馈，增强学习体验。</data>
+  <data key="d9">功能特性,学习体验</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031652</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="平台管理端--应用配置">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能在平台管理端的配置位置。</data>
+  <data key="d9">功能配置,管理端操作</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031652</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="租户管理端--运营配置">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能在租户管理端的配置位置。</data>
+  <data key="d9">功能配置,管理端操作</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031652</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="AI速练功能开启">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能开启是配置后的结果。</data>
+  <data key="d9">功能状态,配置结果</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031652</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="AI速练功能关闭">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能关闭是配置后的结果。</data>
+  <data key="d9">功能状态,配置结果</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031653</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="视频播放页-AI速练-全流程">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能包含视频播放页-AI速练-全流程页面。</data>
+  <data key="d9">功能模块,页面流程</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="AI速练测试记录">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练测试记录与AI速练功能相关联，用于查看测试数据。</data>
+  <data key="d9">数据关联,测试信息</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="AI速练平滑推动效果.html">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练平滑推动效果.html与AI速练功能相关联，用于展示交互效果。</data>
+  <data key="d9">交互展示,文件关联</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031659</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练" target="AI速练封面页">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练封面页是进入AI速练功能的入口页面。</data>
+  <data key="d9">功能入口,页面关联</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031659</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI自测" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档与AI自测产品方案有关联。</data>
+  <data key="d9">产品方案,文档关联</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031651</data>
+  <data key="d13"></data>
+</edge>
+<edge source="PC端" target="视频播放页-AI速练-全流程">
+  <data key="d7">1.0</data>
+  <data key="d8">PC端支持视频播放页-AI速练-全流程页面。</data>
+  <data key="d9">平台支持,页面适配</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="H5" target="AI速练功能">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能在H5端可通过视频播放页访问。</data>
+  <data key="d9">access,platform</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="后台原型" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档与后台原型有关联。</data>
+  <data key="d9">文档关联,设计参考</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031652</data>
+  <data key="d13"></data>
+</edge>
+<edge source="学员端原型图" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档与学员端原型图有关联。</data>
+  <data key="d9">文档关联,设计参考</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031652</data>
+  <data key="d13"></data>
+</edge>
+<edge source="需求评审纪要" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档与需求评审纪要有关联。</data>
+  <data key="d9">文档关联,评审记录</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031651</data>
+  <data key="d13"></data>
+</edge>
+<edge source="修订记录" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档与修订记录有关联。</data>
+  <data key="d9">文档关联,更新历史</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031652</data>
+  <data key="d13"></data>
+</edge>
+<edge source="UI设计稿" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档与UI设计稿有关联。</data>
+  <data key="d9">文档关联,界面展示</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031652</data>
+  <data key="d13"></data>
+</edge>
+<edge source="应用升级" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档与应用升级规则有关联。</data>
+  <data key="d9">文档关联,配置规则</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031652</data>
+  <data key="d13"></data>
+</edge>
+<edge source="应用安装" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档与应用安装规则有关联。</data>
+  <data key="d9">文档关联,配置规则</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031653</data>
+  <data key="d13"></data>
+</edge>
+<edge source="场景化页面跳转规则" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档与场景化页面跳转规则有关联。</data>
+  <data key="d9">文档关联,页面逻辑</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031653</data>
+  <data key="d13"></data>
+</edge>
+<edge source="场景化页面跳转规则" target="题目正在生成状态">
+  <data key="d7">1.0</data>
+  <data key="d8">当题目正在生成时，用户切换tab或刷新页面后进入AI速练，会显示题目正在生成状态。</data>
+  <data key="d9">page transition</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="场景化页面跳转规则" target="题目生成失败状态">
+  <data key="d7">1.0</data>
+  <data key="d8">当题目生成失败时，用户切换tab或刷新页面后进入AI速练，会显示题目生成失败状态。</data>
+  <data key="d9">page transition</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="场景化页面跳转规则" target="第一题做题页">
+  <data key="d7">1.0</data>
+  <data key="d8">当用户停留在第一题做题页时，切换tab或刷新页面后仍显示第一题做题页。</data>
+  <data key="d9">page transition</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="场景化页面跳转规则" target="第4题做题页">
+  <data key="d7">1.0</data>
+  <data key="d8">当用户在第4题做题页时，切换tab或刷新页面后仍显示第4题做题页。</data>
+  <data key="d9">page transition</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="场景化页面跳转规则" target="第4题的解析页">
+  <data key="d7">1.0</data>
+  <data key="d8">当用户在第4题的解析页时，切换tab或刷新页面后仍显示第4题的解析页。</data>
+  <data key="d9">page transition</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="场景化页面跳转规则" target="继续练习">
+  <data key="d7">1.0</data>
+  <data key="d8">当用户退出后点击继续练习，会进入下一题的做题页。</data>
+  <data key="d9">page transition</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="场景化页面跳转规则" target="AI速练tab">
+  <data key="d7">1.0</data>
+  <data key="d8">当用户在PC端刷新页面后进入AI速练tab，会根据当前状态显示相应页面。</data>
+  <data key="d9">page transition</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="场景化页面跳转规则" target="APP">
+  <data key="d7">1.0</data>
+  <data key="d8">当用户在移动端刷新页面后进入AI速练APP，会根据当前状态显示相应页面。</data>
+  <data key="d9">page transition</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="场景化页面跳转规则" target="PC端进入的页面">
+  <data key="d7">1.0</data>
+  <data key="d8">场景化页面跳转规则决定了用户在不同操作下进入的页面内容，确保用户体验一致。</data>
+  <data key="d9">操作逻辑,界面设计</data>
+  <data key="d10">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="场景化页面跳转规则" target="移动端进入的页面">
+  <data key="d7">1.0</data>
+  <data key="d8">场景化页面跳转规则同样适用于移动端，确保用户在移动设备上的操作流畅性。</data>
+  <data key="d9">操作逻辑,界面设计</data>
+  <data key="d10">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="学习理解偏差" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档描述了学习理解偏差问题。</data>
+  <data key="d9">文档关联,问题描述</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031653</data>
+  <data key="d13"></data>
+</edge>
+<edge source="复习动作" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档描述了复习动作依赖记忆的问题。</data>
+  <data key="d9">文档关联,问题描述</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031653</data>
+  <data key="d13"></data>
+</edge>
+<edge source="系统化引导" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档描述了缺乏系统化引导的问题。</data>
+  <data key="d9">文档关联,问题描述</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031653</data>
+  <data key="d13"></data>
+</edge>
+<edge source="随学随测" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档说明了随学随测的功能目标。</data>
+  <data key="d9">功能目标,文档关联</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="学员自主练习" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档说明了学员自主练习的功能目标。</data>
+  <data key="d9">功能目标,文档关联</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="即时反馈" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档说明了即时反馈的功能特性。</data>
+  <data key="d9">功能特性,文档关联</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="平台管理端--应用配置" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档说明了平台管理端--应用配置的配置位置。</data>
+  <data key="d9">文档关联,配置位置</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="租户管理端--运营配置" target="【PRD】AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">【PRD】AI速练文档说明了租户管理端--运营配置的配置位置。</data>
+  <data key="d9">文档关联,配置位置</data>
+  <data key="d10">chunk-851f22411b8dda6d3780176cf242323f</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="学生" target="倾听">
+  <data key="d7">1.0</data>
+  <data key="d8">倾听是一种针对学生的沟通方式，旨在理解其当前问题而非依赖标签。</data>
+  <data key="d9">沟通方式,问题理解</data>
+  <data key="d10">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031653</data>
+  <data key="d13"></data>
+</edge>
+<edge source="生成成功" target="执行状态">
+  <data key="d7">2.0</data>
+  <data key="d8">当执行状态为生成成功时，用户可以点击【进入练习】进行下一步操作。&lt;SEP&gt;执行状态为“生成成功”时，用户可进行“进入练习”操作。</data>
+  <data key="d9">system status,user action,操作触发,状态变化</data>
+  <data key="d10">chunk-dfc57dd39716799a74d4ddf3716f4184&lt;SEP&gt;chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031653</data>
+  <data key="d13"></data>
+</edge>
+<edge source="生成成功" target="进入练习">
+  <data key="d7">2.0</data>
+  <data key="d8">生成成功后，用户可点击【进入练习】以继续学习流程。&lt;SEP&gt;生成成功后，用户可以点击【进入练习】进行下一步操作。</data>
+  <data key="d9">access to practice,user action,操作路径,用户行为</data>
+  <data key="d10">chunk-dfc57dd39716799a74d4ddf3716f4184&lt;SEP&gt;chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="生成成功" target="页面呈现">
+  <data key="d7">1.0</data>
+  <data key="d8">页面呈现显示生成成功状态，允许用户点击【进入练习】继续操作。</data>
+  <data key="d9">状态展示,用户操作</data>
+  <data key="d10">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="生成成功" target="卡片状态">
+  <data key="d7">1.0</data>
+  <data key="d8">卡片状态在生成成功时提示用户可以点击【进入练习】。</data>
+  <data key="d9">操作指引,状态反馈</data>
+  <data key="d10">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="生成成功" target="输出">
+  <data key="d7">1.0</data>
+  <data key="d8">生成成功后，系统会展示解析内容。</data>
+  <data key="d9">内容展示,结果反馈</data>
+  <data key="d10">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="生成失败" target="执行状态">
+  <data key="d7">2.0</data>
+  <data key="d8">当执行状态为生成失败时，卡片上会显示提示文案并支持重新生成。&lt;SEP&gt;执行状态为“生成失败”时，用户可选择“重新生成”以解决问题。</data>
+  <data key="d9">error handling,system status,操作触发,状态变化</data>
+  <data key="d10">chunk-dfc57dd39716799a74d4ddf3716f4184&lt;SEP&gt;chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="生成失败" target="重新生成">
+  <data key="d7">2.0</data>
+  <data key="d8">生成失败后，用户可选择重新生成以尝试获取有效内容。&lt;SEP&gt;生成失败后，用户可以选择重新生成以解决问题。</data>
+  <data key="d9">retry option,user action,操作路径,用户行为</data>
+  <data key="d10">chunk-dfc57dd39716799a74d4ddf3716f4184&lt;SEP&gt;chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="生成失败" target="页面呈现">
+  <data key="d7">1.0</data>
+  <data key="d8">页面呈现显示生成失败状态，并提供文案提示和重新生成选项。</data>
+  <data key="d9">状态展示,用户指引</data>
+  <data key="d10">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="生成失败" target="卡片状态">
+  <data key="d7">1.0</data>
+  <data key="d8">卡片状态在生成失败时显示文案提示并支持重新生成。</data>
+  <data key="d9">状态反馈,用户指引</data>
+  <data key="d10">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="生成失败" target="提交">
+  <data key="d7">1.0</data>
+  <data key="d8">生成失败后，系统会恢复到提交状态并提示错误信息。</data>
+  <data key="d9">状态恢复,错误处理</data>
+  <data key="d10">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="执行状态" target="提交">
+  <data key="d7">1.0</data>
+  <data key="d8">执行状态反映了提交操作的当前状态。</data>
+  <data key="d9">操作触发,状态控制</data>
+  <data key="d10">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="页面呈现" target="生成中">
+  <data key="d7">1.0</data>
+  <data key="d8">页面呈现显示生成中的状态，向用户提供当前操作的反馈信息。</data>
+  <data key="d9">状态展示,用户反馈</data>
+  <data key="d10">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="卡片状态" target="生成中">
+  <data key="d7">1.0</data>
+  <data key="d8">卡片状态用于反映生成中的系统状态，为用户提供实时反馈。</data>
+  <data key="d9">状态反馈,系统提示</data>
+  <data key="d10">chunk-dfc57dd39716799a74d4ddf3716f4184</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="错误选项" target="选项内容要求">
+  <data key="d7">1.0</data>
+  <data key="d8">选项内容要求规定了错误选项需具有迷惑性和来源于真实误区。</data>
+  <data key="d9">干扰项标准,选项设计</data>
+  <data key="d10">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="错误选项" target="解析">
+  <data key="d7">1.0</data>
+  <data key="d8">解析需要指出错误选项与正确选项之间的差异，并解释选择错误选项意味着走了哪条歧路。</data>
+  <data key="d9">对比分析,路径分析</data>
+  <data key="d10">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="错误选项" target="正确选项">
+  <data key="d7">1.0</data>
+  <data key="d8">错误选项与正确选项在关键点上存在分歧，选择错误选项意味着走上了错误的路径。</data>
+  <data key="d9">关键点差异,概念对比</data>
+  <data key="d10">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="正确选项" target="选项内容要求">
+  <data key="d7">1.0</data>
+  <data key="d8">选项内容要求规定了正确选项需与课程核心知识一致。</data>
+  <data key="d9">答案标准,选项设计</data>
+  <data key="d10">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="单选题" target="题目生成规则">
+  <data key="d7">1.0</data>
+  <data key="d8">题目生成规则对单选题的选项数量和内容有具体要求。</data>
+  <data key="d9">选项规范,题型设计</data>
+  <data key="d10">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="多选题" target="题目生成规则">
+  <data key="d7">1.0</data>
+  <data key="d8">题目生成规则对多选题的选项数量和内容有具体要求。</data>
+  <data key="d9">选项规范,题型设计</data>
+  <data key="d10">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="多选题" target="解析">
+  <data key="d7">1.0</data>
+  <data key="d8">多选题需要生成综合解析，以帮助学员理解自己的选择模式。</data>
+  <data key="d9">内容生成,题目类型</data>
+  <data key="d10">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="多选题" target="学员">
+  <data key="d7">1.0</data>
+  <data key="d8">学员在多选题中表现出答题行为，可能因理解偏差导致误选或漏选。</data>
+  <data key="d9">答题行为,认知偏差</data>
+  <data key="d10">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="判断题" target="题目生成规则">
+  <data key="d7">1.0</data>
+  <data key="d8">题目生成规则对判断题的选项数量有具体要求。</data>
+  <data key="d9">选项规范,题型设计</data>
+  <data key="d10">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="标准答案" target="课程">
+  <data key="d7">1.0</data>
+  <data key="d8">课程提供了题目标准答案，用于判断学员理解是否正确。</data>
+  <data key="d9">assessment,correct response</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031659</data>
+  <data key="d13"></data>
+</edge>
+<edge source="题目解析" target="题目选项">
+  <data key="d7">1.0</data>
+  <data key="d8">题目解析是对题目选项的详细说明和解释。</data>
+  <data key="d9">content support,explanation</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="选项解析" target="课程">
+  <data key="d7">1.0</data>
+  <data key="d8">课程包含对各个选项的详细解析，帮助学员理解正确与错误的原因。</data>
+  <data key="d9">explanation,question analysis</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="题目类型分布规则" target="题目生成规则">
+  <data key="d7">1.0</data>
+  <data key="d8">题目类型分布规则确保题目类型多样，提升测试的全面性。</data>
+  <data key="d9">测试全面性,题型多样性</data>
+  <data key="d10">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="数据存储规则" target="临时存储时间">
+  <data key="d7">2.0</data>
+  <data key="d8">数据存储规则规定了临时存储时间，确保数据在有效期内保留。&lt;SEP&gt;数据存储规则规定了临时存储时间为48小时。</data>
+  <data key="d9">storage duration,存储管理,数据保留</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="用户A" target="视频B">
+  <data key="d7">2.0</data>
+  <data key="d8">用户A的视频B数据仅保留最新版本，反映其最新的学习状态。&lt;SEP&gt;用户A在视频B的数据仅保存最新一份。</data>
+  <data key="d9">data storage,信息更新,数据关联</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031654</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练封面页" target="开始练习">
+  <data key="d7">2.0</data>
+  <data key="d8">点击开始练习按钮后，用户进入AI速练封面页并触发模型执行任务。&lt;SEP&gt;学员在AI速练封面页点击“开始练习”按钮以启动练习。</data>
+  <data key="d9">action trigger,功能触发,用户操作</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练封面页" target="【开始练习】">
+  <data key="d7">1.0</data>
+  <data key="d8">点击【开始练习】按钮后，用户进入AI速练封面页并触发模型执行任务。</data>
+  <data key="d9">action trigger</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练封面页" target="PC刷新页面后进入AI速练tab/APP：退出重新进入AI速练">
+  <data key="d7">1.0</data>
+  <data key="d8">用户在PC端刷新页面后，通过退出并重新进入AI速练，回到封面页。</data>
+  <data key="d9">系统操作,页面重载</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="开始练习" target="触发操作">
+  <data key="d7">1.0</data>
+  <data key="d8">用户点击【开始练习】作为触发AI速练流程的操作。</data>
+  <data key="d9">initiation,user action</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="开始练习" target="生成知识点">
+  <data key="d7">1.0</data>
+  <data key="d8">用户点击开始练习后，模型开始执行生成知识点的任务。</data>
+  <data key="d9">process initiation,task execution</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="开始练习" target="最后一题解析页">
+  <data key="d7">1.0</data>
+  <data key="d8">学员在最后一题解析页可以点击“开始练习”按钮重新开始一轮练习。</data>
+  <data key="d9">用户操作,重新开始</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="第一题做题页" target="【进入练习】">
+  <data key="d7">1.0</data>
+  <data key="d8">点击【进入练习】按钮后，用户进入第一题做题页。</data>
+  <data key="d9">action trigger</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="继续练习" target="第4题做题页">
+  <data key="d7">1.0</data>
+  <data key="d8">点击继续练习按钮后，用户进入第4题做题页。</data>
+  <data key="d9">action trigger</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="继续练习" target="第5题做题页">
+  <data key="d7">2.0</data>
+  <data key="d8">退出后点击继续练习，用户进入第5题做题页。&lt;SEP&gt;学员在第5题做题页可以点击“继续练习”按钮进入下一题。</data>
+  <data key="d9">action trigger,用户操作,页面导航</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855&lt;SEP&gt;chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="继续练习" target="第4题的解析页">
+  <data key="d7">1.0</data>
+  <data key="d8">学员在第4题的解析页可以点击“继续练习”按钮进入下一题。</data>
+  <data key="d9">用户操作,页面导航</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="第4题做题页" target="【继续练习】">
+  <data key="d7">1.0</data>
+  <data key="d8">点击【继续练习】按钮后，用户进入第4题做题页。</data>
+  <data key="d9">action trigger</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="第4题的解析页" target="退出">
+  <data key="d7">1.0</data>
+  <data key="d8">学员在第4题的解析页可以点击“退出”按钮离开当前页面。</data>
+  <data key="d9">用户操作,页面导航</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="第4题的解析页" target="第5题做题页">
+  <data key="d7">2.0</data>
+  <data key="d8">学员从第4题的解析页跳转到第5题做题页。</data>
+  <data key="d9">练习流程,页面跳转</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="APP" target="AI速练功能">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能在APP端可通过视频播放页访问。</data>
+  <data key="d9">access,platform</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="【继续练习】" target="第5题做题页">
+  <data key="d7">1.0</data>
+  <data key="d8">退出后点击【继续练习】，用户进入第5题做题页。</data>
+  <data key="d9">action trigger</data>
+  <data key="d10">chunk-26995ce94e78d0be365dc42239168855</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="视频内容管理页面" target="AI速练功能">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能在视频内容管理页面中显示，取决于是否已开启。</data>
+  <data key="d9">activation,visibility</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="知识图谱tab" target="AI速练功能">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能的入口位于知识图谱tab之后。</data>
+  <data key="d9">access,location</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031655</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练功能" target="Toast提示">
+  <data key="d7">1.0</data>
+  <data key="d8">当AI速练功能未开启时，系统会通过Toast提示告知用户。</data>
+  <data key="d9">notification,system feedback</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练功能" target="PC">
+  <data key="d7">1.0</data>
+  <data key="d8">AI速练功能在PC端可通过视频播放页访问。</data>
+  <data key="d9">access,platform</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="AI速练功能" target="模型生成的最新状态">
+  <data key="d7">1.0</data>
+  <data key="d8">进入AI速练页面需要获取模型生成的最新状态数据。</data>
+  <data key="d9">access requirement,data dependency</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="视频原文" target="答案及解析">
+  <data key="d7">1.0</data>
+  <data key="d8">视频原文是生成答案及解析的输入内容。</data>
+  <data key="d9">content source,input</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="视频原文" target="生成题目">
+  <data key="d7">1.0</data>
+  <data key="d8">视频原文是生成题目的输入内容。</data>
+  <data key="d9">content source,input</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="视频原文" target="生成知识点">
+  <data key="d7">1.0</data>
+  <data key="d8">视频原文是生成知识点的输入内容。</data>
+  <data key="d9">content source,input</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="视频原文" target="知识要点">
+  <data key="d7">1.0</data>
+  <data key="d8">知识要点是从视频原文中提取出的核心学习内容。</data>
+  <data key="d9">content extraction,input source</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="知识点" target="生成知识点">
+  <data key="d7">1.0</data>
+  <data key="d8">模型根据视频原文生成知识点。</data>
+  <data key="d9">content creation,task output</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="题目" target="生成知识点">
+  <data key="d7">1.0</data>
+  <data key="d8">模型根据知识点生成题目。</data>
+  <data key="d9">content creation,task output</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="触发操作" target="输入">
+  <data key="d7">1.0</data>
+  <data key="d8">触发操作会引发输入数据的处理。</data>
+  <data key="d9">操作触发,数据输入</data>
+  <data key="d10">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="生成题目" target="答案及解析">
+  <data key="d7">1.0</data>
+  <data key="d8">模型为每个题目生成答案及解析。</data>
+  <data key="d9">content creation,task output</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="知识要点" target="题目选项">
+  <data key="d7">1.0</data>
+  <data key="d8">题目选项是基于知识要点生成的测试内容。</data>
+  <data key="d9">content generation,dependency</data>
+  <data key="d10">chunk-5a0540dbc05bbd3a0b12650b5d7289fb</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="知识要点" target="题干">
+  <data key="d7">1.0</data>
+  <data key="d8">知识要点是题干中所涉及的核心内容。</data>
+  <data key="d9">内容关联,题目背景</data>
+  <data key="d10">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="知识颗粒度规则" target="题目生成规则">
+  <data key="d7">1.0</data>
+  <data key="d8">知识颗粒度规则为题目生成提供了知识点划分的标准，确保题目紧扣知识点。</data>
+  <data key="d9">知识点划分,题目设计标准</data>
+  <data key="d10">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031656</data>
+  <data key="d13"></data>
+</edge>
+<edge source="字幕噪音处理规则" target="题目生成规则">
+  <data key="d7">1.0</data>
+  <data key="d8">字幕噪音处理规则有助于提高题目内容的清晰度和相关性。</data>
+  <data key="d9">信息过滤,内容清晰</data>
+  <data key="d10">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="成人培训" target="出题导向">
+  <data key="d7">1.0</data>
+  <data key="d8">成人培训要求题目设计符合实际工作场景，重点考察应用能力。</data>
+  <data key="d9">学习者定位,能力考察</data>
+  <data key="d10">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="题目难度要求" target="出题导向">
+  <data key="d7">1.0</data>
+  <data key="d8">题目难度要求与出题导向一致，确保题目难度适中，侧重理解与应用。</data>
+  <data key="d9">能力评估,难度控制</data>
+  <data key="d10">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="场景化要求" target="题目生成规则">
+  <data key="d7">1.0</data>
+  <data key="d8">场景化要求指导题目设计，增强题目与实际工作的关联性。</data>
+  <data key="d9">应用测试,情境设计</data>
+  <data key="d10">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="题目表达风格" target="题目生成规则">
+  <data key="d7">1.0</data>
+  <data key="d8">题目表达风格影响题目设计，确保语言专业、清晰、自然。</data>
+  <data key="d9">表达清晰,语言规范</data>
+  <data key="d10">chunk-399bea09d83a82edfa20b044057b1766</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="学员选择" target="正确答案">
+  <data key="d7">2.0</data>
+  <data key="d8">学员选择与正确答案之间的差异可以反映出其认知偏差和思维倾向。&lt;SEP&gt;正确答案与学员选择之间存在差异，需分析其关键区别以帮助学员理解。</data>
+  <data key="d9">判断标准,差异分析,认知偏差,选择分析</data>
+  <data key="d10">chunk-a0d6678d20e38131c14ac6f12ebe0bf0&lt;SEP&gt;chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031657</data>
+  <data key="d13"></data>
+</edge>
+<edge source="选项" target="正确答案">
+  <data key="d7">1.0</data>
+  <data key="d8">选项与正确答案之间存在正确与错误的区别。</data>
+  <data key="d9">正确性判断,选项对比</data>
+  <data key="d10">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="输入" target="输出">
+  <data key="d7">1.0</data>
+  <data key="d8">输入数据经过处理后生成输出内容。</data>
+  <data key="d9">数据处理,结果生成</data>
+  <data key="d10">chunk-a0d6678d20e38131c14ac6f12ebe0bf0</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="退出" target="最后一题解析页">
+  <data key="d7">1.0</data>
+  <data key="d8">学员在最后一题解析页可以点击“退出”按钮离开当前页面。</data>
+  <data key="d9">用户操作,页面导航</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="第5题做题页" target="保持在最后一题的解析页">
+  <data key="d7">1.0</data>
+  <data key="d8">学员在完成第5题后可能停留在最后一题的解析页。</data>
+  <data key="d9">流程控制,页面状态</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031658</data>
+  <data key="d13"></data>
+</edge>
+<edge source="视频播放页-AI速练-全流程" target="H5端">
+  <data key="d7">1.0</data>
+  <data key="d8">H5端支持视频播放页-AI速练-全流程页面。</data>
+  <data key="d9">平台支持,页面适配</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031659</data>
+  <data key="d13"></data>
+</edge>
+<edge source="视频播放页-AI速练-全流程" target="app--学习公社6.0">
+  <data key="d7">1.0</data>
+  <data key="d8">app--学习公社6.0支持视频播放页-AI速练-全流程页面。</data>
+  <data key="d9">平台支持,页面适配</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031659</data>
+  <data key="d13"></data>
+</edge>
+<edge source="视频播放页-AI速练-全流程" target="APP--中教网院(新)">
+  <data key="d7">1.0</data>
+  <data key="d8">APP--中教网院(新)支持视频播放页-AI速练-全流程页面。</data>
+  <data key="d9">平台支持,页面适配</data>
+  <data key="d10">chunk-a2458499b83888d1518caee7f740d4ec</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031659</data>
+  <data key="d13"></data>
+</edge>
+<edge source="倾听的四个核心维度" target="辅导员">
+  <data key="d7">1.0</data>
+  <data key="d8">辅导员需要关注倾听的四个核心维度以全面了解学生的心理状态。</data>
+  <data key="d9">professional focus,psychological understanding</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031659</data>
+  <data key="d13"></data>
+</edge>
+<edge source="倾听的四个核心维度" target="学生经历">
+  <data key="d7">1.0</data>
+  <data key="d8">学生经历是倾听的四个核心维度之一，用于分析事件的来龙去脉。</data>
+  <data key="d9">component,event analysis</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031659</data>
+  <data key="d13"></data>
+</edge>
+<edge source="倾听的四个核心维度" target="学生想法">
+  <data key="d7">1.0</data>
+  <data key="d8">学生想法是倾听的四个核心维度之一，用于理解学生的认知和态度。</data>
+  <data key="d9">cognitive understanding,component</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031659</data>
+  <data key="d13"></data>
+</edge>
+<edge source="倾听的四个核心维度" target="学生行为表现">
+  <data key="d7">1.0</data>
+  <data key="d8">学生行为表现是倾听的四个核心维度之一，用于分析学生的行为模式。</data>
+  <data key="d9">behavioral analysis,component</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031659</data>
+  <data key="d13"></data>
+</edge>
+<edge source="倾听的四个核心维度" target="学生情绪">
+  <data key="d7">1.0</data>
+  <data key="d8">学生情绪是倾听的四个核心维度之一，用于洞察学生的内心状态。</data>
+  <data key="d9">component,emotional insight</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="倾听的四个核心维度" target="选项A">
+  <data key="d7">1.0</data>
+  <data key="d8">选项A正确涵盖了倾听的四个核心维度。</data>
+  <data key="d9">comprehensive coverage,correct answer</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="倾听的四个核心维度" target="选项B">
+  <data key="d7">1.0</data>
+  <data key="d8">选项B不正确，因为它关注的是外部因素而非核心维度。</data>
+  <data key="d9">external factors,incorrect answer</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="倾听的四个核心维度" target="选项C">
+  <data key="d7">1.0</data>
+  <data key="d8">选项C不正确，因为它关注的是外部成就而非核心维度。</data>
+  <data key="d9">external achievements,incorrect answer</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="倾听的四个核心维度" target="选项D">
+  <data key="d7">1.0</data>
+  <data key="d8">选项D不正确，因为它关注的是静态特征而非核心维度。</data>
+  <data key="d9">incorrect answer,static characteristics</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="倾听的四个核心维度" target="课程">
+  <data key="d7">1.0</data>
+  <data key="d8">课程详细讲解了辅导员在倾听时应关注的四个核心维度。</data>
+  <data key="d9">educational content,key focus areas</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="课程" target="题型">
+  <data key="d7">1.0</data>
+  <data key="d8">课程中的题目具有特定的题型，即单选题。</data>
+  <data key="d9">assessment format,question type</data>
+  <data key="d10">chunk-cf672fb1f930a2ef1f5a98a94537da1a</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="综合解析" target="核心判断原则">
+  <data key="d7">1.0</data>
+  <data key="d8">综合解析通过提炼核心判断原则，为学员提供可迁移的认知标准。</data>
+  <data key="d9">总结提炼,教学引导</data>
+  <data key="d10">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="综合解析" target="题目内容">
+  <data key="d7">1.0</data>
+  <data key="d8">综合解析基于题目内容生成，为学员提供针对性的教学反馈。</data>
+  <data key="d9">内容关联,教学反馈</data>
+  <data key="d10">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="综合解析" target="选项逐项解析">
+  <data key="d7">1.0</data>
+  <data key="d8">选项逐项解析为综合解析提供了详细的分析基础和逻辑支撑。</data>
+  <data key="d9">分析基础,逻辑支撑</data>
+  <data key="d10">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="综合解析" target="教学引导感">
+  <data key="d7">1.0</data>
+  <data key="d8">综合解析通过教学引导感增强与学员的互动性和理解力。</data>
+  <data key="d9">互动性,表达方式</data>
+  <data key="d10">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031660</data>
+  <data key="d13"></data>
+</edge>
+<edge source="综合解析" target="核心判断标准">
+  <data key="d7">1.0</data>
+  <data key="d8">综合解析最终提炼出核心判断标准，作为学员的学习目标。</data>
+  <data key="d9">学习目标,总结提炼</data>
+  <data key="d10">chunk-e95839d86ed20f389b56a1dfa77cac63</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780031661</data>
+  <data key="d13"></data>
+</edge>
+</graph></graphml>

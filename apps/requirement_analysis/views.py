@@ -34,7 +34,8 @@ from django.db import models
 from .models import (
     RequirementDocument, RequirementAnalysis, BusinessRequirement,
     GeneratedTestCase, AnalysisTask, AIModelConfig, PromptConfig, TestCaseGenerationTask,
-    GenerationConfig, AIModelService, TestTemplateConfig, TestTemplateCategory
+    GenerationConfig, AIModelService, TestTemplateConfig, TestTemplateCategory,
+    KnowledgeGraph, KnowledgeGraphQueryHistory, KnowledgeGraphBuildTask
 )
 
 # 导入知识库相关模型

@@ -1,0 +1,976 @@
+{
+  "执行状态<SEP>识别异常": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044139,
+    "update_time": 1780044139,
+    "_id": "执行状态<SEP>识别异常"
+  },
+  "前置条件<SEP>直接查询知识库": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044139,
+    "update_time": 1780044139,
+    "_id": "前置条件<SEP>直接查询知识库"
+  },
+  "任务目标<SEP>直接查询知识库": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044139,
+    "update_time": 1780044139,
+    "_id": "任务目标<SEP>直接查询知识库"
+  },
+  "直接查询知识库<SEP>输入": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044139,
+    "update_time": 1780044139,
+    "_id": "直接查询知识库<SEP>输入"
+  },
+  "用户输入的问题知识库没有<SEP>识别异常": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "用户输入的问题知识库没有<SEP>识别异常"
+  },
+  "帮助中心<SEP>执行状态": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "帮助中心<SEP>执行状态"
+  },
+  "API查询<SEP>前置条件": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "API查询<SEP>前置条件"
+  },
+  "API查询<SEP>任务目标": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "API查询<SEP>任务目标"
+  },
+  "查询范围<SEP>直接查询知识库": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "查询范围<SEP>直接查询知识库"
+  },
+  "用户只输入符号或者空格<SEP>识别异常": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "用户只输入符号或者空格<SEP>识别异常"
+  },
+  "前置条件<SEP>模型输出": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "前置条件<SEP>模型输出"
+  },
+  "没有问题只有情绪化表达<SEP>识别异常": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "没有问题只有情绪化表达<SEP>识别异常"
+  },
+  "任务目标<SEP>模型输出": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "任务目标<SEP>模型输出"
+  },
+  "直接查询知识库<SEP>输出": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "直接查询知识库<SEP>输出"
+  },
+  "API查询<SEP>查询范围": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "API查询<SEP>查询范围"
+  },
+  "Toast提示<SEP>输入框": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "Toast提示<SEP>输入框"
+  },
+  "模型输出<SEP>输入": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "模型输出<SEP>输入"
+  },
+  "后台日志<SEP>用户与智能体": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "后台日志<SEP>用户与智能体"
+  },
+  "API查询<SEP>输出": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "API查询<SEP>输出"
+  },
+  "LLM语义识别<SEP>意图识别": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "LLM语义识别<SEP>意图识别"
+  },
+  "意图识别<SEP>标准问题": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "意图识别<SEP>标准问题"
+  },
+  "模型输出<SEP>输出": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044140,
+    "update_time": 1780044140,
+    "_id": "模型输出<SEP>输出"
+  },
+  "后台日志<SEP>每一轮完整的问答流程": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "后台日志<SEP>每一轮完整的问答流程"
+  },
+  "LLM语义识别<SEP>提示词": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "LLM语义识别<SEP>提示词"
+  },
+  "执行状态<SEP>模型输出": {
+    "chunk_ids": [
+      "chunk-b164ec144ee727f1d54c57b81b3b9547"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "执行状态<SEP>模型输出"
+  },
+  "培训项目问答意图识别助手<SEP>用户问题": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce",
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 2,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "培训项目问答意图识别助手<SEP>用户问题"
+  },
+  "标准问题<SEP>置信度": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "标准问题<SEP>置信度"
+  },
+  "培训项目智能问答系统<SEP>意图识别": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "培训项目智能问答系统<SEP>意图识别"
+  },
+  "Toast提示<SEP>点击输入框": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "Toast提示<SEP>点击输入框"
+  },
+  "日志详情<SEP>智能体": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "日志详情<SEP>智能体"
+  },
+  "学员端<SEP>消息体": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "学员端<SEP>消息体"
+  },
+  "API<SEP>标准问题": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "API<SEP>标准问题"
+  },
+  "敏感信息和标注<SEP>项目问答技能": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "敏感信息和标注<SEP>项目问答技能"
+  },
+  "LLM语义识别<SEP>意图识别提示词": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "LLM语义识别<SEP>意图识别提示词"
+  },
+  "日志详情<SEP>标注按钮": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "日志详情<SEP>标注按钮"
+  },
+  "培训项目智能问答系统<SEP>培训项目问答意图识别助手": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "培训项目智能问答系统<SEP>培训项目问答意图识别助手"
+  },
+  "标准问题<SEP>知识库": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce",
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 2,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "标准问题<SEP>知识库"
+  },
+  "学员端<SEP>重新生成按钮": {
+    "chunk_ids": [
+      "chunk-d85b1016b3726e808064537af4cfc4ce"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "学员端<SEP>重新生成按钮"
+  },
+  "PRD<SEP>项目智能体": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "PRD<SEP>项目智能体"
+  },
+  "API查询<SEP>项目问答技能": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "API查询<SEP>项目问答技能"
+  },
+  "培训项目<SEP>运营": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044141,
+    "update_time": 1780044141,
+    "_id": "培训项目<SEP>运营"
+  },
+  "培训项目<SEP>教务": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044142,
+    "update_time": 1780044142,
+    "_id": "培训项目<SEP>教务"
+  },
+  "规则处理<SEP>项目问答技能": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044142,
+    "update_time": 1780044142,
+    "_id": "规则处理<SEP>项目问答技能"
+  },
+  "培训项目<SEP>技术部": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044142,
+    "update_time": 1780044142,
+    "_id": "培训项目<SEP>技术部"
+  },
+  "大语言模型<SEP>项目问答技能": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044142,
+    "update_time": 1780044142,
+    "_id": "大语言模型<SEP>项目问答技能"
+  },
+  "知识库<SEP>项目问答技能": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044142,
+    "update_time": 1780044142,
+    "_id": "知识库<SEP>项目问答技能"
+  },
+  "PRD<SEP>【PRD】项目智能体-项目问答技能.docx": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044142,
+    "update_time": 1780044142,
+    "_id": "PRD<SEP>【PRD】项目智能体-项目问答技能.docx"
+  },
+  "208<SEP>文档ID": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044142,
+    "update_time": 1780044142,
+    "_id": "208<SEP>文档ID"
+  },
+  "租户运营端<SEP>项目问答技能": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044142,
+    "update_time": 1780044142,
+    "_id": "租户运营端<SEP>项目问答技能"
+  },
+  "团队协作<SEP>达标": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044142,
+    "update_time": 1780044142,
+    "_id": "团队协作<SEP>达标"
+  },
+  "执行状态<SEP>输出正常": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "执行状态<SEP>输出正常"
+  },
+  "独立智能体<SEP>项目问答技能": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "独立智能体<SEP>项目问答技能"
+  },
+  "技能类型<SEP>项目问答技能": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "技能类型<SEP>项目问答技能"
+  },
+  "独立智能体<SEP>第三方技能": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "独立智能体<SEP>第三方技能"
+  },
+  "当前查询人数较多<SEP>调用模型超时": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "当前查询人数较多<SEP>调用模型超时"
+  },
+  "执行状态<SEP>输出异常": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "执行状态<SEP>输出异常"
+  },
+  "API查询结果<SEP>培训项目智能问答内容整合助手": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "API查询结果<SEP>培训项目智能问答内容整合助手"
+  },
+  "RAG召回结果<SEP>培训项目智能问答内容整合助手": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "RAG召回结果<SEP>培训项目智能问答内容整合助手"
+  },
+  "API事实回答模式<SEP>API查询结果": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "API事实回答模式<SEP>API查询结果"
+  },
+  "历史会话<SEP>项目问答技能": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "历史会话<SEP>项目问答技能"
+  },
+  "助学<SEP>技能类型": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "助学<SEP>技能类型"
+  },
+  "API + RAG融合回答模式<SEP>API查询结果": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "API + RAG融合回答模式<SEP>API查询结果"
+  },
+  "RAG召回结果<SEP>RAG教学回答模式": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "RAG召回结果<SEP>RAG教学回答模式"
+  },
+  "后台日志<SEP>项目问答技能": {
+    "chunk_ids": [
+      "chunk-741aa075151caf61c242ba45c9118c86"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "后台日志<SEP>项目问答技能"
+  },
+  "API查询结果<SEP>用户问题": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044143,
+    "update_time": 1780044143,
+    "_id": "API查询结果<SEP>用户问题"
+  },
+  "API查询结果<SEP>业务事实信息": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "API查询结果<SEP>业务事实信息"
+  },
+  "RAG教学回答模式<SEP>教学化表达": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "RAG教学回答模式<SEP>教学化表达"
+  },
+  "RAG召回结果<SEP>用户问题": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "RAG召回结果<SEP>用户问题"
+  },
+  "API查询结果<SEP>系统字段": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "API查询结果<SEP>系统字段"
+  },
+  "客服式<SEP>情绪价值": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "客服式<SEP>情绪价值"
+  },
+  "RAG教学回答模式<SEP>结构化说明": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "RAG教学回答模式<SEP>结构化说明"
+  },
+  "API + RAG融合回答模式<SEP>RAG召回结果": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "API + RAG融合回答模式<SEP>RAG召回结果"
+  },
+  "前置课程<SEP>项目作业": {
+    "chunk_ids": [
+      "chunk-55ca6172f050e20c010f7ae3c4eb04a4"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "前置课程<SEP>项目作业"
+  },
+  "RAG教学回答模式<SEP>专业助教式": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "RAG教学回答模式<SEP>专业助教式"
+  },
+  "API<SEP>系统": {
+    "chunk_ids": [
+      "chunk-55ca6172f050e20c010f7ae3c4eb04a4"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "API<SEP>系统"
+  },
+  "RAG教学回答模式<SEP>自然口语化": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "RAG教学回答模式<SEP>自然口语化"
+  },
+  "API + RAG融合回答模式<SEP>建议动作": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "API + RAG融合回答模式<SEP>建议动作"
+  },
+  "当前项目作业<SEP>课程学习进度": {
+    "chunk_ids": [
+      "chunk-55ca6172f050e20c010f7ae3c4eb04a4"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "当前项目作业<SEP>课程学习进度"
+  },
+  "RAG<SEP>系统": {
+    "chunk_ids": [
+      "chunk-55ca6172f050e20c010f7ae3c4eb04a4"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "RAG<SEP>系统"
+  },
+  "测试集<SEP>项目问答技能测试集": {
+    "chunk_ids": [
+      "chunk-55ca6172f050e20c010f7ae3c4eb04a4"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "测试集<SEP>项目问答技能测试集"
+  },
+  "5月10日20:00<SEP>项目作业": {
+    "chunk_ids": [
+      "chunk-55ca6172f050e20c010f7ae3c4eb04a4"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "5月10日20:00<SEP>项目作业"
+  },
+  "RAG召回结果<SEP>前置课程": {
+    "chunk_ids": [
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "RAG召回结果<SEP>前置课程"
+  },
+  "API查询<SEP>培训项目问答意图识别助手": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044144,
+    "update_time": 1780044144,
+    "_id": "API查询<SEP>培训项目问答意图识别助手"
+  },
+  "知识库<SEP>系统": {
+    "chunk_ids": [
+      "chunk-55ca6172f050e20c010f7ae3c4eb04a4"
+    ],
+    "count": 1,
+    "create_time": 1780044145,
+    "update_time": 1780044145,
+    "_id": "知识库<SEP>系统"
+  },
+  "用户问题<SEP>系统": {
+    "chunk_ids": [
+      "chunk-55ca6172f050e20c010f7ae3c4eb04a4"
+    ],
+    "count": 1,
+    "create_time": 1780044145,
+    "update_time": 1780044145,
+    "_id": "用户问题<SEP>系统"
+  },
+  "培训项目问答意图识别助手<SEP>知识库查询": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044145,
+    "update_time": 1780044145,
+    "_id": "培训项目问答意图识别助手<SEP>知识库查询"
+  },
+  "API +知识库查询融合<SEP>培训项目问答意图识别助手": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044145,
+    "update_time": 1780044145,
+    "_id": "API +知识库查询融合<SEP>培训项目问答意图识别助手"
+  },
+  "标准问题<SEP>用户问题": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044145,
+    "update_time": 1780044145,
+    "_id": "标准问题<SEP>用户问题"
+  },
+  "意图理解优先原则<SEP>用户问题": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044145,
+    "update_time": 1780044145,
+    "_id": "意图理解优先原则<SEP>用户问题"
+  },
+  "标准问题<SEP>直接匹配规则": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044145,
+    "update_time": 1780044145,
+    "_id": "标准问题<SEP>直接匹配规则"
+  },
+  "操作类<SEP>用户问题": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "操作类<SEP>用户问题"
+  },
+  "标准问题<SEP>语义匹配规则": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "标准问题<SEP>语义匹配规则"
+  },
+  "用户问题<SEP>规则/说明类": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "用户问题<SEP>规则/说明类"
+  },
+  "标准问题<SEP>模糊匹配规则": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "标准问题<SEP>模糊匹配规则"
+  },
+  "rag召回<SEP>知识库": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "rag召回<SEP>知识库"
+  },
+  "异常情况类<SEP>用户问题": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "异常情况类<SEP>用户问题"
+  },
+  "上下文匹配规则<SEP>标准问题": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "上下文匹配规则<SEP>标准问题"
+  },
+  "内容/数据查询类<SEP>用户问题": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "内容/数据查询类<SEP>用户问题"
+  },
+  "帮助中心<SEP>知识库": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "帮助中心<SEP>知识库"
+  },
+  "培训项目<SEP>培训项目问答意图识别助手": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "培训项目<SEP>培训项目问答意图识别助手"
+  },
+  "培训项目问答意图识别助手<SEP>系统": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "培训项目问答意图识别助手<SEP>系统"
+  },
+  "兜底规则<SEP>标准问题": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "兜底规则<SEP>标准问题"
+  },
+  "用户<SEP>系统": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "用户<SEP>系统"
+  },
+  "知识库<SEP>问题类型": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "知识库<SEP>问题类型"
+  },
+  "混合查询<SEP>用户问题": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044146,
+    "update_time": 1780044146,
+    "_id": "混合查询<SEP>用户问题"
+  },
+  "帮助中心<SEP>用户": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044147,
+    "update_time": 1780044147,
+    "_id": "帮助中心<SEP>用户"
+  },
+  "rag召回<SEP>用户问题": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044147,
+    "update_time": 1780044147,
+    "_id": "rag召回<SEP>用户问题"
+  },
+  "rag召回<SEP>帮助中心": {
+    "chunk_ids": [
+      "chunk-2f786015ed1d47bfe217b52c3925b996"
+    ],
+    "count": 1,
+    "create_time": 1780044147,
+    "update_time": 1780044147,
+    "_id": "rag召回<SEP>帮助中心"
+  }
+}

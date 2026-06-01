@@ -538,7 +538,6 @@ onMounted(() => {
 }
 
 .card-container {
-  flex: 1;
   background: #ffffff;
   border: 1px solid rgba(147, 112, 219, 0.12);
   border-radius: 12px;
@@ -546,12 +545,13 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 16px 24px 24px;
+  padding: 16px 24px 0;
 }
 
 .table-wrapper {
   flex: 1;
   overflow: auto;
+  margin-bottom: 8px;
 }
 
 // 自定义表格样式

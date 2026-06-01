@@ -1,7 +1,10 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import DataFactoryViewSet
-from .excel_filler_view import analyze_excel_template, fill_excel_data, preview_filled_data
+from .excel_filler_view import (
+    analyze_excel_template, fill_excel_data, preview_filled_data,
+    generate_module_course_data,
+)
 # Bug 分析相关视图
 from .bug_analysis_view import (
     analyze_bug_excel,
@@ -29,6 +32,9 @@ urlpatterns = [
     path('excel-filler/analyze/', analyze_excel_template, name='excel-filler-analyze'),
     path('excel-filler/fill/', fill_excel_data, name='excel-filler-fill'),
     path('excel-filler/preview/', preview_filled_data, name='excel-filler-preview'),
+
+    # 模块课程数据生成（按模块导入点播课）
+    path('module-course/generate/', generate_module_course_data, name='module-course-generate'),
 
     # === Bug 分析核心接口 (原有) ===
     path('bug-analysis/analyze/', analyze_bug_excel, name='bug-analysis-analyze'),

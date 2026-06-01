@@ -584,6 +584,9 @@ export default {
       description: 'Description',
       addRow: 'Add Row',
       selectFile: 'Select File',
+      reselectFile: 'Reselect',
+      noFileSelected: 'No file selected',
+      pleaseReselect: 'Please reselect',
       referDataFactory: 'Reference Data Factory',
       insertDynamicVariable: 'Insert Dynamic Variable',
       variableHelper: 'Variable Helper (Click to Insert)',
@@ -764,6 +767,7 @@ export default {
     success: {
       create: 'Created successfully',
       update: 'Updated successfully',
+      updateSuccess: 'Updated successfully',
       delete: 'Deleted successfully',
       save: 'Saved successfully',
       saveSuccess: 'Saved successfully',

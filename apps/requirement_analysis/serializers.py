@@ -2,7 +2,8 @@ from rest_framework import serializers
 from .models import (
     RequirementDocument, RequirementAnalysis, BusinessRequirement,
     GeneratedTestCase, AnalysisTask, AIModelConfig, PromptConfig, TestCaseGenerationTask,
-    GenerationConfig, TestTemplateConfig, TestTemplateCategory
+    GenerationConfig, TestTemplateConfig, TestTemplateCategory,
+    KnowledgeGraph, KnowledgeGraphQueryHistory, KnowledgeGraphBuildTask
 )
 
 
@@ -112,6 +113,14 @@ class DocumentUploadSerializer(serializers.ModelSerializer):
             validated_data['document_type'] = 'txt'
         elif file.name.lower().endswith('.md'):
             validated_data['document_type'] = 'md'
+        elif file.name.lower().endswith('.png'):
+            validated_data['document_type'] = 'png'
+        elif file.name.lower().endswith('.jpg'):
+            validated_data['document_type'] = 'jpg'
+        elif file.name.lower().endswith('.jpeg'):
+            validated_data['document_type'] = 'jpeg'
+        elif file.name.lower().endswith('.gif'):
+            validated_data['document_type'] = 'gif'
         
         # 设置文件大小
         validated_data['file_size'] = file.size
@@ -417,3 +426,123 @@ class TestTemplateMatchTestSerializer(serializers.Serializer):
 
 
 # ==================== 测试模板配置序列化器结束 ====================
+
+
+# ==================== LightRAG 知识图谱序列化器 ====================
+
+class KnowledgeGraphSerializer(serializers.ModelSerializer):
+    """知识图谱序列化器"""
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.username', read_only=True)
+    project_name = serializers.CharField(source='project.name', read_only=True)
+    document_count = serializers.SerializerMethodField()
+    is_public = serializers.BooleanField(default=False)
+    public_access_level = serializers.ChoiceField(
+        choices=[('read', '只读'), ('write', '可编辑')],
+        default='read'
+    )
+    graph_id = serializers.CharField(source='get_graph_id', read_only=True)
+
+    class Meta:
+        model = KnowledgeGraph
+        fields = [
+            'id', 'graph_id', 'name', 'description', 'project', 'project_name',
+            'status', 'status_display', 'node_count', 'edge_count', 'document_count',
+            'build_started_at', 'build_completed_at', 'build_error_message',
+            'created_by', 'created_by_name', 'created_at', 'updated_at',
+            'is_public', 'public_access_level'
+        ]
+        read_only_fields = [
+            'node_count', 'edge_count', 'build_started_at',
+            'build_completed_at', 'build_error_message', 'created_by'
+        ]
+
+    def get_document_count(self, obj):
+        """获取关联文档数量"""
+        return obj.documents.count()
+
+    def get_graph_id(self, obj):
+        """获取图谱存储ID"""
+        return obj.get_graph_id()
+
+
+class KnowledgeGraphBuildRequestSerializer(serializers.Serializer):
+    """知识图谱构建请求序列化器"""
+    document_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=True,
+        min_length=1,
+        help_text='需求文档ID列表'
+    )
+
+
+class KnowledgeGraphQuerySerializer(serializers.Serializer):
+    """知识图谱查询请求序列化器"""
+    question = serializers.CharField(
+        required=True,
+        min_length=1,
+        max_length=2000,
+        help_text='查询问题'
+    )
+    mode = serializers.ChoiceField(
+        choices=[('local', '局部查询'), ('global', '全局查询'), ('mix', '混合查询')],
+        default='mix',
+        help_text='查询模式'
+    )
+
+
+class KnowledgeGraphStatsSerializer(serializers.Serializer):
+    """知识图谱统计信息序列化器"""
+    graph_id = serializers.IntegerField()
+    name = serializers.CharField()
+    status = serializers.CharField()
+    has_graph = serializers.BooleanField()
+    nodes = serializers.IntegerField()
+    edges = serializers.IntegerField()
+    documents = serializers.IntegerField()
+    created_at = serializers.DateTimeField()
+    build_completed_at = serializers.DateTimeField()
+
+
+class KnowledgeGraphVersionCompareSerializer(serializers.Serializer):
+    """知识图谱版本对比请求序列化器"""
+    base_version = serializers.CharField(
+        required=True,
+        max_length=20,
+        help_text='基准版本，如 V1'
+    )
+    compare_version = serializers.CharField(
+        required=True,
+        max_length=20,
+        help_text='对比版本，如 V3'
+    )
+
+
+class KnowledgeGraphQueryHistorySerializer(serializers.ModelSerializer):
+    """知识图谱查询历史序列化器"""
+    mode_display = serializers.CharField(source='get_mode_display', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.username', read_only=True)
+    
+    class Meta:
+        model = KnowledgeGraphQueryHistory
+        fields = [
+            'id', 'question', 'answer', 'mode', 'mode_display',
+            'query_time', 'created_at', 'created_by_name'
+        ]
+
+
+class KnowledgeGraphBuildTaskSerializer(serializers.ModelSerializer):
+    """知识图谱构建任务序列化器"""
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    graph_name = serializers.CharField(source='graph.name', read_only=True)
+    
+    class Meta:
+        model = KnowledgeGraphBuildTask
+        fields = [
+            'id', 'task_id', 'graph', 'graph_name', 'status', 'status_display',
+            'progress', 'current_document', 'error_message',
+            'started_at', 'completed_at', 'created_at'
+        ]
+
+
+# ==================== LightRAG 知识图谱序列化器结束 ====================

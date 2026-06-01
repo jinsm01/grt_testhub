@@ -222,6 +222,9 @@ if DEBUG:
         "http://127.0.0.1:4173",
         "http://192.168.3.120:4173",
         "http://192.168.3.120:5173",
+        "http://192.168.60.138:3000",
+        "http://192.168.60.138:5173",
+        "http://192.168.60.138:4173",
     ]
     CORS_ALLOW_CREDENTIALS = True
     # 支持EventSource (SSE) 的额外CORS头部
@@ -261,6 +264,9 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:4173",
     "http://127.0.0.1:4173",
     "http://192.168.3.120:4173",
+    "http://192.168.60.138:3000",
+    "http://192.168.60.138:5173",
+    "http://192.168.60.138:4173",
 ]
 
 # Spectacular Settings
@@ -352,6 +358,11 @@ LOGGING = {
             'propagate': True,
         },
         'apps.api_testing.views': {
+            'handlers': ['file', 'error_file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'apps.api_testing.ai_scene_generator': {
             'handlers': ['file', 'error_file', 'console'],
             'level': 'INFO',
             'propagate': True,

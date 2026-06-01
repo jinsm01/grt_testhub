@@ -182,19 +182,18 @@ class TestCaseCreateSerializer(serializers.ModelSerializer):
                 if user:
                     validated_data['author'] = user
                 else:
-                    # 如果找不到用户，使用当前登录用户作为作者
-                    if request_user:
-                        validated_data['author'] = request_user
-                    else:
-                        # 如果仍然没有作者，抛出错误
-                        raise serializers.ValidationError(f"无法找到作者 '{author_name}' 对应的用户，且没有可用的当前用户")
+                    # 如果找不到用户，直接报错，不允许导入
+                    raise serializers.ValidationError(f"创建人 '{author_name}' 不存在于平台，请先添加该用户或检查用户名是否正确")
+            except serializers.ValidationError:
+                raise
             except Exception as e:
                 import logging
                 logger = logging.getLogger(__name__)
                 logger.error(f"Error finding user for author_name {author_name}: {e}")
-                # 发生异常时，也尝试使用当前用户
-                if request_user:
-                    validated_data['author'] = request_user
+                raise serializers.ValidationError(f"查找创建人 '{author_name}' 时发生错误: {str(e)}")
+        else:
+            # 如果没有指定作者，直接报错，不允许导入
+            raise serializers.ValidationError("创建人不能为空，请填写创建人字段")
 
         # 如果指定了创建时间，设置创建时间
         if created_at:

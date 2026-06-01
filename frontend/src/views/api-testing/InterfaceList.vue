@@ -92,6 +92,11 @@
               <span>{{ row.created_by?.username || '-' }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="更新时间" width="200" header-align="center" align="center">
+            <template #default="{ row }">
+              <span>{{ row.updated_at ? new Date(row.updated_at).toLocaleString() : '-' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" width="200" fixed="right" header-align="center" align="center">
             <template #default="{ row }">
               <div class="action-buttons">
@@ -283,9 +288,31 @@ const loadRequests = async () => {
     const requests = res.data.results || res.data || []
     const count = res.data.count !== undefined ? res.data.count : requests.length
 
+    // 去重：根据接口名称去重，保留最近更新的数据（updated_at 更大的）
+    const requestMap = new Map()
+    for (const request of requests) {
+      const existing = requestMap.get(request.name)
+      if (!existing) {
+        requestMap.set(request.name, request)
+      } else {
+        // 如果已存在，比较 updated_at，保留最近更新的
+        const existingTime = new Date(existing.updated_at || 0).getTime()
+        const currentTime = new Date(request.updated_at || 0).getTime()
+        if (currentTime > existingTime) {
+          requestMap.set(request.name, request)
+        }
+      }
+    }
+    const uniqueRequests = Array.from(requestMap.values())
+
+    console.log('接口列表去重:', requests.length, '->', uniqueRequests.length, '条')
+    if (requests.length !== uniqueRequests.length) {
+      console.log('重复数据:', requests.filter(r => requests.filter(x => x.name === r.name).length > 1).map(r => ({ id: r.id, name: r.name })))
+    }
+
     // 填充接口列表（用于表格展示）
-    interfaceList.value = requests
-    total.value = count
+    interfaceList.value = uniqueRequests
+    total.value = uniqueRequests.length
 
     // 将请求添加到对应集合中
     requests.forEach(request => {
@@ -817,12 +844,13 @@ const createCollection = async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 16px;
+  padding: 6px 0;
   border-radius: 4px;
   font-size: 13px;
   font-weight: 500;
   transition: all 0.3s ease;
   white-space: nowrap;
+  width: 72px;
 
   &.get {
     background: #f6ffed;
@@ -847,6 +875,16 @@ const createCollection = async () => {
   &.patch {
     background: #f9f0ff;
     color: #722ed1;
+  }
+
+  &.options {
+    background: #e6fffb;
+    color: #13c2c2;
+  }
+
+  &.head {
+    background: #fff0f6;
+    color: #eb2f96;
   }
 
   &.websocket {

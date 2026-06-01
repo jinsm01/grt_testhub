@@ -84,6 +84,33 @@ const routes = [
         path: 'knowledge-base',
         name: 'KnowledgeBase',
         component: () => import('@/views/assistant/KnowledgeBaseView.vue')
+      },
+      // LightRAG 知识图谱路由
+      {
+        path: 'knowledge-graph',
+        redirect: 'knowledge-graph/overview',
+        children: [
+          {
+            path: 'overview',
+            name: 'KnowledgeGraphOverview',
+            component: () => import('@/views/requirement-analysis/KnowledgeGraphOverview.vue')
+          },
+          {
+            path: 'visualization/:id',
+            name: 'KnowledgeGraphVisualization',
+            component: () => import('@/views/requirement-analysis/KnowledgeGraphVisualization.vue')
+          },
+          {
+            path: 'compare',
+            name: 'KnowledgeGraphCompare',
+            component: () => import('@/views/requirement-analysis/KnowledgeGraphCompare.vue')
+          },
+          {
+            path: 'project-documents',
+            name: 'ProjectDocumentManagement',
+            component: () => import('@/views/requirement-analysis/ProjectDocumentManagement.vue')
+          }
+        ]
       }
     ]
   },

@@ -117,15 +117,34 @@ class ApifoxCliImporter:
 
             # 3. 递归处理所有 items，创建请求（同时构建索引映射）
             items = data.get('item', [])
+            print(f"DEBUG - 原始 items 数量: {len(items)}")
+
             # 处理 wrapper 结构：如果 items[0] 有嵌套的 item 数组，提取它
             if items and isinstance(items[0], dict) and 'item' in items[0]:
+                print(f"DEBUG - 检测到 wrapper 结构，提取嵌套 items")
                 items = items[0].get('item', [])
+                print(f"DEBUG - 提取后 items 数量: {len(items)}")
+
+            # 统计原始请求数量
+            def count_raw_requests(items_list):
+                count = 0
+                for item in items_list:
+                    if 'request' in item:
+                        count += 1
+                    if 'item' in item:
+                        count += count_raw_requests(item['item'])
+                return count
+
+            raw_request_count = count_raw_requests(items)
+            print(f"DEBUG - 原始请求数量（递归统计）: {raw_request_count}")
+
             # 重置索引映射
             self._apifox_to_request_index = {}
             structured_steps = self._process_items_structured(items, collection, parent_path='')
-            
+
             print(f"DEBUG - 创建的请求数: {self.import_stats['requests_created']}")
             print(f"DEBUG - 索引映射: {self._apifox_to_request_index}")
+            print(f"DEBUG - structured_steps 数量: {len(structured_steps)}")
 
             # 5. 提取所有请求（用于创建测试套件）
             requests = self._extract_requests_from_steps(structured_steps)
@@ -138,6 +157,9 @@ class ApifoxCliImporter:
 
             # 8. 创建自动化场景（带层级结构）
             scenario = self._create_automation_scenario(data, collection, structured_steps, suite)
+
+            # 构建导入的请求列表（包含层级结构）
+            imported_requests_list = self._build_imported_requests_list(structured_steps)
 
             # 构建返回结果
             result = {
@@ -155,7 +177,8 @@ class ApifoxCliImporter:
                     'warnings_count': len(self.import_stats['warnings'])
                 },
                 'warnings': self.import_stats['warnings'],
-                'issues_by_request': self.import_stats['issues_by_request']
+                'issues_by_request': self.import_stats['issues_by_request'],
+                'imported_requests': imported_requests_list
             }
 
             return result
@@ -282,7 +305,7 @@ class ApifoxCliImporter:
         return collection
 
     def _clear_collection_requests(self, collection: ApiCollection) -> int:
-        """清空合集中的所有接口
+        """清空合集中的所有接口（包括已软删除的）
 
         Args:
             collection: 目标合集
@@ -290,17 +313,18 @@ class ApifoxCliImporter:
         Returns:
             删除的接口数量
         """
-        # 获取该合集下的所有接口
-        requests = ApiRequest.objects.filter(collection=collection)
+        # 获取该合集下的所有接口（包括已软删除的）
+        requests = ApiRequest.all_objects.filter(collection=collection)
         count = requests.count()
 
         if count > 0:
             # 删除相关测试套件中的引用
             TestSuiteRequest.objects.filter(request__collection=collection).delete()
             # 删除自动化场景步骤中的引用
-            ScenarioStep.objects.filter(request__collection=collection).delete()
-            # 删除接口
-            requests.delete()
+            ScenarioStep.objects.filter(api_request__collection=collection).delete()
+            # 物理删除接口（避免软删除接口占用唯一约束）
+            for req in requests:
+                req.hard_delete()
 
         return count
 
@@ -319,11 +343,15 @@ class ApifoxCliImporter:
             for item in items
         )
 
+        print(f"DEBUG - has_scope_markers: {has_scope_markers}")
+
         if has_scope_markers:
             # 使用平铺结构转换
+            print(f"DEBUG - 使用平铺结构处理")
             return self._process_flat_items(items, collection, parent_path)
         else:
             # 使用传统嵌套结构处理
+            print(f"DEBUG - 使用嵌套结构处理")
             return self._process_nested_items(items, collection, parent_path)
 
     def _process_flat_items(self, items: List[Dict], collection: ApiCollection,
@@ -371,6 +399,8 @@ class ApifoxCliImporter:
                     if stack:
                         group_step, group_item, group_apifox_idx, first_request_idx = stack.pop()
                         
+                        print(f"DEBUG - 分组结束: {group_step['name']}, children数量: {len(group_step['children'])}")
+                        
                         # 建立 group 到其第一个请求的映射（用于变量引用转换）
                         if first_request_idx is not None:
                             self._apifox_to_request_index[group_apifox_idx] = first_request_idx
@@ -414,14 +444,17 @@ class ApifoxCliImporter:
 
             elif 'request' in item:
                 # 这是一个请求
-                request_counter[0] += 1
-                testhub_order = request_counter[0]
-                request = self._create_request(item, collection, full_path, testhub_order - 1)
+                print(f"DEBUG - 处理请求: {item_name}, index: {apifox_global_idx[0]}")
+                request = self._create_request(item, collection, full_path, request_counter[0])
 
                 if request:
+                    request_counter[0] += 1
+                    testhub_order = request_counter[0]
+                    print(f"DEBUG - 请求创建成功: {item_name}, order: {testhub_order}")
+
                     # 更新映射（用于变量引用转换）
                     self._apifox_to_request_index[apifox_global_idx[0]] = testhub_order
-                    
+
                     # 如果有父分组，记录这是该分组的第一个请求（用于 group 变量映射）
                     for i, stack_item in enumerate(stack):
                         if len(stack_item) >= 4 and stack_item[3] is None:
@@ -445,6 +478,8 @@ class ApifoxCliImporter:
                         stack[-1][0]['children'].append(step_info)
                     else:
                         result.append(step_info)
+                else:
+                    print(f"DEBUG - 请求创建失败: {item_name}")
 
                 apifox_global_idx[0] += 1
             else:
@@ -468,11 +503,14 @@ class ApifoxCliImporter:
 
             if 'request' in item:
                 # 这是一个请求
-                request_counter[0] += 1
-                testhub_order = request_counter[0]
-                request = self._create_request(item, collection, full_path, testhub_order - 1)
+                print(f"DEBUG - [嵌套] 处理请求: {item_name}, index: {apifox_global_idx[0]}")
+                request = self._create_request(item, collection, full_path, request_counter[0])
 
                 if request:
+                    request_counter[0] += 1
+                    testhub_order = request_counter[0]
+                    print(f"DEBUG - [嵌套] 请求创建成功: {item_name}, order: {testhub_order}")
+
                     # 更新映射（用于变量引用转换）
                     self._apifox_to_request_index[apifox_global_idx[0]] = testhub_order
 
@@ -489,6 +527,8 @@ class ApifoxCliImporter:
                     }
                     apifox_global_idx[0] += 1
                     return step_info
+                else:
+                    print(f"DEBUG - [嵌套] 请求创建失败: {item_name}")
                 apifox_global_idx[0] += 1
 
             elif 'item' in item:
@@ -536,7 +576,32 @@ class ApifoxCliImporter:
             if step.get('children'):
                 requests.extend(self._extract_requests_from_steps(step['children']))
         return requests
-    
+
+    def _build_imported_requests_list(self, steps: List[Dict]) -> List[Dict]:
+        """构建导入的请求列表（包含层级结构）用于前端展示"""
+        result = []
+        for step in steps:
+            if step['type'] == 'request' and step.get('request'):
+                request = step['request']
+                request_info = {
+                    'id': request.id,
+                    'name': request.name,
+                    'method': request.method,
+                    'url': request.url,
+                    'type': 'request'
+                }
+                result.append(request_info)
+            elif step['type'] == 'group':
+                group_info = {
+                    'name': step['name'],
+                    'type': 'group',
+                    'children': self._build_imported_requests_list(step.get('children', []))
+                }
+                # 只添加有子项的分组
+                if group_info['children']:
+                    result.append(group_info)
+        return result
+
     def _convert_requests_variables(self, steps: List[Dict]):
         """统一转换所有请求中的变量（递归处理 children）"""
         print(f"DEBUG - 索引映射表: {self._apifox_to_request_index}")
@@ -583,10 +648,14 @@ class ApifoxCliImporter:
                 
                 # 转换 Body 中的变量，并检测向前引用
                 if request.body:
+                    print(f"DEBUG - [_convert_requests_variables] 请求'{request.name}' 的 body: {request.body}")
                     if isinstance(request.body, dict):
                         if request.body.get('type') == 'json':
                             # JSON body 的 data 可能是 dict 或字符串，需要递归处理
                             body_data = request.body['data']
+                            print(f"DEBUG - [_convert_requests_variables] body_data 类型: {type(body_data)}, 值: {body_data}")
+                            # 创建一个新的 body 字典，确保 Django 能检测到变化
+                            new_body = dict(request.body)
                             if isinstance(body_data, str):
                                 body_data, body_warning = self._convert_step_reference_with_warning(body_data, current_order)
                                 if body_warning:
@@ -597,10 +666,12 @@ class ApifoxCliImporter:
                                         "请手动检查请求体中的变量引用"
                                     )
                                     print(f"WARNING - Body向前引用: 请求'{request.name}' - {body_warning}")
-                                request.body['data'] = self._convert_variables_with_context(body_data)
+                                new_body['data'] = self._convert_variables_with_context(body_data)
                             else:
                                 # dict 或 list，递归处理其中的字符串
-                                request.body['data'] = self._deep_convert_body(body_data, request.name, current_order)
+                                new_body['data'] = self._deep_convert_body(body_data, request.name, current_order)
+                            request.body = new_body
+                            print(f"DEBUG - [_convert_requests_variables] 转换后的 body: {request.body}")
                             updated = True
                         elif request.body.get('type') == 'raw' and isinstance(request.body.get('data'), str):
                             body_data = request.body['data']
@@ -612,7 +683,9 @@ class ApifoxCliImporter:
                                     body_warning,
                                     "请手动检查请求体中的变量引用"
                                 )
-                            request.body['data'] = self._convert_variables_with_context(body_data)
+                            new_body = dict(request.body)
+                            new_body['data'] = self._convert_variables_with_context(body_data)
+                            request.body = new_body
                             updated = True
                     elif isinstance(request.body, str):
                         body_data = request.body
@@ -695,14 +768,11 @@ class ApifoxCliImporter:
                     print(f"DEBUG - 请求 '{request.name}' 断言已更新: {assertions}")
                     updated = True
                 
-                # 转换变量提取器中的跨步骤变量引用
-                if request.variable_extractors:
-                    extractors = request.variable_extractors if isinstance(request.variable_extractors, list) else json.loads(request.variable_extractors)
-                    for extractor in extractors:
-                        if 'json_path' in extractor:
-                            extractor['json_path'], _ = self._convert_step_reference_with_warning(extractor['json_path'], current_order)
-                    request.variable_extractors = extractors  # 保持为 Python 列表
-                    updated = True
+                # 注意：提取器的 json_path 是普通的 JSON Path（如 $.data[0].id）
+                # 用于从当前步骤的响应中提取数据，不需要进行跨步骤引用转换
+                # 跨步骤引用应该只在 variable_name 或其他字段中出现
+                # 因此这里不需要转换 json_path
+                pass
                 
                 # 保存更新
                 if updated:
@@ -719,6 +789,7 @@ class ApifoxCliImporter:
         elif isinstance(data, list):
             return [self._deep_convert_body(item, request_name, current_order) for item in data]
         elif isinstance(data, str):
+            print(f"DEBUG - [_deep_convert_body] 处理字符串: {data}")
             # 检测向前引用
             converted, warning = self._convert_step_reference_with_warning(data, current_order)
             if warning:
@@ -729,7 +800,9 @@ class ApifoxCliImporter:
                     "请手动检查请求体中的变量引用"
                 )
             # 转换变量语法
-            return self._convert_variables_with_context(converted)
+            result = self._convert_variables_with_context(converted)
+            print(f"DEBUG - [_deep_convert_body] 转换结果: {result}")
+            return result
         else:
             return data
     
@@ -737,10 +810,21 @@ class ApifoxCliImporter:
         """转换 API Fox 变量语法到 TestHub 语法
         
         使用 _apifox_to_request_index 映射表转换索引
+        支持:
+        - {{$...}} 格式 (Postman/Apifox 风格)
+        - ${...} 格式 (JMeter/Apifox 动态变量风格)
         """
         if not isinstance(text, str):
             return text
         
+        print(f"DEBUG - [_convert_variables_with_context] 输入: {text}")
+        
+        # 第一步：处理 ${...} 格式的 Apifox 动态变量
+        text = self._convert_apifox_dollar_variables(text)
+        
+        print(f"DEBUG - [_convert_variables_with_context] 第一步后: {text}")
+        
+        # 第二步：处理 {{$...}} 格式
         def replace_func(match):
             func_expr = match.group(1).strip()
             
@@ -791,15 +875,105 @@ class ApifoxCliImporter:
             if '(' in func_expr:
                 func_name = func_expr[:func_expr.index('(')].lower()  # 转为小写
                 args_str = func_expr[func_expr.index('(')+1:func_expr.rindex(')')]
-                
+
+                # String 系列函数
                 if func_name == 'string.alphanumeric':
                     length = 10
-                    if 'length=' in args_str.lower():  # 参数名也转为小写
+                    if 'length=' in args_str.lower():
                         try:
                             length = int(args_str.lower().split('length=')[1].split(',')[0].strip())
                         except:
                             pass
                     return f'${{random_string({length}, "alphanumeric", 1)}}'
+                elif func_name == 'string.numeric':
+                    length = 10
+                    if 'length=' in args_str.lower():
+                        try:
+                            length = int(args_str.lower().split('length=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_string({length}, "numeric", 1)}}'
+                elif func_name == 'string.alpha':
+                    length = 10
+                    if 'length=' in args_str.lower():
+                        try:
+                            length = int(args_str.lower().split('length=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_string({length}, "letters", 1)}}'
+                # Random 系列函数
+                elif func_name in ('random.int', 'random.integer'):
+                    min_val, max_val = 0, 1000
+                    if 'min=' in args_str.lower() and 'max=' in args_str.lower():
+                        try:
+                            min_val = int(args_str.lower().split('min=')[1].split(',')[0].strip())
+                            max_val = int(args_str.lower().split('max=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_int({min_val}, {max_val})}}'
+                elif func_name == 'random.float':
+                    min_val, max_val = 0, 1000
+                    if 'min=' in args_str.lower() and 'max=' in args_str.lower():
+                        try:
+                            min_val = float(args_str.lower().split('min=')[1].split(',')[0].strip())
+                            max_val = float(args_str.lower().split('max=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_float({min_val}, {max_val})}}'
+                elif func_name in ('random.boolean', 'random.bool'):
+                    return f'${{random_boolean()}}'
+                elif func_name in ('random.string', 'random.alphanumeric'):
+                    length = 10
+                    if 'length=' in args_str.lower():
+                        try:
+                            length = int(args_str.lower().split('length=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_string({length}, "alphanumeric", 1)}}'
+                elif func_name == 'random.alpha':
+                    length = 10
+                    if 'length=' in args_str.lower():
+                        try:
+                            length = int(args_str.lower().split('length=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_string({length}, "letters", 1)}}'
+                elif func_name == 'random.numeric':
+                    length = 10
+                    if 'length=' in args_str.lower():
+                        try:
+                            length = int(args_str.lower().split('length=')[1].split(',')[0].strip())
+                        except:
+                            pass
+                    return f'${{random_string({length}, "numeric", 1)}}'
+                elif func_name in ('random.email', 'random.mail'):
+                    return f'${{random_email()}}'
+                elif func_name in ('random.phone', 'random.phonenumber', 'random.mobile'):
+                    return f'${{random_phone()}}'
+                elif func_name in ('random.ip', 'random.ipaddress', 'random.ipv4'):
+                    return f'${{random_ip()}}'
+                elif func_name == 'random.ipv6':
+                    return f'${{random_ipv6()}}'
+                elif func_name in ('random.mac', 'random.macaddress'):
+                    return f'${{random_mac()}}'
+                elif func_name in ('random.name', 'random.fullname'):
+                    return f'${{random_name()}}'
+                elif func_name == 'random.firstname':
+                    return f'${{random_first_name()}}'
+                elif func_name == 'random.lastname':
+                    return f'${{random_last_name()}}'
+                elif func_name == 'random.chinesename':
+                    return f'${{random_chinese_name()}}'
+                elif func_name in ('random.address', 'random.city', 'random.province', 'random.street'):
+                    # 这些函数统一映射到 random_address
+                    return f'${{random_address()}}'
+                elif func_name in ('random.company', 'random.companyname'):
+                    return f'${{random_company()}}'
+                elif func_name in ('random.bankcard', 'random.creditcard'):
+                    return f'${{random_bank_card()}}'
+                elif func_name == 'random.idcard':
+                    return f'${{random_id_card()}}'
+                # 基础函数
                 elif func_name == 'timestamp':
                     return f'${{timestamp()}}'
                 elif func_name == 'uuid':
@@ -807,62 +981,205 @@ class ApifoxCliImporter:
                 else:
                     return f'${{{func_expr}}}'
             else:
-                return f'${{{func_expr}}}'
+                # 处理没有括号的动态变量，如 {{$date.timestamp}}
+                # 需要调用 _convert_apifox_dollar_variables 来转换
+                converted = self._convert_apifox_dollar_variables(f'${{{func_expr}}}')
+                return converted
         
         pattern = r'\{\{\$(.+?)\}\}'
-        return re.sub(pattern, replace_func, text, flags=re.DOTALL)
+        result = re.sub(pattern, replace_func, text, flags=re.DOTALL)
+        print(f"DEBUG - [_convert_variables_with_context] 最终输出: {result}")
+        return result
     
-    def _create_request(self, item: Dict, collection: ApiCollection, 
+    def _convert_apifox_dollar_variables(self, text: str) -> str:
+        """转换 Apifox ${...} 格式的动态变量为 TestHub 格式
+        
+        Apifox 动态变量格式: ${category.function} 或 ${function}
+        TestHub 格式: ${function()}
+        
+        支持的映射:
+        - ${date.timestamp} -> ${timestamp()}
+        - ${date.timestamp(ms)} -> ${timestamp()}
+        - ${date.timestamp(s)} -> ${timestamp_sec()}
+        - ${datetime} -> ${datetime()}
+        - ${date} -> ${date()}
+        - ${time} -> ${time()}
+        - ${uuid} -> ${uuid()}
+        - ${random} -> ${random_int(0, 1000)}
+        - ${random.int} -> ${random_int(0, 1000)}
+        - ${random.float} -> ${random_float(0, 1000)}
+        - ${random.boolean} -> ${random_boolean()}
+        - ${random.uuid} -> ${uuid()}
+        - ${random.string} -> ${random_string(10, "alphanumeric", 1)}
+        - ${random.email} -> ${random_email()}
+        - ${random.phone} -> ${random_phone()}
+        - ${random.ip} -> ${random_ip()}
+        - ${random.mac} -> ${random_mac()}
+        """
+        if not isinstance(text, str):
+            return text
+        
+        print(f"DEBUG - [_convert_apifox_dollar_variables] 输入: {text}")
+        
+        # 匹配 ${...} 格式，但不匹配 ${function()} 格式（已经是 TestHub 格式）
+        pattern = r'\$\{([a-zA-Z_][a-zA-Z0-9_.]*)\}'
+        
+        def replace_func(match):
+            var_expr = match.group(1).strip()
+            
+            # 映射表: Apifox 变量 -> TestHub 函数
+            apifox_to_testhub_map = {
+                # 日期时间
+                'date.timestamp': 'timestamp()',
+                'date.timestamp(ms)': 'timestamp()',
+                'date.timestamp(s)': 'timestamp_sec()',
+                'datetime': 'datetime()',
+                'date': 'date()',
+                'time': 'time()',
+                'date.now': 'datetime()',
+                'date.today': 'date()',
+                
+                # UUID
+                'uuid': 'uuid()',
+                'guid': 'uuid()',
+                
+                # 随机数
+                'random': 'random_int(0, 1000)',
+                'random.int': 'random_int(0, 1000)',
+                'random.integer': 'random_int(0, 1000)',
+                'random.float': 'random_float(0, 1000)',
+                'random.boolean': 'random_boolean()',
+                'random.bool': 'random_boolean()',
+                'random.uuid': 'uuid()',
+                'random.guid': 'uuid()',
+                'random.string': 'random_string(10, "alphanumeric", 1)',
+                'random.alphanumeric': 'random_string(10, "alphanumeric", 1)',
+                'random.alpha': 'random_string(10, "letters", 1)',
+                'random.numeric': 'random_string(10, "numeric", 1)',
+                
+                # 联系信息
+                'random.email': 'random_email()',
+                'random.mail': 'random_email()',
+                'random.phone': 'random_phone()',
+                'random.phoneNumber': 'random_phone()',
+                'random.mobile': 'random_phone()',
+                
+                # 网络
+                'random.ip': 'random_ip()',
+                'random.ipAddress': 'random_ip()',
+                'random.ipv4': 'random_ip()',
+                'random.ipv6': 'random_ipv6()',
+                'random.mac': 'random_mac()',
+                'random.macAddress': 'random_mac()',
+                
+                # 名称
+                'random.name': 'random_name()',
+                'random.fullName': 'random_name()',
+                'random.firstName': 'random_first_name()',
+                'random.lastName': 'random_last_name()',
+                'random.chineseName': 'random_chinese_name()',
+                
+                # 地址
+                'random.address': 'random_address()',
+                'random.city': 'random_city()',
+                'random.province': 'random_province()',
+                'random.street': 'random_street()',
+                
+                # 公司
+                'random.company': 'random_company()',
+                'random.companyName': 'random_company()',
+                
+                # 银行卡
+                'random.bankCard': 'random_bank_card()',
+                'random.creditCard': 'random_bank_card()',
+                'random.idCard': 'random_id_card()',
+            }
+            
+            # 转换为小写进行匹配（不区分大小写）
+            var_expr_lower = var_expr.lower()
+            
+            print(f"DEBUG -   匹配到变量: {var_expr} (小写: {var_expr_lower})")
+            
+            if var_expr_lower in apifox_to_testhub_map:
+                testhub_func = apifox_to_testhub_map[var_expr_lower]
+                result = f'${{{testhub_func}}}'
+                print(f"DEBUG -   转换结果: {result}")
+                return result
+            
+            # 如果没有匹配，保留原样
+            print(f"DEBUG -   未匹配，保留原样")
+            return match.group(0)
+        
+        result = re.sub(pattern, replace_func, text)
+        print(f"DEBUG - [_convert_apifox_dollar_variables] 输出: {result}")
+        return result
+    
+    def _create_request(self, item: Dict, collection: ApiCollection,
                        path: str, index: int) -> Optional[ApiRequest]:
         """创建 API 请求"""
         request_data = item.get('request', {})
-        
-        # 解析请求方法
-        method = request_data.get('method', 'GET').upper()
-        
-        # 解析 URL（暂不转换变量）
-        url = self._parse_url(request_data.get('url', {}))
-        
-        # 解析 Headers（暂不转换变量）
-        headers = self._parse_headers(request_data.get('header', []))
-        
-        # 解析 Body（暂不转换变量）
-        body = self._parse_body(request_data.get('body', {}))
-        
-        # 解析变量提取规则
-        extractors = self._parse_extractors(item)
-        
-        # 解析断言
-        assertions = self._parse_assertions(item)
-        
-        # 解析前置脚本
-        pre_script = self._parse_pre_script(item)
-        
-        # 解析后置脚本
-        post_script = self._parse_post_script(item)
-        
-        # 创建请求
-        request = ApiRequest.objects.create(
-            collection=collection,
-            name=item.get('name', f'Request_{index}'),
-            description=item.get('description', ''),
-            method=method,
-            url=url,
-            headers=headers,
-            params=self._parse_params(request_data.get('url', {}).get('query', [])),
-            body=body,
-            variable_extractors=extractors,
-            assertions=assertions,
-            pre_request_script=pre_script,
-            post_request_script=post_script,
-            created_by=self.user
-        )
-        
-        # 存储原始 item 数据供后续使用
-        request._apifox_item = item
-        
-        self.import_stats['requests_created'] += 1
-        return request
+        request_name = item.get('name', f'Request_{index}')
+
+        try:
+            # 解析请求方法
+            method = request_data.get('method', 'GET').upper()
+            print(f"DEBUG - [_create_request] 方法: {method}, 名称: {request_name}")
+
+            # 解析 URL（暂不转换变量）
+            url = self._parse_url(request_data.get('url', {}))
+            print(f"DEBUG - [_create_request] URL: {url}")
+
+            # 解析 Headers（暂不转换变量）
+            headers = self._parse_headers(request_data.get('header', []))
+
+            # 解析 Body（暂不转换变量）
+            body = self._parse_body(request_data.get('body', {}))
+
+            # 解析变量提取规则
+            extractors = self._parse_extractors(item)
+
+            # 解析断言
+            assertions = self._parse_assertions(item)
+
+            # 解析前置脚本
+            pre_script = self._parse_pre_script(item)
+
+            # 解析后置脚本
+            post_script = self._parse_post_script(item)
+
+            # 创建请求
+            request = ApiRequest.objects.create(
+                collection=collection,
+                name=request_name,
+                description=item.get('description', ''),
+                method=method,
+                url=url,
+                headers=headers,
+                params=self._parse_params(request_data.get('url', {}).get('query', [])),
+                body=body,
+                variable_extractors=extractors,
+                assertions=assertions,
+                pre_request_script=pre_script,
+                post_request_script=post_script,
+                created_by=self.user
+            )
+
+            # 存储原始 item 数据供后续使用
+            request._apifox_item = item
+
+            self.import_stats['requests_created'] += 1
+            print(f"DEBUG - [_create_request] 创建成功: {request_name}, ID: {request.id}")
+            return request
+        except Exception as e:
+            # 记录错误但不中断导入流程
+            print(f"DEBUG - [_create_request] 创建失败: {request_name}, 错误: {str(e)}")
+            self._add_request_issue(
+                request_name,
+                "接口创建失败",
+                str(e),
+                "请检查接口数据格式或手动创建该接口"
+            )
+            return None
     
     def _parse_url(self, url_data: Union[Dict, str]) -> str:
         """解析 URL，只返回路径部分（去掉域名）
@@ -977,6 +1294,8 @@ class ApifoxCliImporter:
         提取器格式：
         - const expression = await ____replaceIn(`$.data.access_token`);
         - const formattedName = await ____replaceIn(`auth_token`);pm.environment.set(...)
+        
+        注意：与断言不同，提取器必须有 pm.environment.set 或 pm.variables.set 来保存变量
         """
         extractors = []
         
@@ -984,8 +1303,21 @@ class ApifoxCliImporter:
         for event in events:
             if event.get('listen') == 'test':
                 script = event.get('script', {}).get('exec', [])
+                script_id = event.get('script', {}).get('id', '')
+                
+                # 跳过断言类型的脚本（避免将断言的 expression 误解析为提取器）
+                if 'assertion' in script_id:
+                    continue
+                    
                 if isinstance(script, list):
                     script_text = '\n'.join(script)
+                    
+                    # 只处理包含变量保存操作的脚本（真正的提取器）
+                    # 提取器必须有 pm.environment.set 或 pm.variables.set
+                    if 'pm.environment.set' not in script_text and 'pm.variables.set' not in script_text:
+                        # 检查是否是 httpApiExtractor 类型（有 const extracts = [...]）
+                        if 'const extracts =' not in script_text:
+                            continue
                     
                     # 查找 JSONPath 表达式
                     # 格式: const expression = await ____replaceIn(`$.data.access_token`);
@@ -1586,6 +1918,7 @@ class ApifoxCliImporter:
             
             if step_info['type'] == 'request':
                 # 创建请求步骤
+                api_request = step_info['request']
                 step = ScenarioStep.objects.create(
                     scenario=scenario,
                     parent=parent_step,
@@ -1593,7 +1926,9 @@ class ApifoxCliImporter:
                     step_type='request',
                     step_number=current_step_number,
                     order=step_info['order'],
-                    api_request=step_info['request']
+                    api_request=api_request,
+                    override_assertions=api_request.assertions if api_request else [],
+                    override_extractors=api_request.variable_extractors if api_request else []
                 )
                 
                 # 记录 order -> step_number 的映射（用于修正变量引用）

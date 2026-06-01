@@ -923,6 +923,255 @@ def preview_filled_data(request):
             'total_sheets': len(sheet_names),
             'current_sheet': sheet_names[0]
         })
-        
+
     except Exception as e:
         return Response({'error': f'预览失败: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ==================== 模块课程数据生成器 ====================
+
+class ModuleCourseDataGenerator:
+    """模块课程数据生成器 - 专门用于生成按模块导入点播课的测试数据"""
+
+    @staticmethod
+    def generate_primary_module_names(count: int, max_length: int = 20, prefix: str = "一级模块") -> list:
+        """生成一级模块名称列表，保证不重复且不超过最大长度。
+
+        采用固定序号位数策略：根据生成数量预计算需要的序号位数，
+        所有序号统一用相同位数，不足补零。这样可以避免序号位数变化
+        导致的截断不一致问题。
+
+        Args:
+            count: 需要生成的名称数量
+            max_length: 每个名称的最大字符数
+            prefix: 名称前缀，默认为"一级模块"
+
+        Returns:
+            不重复的一级模块名称列表，格式为：prefix + 固定位数序号
+        """
+        # 预计算需要的序号位数
+        num_digits = len(str(count))
+
+        names = []
+        for i in range(1, count + 1):
+            # 序号固定位数，不足补零
+            suffix = str(i).zfill(num_digits)
+            name = f"{prefix}{suffix}"
+
+            if len(name) > max_length:
+                # 超长时截断前缀，但保持序号完整（固定位数）
+                max_prefix_len = max_length - num_digits
+                if max_prefix_len < 1:
+                    # 极端情况：连序号都放不下，只能截断序号
+                    name = suffix[:max_length]
+                else:
+                    name = prefix[:max_prefix_len] + suffix
+            names.append(name)
+        return names
+
+    @staticmethod
+    def generate_secondary_module_names(
+        primary_names: list,
+        count_per_primary: int,
+        max_length: int = 20,
+        prefix: str = "二级模块"
+    ) -> list:
+        """为每个一级模块生成对应的二级模块名称，保证全局不重复。
+
+        采用固定序号位数策略：根据总数量预计算需要的序号位数，
+        所有序号统一用相同位数，不足补零。
+
+        Args:
+            primary_names: 一级模块名称列表
+            count_per_primary: 每个一级模块下需要生成的二级模块数量
+            max_length: 每个名称的最大字符数
+            prefix: 名称前缀，默认为"二级模块"
+
+        Returns:
+            (一级模块名称, 二级模块名称) 的列表，二级模块全局唯一，格式为：prefix + 固定位数全局序号
+        """
+        total_count = len(primary_names) * count_per_primary
+        # 预计算需要的序号位数
+        num_digits = len(str(total_count))
+
+        rows = []
+        global_counter = 1
+        for p_name in primary_names:
+            for _ in range(count_per_primary):
+                # 序号固定位数，不足补零
+                suffix = str(global_counter).zfill(num_digits)
+                name = f"{prefix}{suffix}"
+
+                if len(name) > max_length:
+                    # 超长时截断前缀，但保持序号完整（固定位数）
+                    max_prefix_len = max_length - num_digits
+                    if max_prefix_len < 1:
+                        # 极端情况：连序号都放不下，只能截断序号
+                        name = suffix[:max_length]
+                    else:
+                        name = prefix[:max_prefix_len] + suffix
+                rows.append({
+                    'primary_module': p_name,
+                    'secondary_module': name
+                })
+                global_counter += 1
+        return rows
+
+    @staticmethod
+    def validate_module_data(data: list, primary_max_length: int = 20, secondary_max_length: int = 20) -> dict:
+        """校验生成的数据是否满足业务约束。"""
+        primary_names = [row['primary_module'] for row in data]
+        secondary_names = [row['secondary_module'] for row in data]
+
+        errors = []
+
+        for name in primary_names:
+            if len(name) > primary_max_length:
+                errors.append(f"一级模块名称超长: '{name}' ({len(name)}字)")
+
+        for name in secondary_names:
+            if len(name) > secondary_max_length:
+                errors.append(f"二级模块名称超长: '{name}' ({len(name)}字)")
+
+        if len(set(secondary_names)) != len(secondary_names):
+            errors.append("二级模块名称存在重复")
+
+        return {
+            'valid': len(errors) == 0,
+            'errors': errors
+        }
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def generate_module_course_data(request):
+    """
+    生成模块课程测试数据（按模块导入点播课）
+    支持直接下载Excel或返回预览数据
+    """
+    try:
+        # 获取参数
+        primary_count = int(request.data.get('primary_count', 50))
+        secondary_count = int(request.data.get('secondary_count', 30))
+        primary_max_length = int(request.data.get('primary_max_length', 20))
+        secondary_max_length = int(request.data.get('secondary_max_length', 20))
+        data_start_row = int(request.data.get('data_start_row', 3))
+        action = request.data.get('action', 'preview')  # 'preview' 或 'download'
+
+        # 获取自定义前缀（新增）
+        primary_prefix = request.data.get('primary_prefix', '一级模块')
+        secondary_prefix = request.data.get('secondary_prefix', '二级模块')
+
+        # 获取点播课ID列表（可选）
+        course_ids = request.data.get('course_ids', [])
+        if course_ids and not isinstance(course_ids, list):
+            course_ids = []
+
+        # 限制数据量
+        total_rows = primary_count * secondary_count
+        if total_rows > 2000:
+            return Response({
+                'error': f'总数据量 {total_rows} 超过模板单次上限 2000 条，请调整参数'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 生成数据
+        generator = ModuleCourseDataGenerator()
+        primary_names = generator.generate_primary_module_names(
+            primary_count, primary_max_length, primary_prefix
+        )
+        data = generator.generate_secondary_module_names(
+            primary_names, secondary_count, secondary_max_length, secondary_prefix
+        )
+
+        # 将点播课ID填充到数据中
+        if course_ids:
+            for idx, row in enumerate(data):
+                if idx < len(course_ids):
+                    row['course_id'] = course_ids[idx]
+                else:
+                    row['course_id'] = ''
+        else:
+            for row in data:
+                row['course_id'] = ''
+
+        # 校验数据
+        validation = generator.validate_module_data(data, primary_max_length, secondary_max_length)
+        if not validation['valid']:
+            return Response({
+                'error': '数据校验失败',
+                'details': validation['errors']
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 如果是预览模式，返回数据摘要
+        if action == 'preview':
+            preview_data = data[:min(20, len(data))]
+            return Response({
+                'success': True,
+                'primary_count': primary_count,
+                'secondary_count': secondary_count,
+                'total_rows': total_rows,
+                'preview_data': preview_data,
+                'preview_count': len(preview_data)
+            })
+
+        # 下载模式：生成Excel文件
+        if action == 'download':
+            # 创建Excel工作簿
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "按模块导入点播课"
+
+            # 第1行：填写须知
+            instruction = "填写须知：\n1、一级模块: 必填,20个字以内\n2、二级模块: 必填,20个字以内\n3、点播课名称: 非必填\n4、点播课ID: 非必填"
+            ws.cell(row=1, column=1, value=instruction)
+            ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=4)
+            instruction_cell = ws.cell(row=1, column=1)
+            instruction_cell.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
+            ws.row_dimensions[1].height = 60
+
+            # 第2行：表头
+            headers = ['一级模块', '二级模块', '点播课名称', '点播课ID']
+            header_fill = PatternFill(start_color='90EE90', end_color='90EE90', fill_type='solid')
+            for col_idx, header in enumerate(headers, 1):
+                cell = ws.cell(row=2, column=col_idx, value=header)
+                cell.fill = header_fill
+                cell.font = Font(bold=True)
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+
+            # 填充数据
+            for row_idx, row_data in enumerate(data, start=data_start_row):
+                ws.cell(row=row_idx, column=1, value=row_data['primary_module'])
+                ws.cell(row=row_idx, column=2, value=row_data['secondary_module'])
+                # 点播课名称留空，供用户手动填写
+                ws.cell(row=row_idx, column=3, value='')
+                # 点播课ID：如果用户提供了则填充，否则留空
+                ws.cell(row=row_idx, column=4, value=row_data.get('course_id', ''))
+
+            # 设置列宽
+            ws.column_dimensions['A'].width = 25
+            ws.column_dimensions['B'].width = 25
+            ws.column_dimensions['C'].width = 30
+            ws.column_dimensions['D'].width = 20
+
+            # 保存到内存
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+
+            # 生成文件名
+            username = request.user.username if hasattr(request, 'user') and request.user else 'unknown'
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"按模块导入点播课_{primary_count}一级_{secondary_count}二级_{username}_{timestamp}.xlsx"
+
+            from urllib.parse import quote
+            filename_utf8 = quote(filename.encode('utf-8'))
+
+            response = HttpResponse(output.getvalue(), content_type='application/vnd.ms-excel')
+            response['Content-Disposition'] = f"attachment; filename*=UTF-8''{filename_utf8}"
+
+            return response
+
+        return Response({'error': '无效的操作类型'}, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as e:
+        return Response({'error': f'生成失败: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

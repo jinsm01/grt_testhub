@@ -360,6 +360,25 @@
               <el-icon><Collection /></el-icon>
               <span>RAG知识库</span>
             </el-menu-item>
+            <!-- 需求知识图谱 -->
+            <el-sub-menu index="knowledge-graph">
+              <template #title>
+                <el-icon><Share /></el-icon>
+                <span>需求知识图谱</span>
+              </template>
+              <el-menu-item index="/ai-assistant/knowledge-graph/overview">
+                <el-icon><Share /></el-icon>
+                <span>图谱概览</span>
+              </el-menu-item>
+              <el-menu-item index="/ai-assistant/knowledge-graph/project-documents">
+                <el-icon><Document /></el-icon>
+                <span>项目文档</span>
+              </el-menu-item>
+              <el-menu-item index="/ai-assistant/knowledge-graph/compare">
+                <el-icon><ScaleToOriginal /></el-icon>
+                <span>版本对比</span>
+              </el-menu-item>
+            </el-sub-menu>
           </template>
 
           <!-- 数据工厂模块菜单 -->
@@ -698,6 +717,11 @@ const moduleRoute = computed(() => {
     return '/api-testing/team-statistics'
   }
 
+  // AI 知识库模块 - 所有子页面返回到图谱概览
+  if (path.startsWith('/ai-assistant/')) {
+    return '/ai-assistant/knowledge-graph/overview'
+  }
+
   // 其他模块可以根据需要添加
   // 默认返回到模块首页
   return `/${currentModule.value}`
@@ -735,6 +759,11 @@ const breadcrumbTitle = computed(() => {
     return t('project.aiProjectDetail')
   }
 
+  // 知识图谱可视化页面
+  if (path.match(/^\/ai-assistant\/knowledge-graph\/visualization\/\d+$/)) {
+    return '知识图谱可视化'
+  }
+
   // 作者用例详情页
   if (path.match(/^\/ai-generation\/testcase-statistics\/author\/[^/]+$/)) {
     return `${route.params.author || route.query.author || ''} 的用例`
@@ -753,6 +782,9 @@ const breadcrumbTitle = computed(() => {
     // AI 知识库
     '/ai-assistant/chat': 'Dify知识库',
     '/ai-assistant/knowledge-base': 'RAG知识库',
+    '/ai-assistant/knowledge-graph/overview': '图谱概览',
+    '/ai-assistant/knowledge-graph/chat': '智能问答',
+    '/ai-assistant/knowledge-graph/compare': '版本对比',
 
     // AI用例生成
     '/ai-generation/requirement-analysis': t('menu.aiCaseGeneration'),

@@ -42,15 +42,7 @@
         </el-table-column>
         <el-table-column :label="$t('uiAutomation.report.passRate')" width="120" header-align="center" align="center">
           <template #default="{ row }">
-            <div class="pass-rate-wrapper">
-              <span class="pass-rate-text">{{ row.pass_rate.toFixed(1) }}%</span>
-              <div class="pass-rate-bar">
-                <div
-                  class="pass-rate-fill"
-                  :style="{ width: row.pass_rate + '%', backgroundColor: getProgressColor(row.pass_rate) }"
-                ></div>
-              </div>
-            </div>
+            <span class="pass-rate-text" :style="{ color: getProgressColor(row.pass_rate) }">{{ row.pass_rate.toFixed(1) }}%</span>
           </template>
         </el-table-column>
         <el-table-column :label="$t('uiAutomation.report.duration')" width="120" header-align="center" align="center">
@@ -528,37 +520,10 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
-// 通过率进度条样式
-.pass-rate-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 4px 0;
-
-  .pass-rate-text {
-    font-size: 14px;
-    font-weight: 500;
-    color: #595959;
-    min-width: 50px;
-    text-align: right;
-    flex-shrink: 0;
-  }
-
-  .pass-rate-bar {
-    width: 50px;
-    height: 6px;
-    background-color: #f0f0f0;
-    border-radius: 3px;
-    overflow: hidden;
-    flex-shrink: 0;
-
-    .pass-rate-fill {
-      height: 100%;
-      border-radius: 3px;
-      transition: all 0.3s ease;
-    }
-  }
+// 通过率样式
+.pass-rate-text {
+  font-size: 14px;
+  font-weight: 600;
 }
 
 // 状态徽章样式

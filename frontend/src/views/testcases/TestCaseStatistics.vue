@@ -83,41 +83,54 @@
         <el-icon><Folder /></el-icon>
         项目用例分布
       </h3>
-      <el-card shadow="hover" class="table-card">
-        <el-table :data="stats.project_stats" style="width: 100%" v-loading="loading">
-          <el-table-column prop="project_name" label="项目名称" min-width="150" />
-          <el-table-column prop="total" label="总数" width="100" align="center" />
-          <el-table-column prop="active" label="激活" width="100" align="center">
-            <template #default="{ row }">
-              <el-tag type="success" size="small">{{ row.active }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="draft" label="草稿" width="100" align="center">
-            <template #default="{ row }">
-              <el-tag type="info" size="small">{{ row.draft }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="deprecated" label="废弃" width="100" align="center">
-            <template #default="{ row }">
-              <el-tag type="danger" size="small">{{ row.deprecated }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="high_priority" label="高优先级" width="100" align="center">
-            <template #default="{ row }">
-              <span class="high-priority-count">{{ row.high_priority }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="占比" width="150" align="center">
-            <template #default="{ row }">
-              <el-progress 
-                :percentage="stats.total ? Math.round(row.total / stats.total * 100) : 0" 
-                :stroke-width="8"
-                :color="progressColor"
-              />
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-card>
+      <el-table :data="stats.project_stats" style="width: 100%" v-loading="loading" class="direct-table">
+        <el-table-column label="序号" width="80" align="center">
+          <template #default="{ $index }">
+            {{ $index + 1 }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="project_name" label="项目名称" min-width="150" align="center">
+          <template #default="{ row }">
+            <span class="project-name-cell">{{ row.project_name }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="total" label="总数" width="100" align="center">
+          <template #default="{ row }">
+            <span class="num-total">{{ row.total }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="active" label="激活" width="100" align="center">
+          <template #default="{ row }">
+            <span class="num-active">{{ row.active }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="draft" label="草稿" width="100" align="center">
+          <template #default="{ row }">
+            <span class="num-draft">{{ row.draft }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="deprecated" label="废弃" width="100" align="center">
+          <template #default="{ row }">
+            <span class="num-deprecated">{{ row.deprecated }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="high_priority" label="高优先级" width="100" align="center">
+          <template #default="{ row }">
+            <span class="high-priority-count">{{ row.high_priority }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="占比" width="150" align="center">
+          <template #default="{ row }">
+            <el-progress 
+              :percentage="stats.total ? Math.round(row.total / stats.total * 100) : 0" 
+              :stroke-width="6"
+              color="#7b42f6"
+              :show-text="true"
+              class="project-progress"
+            />
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
 
     <!-- 作者排行 -->
@@ -127,70 +140,70 @@
           <el-icon><User /></el-icon>
           用例合入统计
         </h3>
-        <el-select v-model="selectedMonth" placeholder="全部时间" clearable size="default" class="month-filter">
-          <el-option label="全部时间" value="" />
-          <el-option 
-            v-for="item in stats.monthly_stats" 
-            :key="item.month" 
-            :label="item.month" 
-            :value="item.month" 
-          />
-        </el-select>
+        <el-date-picker
+          v-model="selectedMonth"
+          type="month"
+          placeholder="全部时间"
+          clearable
+          size="default"
+          class="month-filter"
+          value-format="YYYY-MM"
+          format="YYYY-MM"
+        />
       </div>
-      <el-card shadow="hover" class="table-card">
-        <el-table :data="filteredAuthorStats" style="width: 100%" v-loading="loading">
-          <el-table-column type="index" label="排名" width="60" align="center">
-            <template #default="{ $index }">
-              <div class="rank-badge" :class="{ 'top-3': $index < 3 }">
-                {{ $index + 1 }}
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column prop="username" label="作者" min-width="120" />
-          <el-table-column label="是否全部审核通过" width="150" align="center">
-            <template #default="{ row }">
-              <span v-if="row.count === 0">-</span>
-              <el-tag v-else-if="row.all_approved" type="success" size="small">是</el-tag>
-              <el-tag v-else type="warning" size="small">否</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="P0" width="70" align="center" title="紧急">
-            <template #default="{ row }">
-              <span class="priority-critical">{{ row.critical || 0 }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="P1" width="70" align="center" title="高">
-            <template #default="{ row }">
-              <span class="priority-high">{{ row.high || 0 }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="P2" width="70" align="center" title="中">
-            <template #default="{ row }">
-              <span class="priority-medium">{{ row.medium || 0 }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="P3" width="70" align="center" title="低">
-            <template #default="{ row }">
-              <span class="priority-low">{{ row.low || 0 }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="count" label="用例数总计" width="100" align="center">
-            <template #default="{ row }">
-              <span class="case-count">{{ row.count }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="主线用例积分" width="110" align="center">
-            <template #default="{ row }">
-              <span class="score-value">{{ row.score || 0 }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="90" align="center" fixed="right">
-            <template #default="{ row }">
-              <el-button type="primary" link @click="goToAuthorDetail(row)">查看详情</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-card>
+      <el-table :data="filteredAuthorStats" style="width: 100%" v-loading="loading" class="direct-table">
+        <el-table-column type="index" label="排名" width="80" align="center">
+          <template #default="{ $index }">
+            <div class="rank-badge" :class="{ 'has-medal': $index < 3, 'no-medal': $index >= 3 }">
+              <span v-if="$index < 3" class="rank-icon">{{ ['🥇', '🥈', '🥉'][$index] }}</span>
+              <span v-else class="rank-number">{{ $index + 1 }}</span>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="username" label="作者" min-width="80" align="center" />
+        <el-table-column label="是否全部审核通过" width="150" align="center">
+          <template #default="{ row }">
+            <span v-if="row.count === 0">-</span>
+            <span v-else-if="row.all_approved" class="approval-badge approved">是</span>
+            <span v-else class="approval-badge rejected">否</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="P0" width="100" align="center" title="紧急">
+          <template #default="{ row }">
+            <span class="priority-critical">{{ row.critical || 0 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="P1" width="100" align="center" title="高">
+          <template #default="{ row }">
+            <span class="priority-high">{{ row.high || 0 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="P2" width="100" align="center" title="中">
+          <template #default="{ row }">
+            <span class="priority-medium">{{ row.medium || 0 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="P3" width="100" align="center" title="低">
+          <template #default="{ row }">
+            <span class="priority-low">{{ row.low || 0 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="count" label="用例总计" width="100" align="center">
+          <template #default="{ row }">
+            <span class="case-count">{{ row.count }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="用例积分" width="100" align="center">
+          <template #default="{ row }">
+            <span class="score-value">{{ row.score || 0 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" align="center" fixed="right">
+          <template #default="{ row }">
+            <el-button class="detail-btn" link @click="goToAuthorDetail(row)">查看详情</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
 
 
@@ -299,7 +312,7 @@ async function loadStatistics() {
 
 // 跳转到作者用例详情页
 function goToAuthorDetail(row) {
-  const query = {}
+  const query = /** @type {Record<string, string>} */ ({})
   if (selectedMonth.value) {
     query.month = selectedMonth.value
   }
@@ -434,7 +447,7 @@ function initTrendChart() {
     tooltip: { trigger: 'axis' },
     legend: { bottom: 0, data: ['新增用例', '激活用例'], textStyle: { color: '#6b7280' } },
     grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
-    xAxis: { type: 'category', data: months, axisLabel: { color: '#6b7280' } },
+    xAxis: { type: 'category', data: months, axisLabel: { color: '#6b7280', rotate: 45, interval: 0 } },
     yAxis: { type: 'value', axisLabel: { color: '#6b7280' } },
     series: [
       { name: '新增用例', type: 'bar', data: counts, itemStyle: { color: '#7b42f6', borderRadius: [4, 4, 0, 0] } },
@@ -468,10 +481,32 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 
   .month-filter {
     width: 140px;
+
+    :deep(.el-input__wrapper) {
+      border-radius: 8px;
+      box-shadow: 0 0 0 1px #dcdfe6 inset;
+
+      &.is-focus {
+        box-shadow: 0 0 0 1px #7c3aed inset;
+      }
+    }
+
+    :deep(.el-input__inner) {
+      color: #374151;
+      font-weight: 500;
+    }
+
+    :deep(.el-input__prefix) {
+      color: #7c3aed;
+    }
+  }
+
+  .section-title {
+    margin-bottom: 0;
   }
 }
 
@@ -479,7 +514,7 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 600;
   color: #6d28d9;
-  margin: 0 0 14px 0;
+  margin: 0 0 12px 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -555,10 +590,42 @@ onMounted(() => {
   font-weight: 600;
 }
 
+// 项目统计数字样式
+.project-name-cell {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+.num-total {
+  color: #6d28d9;
+  font-weight: 600;
+}
+
+.num-active {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.num-draft {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.num-deprecated {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+// 用例合入统计数字样式
 .case-count {
   color: #6d28d9;
   font-weight: 600;
-  font-size: 15px;
+}
+
+.score-value {
+  color: #6d28d9;
+  font-weight: 600;
 }
 
 .priority-critical {
@@ -581,30 +648,101 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.score-value {
-  color: #7c3aed;
-  font-weight: 700;
-  font-size: 16px;
-}
-
 .no-rejected {
   color: #c0c4cc;
 }
 
 .rank-badge {
-  width: 28px;
-  height: 28px;
-  line-height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  font-size: 16px;
+  margin: 0 auto;
   color: #6b7280;
   font-weight: 600;
-  font-size: 13px;
-  display: inline-block;
 
-  &.top-3 {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    color: #d97706;
+  .rank-icon {
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .rank-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  // 4名以后显示圆形灰色背景
+  &.no-medal {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    border: 1px solid #e5e7eb;
+    font-size: 12px;
+    color: #6b7280;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8);
+    line-height: 1;
+  }
+}
+
+.approval-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+
+  &.approved {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  &.rejected {
+    background: #fff1f0;
+    color: #f5222d;
+  }
+}
+
+// 查看详情按钮样式
+.detail-btn {
+  color: #7b42f6;
+
+  &:hover {
+    color: #6d28d9;
+  }
+}
+
+// 项目占比进度条样式
+.project-progress {
+  :deep(.el-progress-bar__outer) {
+    background-color: #e0e7ff;
+    border-radius: 5px;
+  }
+
+  :deep(.el-progress-bar__inner) {
+    border-radius: 5px;
+  }
+
+  :deep(.el-progress__text) {
+    color: #6d28d9;
+    font-weight: 500;
+    font-size: 12px;
+    min-width: 35px;
+    transform: scale(0.9);
+    transform-origin: left center;
   }
 }
 
@@ -626,6 +764,59 @@ onMounted(() => {
 
   tr:hover > td {
     background: #f0edff !important;
+  }
+}
+
+// 直接表格样式（无卡片容器）
+.direct-table {
+  background: #ffffff;
+  border: 1px solid rgba(147, 112, 219, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
+  overflow: hidden;
+
+  :deep(.el-table__header-wrapper) {
+    th {
+      background: #f5f3ff;
+      color: #5a32a3;
+      font-weight: 600;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(147, 112, 219, 0.1);
+      padding: 14px 8px;
+
+      .cell {
+        line-height: 1.4;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+
+  :deep(.el-table__row) {
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #faf9ff;
+    }
+
+    &:last-child td {
+      border-bottom: none;
+    }
+
+    td {
+      padding: 14px 12px;
+      border-bottom: 1px solid rgba(147, 112, 219, 0.06);
+
+      .cell {
+        line-height: 1.4;
+      }
+    }
+  }
+
+  // 隐藏表格底部边框
+  :deep(.el-table__inner-wrapper::before) {
+    display: none;
   }
 }
 

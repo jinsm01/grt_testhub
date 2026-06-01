@@ -238,7 +238,7 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
         """执行API请求"""
         api_request = self.get_object()
         environment_id = request.data.get('environment_id')
-        
+
         try:
             # 创建变量解析器
             resolver = VariableResolver()
@@ -248,13 +248,61 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
             if environment_id:
                 env = Environment.objects.get(id=environment_id)
                 variables.update(env.variables)
-            
+
             # 使用前端发送的更新后的数据，如果没有则使用数据库中的数据
             request_params = request.data.get('params', api_request.params)
             request_headers = request.data.get('headers', api_request.headers)
             request_body = request.data.get('body', api_request.body)
             request_method = request.data.get('method', api_request.method)
             request_url = request.data.get('url', api_request.url)
+
+            # 如果 request_params 是字符串，解析为 JSON
+            if isinstance(request_params, str):
+                try:
+                    request_params = json.loads(request_params)
+                except json.JSONDecodeError:
+                    request_params = {}
+
+            # 如果 request_headers 是字符串，解析为 JSON
+            if isinstance(request_headers, str):
+                try:
+                    request_headers = json.loads(request_headers)
+                except json.JSONDecodeError:
+                    request_headers = {}
+
+            # 检查是否是 multipart/form-data 请求（包含文件上传）
+            uploaded_files = {}
+            body_type = request.data.get('body_type', 'none')
+            form_data_items = request.data.get('form_data', [])
+            print(f"DEBUG - body_type: {body_type}")
+            print(f"DEBUG - form_data_items: {form_data_items}")
+            print(f"DEBUG - request.content_type: {request.content_type}")
+
+            # 如果 form_data_items 是字符串，解析为 JSON
+            if isinstance(form_data_items, str):
+                try:
+                    form_data_items = json.loads(form_data_items)
+                except json.JSONDecodeError:
+                    form_data_items = []
+
+            if body_type == 'form-data' and form_data_items:
+                # 处理文件上传
+                print(f"DEBUG - request.FILES: {request.FILES}")
+                print(f"DEBUG - request.FILES.keys(): {list(request.FILES.keys())}")
+                for key in request.FILES:
+                    print(f"DEBUG - processing FILE key: {key}")
+                    if key.startswith('file_'):
+                        param_name = key[5:]  # 去掉 'file_' 前缀
+                        uploaded_files[param_name] = request.FILES[key]
+                        print(f"DEBUG - added uploaded_files[{param_name}] = {request.FILES[key]}")
+                print(f"DEBUG - final uploaded_files: {uploaded_files}")
+
+                # 重建 request_body 以包含文件信息
+                if form_data_items:
+                    request_body = {
+                        'type': 'form-data',
+                        'data': form_data_items
+                    }
 
             # 替换URL中的变量（先解析动态函数，再替换环境变量）
             url = self._replace_variables(request_url or '', variables)
@@ -286,13 +334,14 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
             headers = {}
             if isinstance(request_headers, list):
                 for header_item in request_headers:
-                    if header_item.get('enabled', True) and header_item.get('key'):
+                    # 确保 header_item 是字典类型
+                    if isinstance(header_item, dict) and header_item.get('enabled', True) and header_item.get('key'):
                         key = header_item['key']
                         value = self._replace_variables(str(header_item.get('value', '')), variables)
                         value = resolver.resolve(value)
                         headers[key] = value
-            else:
-                headers = request_headers.copy() if request_headers else {}
+            elif isinstance(request_headers, dict):
+                headers = request_headers.copy()
                 for key, value in headers.items():
                     headers[key] = self._replace_variables(str(value), variables)
                     headers[key] = resolver.resolve(headers[key])
@@ -379,6 +428,85 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
                     data=body_data,
                     timeout=30
                 )
+            elif body_type == 'form-data':
+                if uploaded_files:
+                    # 有文件时使用 multipart 格式
+                    from requests_toolbelt.multipart.encoder import MultipartEncoder
+
+                    # 构建 multipart 数据
+                    multipart_data = {}
+
+                    # 添加普通字段
+                    print(f"DEBUG - body_data: {body_data}")
+                    print(f"DEBUG - body_data type: {type(body_data)}")
+                    if isinstance(body_data, list):
+                        for item in body_data:
+                            print(f"DEBUG - processing item: {item}")
+                            print(f"DEBUG - item type: {type(item)}")
+                            # 检查 type 字段，只要不是 file 类型就添加
+                            item_type = item.get('type', 'string') if isinstance(item, dict) else 'string'
+                            item_key = item.get('key') if isinstance(item, dict) else None
+                            item_value = item.get('value', '') if isinstance(item, dict) else ''
+                            if item_key and item_type != 'file':
+                                multipart_data[item_key] = item_value
+                                print(f"DEBUG - added to multipart_data: {item_key} = {item_value}")
+                            else:
+                                print(f"DEBUG - skipped item: key={item_key}, type={item_type}")
+
+                    # 添加文件字段
+                    print(f"DEBUG - adding files to multipart_data, uploaded_files: {uploaded_files}")
+                    for param_name, file_obj in uploaded_files.items():
+                        print(f"DEBUG - adding file: {param_name}, file_obj: {file_obj}, content_type: {getattr(file_obj, 'content_type', 'N/A')}")
+                        # 确保文件对象在正确的位置
+                        if hasattr(file_obj, 'seek'):
+                            file_obj.seek(0)
+                        # 使用文件对象的 chunks() 方法读取内容
+                        multipart_data[param_name] = (file_obj.name, file_obj, getattr(file_obj, 'content_type', None) or 'application/octet-stream')
+
+                    # 使用 MultipartEncoder 编码数据
+                    print(f"DEBUG - multipart_data before encoding: {multipart_data}")
+                    try:
+                        encoder = MultipartEncoder(fields=multipart_data)
+                    except Exception as e:
+                        print(f"DEBUG - MultipartEncoder error: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        raise
+
+                    # 更新 headers，设置正确的 Content-Type
+                    request_headers_for_send = headers.copy() if headers else {}
+                    request_headers_for_send['Content-Type'] = encoder.content_type
+
+                    response = requests.request(
+                        method=request_method,
+                        url=url,
+                        headers=request_headers_for_send,
+                        params=params,
+                        data=encoder,
+                        timeout=30
+                    )
+                else:
+                    # 没有文件时，将 form-data 转换为 JSON 格式发送
+                    # 因为很多现代 API 只接受 application/json
+                    print(f"DEBUG - no files, converting form-data to JSON")
+                    print(f"DEBUG - body_data: {body_data}")
+                    form_dict = {}
+                    if isinstance(body_data, list):
+                        for item in body_data:
+                            print(f"DEBUG - processing item: {item}")
+                            if item.get('key'):
+                                form_dict[item['key']] = item.get('value', '')
+                                print(f"DEBUG - added to form_dict: {item['key']} = {item.get('value', '')}")
+                    print(f"DEBUG - final form_dict: {form_dict}")
+
+                    response = requests.request(
+                        method=request_method,
+                        url=url,
+                        headers=headers,
+                        params=params,
+                        json=form_dict,
+                        timeout=30
+                    )
             else:
                 # json 类型使用 json 参数，自动序列化
                 # 如果 body_data 是字符串（JSON 解析失败），尝试解析为 JSON
@@ -422,8 +550,14 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
             
             # 执行断言验证
             assertions = request.data.get('assertions', api_request.assertions) or []
+            # 如果 assertions 是字符串，解析为 JSON
+            if isinstance(assertions, str):
+                try:
+                    assertions = json.loads(assertions)
+                except json.JSONDecodeError:
+                    assertions = []
             for assertion in assertions:
-                if assertion.get('type') == 'response_time':
+                if isinstance(assertion, dict) and assertion.get('type') == 'response_time':
                     assertion['actual_time'] = response_time
             assertions_results = execute_assertions(response, assertions)
 
@@ -439,6 +573,12 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
 
             # 执行变量提取
             extractors = request.data.get('variable_extractors', api_request.variable_extractors) or []
+            # 如果 extractors 是字符串，解析为 JSON
+            if isinstance(extractors, str):
+                try:
+                    extractors = json.loads(extractors)
+                except json.JSONDecodeError:
+                    extractors = []
             extraction_result = {'variables': {}, 'results': []}
             if extractors and response_json is not None:
                 extraction_result = extract_variables(
@@ -497,6 +637,11 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
         except Environment.DoesNotExist:
             return Response({'error': '指定的执行环境不存在'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            # 打印完整的错误堆栈
+            import traceback
+            print(f"DEBUG - execute error: {e}")
+            traceback.print_exc()
+            
             # 保存错误历史
             history = RequestHistory.objects.create(
                 request=api_request,
@@ -662,6 +807,138 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
             logger.error(f"生成断言失败: {e}", exc_info=True)
             return Response(
                 {'error': f'生成断言失败: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['post'])
+    def execute_single(self, request):
+        """执行单个API请求（无需保存接口）"""
+        try:
+            # 获取请求参数
+            method = request.data.get('method', 'GET')
+            url = request.data.get('url', '')
+            headers = request.data.get('headers', {})
+            params = request.data.get('params', {})
+            body = request.data.get('body')
+            environment_id = request.data.get('environment_id')
+
+            if not url:
+                return Response(
+                    {'error': 'URL不能为空'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # 创建变量解析器
+            resolver = VariableResolver()
+
+            # 解析环境变量
+            variables = {}
+            if environment_id:
+                try:
+                    env = Environment.objects.get(id=environment_id)
+                    variables.update(env.variables)
+                except Environment.DoesNotExist:
+                    pass
+
+            # 替换URL中的变量
+            final_url = self._replace_variables(url, variables)
+            final_url = resolver.resolve(final_url)
+
+            # 如果URL是相对路径，自动拼接base_url
+            if final_url and not final_url.startswith(('http://', 'https://')):
+                base_url = None
+                if environment_id:
+                    base_url_var = variables.get('base_url') or variables.get('baseUrl')
+                    if isinstance(base_url_var, dict):
+                        base_url = str(
+                            base_url_var.get('current_value', '') or
+                            base_url_var.get('currentValue', '') or
+                            base_url_var.get('initial_value', '') or
+                            base_url_var.get('initialValue', '')
+                        )
+                    elif base_url_var:
+                        base_url = str(base_url_var)
+
+                if base_url:
+                    base_url = base_url.rstrip('/')
+                    final_url = final_url.lstrip('/')
+                    final_url = f"{base_url}/{final_url}"
+
+            # 准备请求头
+            final_headers = {}
+            if isinstance(headers, dict):
+                for key, value in headers.items():
+                    final_headers[key] = resolver.resolve(self._replace_variables(str(value), variables))
+
+            # 准备请求参数
+            final_params = {}
+            if isinstance(params, dict):
+                for key, value in params.items():
+                    final_params[key] = resolver.resolve(self._replace_variables(str(value), variables))
+
+            # 准备请求体
+            body_data = None
+            if body and method in ['POST', 'PUT', 'PATCH']:
+                if isinstance(body, dict):
+                    body_data = self._replace_variables_in_dict(body, variables)
+                    body_data = self._resolve_variables_in_dict(body_data, resolver)
+                else:
+                    body_data = resolver.resolve(self._replace_variables(str(body), variables))
+
+            # 执行请求
+            start_time = time.time()
+
+            request_kwargs = {
+                'method': method.upper(),
+                'url': final_url,
+                'headers': final_headers,
+                'params': final_params,
+                'timeout': 30
+            }
+
+            if body_data is not None:
+                if isinstance(body_data, dict):
+                    request_kwargs['json'] = body_data
+                else:
+                    request_kwargs['data'] = body_data
+
+            # 发送请求
+            response = requests.request(**request_kwargs)
+
+            end_time = time.time()
+            response_time = (end_time - start_time) * 1000  # 转换为毫秒
+
+            # 解析响应
+            response_headers = dict(response.headers)
+            response_body = response.text
+
+            # 尝试解析JSON响应
+            try:
+                response_json = response.json()
+            except:
+                response_json = None
+
+            return Response({
+                'status_code': response.status_code,
+                'response_time': response_time,
+                'response_data': {
+                    'headers': response_headers,
+                    'body': response_body,
+                    'json': response_json
+                },
+                'request_data': {
+                    'method': method,
+                    'url': final_url,
+                    'headers': final_headers,
+                    'params': final_params,
+                    'body': body_data
+                }
+            })
+
+        except Exception as e:
+            logger.error(f"执行单个请求失败: {e}", exc_info=True)
+            return Response(
+                {'error': f'执行请求失败: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -1011,8 +1288,10 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
                 test_suite=test_suite,
                 enabled=True
             ).select_related('request').order_by('order')
-            
-            execution.total_requests = suite_requests.count()
+
+            # 统计实际请求数（排除分组类型）
+            actual_request_count = sum(1 for sr in suite_requests if sr.step_type != 'group' and sr.request is not None)
+            execution.total_requests = actual_request_count
             execution.save()
             
             results = []
@@ -1037,6 +1316,28 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
             for suite_request in suite_requests:
                 current_step_index = suite_request.order
                 api_request = suite_request.request
+
+                # 处理等待时间步骤
+                if suite_request.step_type == 'wait':
+                    # 从关联的场景步骤获取 control_config
+                    control_config = {}
+                    if hasattr(suite_request, 'scenario_step') and suite_request.scenario_step:
+                        control_config = suite_request.scenario_step.control_config or {}
+                    wait_time = control_config.get('wait_time', 1)
+                    step_name = suite_request.override_name or '等待时间'
+                    logger.info(f"DEBUG - 执行等待步骤: order={current_step_index}, name={step_name}, wait_time={wait_time}")
+                    time.sleep(wait_time)
+                    results.append({
+                        'name': step_name,
+                        'method': 'WAIT',
+                        'url': f'等待 {wait_time} 秒',
+                        'passed': True,
+                        'duration': wait_time * 1000,  # 转换为毫秒
+                        'status_code': None,
+                        'response_time': wait_time * 1000
+                    })
+                    passed_count += 1
+                    continue
 
                 # 跳过分组类型步骤（group 只是容器，不是真正的接口请求）
                 if suite_request.step_type == 'group' or api_request is None:
@@ -1869,6 +2170,80 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['post'], url_path='add-wait-step')
+    def add_wait_step(self, request, pk=None):
+        """添加等待时间步骤到测试套件"""
+        test_suite = self.get_object()
+        wait_time = request.data.get('wait_time', 1)
+        name = request.data.get('name', '等待时间')
+        step_number = request.data.get('step_number')
+
+        try:
+            # 获取关联的自动化场景
+            scenario = None
+            if hasattr(test_suite, 'scenario'):
+                scenario = test_suite.scenario
+            else:
+                # 创建新的自动化场景
+                from .models import AutomationScenario
+                scenario = AutomationScenario.objects.create(
+                    name=test_suite.name,
+                    description=test_suite.description,
+                    project=test_suite.project,
+                    environment=test_suite.environment,
+                    legacy_test_suite=test_suite,
+                    created_by=request.user
+                )
+
+            # 创建 TestSuiteRequest
+            current_order = TestSuiteRequest.objects.filter(test_suite=test_suite).count()
+            suite_request = TestSuiteRequest.objects.create(
+                test_suite=test_suite,
+                request=None,
+                order=current_order,
+                enabled=True,
+                step_type='wait',
+                override_name=name,
+                assertions=[],
+                extracted_variables={}
+            )
+
+            # 创建关联的 ScenarioStep
+            from .models import ScenarioStep
+            # 获取当前场景下最大的步骤编号
+            existing_steps = ScenarioStep.objects.filter(scenario=scenario).values_list('step_number', flat=True)
+            next_step = max(existing_steps, default=0) + 1
+            # 使用传入的 step_number 或自动计算的 next_step
+            final_step_number = step_number if step_number and step_number > 0 else next_step
+            # 如果传入的 step_number 已存在，使用自动计算的
+            if final_step_number in existing_steps:
+                final_step_number = next_step
+
+            scenario_step = ScenarioStep.objects.create(
+                scenario=scenario,
+                step_type='wait',
+                step_number=final_step_number,
+                name=name,
+                api_request=None,
+                override_enabled=True,
+                override_name=name,
+                control_config={'wait_time': wait_time},
+                order=current_order,
+                legacy_suite_request=suite_request
+            )
+
+            # 更新套件的 updated_at 时间戳
+            test_suite.save(update_fields=['updated_at'])
+
+            serializer = self.get_serializer(test_suite)
+            return Response({
+                'message': '等待时间步骤添加成功',
+                'suite': serializer.data
+            })
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=True, methods=['get'])
     def reviews(self, request, pk=None):
         """获取测试套件的评审记录"""
@@ -2597,6 +2972,7 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
         .method-tag.put {{ background: #fef3c7; color: #d97706; }}
         .method-tag.delete {{ background: #fee2e2; color: #dc2626; }}
         .method-tag.patch {{ background: #f3e8ff; color: #9333ea; }}
+        .method-tag.wait {{ background: #fef3c7; color: #d97706; }}
 
         .test-name {{
             font-weight: 600;
@@ -3448,6 +3824,7 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
         .method-tag.put {{ background: #ffedd5; color: #9a3412; }}
         .method-tag.delete {{ background: #fee2e2; color: #b91c1c; }}
         .method-tag.patch {{ background: #f3e8ff; color: #7c3aed; }}
+        .method-tag.wait {{ background: #ffedd5; color: #9a3412; }}
         
         .test-url {{
             font-size: 13px;

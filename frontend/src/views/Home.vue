@@ -66,18 +66,28 @@
           <p>{{ $t('home.aiIntelligentDesc') }}</p>
         </div>
 
-        <!-- 数据工具箱 -->
-        <div class="nav-card" :class="{ 'card-animate': pageLoaded, 'card-delay-3': true }" @click="handleNavigate('data')" role="button" tabindex="0">
+        <!-- 接口测试 -->
+        <div class="nav-card" :class="{ 'card-animate': pageLoaded, 'card-delay-3': true }" @click="handleNavigate('api')" role="button" tabindex="0">
           <div class="card-shine"></div>
-          <div class="card-icon data-icon">
-            <BarChart3 :size="32" stroke-width="1.5" />
+          <div class="card-icon api-icon">
+            <Share2 :size="32" stroke-width="1.5" />
           </div>
-          <h3>{{ $t('home.dataFactory') }}</h3>
-          <p>{{ $t('home.dataFactoryDesc') }}</p>
+          <h3>{{ $t('home.apiTesting') }}</h3>
+          <p>{{ $t('home.apiTestingDesc') }}</p>
+        </div>
+
+        <!-- Web自动化 -->
+        <div class="nav-card" :class="{ 'card-animate': pageLoaded, 'card-delay-4': true }" @click="handleNavigate('ui')" role="button" tabindex="0">
+          <div class="card-shine"></div>
+          <div class="card-icon ui-icon">
+            <Globe :size="32" stroke-width="1.5" />
+          </div>
+          <h3>Web自动化</h3>
+          <p>可视化的Web UI自动化测试</p>
         </div>
 
         <!-- 配置中心 -->
-        <div class="nav-card" :class="{ 'card-animate': pageLoaded, 'card-delay-4': true }" @click="handleNavigate('config')" role="button" tabindex="0">
+        <div class="nav-card" :class="{ 'card-animate': pageLoaded, 'card-delay-5': true }" @click="handleNavigate('config')" role="button" tabindex="0">
           <div class="card-shine"></div>
           <div class="card-icon config-icon">
             <SlidersHorizontal :size="32" stroke-width="1.5" />
@@ -87,7 +97,7 @@
         </div>
 
         <!-- AI知识库 -->
-        <div class="nav-card" :class="{ 'card-animate': pageLoaded, 'card-delay-5': true }" @click="handleNavigate('assistant')" role="button" tabindex="0">
+        <div class="nav-card" :class="{ 'card-animate': pageLoaded, 'card-delay-6': true }" @click="handleNavigate('assistant')" role="button" tabindex="0">
           <div class="card-shine"></div>
           <div class="card-icon assistant-icon">
             <MessagesSquare :size="32" stroke-width="1.5" />
@@ -96,34 +106,24 @@
           <p>{{ $t('home.aiKnowledgeBaseDesc') }}</p>
         </div>
 
-        <!-- Web自动化 -->
-        <div class="nav-card" :class="{ 'card-animate': pageLoaded, 'card-delay-6': true }" @click="handleNavigate('ui')" role="button" tabindex="0">
+        <!-- 数据工具箱 -->
+        <div class="nav-card" :class="{ 'card-animate': pageLoaded, 'card-delay-7': true }" @click="handleNavigate('data')" role="button" tabindex="0">
           <div class="card-shine"></div>
-          <div class="card-icon ui-icon">
-            <Globe :size="32" stroke-width="1.5" />
+          <div class="card-icon data-icon">
+            <BarChart3 :size="32" stroke-width="1.5" />
           </div>
-          <h3>Web自动化</h3>
-          <p>可视化的Web UI自动化测试</p>
+          <h3>{{ $t('home.dataFactory') }}</h3>
+          <p>{{ $t('home.dataFactoryDesc') }}</p>
         </div>
 
         <!-- APP自动化 -->
-        <div class="nav-card" :class="{ 'card-animate': pageLoaded, 'card-delay-7': true }" @click="handleNavigate('app')" role="button" tabindex="0">
+        <div class="nav-card" :class="{ 'card-animate': pageLoaded, 'card-delay-8': true }" @click="handleNavigate('app')" role="button" tabindex="0">
           <div class="card-shine"></div>
           <div class="card-icon app-icon">
             <Smartphone :size="32" stroke-width="1.5" />
           </div>
           <h3>APP自动化</h3>
           <p>可视化的Android App自动化测试</p>
-        </div>
-
-        <!-- 接口测试 -->
-        <div class="nav-card" :class="{ 'card-animate': pageLoaded, 'card-delay-8': true }" @click="handleNavigate('api')" role="button" tabindex="0">
-          <div class="card-shine"></div>
-          <div class="card-icon api-icon">
-            <Share2 :size="32" stroke-width="1.5" />
-          </div>
-          <h3>{{ $t('home.apiTesting') }}</h3>
-          <p>{{ $t('home.apiTestingDesc') }}</p>
         </div>
       </div>
     </div>

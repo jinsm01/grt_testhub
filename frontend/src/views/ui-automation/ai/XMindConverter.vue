@@ -985,15 +985,17 @@ onActivated(() => {
 
   // 数量徽章样式
   .count-badge {
-    display: inline-block;
-    padding: 4px 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 24px;
     border-radius: 4px;
     font-size: 13px;
     font-weight: 500;
     background: #e6f7ff;
     color: #1890ff;
     white-space: nowrap;
-    min-width: 24px;
   }
 
   // 时间文本样式

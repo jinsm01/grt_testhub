@@ -3,6 +3,7 @@
 自动化场景 API 视图
 """
 import json
+import logging
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
@@ -14,10 +15,12 @@ from django.utils import timezone
 
 from .models import (
     AutomationScenario, ScenarioStep, ScenarioExecution,
-    ApiProject, ApiCollection
+    ApiProject, ApiCollection, ApiRequest, Environment
 )
 from .scenario_engine import ScenarioExecutor
 from .apifox_importer import ApifoxCliImporter
+
+logger = logging.getLogger(__name__)
 
 
 class AutomationScenarioViewSet(viewsets.ModelViewSet):
@@ -426,8 +429,46 @@ class ScenarioStepViewSet(viewsets.ModelViewSet):
         """创建步骤"""
         data = request.data
 
-        # 获取最大步骤编号
+        # 获取场景ID（支持直接传 scenario_id 或通过 test_suite_id 自动查找）
         scenario_id = data.get('scenario_id')
+        test_suite_id = data.get('test_suite_id')
+
+        if not scenario_id and test_suite_id:
+            # 通过 test_suite_id 查找关联的 AutomationScenario
+            try:
+                from apps.api_testing.models import TestSuite
+                test_suite = TestSuite.objects.get(id=test_suite_id)
+                if hasattr(test_suite, 'scenario') and test_suite.scenario:
+                    scenario_id = test_suite.scenario.id
+                else:
+                    # 如果没有关联的场景，创建一个
+                    from apps.api_testing.models import AutomationScenario
+                    scenario = AutomationScenario.objects.create(
+                        project=test_suite.project,
+                        name=test_suite.name,
+                        description=test_suite.description or '',
+                        environment=test_suite.environment,
+                        global_variables={},
+                        pre_script='',
+                        post_script='',
+                        flow_control={},
+                        legacy_test_suite=test_suite,
+                        created_by=request.user
+                    )
+                    scenario_id = scenario.id
+            except TestSuite.DoesNotExist:
+                return Response(
+                    {'error': f'测试套件 {test_suite_id} 不存在'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        if not scenario_id:
+            return Response(
+                {'error': '必须提供 scenario_id 或 test_suite_id'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 获取最大步骤编号
         max_step = ScenarioStep.objects.filter(
             scenario_id=scenario_id
         ).values_list('step_number', flat=True)
@@ -456,6 +497,45 @@ class ScenarioStepViewSet(viewsets.ModelViewSet):
             control_config=data.get('control_config', {}),
             order=next_step
         )
+
+        # 如果通过 test_suite_id 创建，同时创建 TestSuiteRequest 以保持兼容性
+        if test_suite_id and data.get('api_request_id'):
+            try:
+                from apps.api_testing.models import TestSuite, TestSuiteRequest
+                test_suite = TestSuite.objects.get(id=test_suite_id)
+                # 检查是否已存在
+                existing = TestSuiteRequest.objects.filter(
+                    test_suite=test_suite,
+                    request_id=data.get('api_request_id')
+                ).first()
+                
+                # 转换 override_extractors 格式：列表 -> 字典
+                override_extractors = data.get('override_extractors', [])
+                extracted_variables_dict = {}
+                if isinstance(override_extractors, list):
+                    for extractor in override_extractors:
+                        if isinstance(extractor, dict) and extractor.get('variable_name'):
+                            extracted_variables_dict[extractor['variable_name']] = extractor.get('json_path', '')
+                elif isinstance(override_extractors, dict):
+                    extracted_variables_dict = override_extractors
+                
+                if not existing:
+                    suite_request = TestSuiteRequest.objects.create(
+                        test_suite=test_suite,
+                        request_id=data.get('api_request_id'),
+                        order=next_step,
+                        assertions=data.get('override_assertions', []),
+                        extracted_variables=extracted_variables_dict
+                    )
+                    # 建立 ScenarioStep 和 TestSuiteRequest 的关联
+                    step.legacy_suite_request = suite_request
+                    step.save()
+                else:
+                    # 如果已存在，建立关联
+                    step.legacy_suite_request = existing
+                    step.save()
+            except Exception as e:
+                logger.warning(f"创建 TestSuiteRequest 失败: {str(e)}")
 
         return Response({
             'id': step.id,
@@ -583,6 +663,8 @@ def apifox_import_v2_validate(request):
     """
     try:
         file_obj = request.FILES.get('file')
+        project_id = request.data.get('project_id')
+
         if not file_obj:
             return Response({'error': '请上传文件'}, status=400)
 
@@ -595,27 +677,57 @@ def apifox_import_v2_validate(request):
         collection_name = info.get('name', '未命名集合')
         item_count = len(data.get('item', []))
 
-        # 统计步骤
-        def count_steps(items):
+        # 处理 wrapper 结构：如果 items[0] 有嵌套的 item 数组，提取它
+        items = data.get('item', [])
+        if items and isinstance(items[0], dict) and 'item' in items[0]:
+            items = items[0].get('item', [])
+
+        # 统计请求数量（只统计包含 request 字段的项，不包括分组）
+        def count_requests(items):
             count = 0
             for item in items:
-                count += 1
+                # 如果 item 包含 request 字段，说明是一个请求
+                if 'request' in item:
+                    count += 1
+                # 如果有嵌套的 item，递归统计
                 if 'item' in item:
-                    count += count_steps(item['item'])
+                    count += count_requests(item['item'])
             return count
 
-        total_steps = count_steps(data.get('item', []))
+        total_requests = count_requests(items)
 
         # 提取变量
         variables = [v.get('key', '') for v in data.get('variable', [])]
+
+        # 检查是否已存在同名合集
+        existing_collection = None
+        if project_id:
+            existing = ApiCollection.objects.filter(
+                project_id=project_id,
+                name=collection_name,
+                is_deleted=False
+            ).first()
+            if existing:
+                # 统计现有合集中的接口数量
+                existing_request_count = ApiRequest.objects.filter(
+                    collection=existing,
+                    is_deleted=False
+                ).count()
+                existing_collection = {
+                    'id': existing.id,
+                    'name': existing.name,
+                    'request_count': existing_request_count,
+                    'created_at': existing.created_at.strftime('%Y-%m-%d %H:%M:%S')
+                }
 
         return Response({
             'valid': True,
             'collection_name': collection_name,
             'description': info.get('description', ''),
-            'total_steps': total_steps,
+            'total_requests': total_requests,
             'variables': variables,
-            'message': f'验证通过，共 {total_steps} 个步骤，{len(variables)} 个变量'
+            'existing_collection': existing_collection,
+            'message': f'验证通过，共 {total_requests} 个请求，{len(variables)} 个变量'
         })
 
     except json.JSONDecodeError as e:
@@ -666,7 +778,8 @@ def apifox_import_v2_execute(request):
             'suite_id': result.get('suite_id'),
             'suite_name': result.get('suite_name'),
             'stats': result.get('stats', {}),
-            'warnings': result.get('warnings', [])
+            'warnings': result.get('warnings', []),
+            'imported_requests': result.get('imported_requests', [])
         })
 
     except Exception as e:

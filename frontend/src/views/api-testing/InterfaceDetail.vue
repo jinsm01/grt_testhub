@@ -742,7 +742,7 @@ const request = ref({
 const bodyType = ref('none')
 const rawType = ref('json')
 const rawBody = ref('')
-const formData = ref({})
+const formData = ref([])
 const formUrlEncoded = ref({})
 
 // 请求体类型选项
@@ -871,9 +871,31 @@ const responseBodyJson = computed(() => {
 })
 
 // 复制 JSON Path 到剪贴板
-const copyJsonPath = (path) => {
-  navigator.clipboard.writeText(path)
-  ElMessage.success(`已复制 JSON Path: ${path}`)
+const copyJsonPath = async (path) => {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(path)
+      ElMessage.success(`已复制 JSON Path: ${path}`)
+    } else {
+      // 降级方案：使用传统的复制方法
+      const textarea = document.createElement('textarea')
+      textarea.value = path
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      const success = document.execCommand('copy')
+      document.body.removeChild(textarea)
+      if (success) {
+        ElMessage.success(`已复制 JSON Path: ${path}`)
+      } else {
+        ElMessage.error('复制失败，请手动复制')
+      }
+    }
+  } catch (error) {
+    console.error('复制失败:', error)
+    ElMessage.error('复制失败，请手动复制')
+  }
 }
 
 onMounted(async () => {
@@ -900,8 +922,8 @@ onMounted(async () => {
     }
     bodyType.value = 'none'
     rawBody.value = ''
-    formData.value = {}
-    formUrlEncoded.value = {}
+    formData.value = []
+    formUrlEncoded.value = []
   }
 })
 
@@ -1329,10 +1351,10 @@ const loadInterface = async () => {
         rawBody.value = data.body.data
       } else if (data.body.type === 'form-data') {
         bodyType.value = 'form-data'
-        formData.value = data.body.data || {}
+        formData.value = convertToKeyValueArray(data.body.data)
       } else if (data.body.type === 'x-www-form-urlencoded') {
         bodyType.value = 'x-www-form-urlencoded'
-        formUrlEncoded.value = data.body.data || {}
+        formUrlEncoded.value = convertToKeyValueArray(data.body.data)
       } else {
         bodyType.value = 'none'
       }
@@ -1348,7 +1370,16 @@ const loadInterface = async () => {
 
 const convertToKeyValueArray = (obj) => {
   if (!obj || typeof obj !== 'object') return []
-  if (Array.isArray(obj)) return obj
+  if (Array.isArray(obj)) {
+    // 确保数组中的每个对象都有完整的字段
+    return obj.map(item => ({
+      enabled: item.enabled !== false,
+      key: item.key || '',
+      value: item.value || '',
+      description: item.description || '',
+      type: item.type || 'string'
+    }))
+  }
   return Object.entries(obj).map(([key, value]) => ({
     enabled: true,
     key: key,
@@ -1372,8 +1403,8 @@ const convertToObject = (arr) => {
 const onBodyTypeChange = (type) => {
   if (type === 'none') {
     rawBody.value = ''
-    formData.value = {}
-    formUrlEncoded.value = {}
+    formData.value = []
+    formUrlEncoded.value = []
   }
 }
 
@@ -1753,29 +1784,6 @@ const sendRequest = async () => {
       return
     }
     
-    // 构造请求体
-    let bodyData = null
-    // 将转义的 \{\{ 转换回 {{
-    const unescapedRawBody = rawBody.value.replace(/\\\{\\\{/g, '{{')
-    if (hasBody.value && bodyType.value !== 'none') {
-      if (bodyType.value === 'raw' && rawType.value === 'json') {
-        try {
-          // 解析 JSON 后替换变量
-          const parsedBody = JSON.parse(unescapedRawBody || '{}')
-          bodyData = { type: 'json', data: replaceVariablesInObject(parsedBody) }
-        } catch {
-          // JSON 解析失败时，对字符串进行变量替换
-          bodyData = { type: 'raw', data: replaceVariables(unescapedRawBody) }
-        }
-      } else if (bodyType.value === 'raw') {
-        bodyData = { type: 'raw', data: replaceVariables(unescapedRawBody) }
-      } else if (bodyType.value === 'form-data') {
-        bodyData = { type: 'form-data', data: replaceVariablesInObject(formData.value) }
-      } else if (bodyType.value === 'x-www-form-urlencoded') {
-        bodyData = { type: 'x-www-form-urlencoded', data: replaceVariablesInObject(formUrlEncoded.value) }
-      }
-    }
-
     // 替换 URL 中的 Path 参数（只替换启用的参数）
     let finalUrl = request.value.url
     if (request.value.path_params && request.value.path_params.length > 0) {
@@ -1810,18 +1818,94 @@ const sendRequest = async () => {
 
     const replacedUrl = replaceVariables(finalUrl)
 
-    const data = {
-      method: request.value.method,
-      url: replacedUrl,
-      headers: replacedHeaders,
-      params: replacedParams,
-      body: bodyData,
-      environment_id: selectedEnvironment.value,
-      variable_extractors: request.value.variable_extractors,
-      assertions: request.value.assertions || []
-    }
+    // 检查是否包含文件上传
+    console.log('DEBUG - bodyType:', bodyType.value)
+    console.log('DEBUG - formData:', formData.value)
+    const hasFiles = bodyType.value === 'form-data' && formData.value && formData.value.some(item => {
+      console.log('DEBUG - checking item:', item, 'has file:', !!item.file)
+      return item.type === 'file' && item.file
+    })
+    console.log('DEBUG - hasFiles:', hasFiles)
 
-    const res = await api.post(`/api-testing/requests/${interfaceId.value}/execute/`, data)
+    let res
+    if (hasFiles) {
+      // 使用 FormData 发送包含文件的请求
+      const formDataObj = new FormData()
+      formDataObj.append('method', request.value.method)
+      formDataObj.append('url', replacedUrl)
+      formDataObj.append('headers', JSON.stringify(replacedHeaders))
+      formDataObj.append('params', JSON.stringify(replacedParams))
+      formDataObj.append('environment_id', selectedEnvironment.value || '')
+      formDataObj.append('variable_extractors', JSON.stringify(request.value.variable_extractors || []))
+      formDataObj.append('assertions', JSON.stringify(request.value.assertions || []))
+
+      // 处理 form-data 数据，将文件添加到 FormData
+      const formDataItems = []
+      formData.value.forEach(item => {
+        if (item.enabled !== false && item.key) {
+          if (item.type === 'file' && item.file) {
+            formDataObj.append(`file_${item.key}`, item.file, item.file.name)
+            formDataItems.push({
+              key: item.key,
+              type: 'file',
+              value: item.file.name,
+              description: item.description || ''
+            })
+          } else {
+            formDataItems.push({
+              key: item.key,
+              type: item.type || 'string',
+              value: replaceVariables(item.value || ''),
+              description: item.description || ''
+            })
+          }
+        }
+      })
+      formDataObj.append('body_type', 'form-data')
+      formDataObj.append('form_data', JSON.stringify(formDataItems))
+
+      res = await api.post(`/api-testing/requests/${interfaceId.value}/execute/`, formDataObj, {
+        headers: {
+          'Content-Type': undefined  // 让浏览器自动设置 Content-Type 为 multipart/form-data
+        }
+      })
+    } else {
+      // 构造请求体
+      let bodyData = null
+      // 将转义的 \\\\{\\\\{ 转换回 {{
+      const unescapedRawBody = rawBody.value.replace(/\\\\{\\\\{/g, '{{')
+      if (hasBody.value && bodyType.value !== 'none') {
+        if (bodyType.value === 'raw' && rawType.value === 'json') {
+          try {
+            // 解析 JSON 后替换变量
+            const parsedBody = JSON.parse(unescapedRawBody || '{}')
+            bodyData = { type: 'json', data: replaceVariablesInObject(parsedBody) }
+          } catch {
+            // JSON 解析失败时，对字符串进行变量替换
+            bodyData = { type: 'raw', data: replaceVariables(unescapedRawBody) }
+          }
+        } else if (bodyType.value === 'raw') {
+          bodyData = { type: 'raw', data: replaceVariables(unescapedRawBody) }
+        } else if (bodyType.value === 'form-data') {
+          bodyData = { type: 'form-data', data: replaceVariablesInObject(formData.value) }
+        } else if (bodyType.value === 'x-www-form-urlencoded') {
+          bodyData = { type: 'x-www-form-urlencoded', data: replaceVariablesInObject(formUrlEncoded.value) }
+        }
+      }
+
+      const data = {
+        method: request.value.method,
+        url: replacedUrl,
+        headers: replacedHeaders,
+        params: replacedParams,
+        body: bodyData,
+        environment_id: selectedEnvironment.value,
+        variable_extractors: request.value.variable_extractors,
+        assertions: request.value.assertions || []
+      }
+
+      res = await api.post(`/api-testing/requests/${interfaceId.value}/execute/`, data)
+    }
     response.value = res.data
     responseActiveTab.value = 'response-body'
     

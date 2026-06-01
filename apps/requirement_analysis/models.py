@@ -18,6 +18,10 @@ class RequirementDocument(models.Model):
         ('docx', 'Word文档'),
         ('txt', '文本文档'),
         ('md', 'Markdown文档'),
+        ('png', 'PNG图片'),
+        ('jpg', 'JPG图片'),
+        ('jpeg', 'JPEG图片'),
+        ('gif', 'GIF图片'),
     ]
 
     STATUS_CHOICES = [
@@ -213,6 +217,7 @@ class AIModelConfig(models.Model):
         ('knowledge_base', '知识库问答'),
         ('bug_analyzer', 'Bug 分析专家'),
         ('assertion_generator', 'AI断言生成'),
+        ('knowledge_graph', '知识图谱构建'),
     ]
 
     name = models.CharField(max_length=100, verbose_name='配置名称')
@@ -1539,3 +1544,223 @@ class AIModelService:
         logger.info(f"重新编号完成: 共{total_cases}条测试用例，编号范围: {prefix}001-{prefix}{total_cases:03d}")
 
         return renumbered_content
+
+
+# ==================== LightRAG 知识图谱模型 ====================
+
+class KnowledgeGraph(models.Model):
+    """知识图谱模型 - 管理项目的知识图谱实例"""
+
+    STATUS_CHOICES = [
+        ('pending', '待构建'),
+        ('building', '正在构建'),
+        ('completed', '构建完成'),
+        ('failed', '构建失败'),
+    ]
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='knowledge_graphs',
+        verbose_name='关联项目',
+        null=True,
+        blank=True
+    )
+    name = models.CharField(max_length=100, verbose_name='图谱名称', default='需求知识图谱')
+    description = models.TextField(verbose_name='图谱描述', blank=True)
+
+    # 公共图谱标记
+    is_public = models.BooleanField(default=False, verbose_name='是否公共图谱')
+    public_access_level = models.CharField(
+        max_length=20,
+        choices=[
+            ('read', '只读'),
+            ('write', '可编辑'),
+        ],
+        default='read',
+        verbose_name='公共访问权限'
+    )
+    
+    # 关联的需求文档
+    documents = models.ManyToManyField(
+        RequirementDocument,
+        related_name='knowledge_graphs',
+        verbose_name='关联文档'
+    )
+    
+    # 构建状态
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name='状态'
+    )
+    
+    # 统计信息
+    node_count = models.PositiveIntegerField(default=0, verbose_name='实体节点数')
+    edge_count = models.PositiveIntegerField(default=0, verbose_name='关系边数')
+    document_count = models.PositiveIntegerField(default=0, verbose_name='文档数')
+    
+    # 构建信息
+    build_started_at = models.DateTimeField(null=True, blank=True, verbose_name='构建开始时间')
+    build_completed_at = models.DateTimeField(null=True, blank=True, verbose_name='构建完成时间')
+    build_error_message = models.TextField(blank=True, verbose_name='构建错误信息')
+    
+    # 存储路径
+    working_dir = models.CharField(max_length=500, verbose_name='工作目录', blank=True)
+    
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='创建者')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+    
+    class Meta:
+        db_table = 'knowledge_graphs'
+        verbose_name = '知识图谱'
+        verbose_name_plural = '知识图谱'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.name} - {self.get_status_display()}"
+    
+    def get_working_dir(self) -> str:
+        """获取工作目录路径（不自动保存）"""
+        from django.conf import settings
+        import os
+        return os.path.join(
+            settings.BASE_DIR, 'media', 'lightrag',
+            f'project_{self.project_id or "public"}', f'graph_{self.id}'
+        )
+    
+    def save_working_dir(self):
+        """保存工作目录到数据库（同步上下文使用）"""
+        if not self.working_dir:
+            self.working_dir = self.get_working_dir()
+            self.save(update_fields=['working_dir'])
+
+    def get_graph_id(self) -> str:
+        """获取图谱存储ID（用于前端显示）"""
+        return str(self.id)
+
+
+class KnowledgeGraphQueryHistory(models.Model):
+    """知识图谱查询历史"""
+    
+    MODE_CHOICES = [
+        ('local', '局部查询'),
+        ('global', '全局查询'),
+        ('mix', '混合查询'),
+    ]
+    
+    graph = models.ForeignKey(
+        KnowledgeGraph,
+        on_delete=models.CASCADE,
+        related_name='query_history',
+        verbose_name='关联图谱',
+        db_column='knowledge_graph_id'
+    )
+    question = models.TextField(verbose_name='查询问题')
+    answer = models.TextField(verbose_name='查询答案')
+    mode = models.CharField(max_length=10, choices=MODE_CHOICES, default='mix', verbose_name='查询模式')
+    query_time = models.FloatField(verbose_name='查询耗时(秒)', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='查询用户')
+    
+    class Meta:
+        db_table = 'knowledge_graph_query_history'
+        verbose_name = '知识图谱查询历史'
+        verbose_name_plural = '知识图谱查询历史'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.question[:50]}... ({self.get_mode_display()})"
+
+
+class KnowledgeGraphBuildTask(models.Model):
+    """知识图谱构建任务"""
+    
+    STATUS_CHOICES = [
+        ('pending', '待处理'),
+        ('running', '运行中'),
+        ('completed', '已完成'),
+        ('failed', '失败'),
+    ]
+    
+    task_id = models.CharField(max_length=100, unique=True, verbose_name='任务ID')
+    graph = models.ForeignKey(
+        KnowledgeGraph,
+        on_delete=models.CASCADE,
+        related_name='build_tasks',
+        verbose_name='关联图谱',
+        db_column='knowledge_graph_id'
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='状态')
+    progress = models.PositiveIntegerField(default=0, verbose_name='进度百分比')
+    current_document = models.CharField(max_length=200, blank=True, verbose_name='当前处理文档')
+    error_message = models.TextField(blank=True, verbose_name='错误信息')
+    started_at = models.DateTimeField(null=True, blank=True, verbose_name='开始时间')
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name='完成时间')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    
+    class Meta:
+        db_table = 'knowledge_graph_build_tasks'
+        verbose_name = '知识图谱构建任务'
+        verbose_name_plural = '知识图谱构建任务'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.task_id} - {self.get_status_display()}"
+
+
+class KnowledgeGraphVersion(models.Model):
+    """知识图谱版本模型 - 保存知识图谱的版本快照"""
+
+    graph = models.ForeignKey(
+        KnowledgeGraph,
+        on_delete=models.CASCADE,
+        related_name='versions',
+        verbose_name='关联图谱'
+    )
+    version_number = models.CharField(max_length=20, verbose_name='版本号')
+    version_name = models.CharField(max_length=100, verbose_name='版本名称', blank=True)
+    description = models.TextField(verbose_name='版本描述', blank=True)
+
+    # 版本快照数据（JSON格式存储）
+    snapshot_data = models.JSONField(verbose_name='快照数据', default=dict)
+
+    # 统计信息
+    node_count = models.PositiveIntegerField(default=0, verbose_name='实体节点数')
+    edge_count = models.PositiveIntegerField(default=0, verbose_name='关系边数')
+    document_count = models.PositiveIntegerField(default=0, verbose_name='文档数')
+
+    # 关联的文档ID列表
+    document_ids = models.JSONField(verbose_name='关联文档ID列表', default=list)
+
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='创建者')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+
+    class Meta:
+        db_table = 'knowledge_graph_versions'
+        verbose_name = '知识图谱版本'
+        verbose_name_plural = '知识图谱版本'
+        ordering = ['-created_at']
+        unique_together = ['graph', 'version_number']
+
+    def __str__(self):
+        return f"{self.graph.name} - {self.version_number}"
+
+    def save_snapshot(self, docs_data: dict, entities_data: dict, relations_data: dict):
+        """保存知识图谱快照"""
+        self.snapshot_data = {
+            'docs': docs_data,
+            'entities': entities_data,
+            'relations': relations_data,
+            'saved_at': timezone.now().isoformat()
+        }
+        self.node_count = len(entities_data)
+        self.edge_count = len(relations_data)
+        self.document_count = len(docs_data)
+        self.document_ids = list(docs_data.keys())
+        self.save(update_fields=['snapshot_data', 'node_count', 'edge_count', 'document_count', 'document_ids'])
+
+
+# ==================== LightRAG 知识图谱模型结束 ====================
