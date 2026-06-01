@@ -277,6 +277,12 @@ const saveConfig = async () => {
 
 // 生成报告
 const generateReport = async () => {
+  // 检查必要参数
+  if (!config.project_id || !config.environment_id || !config.access_token) {
+    ElMessage.warning('请填写完整的检查配置（Project ID、Environment ID、Access Token）')
+    return
+  }
+
   generating.value = true
   progressText.value = '正在启动检查任务...'
   taskResult.value = ''
@@ -291,6 +297,10 @@ const generateReport = async () => {
 
     if (res.data.task_id) {
       pollTaskStatus(res.data.task_id)
+    } else {
+      // 后端返回成功但没有 task_id，说明有错误
+      generating.value = false
+      taskError.value = res.data.error || '启动生成任务失败'
     }
   } catch (e) {
     generating.value = false

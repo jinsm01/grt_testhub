@@ -20,10 +20,22 @@ from rest_framework import status
 # 配置文件路径
 CONFIG_FILE = os.path.join(settings.BASE_DIR, 'data', 'apifox_check_config.json')
 REPORTS_DIR = os.path.join(settings.MEDIA_ROOT, 'apifox-check-reports')
-# apifox-check CLI 所在 Python 路径
-PYTHON_EXE = r'C:\Users\86150\AppData\Local\Programs\Python\Python312\python.exe'
-# apply_exclusions.py 脚本路径
-SKILL_SCRIPTS_DIR = r'C:\Users\86150\.codebuddy\skills\apifox-scene-check\scripts'
+
+# apifox-check CLI 所在 Python 路径（根据操作系统自动选择）
+import platform
+if platform.system() == 'Windows':
+    PYTHON_EXE = 'python'
+else:
+    # macOS/Linux 使用系统默认的 python3
+    PYTHON_EXE = 'python3'
+
+# 技能脚本目录（相对于项目根目录，跨平台通用）
+SKILL_SCRIPTS_DIR = os.path.join(settings.BASE_DIR, 'skills', 'apifox-scene-check', 'scripts')
+
+# 第三方包路径 - 用于加载 apifox_check
+THIRD_PARTY_DIR = os.path.join(settings.BASE_DIR, 'third_party')
+APIFOX_CHECK_DIR = os.path.join(THIRD_PARTY_DIR, 'apifox_check')
+
 APPLY_EXCLUSIONS_SCRIPT = os.path.join(SKILL_SCRIPTS_DIR, 'apply_exclusions.py')
 VERIFY_EXCLUSIONS_SCRIPT = os.path.join(SKILL_SCRIPTS_DIR, 'verify_exclusions.py')
 
@@ -71,9 +83,18 @@ def _extract_cli_error(stderr):
 
 def _run_apifox_check(project_id, environment_id, access_token, output_path):
     """运行 apifox-check CLI 生成原始报告"""
-    cmd = f'"{PYTHON_EXE}" -c "from apifox_check.cli import main; import sys; sys.argv = [\'apifox-check\', \'--project-id\', \'{project_id}\', \'--environment-id\', \'{environment_id}\', \'--access-token\', \'{access_token}\', \'--output\', r\'{output_path}\']; main(); print(\'DONE\')"'
-
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=300)
+    # 构建 Python 命令，添加第三方包路径
+    python_cmd = f'"{PYTHON_EXE}"'
+    
+    # 检查第三方包目录是否存在
+    if os.path.exists(APIFOX_CHECK_DIR):
+        # 使用第三方目录中的 apifox_check
+        python_cmd += f' -c "import sys; sys.path.insert(0, \'{THIRD_PARTY_DIR}\'); from apifox_check.cli import main; import sys; sys.argv = [\'apifox-check\', \'--project-id\', \'{project_id}\', \'--environment-id\', \'{environment_id}\', \'--access-token\', \'{access_token}\', \'--output\', r\'{output_path}\']; main(); print(\'DONE\')"'
+    else:
+        # 尝试从已安装的包中导入
+        python_cmd += f' -c "from apifox_check.cli import main; import sys; sys.argv = [\'apifox-check\', \'--project-id\', \'{project_id}\', \'--environment-id\', \'{environment_id}\', \'--access-token\', \'{access_token}\', \'--output\', r\'{output_path}\']; main(); print(\'DONE\')"'
+    
+    result = subprocess.run(python_cmd, shell=True, capture_output=True, text=True, timeout=300)
     success = result.returncode == 0 and 'DONE' in result.stdout
     if not success:
         error_msg = _extract_cli_error(result.stderr)
@@ -95,6 +116,9 @@ def _load_report_meta(report_filename):
         with open(meta_file, 'r', encoding='utf-8') as f:
             return json.load(f)
     return {}
+
+
+def _run_apply_exclusions(report_path):
     """运行 apply_exclusions.py 后处理脚本"""
     cmd = f'"{PYTHON_EXE}" "{APPLY_EXCLUSIONS_SCRIPT}" "{report_path}"'
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=60)
