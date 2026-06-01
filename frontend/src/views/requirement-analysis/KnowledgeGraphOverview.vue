@@ -323,18 +323,40 @@
     <el-dialog
       v-model="showBuildProgress"
       title="构建知识图谱"
-      width="420px"
+      width="480px"
       :close-on-click-modal="false"
       :show-close="false"
       class="build-progress-dialog"
     >
-      <div class="build-progress-compact">
+      <div class="build-progress-enhanced">
+        <!-- 步骤指示器 -->
+        <div class="steps-indicator">
+          <div 
+            v-for="(step, index) in buildSteps" 
+            :key="index"
+            class="step-item"
+            :class="{ 
+              'active': currentStepIndex === index,
+              'completed': currentStepIndex > index,
+              'pending': currentStepIndex < index
+            }"
+          >
+            <div class="step-icon">
+              <el-icon v-if="currentStepIndex > index"><Check /></el-icon>
+              <span v-else-if="currentStepIndex === index" class="step-number">{{ index + 1 }}</span>
+              <span v-else class="step-number">{{ index + 1 }}</span>
+            </div>
+            <div class="step-title">{{ step.title }}</div>
+            <div v-if="index < buildSteps.length - 1" class="step-line"></div>
+          </div>
+        </div>
+
         <!-- 进度条 + 百分比 -->
         <div class="progress-row">
           <el-progress 
             :percentage="buildProgress" 
             :status="buildStatus"
-            :stroke-width="16"
+            :stroke-width="12"
             :show-text="false"
             class="build-progress-bar"
           />
@@ -363,8 +385,16 @@
           <span class="file-name" :title="currentDocument">{{ currentDocument }}</span>
         </div>
 
+        <!-- 预计剩余时间 -->
+        <div class="time-estimate" v-if="buildProgress > 0 && buildProgress < 100">
+          <el-icon><Timer /></el-icon>
+          <span>预计剩余时间: {{ estimatedRemainingTime }}</span>
+        </div>
+
         <!-- 提示信息 -->
         <div class="tips-row" v-if="buildProgress < 100 && buildStatus !== 'exception'">
+          <el-icon><InfoFilled /></el-icon>
+          <span>{{ currentStepTip }}</span>
         </div>
       </div>
     </el-dialog>
@@ -527,6 +557,23 @@ const buildStartTime = ref(null)
 const elapsedTime = ref('00:00')
 const estimatedRemainingTime = ref('计算中...')
 
+// 构建步骤配置
+const buildSteps = [
+  { title: '初始化', tip: '正在初始化存储环境...' },
+  { title: '提取文本', tip: '正在从文档中提取文本内容...' },
+  { title: '分析文档', tip: 'AI正在分析文档结构和语义...' },
+  { title: '构建图谱', tip: '正在构建知识图谱节点和关系...' },
+  { title: '生成统计', tip: '正在生成图谱统计信息...' },
+  { title: '完成', tip: '构建完成！' }
+]
+const currentStepIndex = ref(0)
+const currentStepTip = computed(() => {
+  if (currentStepIndex.value < buildSteps.length) {
+    return buildSteps[currentStepIndex.value].tip
+  }
+  return '处理中...'
+})
+
 // 计时器
 let buildTimer = null
 
@@ -600,7 +647,7 @@ const fetchVisualizationData = async () => {
 
   loadingVisualization.value = true
   try {
-    const response = await axios.get(`/api/requirement-analysis/knowledge-graphs/${selectedGraphId.value}/graph_data/`)
+    const response = await api.get(`/requirement-analysis/knowledge-graphs/${selectedGraphId.value}/graph_data/`)
     graphData.value = {
       nodes: response.data.nodes,
       edges: response.data.edges
@@ -772,7 +819,7 @@ const canCreate = computed(() => {
 // 获取项目列表
 const fetchProjects = async () => {
   try {
-    const response = await axios.get('/api/projects/')
+    const response = await api.get('/projects/')
     projects.value = response.data.results || response.data
   } catch (error) {
     console.error('获取项目列表失败:', error)
@@ -792,7 +839,7 @@ const fetchGraphList = async () => {
       params.search = searchKeyword.value
     }
     
-    const response = await axios.get('/api/requirement-analysis/knowledge-graphs/', {
+    const response = await api.get('/requirement-analysis/knowledge-graphs/', {
       params
     })
     graphList.value = response.data.results || response.data
@@ -815,7 +862,7 @@ const fetchQueryHistory = async () => {
   if (!selectedGraphId.value) return
   
   try {
-    const response = await axios.get(`/api/requirement-analysis/knowledge-graphs/${selectedGraphId.value}/query_history/`)
+    const response = await api.get(`/requirement-analysis/knowledge-graphs/${selectedGraphId.value}/query_history/`)
     queryHistory.value = response.data
   } catch (error) {
     console.error('获取查询历史失败:', error)
@@ -861,7 +908,7 @@ const batchDelete = async () => {
   ).then(async () => {
     try {
       const ids = selectedRows.value.map(row => row.id)
-      await api.post('/requirement-analysis/knowledge-graphs/batch-delete/', { ids })
+      await api.post('/requirement-analysis/knowledge-graphs/batch_delete/', { ids })
       ElMessage.success('批量删除成功')
       selectedRows.value = []
       fetchGraphList()
@@ -898,7 +945,7 @@ const createVersion = async () => {
 
   creatingVersion.value = true
   try {
-    const response = await axios.post(`/api/requirement-analysis/knowledge-graphs/${currentGraphForVersion.value.id}/create_version/`, {
+    const response = await api.post(`/requirement-analysis/knowledge-graphs/${currentGraphForVersion.value.id}/create_version/`, {
       version_number: createVersionForm.value.version_number,
       version_name: createVersionForm.value.version_name,
       description: createVersionForm.value.description
@@ -930,7 +977,7 @@ const openVersionManageDialog = (row) => {
 const fetchGraphVersions = async (graphId) => {
   loadingVersions.value = true
   try {
-    const response = await axios.get(`/api/requirement-analysis/knowledge-graphs/${graphId}/versions/`)
+    const response = await api.get(`/requirement-analysis/knowledge-graphs/${graphId}/versions/`)
     graphVersions.value = response.data
   } catch (error) {
     console.error('获取版本列表失败:', error)
@@ -954,7 +1001,7 @@ const deleteVersion = async (version) => {
       }
     )
 
-    await axios.delete(`/api/requirement-analysis/knowledge-graphs/${currentGraphForManage.value.id}/versions/${version.id}/`)
+    await api.delete(`/requirement-analysis/knowledge-graphs/${currentGraphForManage.value.id}/versions/${version.id}/`)
     ElMessage.success('版本删除成功')
     await fetchGraphVersions(currentGraphForManage.value.id)
   } catch (error) {
@@ -1013,8 +1060,8 @@ const createGraph = async () => {
       formData.append('files', file.raw)
     })
 
-    const uploadResponse = await axios.post(
-      '/api/requirement-analysis/knowledge-graphs/upload-and-create/',
+    const uploadResponse = await api.post(
+      '/requirement-analysis/knowledge-graphs/upload-and-create/',
       formData,
       {
         headers: {
@@ -1036,7 +1083,7 @@ const createGraph = async () => {
     // 开始计时
     startBuildTimer()
     
-    const buildResponse = await axios.post(`/api/requirement-analysis/knowledge-graphs/${graphId}/build/`, {
+    const buildResponse = await api.post(`/requirement-analysis/knowledge-graphs/${graphId}/build/`, {
       document_ids: documentIds
     })
     
@@ -1052,18 +1099,52 @@ const createGraph = async () => {
   }
 }
 
+// 根据进度更新当前步骤
+const updateStepByProgress = (progress) => {
+  if (progress < 10) {
+    currentStepIndex.value = 0  // 初始化
+  } else if (progress < 30) {
+    currentStepIndex.value = 1  // 提取文本
+  } else if (progress < 70) {
+    currentStepIndex.value = 2  // 分析文档
+  } else if (progress < 85) {
+    currentStepIndex.value = 3  // 构建图谱
+  } else if (progress < 100) {
+    currentStepIndex.value = 4  // 生成统计
+  } else {
+    currentStepIndex.value = 5  // 完成
+  }
+}
+
 // 轮询构建进度
 const pollBuildProgress = async (taskId, graphId) => {
   const checkProgress = async () => {
     try {
-      const response = await axios.get(`/api/requirement-analysis/knowledge-graphs/build-tasks/${taskId}/status/`)
+      const response = await api.get(`/requirement-analysis/knowledge-graphs/build-tasks/${taskId}/status/`)
       const task = response.data
       
       buildProgress.value = task.progress
       currentDocument.value = task.current_document
       
+      // 更新当前步骤
+      updateStepByProgress(task.progress)
+      
+      // 根据进度更新状态文本
+      if (task.progress < 10) {
+        buildStatusText.value = '正在初始化...'
+      } else if (task.progress < 30) {
+        buildStatusText.value = '正在提取文档内容...'
+      } else if (task.progress < 70) {
+        buildStatusText.value = 'AI正在分析文档...'
+      } else if (task.progress < 85) {
+        buildStatusText.value = '正在构建知识图谱...'
+      } else if (task.progress < 100) {
+        buildStatusText.value = '正在生成统计信息...'
+      }
+      
       if (task.status === 'completed') {
         buildProgress.value = 100
+        currentStepIndex.value = 5
         buildStatus.value = 'success'
         buildStatusText.value = '构建完成！'
         stopBuildTimer()
@@ -1082,7 +1163,6 @@ const pollBuildProgress = async (taskId, graphId) => {
         creating.value = false
         return
       } else {
-        buildStatusText.value = '正在构建'
         setTimeout(checkProgress, 2000)
       }
     } catch (error) {
@@ -2226,9 +2306,97 @@ onMounted(() => {
   color: #67c23a;
 }
 
-// 紧凑版构建进度弹窗
-.build-progress-compact {
+// 增强版构建进度弹窗
+.build-progress-enhanced {
   padding: 8px 4px;
+
+  // 步骤指示器
+  .steps-indicator {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding: 0 8px;
+
+    .step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      flex: 1;
+
+      .step-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        margin-bottom: 6px;
+        transition: all 0.3s ease;
+
+        .step-number {
+          font-weight: 600;
+          font-size: 12px;
+        }
+      }
+
+      .step-title {
+        font-size: 11px;
+        color: #9ca3af;
+        text-align: center;
+        white-space: nowrap;
+        transition: all 0.3s ease;
+      }
+
+      .step-line {
+        position: absolute;
+        top: 16px;
+        right: -50%;
+        width: 100%;
+        height: 2px;
+        background: #e5e7eb;
+        z-index: 0;
+      }
+
+      // 已完成状态
+      &.completed {
+        .step-icon {
+          background: #22c55e;
+          color: white;
+        }
+
+        .step-title {
+          color: #22c55e;
+        }
+      }
+
+      // 进行中状态
+      &.active {
+        .step-icon {
+          background: #7b42f6;
+          color: white;
+          box-shadow: 0 0 0 4px rgba(123, 66, 246, 0.2);
+          animation: pulse 2s infinite;
+        }
+
+        .step-title {
+          color: #7b42f6;
+          font-weight: 600;
+        }
+      }
+
+      // 待处理状态
+      &.pending {
+        .step-icon {
+          background: #f3f4f6;
+          color: #9ca3af;
+          border: 2px solid #e5e7eb;
+        }
+      }
+    }
+  }
 
   // 进度条行
   .progress-row {
@@ -2248,7 +2416,7 @@ onMounted(() => {
       :deep(.el-progress-bar__inner) {
         border-radius: 8px;
         background: linear-gradient(90deg, #7b42f6 0%, #a855f7 100%);
-        transition: width 0.3s ease;
+        transition: width 0.5s ease;
       }
     }
 
@@ -2347,18 +2515,52 @@ onMounted(() => {
     }
   }
 
-  // 提示行
-  .tips-row {
+  // 预计剩余时间
+  .time-estimate {
     display: flex;
     align-items: center;
     gap: 6px;
     font-size: 12px;
-    color: #9ca3af;
+    color: #6b7280;
+    margin-bottom: 12px;
+    padding: 6px 10px;
+    background: #fef3c7;
+    border-radius: 6px;
 
     .el-icon {
       font-size: 14px;
       color: #f59e0b;
     }
+  }
+
+  // 提示行
+  .tips-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    color: #6b7280;
+    padding: 10px 12px;
+    background: #eff6ff;
+    border-radius: 8px;
+    line-height: 1.5;
+
+    .el-icon {
+      font-size: 16px;
+      color: #3b82f6;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+  }
+}
+
+// 脉冲动画
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(123, 66, 246, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(123, 66, 246, 0.1);
   }
 }
 

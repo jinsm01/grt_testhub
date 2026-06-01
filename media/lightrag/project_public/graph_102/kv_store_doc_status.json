@@ -1,0 +1,23 @@
+{
+  "doc-f2ab78e58282bd838789829c0dbf6394": {
+    "status": "processed",
+    "chunks_count": 5,
+    "chunks_list": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e",
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c",
+      "chunk-6b91f407981af618776cf67b9e8abfe1",
+      "chunk-20d1d7af32511384bcb336bd7416b83a",
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "content_summary": "[文档版本: 未知版本]\n[文件名: 【PRD】租户自建智能体&项目关联智能体.docx]\n[文档ID: 212]\n**【PRD】租户自建智能体&项目关联智能体**\n\n1. **文档目录**\n\n2. **原型及相关文档**\n\n| 产品方案     | 【产品方案】项目关联智能体                                                                                                               ...",
+    "content_length": 12003,
+    "created_at": "2026-05-29T12:12:14.925156+00:00",
+    "updated_at": "2026-05-29T12:13:14.884908+00:00",
+    "file_path": "unknown_source",
+    "track_id": "insert_20260529_201214_69cb6de4",
+    "metadata": {
+      "processing_start_time": 1780056734,
+      "processing_end_time": 1780056794
+    }
+  }
+}

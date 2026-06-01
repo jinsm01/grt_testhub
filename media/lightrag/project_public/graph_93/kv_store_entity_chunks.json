@@ -1,0 +1,1843 @@
+{
+  "PRD": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "PRD"
+  },
+  "AI速练": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb",
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 3,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "AI速练"
+  },
+  "苗宁": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "苗宁"
+  },
+  "GRT研发中心的团队": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "GRT研发中心的团队"
+  },
+  "AI自测": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "AI自测"
+  },
+  "需求评审": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "需求评审"
+  },
+  "移动端": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "移动端"
+  },
+  "PC端": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f",
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 2,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "PC端"
+  },
+  "H5": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 2,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "H5"
+  },
+  "开放课": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "开放课"
+  },
+  "视频课": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "视频课"
+  },
+  "项目内点播课": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "项目内点播课"
+  },
+  "视频播放页": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "视频播放页"
+  },
+  "文件管理": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "文件管理"
+  },
+  "AI速练(开关)": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "AI速练(开关)"
+  },
+  "平台管理端": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 2,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "平台管理端"
+  },
+  "租户管理端": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 2,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "租户管理端"
+  },
+  "租户运营端": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 2,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "租户运营端"
+  },
+  "学员端": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 2,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "学员端"
+  },
+  "学习公社6.0": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "学习公社6.0"
+  },
+  "中教网院": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031639,
+    "update_time": 1780031639,
+    "_id": "中教网院"
+  },
+  "后台原型": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "后台原型"
+  },
+  "学员端原型图": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "学员端原型图"
+  },
+  "需求评审纪要": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "需求评审纪要"
+  },
+  "修订记录": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "修订记录"
+  },
+  "平台": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "平台"
+  },
+  "app": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "app"
+  },
+  "UI设计稿": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "UI设计稿"
+  },
+  "应用升级": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "应用升级"
+  },
+  "应用安装": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "应用安装"
+  },
+  "场景化页面跳转规则": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f",
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 3,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "场景化页面跳转规则"
+  },
+  "学习理解偏差": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "学习理解偏差"
+  },
+  "复习动作": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "复习动作"
+  },
+  "系统化引导": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "系统化引导"
+  },
+  "随学随测": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "随学随测"
+  },
+  "学员自主练习": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "学员自主练习"
+  },
+  "即时反馈": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "即时反馈"
+  },
+  "平台管理端--应用配置": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "平台管理端--应用配置"
+  },
+  "租户管理端--运营配置": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "租户管理端--运营配置"
+  },
+  "AI速练功能开启": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "AI速练功能开启"
+  },
+  "AI速练功能关闭": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "AI速练功能关闭"
+  },
+  "【PRD】AI速练": {
+    "chunk_ids": [
+      "chunk-851f22411b8dda6d3780176cf242323f"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "【PRD】AI速练"
+  },
+  "学生": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "学生"
+  },
+  "倾听": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "倾听"
+  },
+  "生成成功": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184",
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0",
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 3,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "生成成功"
+  },
+  "生成失败": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184",
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0",
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 3,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "生成失败"
+  },
+  "执行状态": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184",
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0",
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 3,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "执行状态"
+  },
+  "进入练习": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184",
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 2,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "进入练习"
+  },
+  "重新生成": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184",
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 2,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "重新生成"
+  },
+  "页面呈现": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "页面呈现"
+  },
+  "卡片状态": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "卡片状态"
+  },
+  "用户可点击【进入练习】": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031640,
+    "update_time": 1780031640,
+    "_id": "用户可点击【进入练习】"
+  },
+  "文案提示": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "文案提示"
+  },
+  "支持重新生成": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "支持重新生成"
+  },
+  "低质量选项": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "低质量选项"
+  },
+  "语义重复": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "语义重复"
+  },
+  "错误选项": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925",
+      "chunk-399bea09d83a82edfa20b044057b1766",
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 3,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "错误选项"
+  },
+  "正确选项": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925",
+      "chunk-399bea09d83a82edfa20b044057b1766",
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 3,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "正确选项"
+  },
+  "单选题": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925",
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 2,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "单选题"
+  },
+  "多选题": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925",
+      "chunk-399bea09d83a82edfa20b044057b1766",
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 4,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "多选题"
+  },
+  "判断题": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925",
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 2,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "判断题"
+  },
+  "标准答案": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925",
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 2,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "标准答案"
+  },
+  "题目解析": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 2,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "题目解析"
+  },
+  "选项解析": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925",
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 2,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "选项解析"
+  },
+  "教学性": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "教学性"
+  },
+  "题目类型分布规则": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925",
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 2,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "题目类型分布规则"
+  },
+  "题型选择依据": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "题型选择依据"
+  },
+  "核心知识": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "核心知识"
+  },
+  "课程原文": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "课程原文"
+  },
+  "常见误区": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "常见误区"
+  },
+  "思维偏差": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "思维偏差"
+  },
+  "解析目标": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "解析目标"
+  },
+  "教学感": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "教学感"
+  },
+  "错题复盘": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "错题复盘"
+  },
+  "选项独立解析": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "选项独立解析"
+  },
+  "对比分析": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "对比分析"
+  },
+  "视角差异": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "视角差异"
+  },
+  "立场差异": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "立场差异"
+  },
+  "逻辑差异": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "逻辑差异"
+  },
+  "定性差异": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "定性差异"
+  },
+  "歧路": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "歧路"
+  },
+  "生动性话语": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "生动性话语"
+  },
+  "生活化比喻": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "生活化比喻"
+  },
+  "场景代入": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031641,
+    "update_time": 1780031641,
+    "_id": "场景代入"
+  },
+  "情感化表达": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "情感化表达"
+  },
+  "对比式反问": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "对比式反问"
+  },
+  "自然流畅": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "自然流畅"
+  },
+  "避免模板化": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "避免模板化"
+  },
+  "机械化表达": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "机械化表达"
+  },
+  "教学价值": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "教学价值"
+  },
+  "阅读体验": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "阅读体验"
+  },
+  "知识理解": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "知识理解"
+  },
+  "做题技巧": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "做题技巧"
+  },
+  "错题复盘价值": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "错题复盘价值"
+  },
+  "核心考点": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "核心考点"
+  },
+  "判断逻辑": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "判断逻辑"
+  },
+  "正确思路": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "正确思路"
+  },
+  "稳定思路": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "稳定思路"
+  },
+  "解析教学性": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "解析教学性"
+  },
+  "自然度": {
+    "chunk_ids": [
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "自然度"
+  },
+  "数据存储规则": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "数据存储规则"
+  },
+  "临时存储时间": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "临时存储时间"
+  },
+  "用户A": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "用户A"
+  },
+  "视频B": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "视频B"
+  },
+  "AI速练封面页": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 2,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "AI速练封面页"
+  },
+  "题目正在生成状态": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "题目正在生成状态"
+  },
+  "题目生成失败状态": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "题目生成失败状态"
+  },
+  "开始练习": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb",
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 3,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "开始练习"
+  },
+  "第一题做题页": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "第一题做题页"
+  },
+  "继续练习": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 2,
+    "create_time": 1780031642,
+    "update_time": 1780031642,
+    "_id": "继续练习"
+  },
+  "第4题做题页": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "第4题做题页"
+  },
+  "第4题的解析页": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 2,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "第4题的解析页"
+  },
+  "8道题": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "8道题"
+  },
+  "最后一道": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "最后一道"
+  },
+  "AI速练tab": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "AI速练tab"
+  },
+  "APP": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 2,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "APP"
+  },
+  "【开始练习】": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "【开始练习】"
+  },
+  "【进入练习】": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "【进入练习】"
+  },
+  "【继续练习】": {
+    "chunk_ids": [
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "【继续练习】"
+  },
+  "视频内容管理页面": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "视频内容管理页面"
+  },
+  "知识图谱tab": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "知识图谱tab"
+  },
+  "AI速练功能": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "AI速练功能"
+  },
+  "模型": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "模型"
+  },
+  "视频原文": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "视频原文"
+  },
+  "知识点": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "知识点"
+  },
+  "题目": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "题目"
+  },
+  "解析": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb",
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 2,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "解析"
+  },
+  "触发操作": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb",
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 2,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "触发操作"
+  },
+  "生成知识点": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "生成知识点"
+  },
+  "生成题目": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "生成题目"
+  },
+  "答案及解析": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "答案及解析"
+  },
+  "Toast提示": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "Toast提示"
+  },
+  "PC": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "PC"
+  },
+  "知识要点": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb",
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 2,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "知识要点"
+  },
+  "题目选项": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "题目选项"
+  },
+  "模型生成的最新状态": {
+    "chunk_ids": [
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "模型生成的最新状态"
+  },
+  "知识颗粒度规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "知识颗粒度规则"
+  },
+  "字幕噪音处理规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "字幕噪音处理规则"
+  },
+  "成人培训": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "成人培训"
+  },
+  "题目难度要求": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "题目难度要求"
+  },
+  "出题导向": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "出题导向"
+  },
+  "学员角色意识": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "学员角色意识"
+  },
+  "场景化要求": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "场景化要求"
+  },
+  "题目表达风格": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "题目表达风格"
+  },
+  "题目生成规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031643,
+    "update_time": 1780031643,
+    "_id": "题目生成规则"
+  },
+  "题目要求": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "题目要求"
+  },
+  "题目标题规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "题目标题规则"
+  },
+  "题目选项规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "题目选项规则"
+  },
+  "选项数量规则": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "选项数量规则"
+  },
+  "选项内容要求": {
+    "chunk_ids": [
+      "chunk-399bea09d83a82edfa20b044057b1766"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "选项内容要求"
+  },
+  "学员选择": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "学员选择"
+  },
+  "题干": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "题干"
+  },
+  "选项": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "选项"
+  },
+  "正确答案": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "正确答案"
+  },
+  "输入": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "输入"
+  },
+  "输出": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "输出"
+  },
+  "示例效果": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "示例效果"
+  },
+  "正在生成": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "正在生成"
+  },
+  "提交": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "提交"
+  },
+  "解析生成失败": {
+    "chunk_ids": [
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "解析生成失败"
+  },
+  "退出": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "退出"
+  },
+  "第5题做题页": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec",
+      "chunk-26995ce94e78d0be365dc42239168855"
+    ],
+    "count": 2,
+    "update_time": 1780031655,
+    "_id": "第5题做题页"
+  },
+  "最后一题解析页": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "最后一题解析页"
+  },
+  "视频播放页-AI速练-全流程": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "视频播放页-AI速练-全流程"
+  },
+  "H5端": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "H5端"
+  },
+  "app--学习公社6.0": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "app--学习公社6.0"
+  },
+  "APP--中教网院(新)": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "APP--中教网院(新)"
+  },
+  "AI速练测试记录": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031644,
+    "update_time": 1780031644,
+    "_id": "AI速练测试记录"
+  },
+  "AI速练平滑推动效果.html": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "AI速练平滑推动效果.html"
+  },
+  "8道题，当前已提交第4题，停留在第4题的解析页": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "8道题，当前已提交第4题，停留在第4题的解析页"
+  },
+  "保持在最后一题的解析页": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "保持在最后一题的解析页"
+  },
+  "PC刷新页面后进入AI速练tab/APP：退出重新进入AI速练": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "PC刷新页面后进入AI速练tab/APP：退出重新进入AI速练"
+  },
+  "学员进入第5题做题页，无需记录选项": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "学员进入第5题做题页，无需记录选项"
+  },
+  "点击退出": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "点击退出"
+  },
+  "退出后，点击继续练习": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "退出后，点击继续练习"
+  },
+  "学员进入第5题做题页": {
+    "chunk_ids": [
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "学员进入第5题做题页"
+  },
+  "倾听的四个核心维度": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "倾听的四个核心维度"
+  },
+  "学生经历": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "学生经历"
+  },
+  "学生想法": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "学生想法"
+  },
+  "学生行为表现": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "学生行为表现"
+  },
+  "学生情绪": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "学生情绪"
+  },
+  "辅导员": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "辅导员"
+  },
+  "选项A": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "选项A"
+  },
+  "选项B": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "选项B"
+  },
+  "选项C": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "选项C"
+  },
+  "选项D": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 2,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "选项D"
+  },
+  "单选": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "单选"
+  },
+  "课程": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "课程"
+  },
+  "题型": {
+    "chunk_ids": [
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "题型"
+  },
+  "学员": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "学员"
+  },
+  "综合解析": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "综合解析"
+  },
+  "核心判断原则": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "核心判断原则"
+  },
+  "PC端进入的页面": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "PC端进入的页面"
+  },
+  "移动端进入的页面": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "移动端进入的页面"
+  },
+  "题目内容": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "题目内容"
+  },
+  "选项逐项解析": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "选项逐项解析"
+  },
+  "教学引导感": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "教学引导感"
+  },
+  "核心判断标准": {
+    "chunk_ids": [
+      "chunk-e95839d86ed20f389b56a1dfa77cac63"
+    ],
+    "count": 1,
+    "create_time": 1780031645,
+    "update_time": 1780031645,
+    "_id": "核心判断标准"
+  },
+  "生成中": {
+    "chunk_ids": [
+      "chunk-dfc57dd39716799a74d4ddf3716f4184"
+    ],
+    "count": 1,
+    "create_time": 1780031654,
+    "update_time": 1780031654,
+    "_id": "生成中"
+  }
+}

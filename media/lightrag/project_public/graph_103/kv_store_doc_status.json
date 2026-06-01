@@ -1,0 +1,50 @@
+{
+  "doc-f2ab78e58282bd838789829c0dbf6394": {
+    "status": "processed",
+    "chunks_count": 5,
+    "chunks_list": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e",
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c",
+      "chunk-6b91f407981af618776cf67b9e8abfe1",
+      "chunk-20d1d7af32511384bcb336bd7416b83a",
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "content_summary": "[文档版本: 未知版本]\n[文件名: 【PRD】租户自建智能体&项目关联智能体.docx]\n[文档ID: 212]\n**【PRD】租户自建智能体&项目关联智能体**\n\n1. **文档目录**\n\n2. **原型及相关文档**\n\n| 产品方案     | 【产品方案】项目关联智能体                                                                                                               ...",
+    "content_length": 12003,
+    "created_at": "2026-05-29T12:12:14.925156+00:00",
+    "updated_at": "2026-05-29T12:13:14.884908+00:00",
+    "file_path": "unknown_source",
+    "track_id": "insert_20260529_201214_69cb6de4",
+    "metadata": {
+      "processing_start_time": 1780056734,
+      "processing_end_time": 1780056794
+    }
+  },
+  "doc-667030c44d8acf0e57514febdaf09fbf": {
+    "status": "failed",
+    "error_msg": "C[1/10]: <asyncio.locks.Lock object at 0x137f54460 [locked]> is bound to a different event loop",
+    "chunks_count": 10,
+    "chunks_list": [
+      "chunk-791d5ecaa993a7b85d96c1fc1fcd2f62",
+      "chunk-5a0540dbc05bbd3a0b12650b5d7289fb",
+      "chunk-cf672fb1f930a2ef1f5a98a94537da1a",
+      "chunk-dfc57dd39716799a74d4ddf3716f4184",
+      "chunk-399bea09d83a82edfa20b044057b1766",
+      "chunk-8c5bcbd045b5c1c625aac45f8790a925",
+      "chunk-a0d6678d20e38131c14ac6f12ebe0bf0",
+      "chunk-e95839d86ed20f389b56a1dfa77cac63",
+      "chunk-26995ce94e78d0be365dc42239168855",
+      "chunk-a2458499b83888d1518caee7f740d4ec"
+    ],
+    "content_summary": "[文档版本: 未知版本]\n[文件名: 【PRD】AI速练.docx]\n[文档ID: 213]\n**【PRD】AI速练**\n\n1. **原型及相关文档**\n\n| 后台原型     | https://lanhuapp.com/link/#/invite?sid=lX0zyzZs  分享人: 苗宁  团队名称: GRT研发中心的团队  相关项目: AI应用相关  链接有效期: 长期   |\n|--------------|---------------------------------------...",
+    "content_length": 32417,
+    "created_at": "2026-05-29T13:06:19.490859+00:00",
+    "updated_at": "2026-05-29T13:06:20.500137+00:00",
+    "file_path": "unknown_source",
+    "track_id": "insert_20260529_210619_4df13343",
+    "metadata": {
+      "processing_start_time": 1780059979,
+      "processing_end_time": 1780059980
+    }
+  }
+}

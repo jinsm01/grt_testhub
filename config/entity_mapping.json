@@ -34,6 +34,9 @@
     "Prompt": "提示",
     "JSON": "JSON",
     "PC": "个人电脑",
-    "H5": "HTML5"
+    "H5": "HTML5",
+    "app": "应用",
+    "toast": "吐司",
+    "Profile": "资料档"
   }
 }

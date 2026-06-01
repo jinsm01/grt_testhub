@@ -21,6 +21,8 @@ from .lightrag_views import (
     get_build_task_status,
     get_available_documents,
     upload_and_create_graph,
+    ProjectDocumentListCreateView,
+    ProjectDocumentDetailView,
 )
 
 # 创建DRF路由器
@@ -53,6 +55,10 @@ knowledge_graph_patterns = [
 urlpatterns = [
     # LightRAG 知识图谱特殊端点 - 必须放在 router 之前
     path('knowledge-graphs/', include(knowledge_graph_patterns)),
+    
+    # 项目文档管理API
+    path('project-documents/', ProjectDocumentListCreateView.as_view(), name='project-document-list'),
+    path('project-documents/<int:pk>/', ProjectDocumentDetailView.as_view(), name='project-document-detail'),
     
     # DRF路由
     path('', include(router.urls)),

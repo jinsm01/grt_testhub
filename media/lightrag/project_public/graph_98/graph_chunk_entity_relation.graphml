@@ -1,0 +1,2302 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"><key id="d13" for="edge" attr.name="truncate" attr.type="string"/>
+<key id="d12" for="edge" attr.name="created_at" attr.type="long"/>
+<key id="d11" for="edge" attr.name="file_path" attr.type="string"/>
+<key id="d10" for="edge" attr.name="source_id" attr.type="string"/>
+<key id="d9" for="edge" attr.name="keywords" attr.type="string"/>
+<key id="d8" for="edge" attr.name="description" attr.type="string"/>
+<key id="d7" for="edge" attr.name="weight" attr.type="double"/>
+<key id="d6" for="node" attr.name="truncate" attr.type="string"/>
+<key id="d5" for="node" attr.name="created_at" attr.type="long"/>
+<key id="d4" for="node" attr.name="file_path" attr.type="string"/>
+<key id="d3" for="node" attr.name="source_id" attr.type="string"/>
+<key id="d2" for="node" attr.name="description" attr.type="string"/>
+<key id="d1" for="node" attr.name="entity_type" attr.type="string"/>
+<key id="d0" for="node" attr.name="entity_id" attr.type="string"/>
+<graph edgedefault="undirected"><node id="执行状态">
+  <data key="d0">执行状态</data>
+  <data key="d1">concept</data>
+  <data key="d2">执行状态表示系统在处理用户问题时的当前运行状况，包括正常和异常情况。&lt;SEP&gt;执行状态是描述任务或流程当前运行情况的指标。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547&lt;SEP&gt;chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="召回正常">
+  <data key="d0">召回正常</data>
+  <data key="d1">concept</data>
+  <data key="d2">召回正常是指系统能够成功从知识库中检索到相关信息。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="正常返回召回的知识库片段">
+  <data key="d0">正常返回召回的知识库片段</data>
+  <data key="d1">concept</data>
+  <data key="d2">正常返回召回的知识库片段表示系统成功检索并返回了相关知识库内容。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="识别异常">
+  <data key="d0">识别异常</data>
+  <data key="d1">concept</data>
+  <data key="d2">识别异常是指系统在处理用户问题时出现错误或无法识别的情况。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="用户输入的问题知识库没有">
+  <data key="d0">用户输入的问题知识库没有</data>
+  <data key="d1">concept</data>
+  <data key="d2">用户输入的问题知识库没有表示系统无法在知识库中找到相关问题。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="用户只输入符号或者空格">
+  <data key="d0">用户只输入符号或者空格</data>
+  <data key="d1">concept</data>
+  <data key="d2">用户只输入符号或者空格表示用户输入的内容无效或无意义。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="没有问题只有情绪化表达">
+  <data key="d0">没有问题只有情绪化表达</data>
+  <data key="d1">concept</data>
+  <data key="d2">没有问题只有情绪化表达表示用户未提出具体问题，仅表达情绪。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="帮助中心">
+  <data key="d0">帮助中心</data>
+  <data key="d1">organization</data>
+  <data key="d2">帮助中心是用户获取帮助文档的链接位置。&lt;SEP&gt;帮助中心是提供帮助文档和支持服务的平台。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="直接查询知识库">
+  <data key="d0">直接查询知识库</data>
+  <data key="d1">method</data>
+  <data key="d2">直接查询知识库是一种从知识库中获取信息的方法。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="前置条件">
+  <data key="d0">前置条件</data>
+  <data key="d1">concept</data>
+  <data key="d2">前置条件是指执行任务前需要满足的条件。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="意图识别节点">
+  <data key="d0">意图识别节点</data>
+  <data key="d1">concept</data>
+  <data key="d2">意图识别节点是用于识别用户意图的系统组件。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="标准问题">
+  <data key="d0">标准问题</data>
+  <data key="d1">concept</data>
+  <data key="d2">标准问题是用于匹配用户提问的预定义问题分类。&lt;SEP&gt;标准问题是预先定义好的、用于匹配用户提问的典型问题。&lt;SEP&gt;标准问题是系统中预定义的常见问题。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547&lt;SEP&gt;chunk-d85b1016b3726e808064537af4cfc4ce&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="任务目标">
+  <data key="d0">任务目标</data>
+  <data key="d1">concept</data>
+  <data key="d2">任务目标是执行任务所要达到的目的。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="操作类知识库">
+  <data key="d0">操作类知识库</data>
+  <data key="d1">data</data>
+  <data key="d2">操作类知识库包含与操作相关的知识内容。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="规则类知识库">
+  <data key="d0">规则类知识库</data>
+  <data key="d1">data</data>
+  <data key="d2">规则类知识库包含与规则相关的知识内容。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="异常情况问题知识库">
+  <data key="d0">异常情况问题知识库</data>
+  <data key="d1">data</data>
+  <data key="d2">异常情况问题知识库包含与异常情况相关的知识内容。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="输出">
+  <data key="d0">输出</data>
+  <data key="d1">concept</data>
+  <data key="d2">输出是任务执行后的结果。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="回答片段">
+  <data key="d0">回答片段</data>
+  <data key="d1">content</data>
+  <data key="d2">回答片段是从知识库中提取的用于回答用户问题的部分内容。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="图片">
+  <data key="d0">图片</data>
+  <data key="d1">artifact</data>
+  <data key="d2">图片是知识库中可能包含的视觉内容。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044134</data>
+  <data key="d6"></data>
+</node>
+<node id="问题类型">
+  <data key="d0">问题类型</data>
+  <data key="d1">concept</data>
+  <data key="d2">问题类型是对用户问题进行分类的类别。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="原始问题">
+  <data key="d0">原始问题</data>
+  <data key="d1">concept</data>
+  <data key="d2">原始问题是用户最初提出的问题。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="API查询">
+  <data key="d0">API查询</data>
+  <data key="d1">method</data>
+  <data key="d2">API查询is a method used to retrieve information through APIs.&lt;SEP&gt;API查询是一种通过调用外部接口获取数据的处理方式。&lt;SEP&gt;API查询是根据意图识别结果调用的接口方法。&lt;SEP&gt;API查询是一种通过接口获取数据的方法。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547&lt;SEP&gt;chunk-d85b1016b3726e808064537af4cfc4ce&lt;SEP&gt;chunk-741aa075151caf61c242ba45c9118c86&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="数据查询类的标准问题">
+  <data key="d0">数据查询类的标准问题</data>
+  <data key="d1">concept</data>
+  <data key="d2">数据查询类的标准问题是涉及数据查询的常见问题。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="业务数据">
+  <data key="d0">业务数据</data>
+  <data key="d1">data</data>
+  <data key="d2">业务数据是与项目运营相关的实时数据。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="查询异常">
+  <data key="d0">查询异常</data>
+  <data key="d1">concept</data>
+  <data key="d2">查询异常表示系统在查询过程中遇到问题。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="学习数据">
+  <data key="d0">学习数据</data>
+  <data key="d1">data</data>
+  <data key="d2">学习数据是与用户学习进度相关的数据。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="接口超时">
+  <data key="d0">接口超时</data>
+  <data key="d1">concept</data>
+  <data key="d2">接口超时表示系统调用接口时等待时间过长。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="部分接口字段缺失">
+  <data key="d0">部分接口字段缺失</data>
+  <data key="d1">concept</data>
+  <data key="d2">部分接口字段缺失表示接口返回的数据不完整。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="模型输出">
+  <data key="d0">模型输出</data>
+  <data key="d1">method</data>
+  <data key="d2">模型输出是基于多种数据整合生成最终回复的过程。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="rag召回的结果">
+  <data key="d0">rag召回的结果</data>
+  <data key="d1">data</data>
+  <data key="d2">rag召回的结果是从知识库中检索到的相关信息。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="数据查询结果">
+  <data key="d0">数据查询结果</data>
+  <data key="d1">data</data>
+  <data key="d2">数据查询结果是通过API查询得到的结构化数据。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="输出规则提示词">
+  <data key="d0">输出规则提示词</data>
+  <data key="d1">content</data>
+  <data key="d2">输出规则提示词是指导模型生成回复的规则说明。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="培训项目智能问答内容整合助手">
+  <data key="d0">培训项目智能问答内容整合助手</data>
+  <data key="d1">organization</data>
+  <data key="d2">培训项目智能问答内容整合助手是负责整合问答内容的系统角色。&lt;SEP&gt;培训项目智能问答内容整合助手是一个负责整合和生成培训项目相关问答内容的系统。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547&lt;SEP&gt;chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="API接口列表">
+  <data key="d0">API接口列表</data>
+  <data key="d1">data</data>
+  <data key="d2">API接口列表是用于查询的接口集合。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="模型">
+  <data key="d0">模型</data>
+  <data key="d1">concept</data>
+  <data key="d2">模型是用于生成最终回复的系统组件。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="最终回复的文本">
+  <data key="d0">最终回复的文本</data>
+  <data key="d1">content</data>
+  <data key="d2">最终回复的文本是系统生成的最终回答。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="必修课">
+  <data key="d0">必修课</data>
+  <data key="d1">concept</data>
+  <data key="d2">必修课是必须完成的课程。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="管理基础">
+  <data key="d0">管理基础</data>
+  <data key="d1">content</data>
+  <data key="d2">管理基础是一门必修课程。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="领导力入门">
+  <data key="d0">领导力入门</data>
+  <data key="d1">content</data>
+  <data key="d2">领导力入门是一门必修课程。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="团队协作">
+  <data key="d0">团队协作</data>
+  <data key="d1">content</data>
+  <data key="d2">团队协作是一门必修课程。&lt;SEP&gt;团队协作是一种工作方式，强调成员之间的合作与协调以达成共同目标。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547&lt;SEP&gt;chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="选修课">
+  <data key="d0">选修课</data>
+  <data key="d1">concept</data>
+  <data key="d2">选修课是可以选择学习的课程。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="沟通技巧">
+  <data key="d0">沟通技巧</data>
+  <data key="d1">content</data>
+  <data key="d2">沟通技巧是一门选修课程。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="决策思维">
+  <data key="d0">决策思维</data>
+  <data key="d1">content</data>
+  <data key="d2">决策思维是一门选修课程。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="学习时长">
+  <data key="d0">学习时长</data>
+  <data key="d1">concept</data>
+  <data key="d2">学习时长是完成课程所需的时间。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="考试">
+  <data key="d0">考试</data>
+  <data key="d1">concept</data>
+  <data key="d2">考试是项目考核的一部分。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="作业">
+  <data key="d0">作业</data>
+  <data key="d1">concept</data>
+  <data key="d2">作业是项目考核的一部分。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="研修成果">
+  <data key="d0">研修成果</data>
+  <data key="d1">concept</data>
+  <data key="d2">研修成果是项目考核的一部分。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="研讨会">
+  <data key="d0">研讨会</data>
+  <data key="d1">concept</data>
+  <data key="d2">研讨会是项目考核的一部分。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="直播课">
+  <data key="d0">直播课</data>
+  <data key="d1">concept</data>
+  <data key="d2">直播课是项目考核的一部分。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="输出异常">
+  <data key="d0">输出异常</data>
+  <data key="d1">concept</data>
+  <data key="d2">输出异常表示系统在生成最终回复时出现问题。&lt;SEP&gt;输出异常表示系统在处理过程中出现错误或问题。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547&lt;SEP&gt;chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="调用模型超时">
+  <data key="d0">调用模型超时</data>
+  <data key="d1">concept</data>
+  <data key="d2">调用模型超时表示系统在调用模型时等待时间过长。&lt;SEP&gt;调用模型超时是指系统在调用模型时超过了设定的时间限制。</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547&lt;SEP&gt;chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="Toast提示">
+  <data key="d0">Toast提示</data>
+  <data key="d1">content</data>
+  <data key="d2">Toast提示是在点击输入框时弹出的系统提示信息，内容为“该技能暂不可用”。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="后台日志">
+  <data key="d0">后台日志</data>
+  <data key="d1">data</data>
+  <data key="d2">后台日志是记录用户与智能体每一轮交互的详细信息，包括输入和输出。&lt;SEP&gt;后台日志is a record of user interactions with the intelligent agent.</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce&lt;SEP&gt;chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="数据统计">
+  <data key="d0">数据统计</data>
+  <data key="d1">data</data>
+  <data key="d2">数据统计是本期不计入统计的部分。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044135</data>
+  <data key="d6"></data>
+</node>
+<node id="敏感信息和标注">
+  <data key="d0">敏感信息和标注</data>
+  <data key="d1">concept</data>
+  <data key="d2">敏感信息和标注是项目问答技能需要遵循的规则。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="学员端">
+  <data key="d0">学员端</data>
+  <data key="d1">location</data>
+  <data key="d2">学员端是用户操作的界面部分。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="反馈按钮">
+  <data key="d0">反馈按钮</data>
+  <data key="d1">artifact</data>
+  <data key="d2">反馈按钮是学员端显示的一个功能按钮。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="复制按钮">
+  <data key="d0">复制按钮</data>
+  <data key="d1">artifact</data>
+  <data key="d2">复制按钮是学员端显示的一个功能按钮。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="重新生成按钮">
+  <data key="d0">重新生成按钮</data>
+  <data key="d1">artifact</data>
+  <data key="d2">重新生成按钮是学员端显示的一个功能按钮，用于重新生成内容。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="意图识别">
+  <data key="d0">意图识别</data>
+  <data key="d1">method</data>
+  <data key="d2">意图识别是通过LLM语义识别来判断用户提问的意图。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="LLM语义识别">
+  <data key="d0">LLM语义识别</data>
+  <data key="d1">method</data>
+  <data key="d2">LLM语义识别是一种用于意图识别的技术方法。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="置信度">
+  <data key="d0">置信度</data>
+  <data key="d1">data</data>
+  <data key="d2">置信度是衡量标准问题匹配程度的数值指标。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="API">
+  <data key="d0">API</data>
+  <data key="d1">method</data>
+  <data key="d2">API是用于查询数据的接口方法。&lt;SEP&gt;API是系统中用于查询数据的接口。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce&lt;SEP&gt;chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="知识库">
+  <data key="d0">知识库</data>
+  <data key="d1">data</data>
+  <data key="d2">知识库是包含问题分类映射关系的数据源。&lt;SEP&gt;知识库is a database used to store information for the Q&amp;A system.&lt;SEP&gt;知识库是存储标准问题、回答内容及规则说明的数据库。&lt;SEP&gt;知识库是系统中存储信息的数据库。&lt;SEP&gt;知识库是存储培训项目相关知识和信息的数据库。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce&lt;SEP&gt;chunk-741aa075151caf61c242ba45c9118c86&lt;SEP&gt;chunk-31e5c75189d17ae4c2a892e6c06113ea&lt;SEP&gt;chunk-55ca6172f050e20c010f7ae3c4eb04a4&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="提示词">
+  <data key="d0">提示词</data>
+  <data key="d1">content</data>
+  <data key="d2">提示词是用于引导LLM进行意图识别的指令文本。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="培训项目问答意图识别助手">
+  <data key="d0">培训项目问答意图识别助手</data>
+  <data key="d1">person</data>
+  <data key="d2">培训项目问答意图识别助手是负责分析用户问题的系统角色。&lt;SEP&gt;培训项目问答意图识别助手是智能问答系统中的一个模块，负责分析用户问题并判断其业务意图。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="培训项目智能问答系统">
+  <data key="d0">培训项目智能问答系统</data>
+  <data key="d1">organization</data>
+  <data key="d2">培训项目智能问答系统是提供意图识别服务的系统。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="点击输入框">
+  <data key="d0">点击输入框</data>
+  <data key="d1">event</data>
+  <data key="d2">点击输入框是用户触发系统弹出Toast提示的操作行为。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="智能体">
+  <data key="d0">智能体</data>
+  <data key="d1">creature</data>
+  <data key="d2">智能体是与用户进行交互的系统角色，负责处理用户的问题和反馈。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="日志详情">
+  <data key="d0">日志详情</data>
+  <data key="d1">data</data>
+  <data key="d2">日志详情是记录用户与智能体交互内容的详细信息。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="标注按钮">
+  <data key="d0">标注按钮</data>
+  <data key="d1">artifact</data>
+  <data key="d2">标注按钮是日志详情中的一个功能按钮，用于标记或注释日志内容。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="项目问答技能">
+  <data key="d0">项目问答技能</data>
+  <data key="d1">concept</data>
+  <data key="d2">项目问答技能is a skill designed to provide intelligent Q&amp;A for training projects.&lt;SEP&gt;项目问答技能是需要遵循敏感信息和标注规则的功能模块。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce&lt;SEP&gt;chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="消息体">
+  <data key="d0">消息体</data>
+  <data key="d1">content</data>
+  <data key="d2">消息体是学员端显示的对话内容区域。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="意图识别提示词">
+  <data key="d0">意图识别提示词</data>
+  <data key="d1">content</data>
+  <data key="d2">意图识别提示词是用于引导LLM进行意图识别的指令文本。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="XML">
+  <data key="d0">XML</data>
+  <data key="d1">artifact</data>
+  <data key="d2">XML是意图识别提示词的格式或数据结构。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="知识库查询">
+  <data key="d0">知识库查询</data>
+  <data key="d1">method</data>
+  <data key="d2">知识库查询是一种通过检索内部知识库内容来回答问题的处理方式。&lt;SEP&gt;知识库查询是根据意图识别结果进行的数据库检索方法。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="API +知识库查询融合">
+  <data key="d0">API +知识库查询融合</data>
+  <data key="d1">method</data>
+  <data key="d2">API +知识库查询融合是结合API和知识库查询结果进行综合分析的处理方式。&lt;SEP&gt;API +知识库查询融合是结合两种查询方式的综合处理方法。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044136</data>
+  <data key="d6"></data>
+</node>
+<node id="核心任务">
+  <data key="d0">核心任务</data>
+  <data key="d1">concept</data>
+  <data key="d2">核心任务是培训项目问答意图识别助手的主要职责。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="用户问题">
+  <data key="d0">用户问题</data>
+  <data key="d1">content</data>
+  <data key="d2">用户问题是指用户向系统提出的具体询问内容。&lt;SEP&gt;用户问题是培训项目问答意图识别助手分析的对象。&lt;SEP&gt;用户问题是需要根据规则进行回答的询问内容。&lt;SEP&gt;用户问题是用户提出的具体疑问或需求。</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce&lt;SEP&gt;chunk-31e5c75189d17ae4c2a892e6c06113ea&lt;SEP&gt;chunk-55ca6172f050e20c010f7ae3c4eb04a4&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="PRD">
+  <data key="d0">PRD</data>
+  <data key="d1">content</data>
+  <data key="d2">PRD is a document that outlines the requirements for the project agent's project Q&amp;A skill.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="项目智能体">
+  <data key="d0">项目智能体</data>
+  <data key="d1">concept</data>
+  <data key="d2">项目智能体is a concept referring to an intelligent agent designed for training projects.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="苗宁">
+  <data key="d0">苗宁</data>
+  <data key="d1">person</data>
+  <data key="d2">苗宁is a person who completed the document on 2026-05-18.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="培训项目">
+  <data key="d0">培训项目</data>
+  <data key="d1">event</data>
+  <data key="d2">培训项目refers to an educational program where participants face various questions during learning.&lt;SEP&gt;培训项目是智能问答系统所服务的业务场景。</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="运营">
+  <data key="d0">运营</data>
+  <data key="d1">organization</data>
+  <data key="d2">运营is an organization responsible for handling inquiries from trainees.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="教务">
+  <data key="d0">教务</data>
+  <data key="d1">organization</data>
+  <data key="d2">教务is an organization responsible for managing training projects.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="技术部">
+  <data key="d0">技术部</data>
+  <data key="d1">organization</data>
+  <data key="d2">技术部is an organization responsible for technical support in training projects.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="规则处理">
+  <data key="d0">规则处理</data>
+  <data key="d1">method</data>
+  <data key="d2">规则处理is a method used to handle project rules and regulations.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="大语言模型">
+  <data key="d0">大语言模型</data>
+  <data key="d1">artifact</data>
+  <data key="d2">大语言模型is an artificial intelligence model used for natural language processing.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="智能问答">
+  <data key="d0">智能问答</data>
+  <data key="d1">concept</data>
+  <data key="d2">智能问答is a system designed to provide quick and accurate answers to trainees' questions.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="租户运营端">
+  <data key="d0">租户运营端</data>
+  <data key="d1">location</data>
+  <data key="d2">租户运营端is a platform for managing training projects.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="独立智能体">
+  <data key="d0">独立智能体</data>
+  <data key="d1">concept</data>
+  <data key="d2">独立智能体is a type of intelligent agent that does not display the "project Q&amp;A" skill.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="第三方技能">
+  <data key="d0">第三方技能</data>
+  <data key="d1">concept</data>
+  <data key="d2">第三方技能refers to external skills that can be added to an intelligent agent.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="技能类型">
+  <data key="d0">技能类型</data>
+  <data key="d1">concept</data>
+  <data key="d2">技能类型is a classification used to select third-party skills.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="助学">
+  <data key="d0">助学</data>
+  <data key="d1">concept</data>
+  <data key="d2">助学is a category of skills used for assisting trainees.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="历史会话">
+  <data key="d0">历史会话</data>
+  <data key="d1">data</data>
+  <data key="d2">历史会话refers to the record of past conversations between users and the intelligent agent.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="标注">
+  <data key="d0">标注</data>
+  <data key="d1">concept</data>
+  <data key="d2">标注is a feature used to mark or label content in the system.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="【PRD】项目智能体-项目问答技能.docx">
+  <data key="d0">【PRD】项目智能体-项目问答技能.docx</data>
+  <data key="d1">content</data>
+  <data key="d2">【PRD】项目智能体-项目问答技能.docx is a document outlining the requirements for the project Q&amp;A skill of the project agent.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="208">
+  <data key="d0">208</data>
+  <data key="d1">data</data>
+  <data key="d2">208 is the document ID assigned to the PRD document.</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="达标">
+  <data key="d0">达标</data>
+  <data key="d1">concept</data>
+  <data key="d2">达标是指达到预定的标准或目标。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="输出正常">
+  <data key="d0">输出正常</data>
+  <data key="d1">concept</data>
+  <data key="d2">输出正常表示系统运行正常，可以返回预期结果。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="当前查询人数较多">
+  <data key="d0">当前查询人数较多</data>
+  <data key="d1">concept</data>
+  <data key="d2">当前查询人数较多表示系统正在处理大量请求，可能导致响应延迟。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="稍后重试">
+  <data key="d0">稍后重试</data>
+  <data key="d1">concept</data>
+  <data key="d2">稍后重试是建议用户在系统负载降低后再次尝试操作。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="API查询结果">
+  <data key="d0">API查询结果</data>
+  <data key="d1">data</data>
+  <data key="d2">API查询结果是从外部接口获取的实时业务数据。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="RAG召回结果">
+  <data key="d0">RAG召回结果</data>
+  <data key="d1">data</data>
+  <data key="d2">RAG召回结果是从知识库中检索到的相关信息。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="回答模式">
+  <data key="d0">回答模式</data>
+  <data key="d1">concept</data>
+  <data key="d2">回答模式是根据输入数据来源选择的不同回答策略。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="API事实回答模式">
+  <data key="d0">API事实回答模式</data>
+  <data key="d1">method</data>
+  <data key="d2">API事实回答模式是基于API查询结果直接提供事实性答案的模式。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="RAG教学回答模式">
+  <data key="d0">RAG教学回答模式</data>
+  <data key="d1">method</data>
+  <data key="d2">RAG教学回答模式是基于知识库内容进行解释和教学的模式。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="API + RAG融合回答模式">
+  <data key="d0">API + RAG融合回答模式</data>
+  <data key="d1">method</data>
+  <data key="d2">API + RAG融合回答模式是结合API事实和RAG解释的综合回答模式。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="业务事实信息">
+  <data key="d0">业务事实信息</data>
+  <data key="d1">concept</data>
+  <data key="d2">业务事实信息是与实际业务相关的准确数据。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="教学化表达">
+  <data key="d0">教学化表达</data>
+  <data key="d1">method</data>
+  <data key="d2">教学化表达是用于帮助理解的解释性语言。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="结构化说明">
+  <data key="d0">结构化说明</data>
+  <data key="d1">method</data>
+  <data key="d2">结构化说明是将信息按逻辑顺序组织的表达方式。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="建议动作">
+  <data key="d0">建议动作</data>
+  <data key="d1">concept</data>
+  <data key="d2">建议动作是针对问题提出的可行解决方案。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="前置课程">
+  <data key="d0">前置课程</data>
+  <data key="d1">concept</data>
+  <data key="d2">前置课程是项目作业提交前必须完成的学习内容。&lt;SEP&gt;前置课程是完成后续任务前需要先学习的课程。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea&lt;SEP&gt;chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="系统字段">
+  <data key="d0">系统字段</data>
+  <data key="d1">data</data>
+  <data key="d2">系统字段是系统内部使用的数据标识符。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044137</data>
+  <data key="d6"></data>
+</node>
+<node id="情绪价值">
+  <data key="d0">情绪价值</data>
+  <data key="d1">concept</data>
+  <data key="d2">情绪价值是回答中包含的情感支持或积极影响。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="客服式">
+  <data key="d0">客服式</data>
+  <data key="d1">method</data>
+  <data key="d2">客服式是一种友好且专业的沟通风格。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="专业助教式">
+  <data key="d0">专业助教式</data>
+  <data key="d1">method</data>
+  <data key="d2">专业助教式是一种具有指导性和教育性的沟通风格。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="自然口语化">
+  <data key="d0">自然口语化</data>
+  <data key="d1">method</data>
+  <data key="d2">自然口语化是一种接近日常对话的表达方式。</data>
+  <data key="d3">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="项目作业">
+  <data key="d0">项目作业</data>
+  <data key="d1">content</data>
+  <data key="d2">项目作业是需要完成的任务，需在特定时间开放后才能提交。</data>
+  <data key="d3">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="5月10日20:00">
+  <data key="d0">5月10日20:00</data>
+  <data key="d1">data</data>
+  <data key="d2">5月10日20:00是项目作业开放提交的时间。</data>
+  <data key="d3">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="系统">
+  <data key="d0">系统</data>
+  <data key="d1">artifact</data>
+  <data key="d2">系统是提供智能问答服务的整体架构。&lt;SEP&gt;系统是用于查询和管理项目作业信息的平台。</data>
+  <data key="d3">chunk-55ca6172f050e20c010f7ae3c4eb04a4&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="RAG">
+  <data key="d0">RAG</data>
+  <data key="d1">artifact</data>
+  <data key="d2">RAG是系统中用于提供补充信息的技术。</data>
+  <data key="d3">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="当前项目作业">
+  <data key="d0">当前项目作业</data>
+  <data key="d1">content</data>
+  <data key="d2">当前项目作业是尚未开放的作业任务，需等待指定时间才能提交。</data>
+  <data key="d3">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="课程学习进度">
+  <data key="d0">课程学习进度</data>
+  <data key="d1">data</data>
+  <data key="d2">课程学习进度是判断项目作业是否可提交的关键信息。</data>
+  <data key="d3">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="系统内部信息">
+  <data key="d0">系统内部信息</data>
+  <data key="d1">concept</data>
+  <data key="d2">系统内部信息是指不对外公开的系统运行数据和逻辑。</data>
+  <data key="d3">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="测试集">
+  <data key="d0">测试集</data>
+  <data key="d1">content</data>
+  <data key="d2">测试集是用于评估问答技能的资料集合。</data>
+  <data key="d3">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="项目问答技能测试集">
+  <data key="d0">项目问答技能测试集</data>
+  <data key="d1">content</data>
+  <data key="d2">项目问答技能测试集是特定的测试资源链接。</data>
+  <data key="d3">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="直接匹配规则">
+  <data key="d0">直接匹配规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">直接匹配规则是根据用户表达与标准问题的名称或变体表达方式进行匹配的规则。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="语义匹配规则">
+  <data key="d0">语义匹配规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">语义匹配规则是根据用户表达与标准问题在语义层面的相关性进行匹配的规则。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="模糊匹配规则">
+  <data key="d0">模糊匹配规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">模糊匹配规则是当用户输入存在歧义时，返回多个合理候选的匹配规则。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="上下文匹配规则">
+  <data key="d0">上下文匹配规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">上下文匹配规则是结合对话历史理解用户意图的匹配规则。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="兜底规则">
+  <data key="d0">兜底规则</data>
+  <data key="d1">concept</data>
+  <data key="d2">兜底规则是在所有候选置信度均低于0.5时，采用RAG召回流程的规则。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="意图理解优先原则">
+  <data key="d0">意图理解优先原则</data>
+  <data key="d1">concept</data>
+  <data key="d2">意图理解优先原则是优先理解用户真实诉求而非字面表达的原则。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="操作类">
+  <data key="d0">操作类</data>
+  <data key="d1">concept</data>
+  <data key="d2">操作类问题是指需要提供操作指引的问题类型。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="规则/说明类">
+  <data key="d0">规则/说明类</data>
+  <data key="d1">concept</data>
+  <data key="d2">规则/说明类问题是指需要解释规则或说明的问题类型。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="异常情况类">
+  <data key="d0">异常情况类</data>
+  <data key="d1">concept</data>
+  <data key="d2">异常情况类问题是指涉及异常或错误处理的问题类型。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="内容/数据查询类">
+  <data key="d0">内容/数据查询类</data>
+  <data key="d1">concept</data>
+  <data key="d2">内容/数据查询类问题是指需要获取具体数据或内容的问题类型。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="混合查询">
+  <data key="d0">混合查询</data>
+  <data key="d1">concept</data>
+  <data key="d2">混合查询是指一个问题触发多个标准问题的查询类型。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="rag召回">
+  <data key="d0">rag召回</data>
+  <data key="d1">method</data>
+  <data key="d2">RAG召回是一种通过向量语义检索从知识库中召回相关内容的机制。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044138</data>
+  <data key="d6"></data>
+</node>
+<node id="用户">
+  <data key="d0">用户</data>
+  <data key="d1">person</data>
+  <data key="d2">用户是向系统提出问题的个体。</data>
+  <data key="d3">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044139</data>
+  <data key="d6"></data>
+</node>
+<node id="输入">
+  <data key="d0">输入</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d2">直接查询知识库的输入是匹配到的标准问题。</data>
+  <data key="d1">UNKNOWN</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044139</data>
+  <data key="d6"></data>
+</node>
+<node id="查询范围">
+  <data key="d0">查询范围</data>
+  <data key="d3">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d2">直接查询知识库的查询范围包括操作类、规则类和异常情况问题知识库。</data>
+  <data key="d1">UNKNOWN</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044140</data>
+  <data key="d6"></data>
+</node>
+<node id="输入框">
+  <data key="d0">输入框</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d2">当用户点击输入框时，系统会统一弹出Toast提示。</data>
+  <data key="d1">UNKNOWN</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044140</data>
+  <data key="d6"></data>
+</node>
+<node id="用户与智能体">
+  <data key="d0">用户与智能体</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d2">后台日志完整记录了用户与智能体的每一轮交互。</data>
+  <data key="d1">UNKNOWN</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044140</data>
+  <data key="d6"></data>
+</node>
+<node id="每一轮完整的问答流程">
+  <data key="d0">每一轮完整的问答流程</data>
+  <data key="d3">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d2">后台日志在每一轮完整的问答流程结束时被记录。</data>
+  <data key="d1">UNKNOWN</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044141</data>
+  <data key="d6"></data>
+</node>
+<node id="文档ID">
+  <data key="d0">文档ID</data>
+  <data key="d3">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d2">文档ID 208 is the identifier for the PRD document.</data>
+  <data key="d1">UNKNOWN</data>
+  <data key="d4">unknown_source</data>
+  <data key="d5">1780044142</data>
+  <data key="d6"></data>
+</node>
+<edge source="执行状态" target="识别异常">
+  <data key="d7">1.0</data>
+  <data key="d8">执行状态为识别异常时，表示系统无法正确识别用户问题。</data>
+  <data key="d9">系统状态,问题分类</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044139</data>
+  <data key="d13"></data>
+</edge>
+<edge source="执行状态" target="帮助中心">
+  <data key="d7">1.0</data>
+  <data key="d8">帮助中心是系统提供的支持服务，用于解决用户问题。</data>
+  <data key="d9">支持服务,系统功能</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="执行状态" target="模型输出">
+  <data key="d7">1.0</data>
+  <data key="d8">模型输出的执行状态表示是否成功返回最终回复。</data>
+  <data key="d9">系统状态,输出结果</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="执行状态" target="输出正常">
+  <data key="d7">1.0</data>
+  <data key="d8">“执行状态”为“输出正常”时表示系统运行正常。</data>
+  <data key="d9">状态关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="执行状态" target="输出异常">
+  <data key="d7">1.0</data>
+  <data key="d8">“执行状态”为“输出异常”时表示系统运行出现问题。</data>
+  <data key="d9">状态关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="识别异常" target="用户输入的问题知识库没有">
+  <data key="d7">1.0</data>
+  <data key="d8">当系统无法在知识库中找到用户的问题时，会触发识别异常。</data>
+  <data key="d9">知识库缺失,问题原因</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="识别异常" target="用户只输入符号或者空格">
+  <data key="d7">1.0</data>
+  <data key="d8">当用户仅输入符号或空格时，系统会识别为异常。</data>
+  <data key="d9">无效输入,问题原因</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="识别异常" target="没有问题只有情绪化表达">
+  <data key="d7">1.0</data>
+  <data key="d8">当用户仅表达情绪而没有提出具体问题时，系统会识别为异常。</data>
+  <data key="d9">情绪化表达,问题原因</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="帮助中心" target="知识库">
+  <data key="d7">1.0</data>
+  <data key="d8">知识库与帮助中心可以相互补充。</data>
+  <data key="d9">关联资源</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="帮助中心" target="用户">
+  <data key="d7">1.0</data>
+  <data key="d8">当无法回答时，用户可能被引导至帮助中心。</data>
+  <data key="d9">引导目标</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044147</data>
+  <data key="d13"></data>
+</edge>
+<edge source="帮助中心" target="rag召回">
+  <data key="d7">1.0</data>
+  <data key="d8">RAG召回可引导用户至帮助中心获取更多信息。</data>
+  <data key="d9">辅助资源</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044147</data>
+  <data key="d13"></data>
+</edge>
+<edge source="直接查询知识库" target="前置条件">
+  <data key="d7">1.0</data>
+  <data key="d8">直接查询知识库是执行任务的前提条件之一。</data>
+  <data key="d9">任务流程,系统步骤</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044139</data>
+  <data key="d13"></data>
+</edge>
+<edge source="直接查询知识库" target="任务目标">
+  <data key="d7">1.0</data>
+  <data key="d8">直接查询知识库的目标是从知识库中获取相关信息。</data>
+  <data key="d9">任务目的,信息获取</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044139</data>
+  <data key="d13"></data>
+</edge>
+<edge source="直接查询知识库" target="输入">
+  <data key="d7">1.0</data>
+  <data key="d8">直接查询知识库的输入是匹配到的标准问题。</data>
+  <data key="d9">数据来源,用户问题</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="直接查询知识库" target="查询范围">
+  <data key="d7">1.0</data>
+  <data key="d8">直接查询知识库的查询范围包括操作类、规则类和异常情况问题知识库。</data>
+  <data key="d9">数据范围,知识库类型</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="直接查询知识库" target="输出">
+  <data key="d7">1.0</data>
+  <data key="d8">直接查询知识库的输出是标准问题及对应的回答片段。</data>
+  <data key="d9">知识片段,结果输出</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="前置条件" target="API查询">
+  <data key="d7">1.0</data>
+  <data key="d8">API查询的前置条件是意图识别节点正常匹配到标准问题。</data>
+  <data key="d9">任务前提,系统条件</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="前置条件" target="模型输出">
+  <data key="d7">1.0</data>
+  <data key="d8">模型输出的前置条件是任务执行正常返回结果。</data>
+  <data key="d9">任务前提,系统条件</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="标准问题" target="意图识别">
+  <data key="d7">1.0</data>
+  <data key="d8">意图识别的目标是将用户问题匹配到标准问题。</data>
+  <data key="d9">classification,matching</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="标准问题" target="置信度">
+  <data key="d7">1.0</data>
+  <data key="d8">标准问题的匹配结果包含置信度作为评估指标。</data>
+  <data key="d9">evaluation metric</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="标准问题" target="API">
+  <data key="d7">1.0</data>
+  <data key="d8">标准问题的处理方式可以是调用API。</data>
+  <data key="d9">integration,response method</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="标准问题" target="知识库">
+  <data key="d7">2.0</data>
+  <data key="d8">标准问题的识别依赖于知识库中的问题分类映射关系。&lt;SEP&gt;知识库存储了标准问题及相关信息。</data>
+  <data key="d9">data source,mapping,数据存储</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="标准问题" target="用户问题">
+  <data key="d7">1.0</data>
+  <data key="d8">用户问题可能与标准问题直接匹配或语义匹配。</data>
+  <data key="d9">匹配关系</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044145</data>
+  <data key="d13"></data>
+</edge>
+<edge source="标准问题" target="直接匹配规则">
+  <data key="d7">1.0</data>
+  <data key="d8">标准问题可以通过直接匹配规则与用户问题匹配。</data>
+  <data key="d9">匹配规则应用</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044145</data>
+  <data key="d13"></data>
+</edge>
+<edge source="标准问题" target="语义匹配规则">
+  <data key="d7">1.0</data>
+  <data key="d8">标准问题可以通过语义匹配规则与用户问题匹配。</data>
+  <data key="d9">匹配规则应用</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="标准问题" target="模糊匹配规则">
+  <data key="d7">1.0</data>
+  <data key="d8">标准问题可以通过模糊匹配规则与用户问题匹配。</data>
+  <data key="d9">匹配规则应用</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="标准问题" target="上下文匹配规则">
+  <data key="d7">1.0</data>
+  <data key="d8">标准问题可以通过上下文匹配规则与用户问题匹配。</data>
+  <data key="d9">匹配规则应用</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="标准问题" target="兜底规则">
+  <data key="d7">1.0</data>
+  <data key="d8">当其他匹配规则不适用时，标准问题可通过兜底规则处理。</data>
+  <data key="d9">匹配规则应用</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="任务目标" target="API查询">
+  <data key="d7">1.0</data>
+  <data key="d8">API查询的目标是获取用户的实时业务数据。</data>
+  <data key="d9">任务目的,数据获取</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="任务目标" target="模型输出">
+  <data key="d7">1.0</data>
+  <data key="d8">模型输出的目标是生成符合业务规范的回答。</data>
+  <data key="d9">任务目的,回答生成</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="输出" target="API查询">
+  <data key="d7">1.0</data>
+  <data key="d8">API查询的输出是各个API返回的查询结果。</data>
+  <data key="d9">数据反馈,结果输出</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="输出" target="模型输出">
+  <data key="d7">1.0</data>
+  <data key="d8">模型输出的输出是最终的回复文本。</data>
+  <data key="d9">最终回复,结果输出</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="问题类型" target="知识库">
+  <data key="d7">1.0</data>
+  <data key="d8">知识库包含不同问题类型的分类信息。</data>
+  <data key="d9">数据关联</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044147</data>
+  <data key="d13"></data>
+</edge>
+<edge source="API查询" target="查询范围">
+  <data key="d7">1.0</data>
+  <data key="d8">API查询的查询范围是根据标准问题对应的API接口列表。</data>
+  <data key="d9">接口列表,数据范围</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="API查询" target="项目问答技能">
+  <data key="d7">1.0</data>
+  <data key="d8">The project Q&amp;A skill uses API queries to retrieve data.</data>
+  <data key="d9">data retrieval,integration</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="API查询" target="培训项目问答意图识别助手">
+  <data key="d7">1.0</data>
+  <data key="d8">培训项目问答意图识别助手根据问题类型决定是否使用API查询。</data>
+  <data key="d9">处理方式选择</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="模型输出" target="输入">
+  <data key="d7">1.0</data>
+  <data key="d8">模型输出的输入包括用户的原始问题、匹配到的标准问题、置信度等。</data>
+  <data key="d9">多源信息,数据来源</data>
+  <data key="d10">chunk-b164ec144ee727f1d54c57b81b3b9547</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="培训项目智能问答内容整合助手" target="API查询结果">
+  <data key="d7">1.0</data>
+  <data key="d8">“培训项目智能问答内容整合助手”依赖“API查询结果”来提供事实性答案。</data>
+  <data key="d9">功能依赖</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="培训项目智能问答内容整合助手" target="RAG召回结果">
+  <data key="d7">1.0</data>
+  <data key="d8">“培训项目智能问答内容整合助手”依赖“RAG召回结果”来提供解释和教学内容。</data>
+  <data key="d9">功能依赖</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="团队协作" target="达标">
+  <data key="d7">1.0</data>
+  <data key="d8">“团队协作”是实现“达标”的一种方式。</data>
+  <data key="d9">关联关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044142</data>
+  <data key="d13"></data>
+</edge>
+<edge source="调用模型超时" target="当前查询人数较多">
+  <data key="d7">1.0</data>
+  <data key="d8">“调用模型超时”可能是由于“当前查询人数较多”导致的。</data>
+  <data key="d9">因果关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="Toast提示" target="输入框">
+  <data key="d7">1.0</data>
+  <data key="d8">当用户点击输入框时，系统会统一弹出Toast提示。</data>
+  <data key="d9">system feedback,user interaction</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="Toast提示" target="点击输入框">
+  <data key="d7">1.0</data>
+  <data key="d8">当用户点击输入框时，系统会触发Toast提示。</data>
+  <data key="d9">system response,trigger</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="后台日志" target="用户与智能体">
+  <data key="d7">1.0</data>
+  <data key="d8">后台日志完整记录了用户与智能体的每一轮交互。</data>
+  <data key="d9">data recording,interaction logging</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="后台日志" target="每一轮完整的问答流程">
+  <data key="d7">1.0</data>
+  <data key="d8">后台日志在每一轮完整的问答流程结束时被记录。</data>
+  <data key="d9">data capture,timing</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="后台日志" target="项目问答技能">
+  <data key="d7">1.0</data>
+  <data key="d8">The project Q&amp;A skill logs all user interactions for auditing purposes.</data>
+  <data key="d9">audit trail,interaction recording</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="敏感信息和标注" target="项目问答技能">
+  <data key="d7">1.0</data>
+  <data key="d8">项目问答技能需要遵守敏感信息和标注的相关规定。</data>
+  <data key="d9">compliance,requirement</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="学员端" target="消息体">
+  <data key="d7">1.0</data>
+  <data key="d8">学员端包含消息体，用于展示对话内容。</data>
+  <data key="d9">interface,user interaction</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="学员端" target="重新生成按钮">
+  <data key="d7">1.0</data>
+  <data key="d8">学员端显示重新生成按钮，供用户执行重新生成操作。</data>
+  <data key="d9">interface,user action</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="意图识别" target="LLM语义识别">
+  <data key="d7">1.0</data>
+  <data key="d8">意图识别通过LLM语义识别技术实现。</data>
+  <data key="d9">method,technique</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044140</data>
+  <data key="d13"></data>
+</edge>
+<edge source="意图识别" target="培训项目智能问答系统">
+  <data key="d7">1.0</data>
+  <data key="d8">培训项目智能问答系统包含意图识别功能。</data>
+  <data key="d9">functionality,system component</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="LLM语义识别" target="提示词">
+  <data key="d7">1.0</data>
+  <data key="d8">提示词用于指导LLM进行语义识别。</data>
+  <data key="d9">guidance,instruction</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="LLM语义识别" target="意图识别提示词">
+  <data key="d7">1.0</data>
+  <data key="d8">意图识别提示词用于指导LLM进行语义识别。</data>
+  <data key="d9">guidance,processing</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="API" target="系统">
+  <data key="d7">1.0</data>
+  <data key="d8">系统通过API接口进行数据查询。</data>
+  <data key="d9">system interface,数据查询</data>
+  <data key="d10">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="知识库" target="项目问答技能">
+  <data key="d7">1.0</data>
+  <data key="d8">The project Q&amp;A skill integrates information from the knowledge base.</data>
+  <data key="d9">information source,knowledge integration</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044142</data>
+  <data key="d13"></data>
+</edge>
+<edge source="知识库" target="系统">
+  <data key="d7">1.0</data>
+  <data key="d8">系统依赖知识库存储相关信息。</data>
+  <data key="d9">information repository,数据存储</data>
+  <data key="d10">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044145</data>
+  <data key="d13"></data>
+</edge>
+<edge source="知识库" target="rag召回">
+  <data key="d7">1.0</data>
+  <data key="d8">RAG召回依赖知识库作为数据来源。</data>
+  <data key="d9">数据来源</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="培训项目问答意图识别助手" target="用户问题">
+  <data key="d7">2.0</data>
+  <data key="d8">培训项目问答意图识别助手负责分析用户问题并进行分类。&lt;SEP&gt;培训项目问答意图识别助手负责分析用户问题以判断其业务意图。</data>
+  <data key="d9">analysis,classification,分析,意图识别</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce&lt;SEP&gt;chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="培训项目问答意图识别助手" target="培训项目智能问答系统">
+  <data key="d7">1.0</data>
+  <data key="d8">培训项目智能问答系统包含培训项目问答意图识别助手这一角色。</data>
+  <data key="d9">role,system component</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="培训项目问答意图识别助手" target="知识库查询">
+  <data key="d7">1.0</data>
+  <data key="d8">培训项目问答意图识别助手根据问题类型决定是否使用知识库查询。</data>
+  <data key="d9">处理方式选择</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044145</data>
+  <data key="d13"></data>
+</edge>
+<edge source="培训项目问答意图识别助手" target="API +知识库查询融合">
+  <data key="d7">1.0</data>
+  <data key="d8">培训项目问答意图识别助手根据问题类型决定是否使用API与知识库查询融合。</data>
+  <data key="d9">处理方式选择</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044145</data>
+  <data key="d13"></data>
+</edge>
+<edge source="培训项目问答意图识别助手" target="培训项目">
+  <data key="d7">1.0</data>
+  <data key="d8">培训项目问答意图识别助手服务于培训项目。</data>
+  <data key="d9">服务对象</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="培训项目问答意图识别助手" target="系统">
+  <data key="d7">1.0</data>
+  <data key="d8">培训项目问答意图识别助手是系统的一部分。</data>
+  <data key="d9">组成部分</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="智能体" target="日志详情">
+  <data key="d7">1.0</data>
+  <data key="d8">智能体与用户的交互内容被记录在日志详情中。</data>
+  <data key="d9">data recording,interaction</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="日志详情" target="标注按钮">
+  <data key="d7">1.0</data>
+  <data key="d8">日志详情中包含标注按钮，供用户进行标注操作。</data>
+  <data key="d9">functionality,user interaction</data>
+  <data key="d10">chunk-d85b1016b3726e808064537af4cfc4ce</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="项目问答技能" target="规则处理">
+  <data key="d7">1.0</data>
+  <data key="d8">The project Q&amp;A skill applies rules to process queries.</data>
+  <data key="d9">decision making,rule application</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044142</data>
+  <data key="d13"></data>
+</edge>
+<edge source="项目问答技能" target="大语言模型">
+  <data key="d7">1.0</data>
+  <data key="d8">The project Q&amp;A skill utilizes a large language model for natural language processing.</data>
+  <data key="d9">language processing,response generation</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044142</data>
+  <data key="d13"></data>
+</edge>
+<edge source="项目问答技能" target="租户运营端">
+  <data key="d7">1.0</data>
+  <data key="d8">The tenant operations platform integrates the project Q&amp;A skill.</data>
+  <data key="d9">platform integration,skill deployment</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044142</data>
+  <data key="d13"></data>
+</edge>
+<edge source="项目问答技能" target="独立智能体">
+  <data key="d7">1.0</data>
+  <data key="d8">Independent intelligent agents do not display the project Q&amp;A skill.</data>
+  <data key="d9">configuration restriction,skill exclusion</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="项目问答技能" target="技能类型">
+  <data key="d7">1.0</data>
+  <data key="d8">The skill type determines how the project Q&amp;A skill is selected.</data>
+  <data key="d9">selection criteria,skill categorization</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="项目问答技能" target="历史会话">
+  <data key="d7">1.0</data>
+  <data key="d8">The project Q&amp;A skill supports multi-turn conversations and retains historical sessions.</data>
+  <data key="d9">context retention,conversation tracking</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="用户问题" target="API查询结果">
+  <data key="d7">1.0</data>
+  <data key="d8">“用户问题”是“API查询结果”的输入来源。</data>
+  <data key="d9">输入关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="用户问题" target="RAG召回结果">
+  <data key="d7">1.0</data>
+  <data key="d8">“用户问题”是“RAG召回结果”的输入来源。</data>
+  <data key="d9">输入关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="用户问题" target="系统">
+  <data key="d7">1.0</data>
+  <data key="d8">系统根据用户问题提供相关信息。</data>
+  <data key="d9">information source,查询依据</data>
+  <data key="d10">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044145</data>
+  <data key="d13"></data>
+</edge>
+<edge source="用户问题" target="意图理解优先原则">
+  <data key="d7">1.0</data>
+  <data key="d8">意图理解优先原则指导对用户问题的分析。</data>
+  <data key="d9">分析依据</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044145</data>
+  <data key="d13"></data>
+</edge>
+<edge source="用户问题" target="操作类">
+  <data key="d7">1.0</data>
+  <data key="d8">用户问题可能被归类为操作类问题。</data>
+  <data key="d9">问题分类</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="用户问题" target="规则/说明类">
+  <data key="d7">1.0</data>
+  <data key="d8">用户问题可能被归类为规则/说明类问题。</data>
+  <data key="d9">问题分类</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="用户问题" target="异常情况类">
+  <data key="d7">1.0</data>
+  <data key="d8">用户问题可能被归类为异常情况类问题。</data>
+  <data key="d9">问题分类</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="用户问题" target="内容/数据查询类">
+  <data key="d7">1.0</data>
+  <data key="d8">用户问题可能被归类为内容/数据查询类问题。</data>
+  <data key="d9">问题分类</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="用户问题" target="混合查询">
+  <data key="d7">1.0</data>
+  <data key="d8">用户问题可能被归类为混合查询。</data>
+  <data key="d9">问题分类</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="用户问题" target="rag召回">
+  <data key="d7">1.0</data>
+  <data key="d8">RAG召回处理用户问题。</data>
+  <data key="d9">处理对象</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044147</data>
+  <data key="d13"></data>
+</edge>
+<edge source="PRD" target="项目智能体">
+  <data key="d7">1.0</data>
+  <data key="d8">PRD outlines the requirements for the project agent's project Q&amp;A skill.</data>
+  <data key="d9">document scope,skill development</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="PRD" target="【PRD】项目智能体-项目问答技能.docx">
+  <data key="d7">1.0</data>
+  <data key="d8">PRD is associated with the document 【PRD】项目智能体-项目问答技能.docx.</data>
+  <data key="d9">document reference,file association</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044142</data>
+  <data key="d13"></data>
+</edge>
+<edge source="培训项目" target="运营">
+  <data key="d7">1.0</data>
+  <data key="d8">The operation team handles inquiries from trainees in training projects.</data>
+  <data key="d9">problem resolution,user support</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044141</data>
+  <data key="d13"></data>
+</edge>
+<edge source="培训项目" target="教务">
+  <data key="d7">1.0</data>
+  <data key="d8">The academic affairs department manages training projects.</data>
+  <data key="d9">administrative support,management</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044142</data>
+  <data key="d13"></data>
+</edge>
+<edge source="培训项目" target="技术部">
+  <data key="d7">1.0</data>
+  <data key="d8">The technical department provides technical support for training projects.</data>
+  <data key="d9">issue resolution,technical support</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044142</data>
+  <data key="d13"></data>
+</edge>
+<edge source="独立智能体" target="第三方技能">
+  <data key="d7">1.0</data>
+  <data key="d8">Independent intelligent agents do not display the "project Q&amp;A" skill.</data>
+  <data key="d9">configuration restriction,skill exclusion</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="技能类型" target="助学">
+  <data key="d7">1.0</data>
+  <data key="d8">The skill type determines how the project Q&amp;A skill is selected.</data>
+  <data key="d9">selection criteria,skill categorization</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="208" target="文档ID">
+  <data key="d7">1.0</data>
+  <data key="d8">文档ID 208 is the identifier for the PRD document.</data>
+  <data key="d9">document identification,metadata</data>
+  <data key="d10">chunk-741aa075151caf61c242ba45c9118c86</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044142</data>
+  <data key="d13"></data>
+</edge>
+<edge source="API查询结果" target="API事实回答模式">
+  <data key="d7">1.0</data>
+  <data key="d8">“API事实回答模式”应用于“API查询结果”以提供事实性答案。</data>
+  <data key="d9">应用关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="API查询结果" target="API + RAG融合回答模式">
+  <data key="d7">1.0</data>
+  <data key="d8">“API + RAG融合回答模式”应用于“API查询结果”以提供事实性答案。</data>
+  <data key="d9">应用关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="API查询结果" target="业务事实信息">
+  <data key="d7">1.0</data>
+  <data key="d8">“业务事实信息”是“API查询结果”的主要内容。</data>
+  <data key="d9">内容关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="API查询结果" target="系统字段">
+  <data key="d7">1.0</data>
+  <data key="d8">“系统字段”是“API查询结果”中的部分内容。</data>
+  <data key="d9">内容关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="RAG召回结果" target="RAG教学回答模式">
+  <data key="d7">1.0</data>
+  <data key="d8">“RAG教学回答模式”应用于“RAG召回结果”以提供教学内容。</data>
+  <data key="d9">应用关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044143</data>
+  <data key="d13"></data>
+</edge>
+<edge source="RAG召回结果" target="API + RAG融合回答模式">
+  <data key="d7">1.0</data>
+  <data key="d8">“API + RAG融合回答模式”应用于“RAG召回结果”以提供解释和教学内容。</data>
+  <data key="d9">应用关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="RAG召回结果" target="前置课程">
+  <data key="d7">1.0</data>
+  <data key="d8">“前置课程”是“RAG召回结果”中提到的内容。</data>
+  <data key="d9">内容关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="RAG教学回答模式" target="教学化表达">
+  <data key="d7">1.0</data>
+  <data key="d8">“教学化表达”是“RAG教学回答模式”的一种表达方式。</data>
+  <data key="d9">方法关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="RAG教学回答模式" target="结构化说明">
+  <data key="d7">1.0</data>
+  <data key="d8">“结构化说明”是“RAG教学回答模式”的一种表达方式。</data>
+  <data key="d9">方法关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="RAG教学回答模式" target="专业助教式">
+  <data key="d7">1.0</data>
+  <data key="d8">“专业助教式”是“RAG教学回答模式”的一种风格。</data>
+  <data key="d9">风格关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="RAG教学回答模式" target="自然口语化">
+  <data key="d7">1.0</data>
+  <data key="d8">“自然口语化”是“RAG教学回答模式”的一种风格。</data>
+  <data key="d9">风格关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="API + RAG融合回答模式" target="建议动作">
+  <data key="d7">1.0</data>
+  <data key="d8">“建议动作”是“API + RAG融合回答模式”中的一部分内容。</data>
+  <data key="d9">内容关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="前置课程" target="项目作业">
+  <data key="d7">1.0</data>
+  <data key="d8">项目作业需要先完成对应的前置课程才能提交。</data>
+  <data key="d9">required completion,提交条件</data>
+  <data key="d10">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="情绪价值" target="客服式">
+  <data key="d7">1.0</data>
+  <data key="d8">“情绪价值”是“客服式”风格的一种体现。</data>
+  <data key="d9">风格关系</data>
+  <data key="d10">chunk-31e5c75189d17ae4c2a892e6c06113ea</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="项目作业" target="5月10日20:00">
+  <data key="d7">1.0</data>
+  <data key="d8">项目作业在5月10日20:00之后才可提交。</data>
+  <data key="d9">submission availability,开放时间</data>
+  <data key="d10">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="系统" target="RAG">
+  <data key="d7">1.0</data>
+  <data key="d8">系统使用RAG技术作为信息补充手段。</data>
+  <data key="d9">knowledge support,信息补充</data>
+  <data key="d10">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="系统" target="用户">
+  <data key="d7">1.0</data>
+  <data key="d8">系统与用户进行交互。</data>
+  <data key="d9">交互对象</data>
+  <data key="d10">chunk-2f786015ed1d47bfe217b52c3925b996</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044146</data>
+  <data key="d13"></data>
+</edge>
+<edge source="当前项目作业" target="课程学习进度">
+  <data key="d7">1.0</data>
+  <data key="d8">当前项目作业的提交依赖于课程学习进度的完成情况。</data>
+  <data key="d9">dependency,提交条件</data>
+  <data key="d10">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+<edge source="测试集" target="项目问答技能测试集">
+  <data key="d7">1.0</data>
+  <data key="d8">测试集是项目问答技能测试集的参考资源。</data>
+  <data key="d9">reference,resource link</data>
+  <data key="d10">chunk-55ca6172f050e20c010f7ae3c4eb04a4</data>
+  <data key="d11">unknown_source</data>
+  <data key="d12">1780044144</data>
+  <data key="d13"></data>
+</edge>
+</graph></graphml>

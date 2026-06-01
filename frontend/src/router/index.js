@@ -103,6 +103,11 @@ const routes = [
             path: 'compare',
             name: 'KnowledgeGraphCompare',
             component: () => import('@/views/requirement-analysis/KnowledgeGraphCompare.vue')
+          },
+          {
+            path: 'project-documents',
+            name: 'ProjectDocumentManagement',
+            component: () => import('@/views/requirement-analysis/ProjectDocumentManagement.vue')
           }
         ]
       }

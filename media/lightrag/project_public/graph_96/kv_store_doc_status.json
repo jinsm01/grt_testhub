@@ -1,0 +1,59 @@
+{
+  "doc-aa6f11045ef95f41987572f061de2f32": {
+    "status": "processed",
+    "chunks_count": 18,
+    "chunks_list": [
+      "chunk-6af1d56bc6e64532dd9c637ca2a0b6ea",
+      "chunk-c09c81eebbc91192309a75c11c39b55b",
+      "chunk-ff4ad8acb2f5dc7c34850a1b7551650b",
+      "chunk-c37bf96402015c1a3fc583c5e3fc554a",
+      "chunk-05017a3c4067da5fbe2670118101855f",
+      "chunk-9ed43fd2cf6ce6a4fbd6e05236731ce0",
+      "chunk-2784f4fe9cea16e81aaad3d2d8cdac27",
+      "chunk-1abcba8fdfda2ae7aac78156ea07bf9b",
+      "chunk-5fae1517fb9b98832fe75b6f5a9a793a",
+      "chunk-df8733f0afe6c368952e7dcce7af300f",
+      "chunk-18512f38d43fa875be12793e3f45ce6a",
+      "chunk-04a3b728d0d1e5e664278f31e5ed09de",
+      "chunk-68f98d20334da6fa7758c7f5fc34c477",
+      "chunk-838609590d19b00c0f595d2ef814304d",
+      "chunk-37d70258cd3425e97aed253665baac35",
+      "chunk-0a085fbb7a65b60140d06a8a97cfbe64",
+      "chunk-65a291dbb9e4ae14f901c353e87ae165",
+      "chunk-8f96b9b4820270df5e342fb13bb472f5"
+    ],
+    "content_summary": "[文档版本: 未知版本]\n[文件名: 【PRD】教发产品1期-支持表单工作流能力.docx]\n[文档ID: 205]\n**【PRD】教发产品1期-支持表单工作流能力**\n\n1. **文档目录**\n\n2. **原型及相关文档**\n\n| 原型图       | 开发端：https://code.juejin.cn/pen/7637419513650085898  平台端：https://code.juejin.cn/pen/7637412193495711795  租户管理端：https://cod...",
+    "content_length": 67895,
+    "created_at": "2026-05-29T06:37:23.215134+00:00",
+    "updated_at": "2026-05-29T06:40:59.757719+00:00",
+    "file_path": "unknown_source",
+    "track_id": "insert_20260529_143723_141d86e6",
+    "metadata": {
+      "processing_start_time": 1780036643,
+      "processing_end_time": 1780036859
+    }
+  },
+  "doc-7a1aff99677b56cd28b0a6caf58cf3e6": {
+    "status": "failed",
+    "error_msg": "C[1/6]: <asyncio.locks.Lock object at 0x13a492ea0 [locked]> is bound to a different event loop",
+    "chunks_count": 6,
+    "chunks_list": [
+      "chunk-a06728f4a0f07f5aeb1615359275fb67",
+      "chunk-d85b1016b3726e808064537af4cfc4ce",
+      "chunk-2f786015ed1d47bfe217b52c3925b996",
+      "chunk-b164ec144ee727f1d54c57b81b3b9547",
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea",
+      "chunk-55ca6172f050e20c010f7ae3c4eb04a4"
+    ],
+    "content_summary": "[文档版本: 未知版本]\n[文件名: 【PRD】项目智能体-项目问答技能.docx]\n[文档ID: 206]\n**【PRD】项目智能体-项目问答技能**\n\n1. **原型及相关文档**\n\n| 原型图       |    |\n|--------------|----|\n| 需求评审纪要 |    |\n\n2. **修订记录**\n\n|   **序号** | **修订人**   | **修改内容**                                                    ...",
+    "content_length": 21388,
+    "created_at": "2026-05-29T08:24:39.822102+00:00",
+    "updated_at": "2026-05-29T08:24:40.474993+00:00",
+    "file_path": "unknown_source",
+    "track_id": "insert_20260529_162439_83a1e914",
+    "metadata": {
+      "processing_start_time": 1780043079,
+      "processing_end_time": 1780043080
+    }
+  }
+}

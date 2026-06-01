@@ -357,10 +357,24 @@
               <span>RAG知识库</span>
             </el-menu-item>
             <!-- 需求知识图谱 -->
-            <el-menu-item index="/ai-assistant/knowledge-graph/overview">
-              <el-icon><Share /></el-icon>
-              <span>需求知识图谱</span>
-            </el-menu-item>
+            <el-sub-menu index="knowledge-graph">
+              <template #title>
+                <el-icon><Share /></el-icon>
+                <span>需求知识图谱</span>
+              </template>
+              <el-menu-item index="/ai-assistant/knowledge-graph/overview">
+                <el-icon><Share /></el-icon>
+                <span>图谱概览</span>
+              </el-menu-item>
+              <el-menu-item index="/ai-assistant/knowledge-graph/project-documents">
+                <el-icon><Document /></el-icon>
+                <span>项目文档</span>
+              </el-menu-item>
+              <el-menu-item index="/ai-assistant/knowledge-graph/compare">
+                <el-icon><ScaleToOriginal /></el-icon>
+                <span>版本对比</span>
+              </el-menu-item>
+            </el-sub-menu>
           </template>
 
           <!-- 数据工厂模块菜单 -->

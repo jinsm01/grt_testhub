@@ -1,0 +1,24 @@
+{
+  "doc-b2880466419a7f9ebbaa5409ae98ab7f": {
+    "status": "processed",
+    "chunks_count": 6,
+    "chunks_list": [
+      "chunk-741aa075151caf61c242ba45c9118c86",
+      "chunk-d85b1016b3726e808064537af4cfc4ce",
+      "chunk-2f786015ed1d47bfe217b52c3925b996",
+      "chunk-b164ec144ee727f1d54c57b81b3b9547",
+      "chunk-31e5c75189d17ae4c2a892e6c06113ea",
+      "chunk-55ca6172f050e20c010f7ae3c4eb04a4"
+    ],
+    "content_summary": "[文档版本: 未知版本]\n[文件名: 【PRD】项目智能体-项目问答技能.docx]\n[文档ID: 208]\n**【PRD】项目智能体-项目问答技能**\n\n1. **原型及相关文档**\n\n| 原型图       |    |\n|--------------|----|\n| 需求评审纪要 |    |\n\n2. **修订记录**\n\n|   **序号** | **修订人**   | **修改内容**                                                    ...",
+    "content_length": 21388,
+    "created_at": "2026-05-29T08:41:16.000415+00:00",
+    "updated_at": "2026-05-29T08:42:27.670716+00:00",
+    "file_path": "unknown_source",
+    "track_id": "insert_20260529_164115_9974cff6",
+    "metadata": {
+      "processing_start_time": 1780044076,
+      "processing_end_time": 1780044147
+    }
+  }
+}

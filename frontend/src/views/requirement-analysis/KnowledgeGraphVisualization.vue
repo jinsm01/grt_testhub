@@ -159,7 +159,7 @@
 <script setup>
 import { ref, shallowRef, computed, onMounted, onUnmounted, nextTick, toRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
+import api from '@/utils/api'
 import * as echarts from 'echarts'
 import { ArrowLeft, Refresh, ZoomOut, ChatDotRound, Connection, Search, FullScreen } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -204,7 +204,7 @@ const loadGraphData = async () => {
   
   try {
     // 获取图谱基本信息
-    const graphResponse = await axios.get(`/api/requirement-analysis/knowledge-graphs/${graphId.value}/`)
+    const graphResponse = await api.get(`/requirement-analysis/knowledge-graphs/${graphId.value}/`)
     const graph = graphResponse.data
     graphName.value = graph.name
     graphStatus.value = graph.status
@@ -217,10 +217,13 @@ const loadGraphData = async () => {
     }
     
     // 获取可视化数据
-    const vizResponse = await axios.get(`/api/requirement-analysis/knowledge-graphs/${graphId.value}/graph_data/`)
+    const vizResponse = await api.get(`/requirement-analysis/knowledge-graphs/${graphId.value}/graph_data/`)
     const vizData = vizResponse.data
     
-    if (vizData.success) {
+    if (vizData.error) {
+      error.value = true
+      ElMessage.error(vizData.error || '获取图谱数据失败')
+    } else if (vizData.nodes && vizData.edges) {
       // 先结束加载状态，让 DOM 更新
       loading.value = false
       // 等待 DOM 完全渲染
@@ -233,7 +236,7 @@ const loadGraphData = async () => {
       })
     } else {
       error.value = true
-      ElMessage.error(vizData.error || '获取图谱数据失败')
+      ElMessage.error('图谱数据格式不正确')
     }
   } catch (err) {
     console.error('加载图谱数据失败:', err)
@@ -870,13 +873,25 @@ onUnmounted(() => {
   border-bottom: 1px solid #e4e7ed;
 }
 
+/* 图表容器默认样式 */
+.graph-container {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  height: calc(100vh - 140px);
+  margin-top: 20px;
+}
+
 .page-container.is-fullscreen .graph-container {
   flex: 1;
   border-radius: 0;
   box-shadow: none;
   margin: 0;
   height: auto;
-  min-height: auto;
+  min-height: 0;
+  padding: 0;
+  margin-top: 0;
 }
 
 .filter-bar {
@@ -1058,6 +1073,16 @@ onUnmounted(() => {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   padding: 20px;
   height: calc(100vh - 140px);
+}
+
+/* 全屏模式下的卡片容器 */
+.page-container.is-fullscreen .card-container {
+  flex: 1;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  height: auto;
+  margin: 0;
 }
 
 .graph-canvas {

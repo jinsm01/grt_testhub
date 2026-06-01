@@ -6,6 +6,7 @@ import os
 import asyncio
 import logging
 import json
+import queue
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 from django.conf import settings
@@ -681,10 +682,17 @@ class LightRAGService:
         embeddings = [item.embedding for item in resp.data]
         return np.array(embeddings, dtype=np.float32)
     
-    async def _llm_model_func(self, prompt, system_prompt=None, history_messages=[], **kwargs) -> str:
-        """LLM 调用函数"""
+    async def _llm_model_func_with_retry(self, prompt, system_prompt=None, history_messages=[], **kwargs) -> str:
+        """
+        LLM 调用函数（带重试机制）
+        实体提取对 LLM 调用稳定性要求高，添加重试机制避免偶发失败
+        """
+        import random
+        
+        max_retries = 3
+        base_delay = 1  # 基础延迟 1 秒
+        
         # LightRAG 会通过 llm_model_kwargs 传递 api_key 和 base_url
-        # 所以我们直接从 kwargs 中获取，如果没有则从配置获取
         api_key = kwargs.pop('api_key', None)
         base_url = kwargs.pop('base_url', None)
         model_name = kwargs.pop('model', None)
@@ -695,13 +703,57 @@ class LightRAGService:
             base_url = base_url or config['base_url']
             model_name = model_name or config['model_name']
         
-        return await openai_complete_if_cache(
-            model_name,
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                logger.debug(f"LLM 调用尝试 {attempt + 1}/{max_retries}")
+                result = await openai_complete_if_cache(
+                    model_name,
+                    prompt,
+                    system_prompt=system_prompt,
+                    history_messages=history_messages,
+                    base_url=base_url,
+                    api_key=api_key,
+                    **kwargs,
+                )
+                if attempt > 0:
+                    logger.info(f"LLM 调用在第 {attempt + 1} 次尝试成功")
+                return result
+            except Exception as e:
+                last_error = e
+                error_msg = str(e).lower()
+                
+                # 判断是否需要重试的错误类型
+                retryable_errors = [
+                    'timeout', 'connection', 'rate limit', 'too many requests',
+                    'internal server error', 'service unavailable', 'temporarily unavailable',
+                    '连接超时', '请求过于频繁', '服务器错误', '服务暂时不可用'
+                ]
+                
+                should_retry = any(err in error_msg for err in retryable_errors)
+                
+                if not should_retry and attempt < max_retries - 1:
+                    # 对于非重试类错误，也尝试一次重试（可能是偶发问题）
+                    should_retry = True
+                
+                if should_retry and attempt < max_retries - 1:
+                    # 指数退避 + 随机抖动
+                    delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                    logger.warning(f"LLM 调用失败 (尝试 {attempt + 1}/{max_retries}): {e}, {delay:.1f}秒后重试...")
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"LLM 调用最终失败 (尝试 {attempt + 1}/{max_retries}): {e}")
+                    break
+        
+        # 所有重试都失败，抛出最后一个错误
+        raise last_error
+    
+    async def _llm_model_func(self, prompt, system_prompt=None, history_messages=[], **kwargs) -> str:
+        """LLM 调用函数（包装带重试的版本）"""
+        return await self._llm_model_func_with_retry(
             prompt,
             system_prompt=system_prompt,
             history_messages=history_messages,
-            base_url=base_url,
-            api_key=api_key,
             **kwargs,
         )
     
@@ -957,9 +1009,9 @@ class LightRAGService:
         Returns:
             构建结果统计
         """
-        # 用于在线程间传递进度的队列
-        progress_queue = asyncio.Queue()
-        
+        # 用于在线程间传递进度的队列（使用线程安全的 queue.Queue）
+        progress_queue = queue.Queue()
+
         # 辅助函数：调用进度回调
         async def call_progress_callback(progress, message):
             if progress_callback:
@@ -981,7 +1033,7 @@ class LightRAGService:
             # 使用线程池在独立线程中执行 LightRAG 操作
             # 这样可以避免 asyncio.Lock 绑定到不同事件循环的问题
             loop = asyncio.get_event_loop()
-            
+
             def build_in_thread():
                 """在独立线程中执行构建"""
                 # 创建新的事件循环
@@ -993,33 +1045,39 @@ class LightRAGService:
                     )
                 finally:
                     new_loop.close()
-            
+
             # 启动构建任务
             build_task = loop.run_in_executor(None, build_in_thread)
-            
+
             # 监听进度更新
             last_progress = 5
             while True:
                 try:
-                    # 等待进度更新或构建完成
-                    progress, message = await asyncio.wait_for(progress_queue.get(), timeout=0.5)
-                    if progress == -1:  # 构建完成的信号
-                        break
-                    if progress > last_progress:
-                        last_progress = progress
-                        await call_progress_callback(progress, message)
-                except asyncio.TimeoutError:
+                    # 等待进度更新或构建完成（使用非阻塞方式检查队列）
+                    try:
+                        progress, message = progress_queue.get(timeout=0.5)
+                        if progress == -1:  # 构建完成的信号
+                            break
+                        if progress > last_progress:
+                            last_progress = progress
+                            await call_progress_callback(progress, message)
+                    except queue.Empty:
+                        # 检查构建任务是否完成
+                        if build_task.done():
+                            break
+                except Exception as e:
+                    logger.warning(f"进度监听出错: {e}")
                     # 检查构建任务是否完成
                     if build_task.done():
                         break
-            
+
             # 获取构建结果
             result = await build_task
-            
+
             # 最终进度更新
             if result.get('success'):
                 await call_progress_callback(100, '构建完成')
-            
+
             return result
 
         except Exception as e:
@@ -1027,7 +1085,7 @@ class LightRAGService:
             import traceback
             logger.error(f"堆栈跟踪: {traceback.format_exc()}")
             return {'success': False, 'error': str(e)}
-    
+
     async def _build_graph_in_isolated_loop(self, documents: List[Any], progress_queue) -> Dict[str, Any]:
         """
         在隔离的事件循环中构建知识图谱
@@ -1036,12 +1094,16 @@ class LightRAGService:
         # 在隔离的事件循环中直接创建 RAG 实例（不使用 _get_rag，因为它使用了 sync_to_async）
         if not LIGHT_RAG_AVAILABLE:
             return {'success': False, 'error': 'LightRAG 未安装'}
-        
+
+        # 验证 API Key 是否配置
+        config = self._get_llm_config_sync()
+        if not config.get('api_key'):
+            logger.error("LLM API Key 未配置，无法构建知识图谱")
+            return {'success': False, 'error': 'LLM API Key 未配置，请在系统设置中配置 API Key'}
+
         try:
-            # 使用同步方法获取配置
-            config = self._get_llm_config_sync()
-            logger.info(f"初始化 LightRAG (隔离模式)，API Key: {'已设置' if config['api_key'] else '未设置'}")
-            
+            logger.info(f"初始化 LightRAG (隔离模式)，API Key: {'已设置' if config['api_key'] else '未设置'}, 模型: {config.get('model_name', '默认')}")
+
             rag = LightRAG(
                 working_dir=str(self.working_dir),
                 llm_model_func=self._llm_model_func,
@@ -1061,12 +1123,12 @@ class LightRAGService:
                 chunk_token_size=LightRAGConfig.CHUNK_SIZE,
                 chunk_overlap_token_size=LightRAGConfig.CHUNK_OVERLAP,
             )
-            
+
             # 初始化存储
             logger.info("初始化 LightRAG 存储...")
             await rag.initialize_storages()
             logger.info("LightRAG 存储初始化完成")
-            
+
         except Exception as e:
             logger.error(f"创建 LightRAG 实例失败: {e}")
             import traceback
@@ -1075,10 +1137,10 @@ class LightRAGService:
 
         total_docs = len(documents)
 
-        # 辅助函数：发送进度更新
-        async def send_progress(progress, message):
+        # 辅助函数：发送进度更新（使用线程安全的 queue.Queue，同步 put）
+        def send_progress(progress, message):
             try:
-                await progress_queue.put((progress, message))
+                progress_queue.put((progress, message))
             except Exception as e:
                 logger.warning(f"进度更新失败: {e}")
 
@@ -1086,7 +1148,7 @@ class LightRAGService:
         logger.info("LightRAG 存储已初始化")
 
         # 更新进度：初始化完成
-        await send_progress(10, '存储初始化完成')
+        send_progress(10, '存储初始化完成')
 
         inserted_count = 0
         for idx, doc in enumerate(documents):
@@ -1101,28 +1163,26 @@ class LightRAGService:
                 # 图片文件需要异步分析
                 logger.info(f"检测到图片流程图，使用多模态 AI 分析: {doc.title}")
                 try:
-                    # 获取知识图谱 AI 配置
-                    from .models import AIModelConfig
                     from .services import ImageFlowchartProcessor
                     
-                    # 在隔离的事件循环中，使用同步方式获取配置
-                    config = None
-                    try:
-                        config = AIModelConfig.objects.filter(model_type='qwen', is_active=True).first()
-                    except Exception as e:
-                        logger.warning(f"获取AI配置失败: {e}")
+                    # 使用已获取的 llm_config 配置，而不是直接查询数据库
+                    # 在隔离的事件循环中不能直接访问 Django ORM
+                    llm_config = self._get_llm_config_sync()
                     
-                    if not config:
-                        try:
-                            config = AIModelConfig.objects.filter(is_active=True).first()
-                        except Exception as e:
-                            logger.warning(f"获取默认AI配置失败: {e}")
+                    # 创建配置对象供 ImageFlowchartProcessor 使用
+                    class SimpleConfig:
+                        def __init__(self, config_dict):
+                            self.api_key = config_dict.get('api_key')
+                            self.base_url = config_dict.get('base_url')
+                            self.model_name = config_dict.get('model_name')
+                    
+                    config = SimpleConfig(llm_config)
 
-                    if config:
+                    if config.api_key:
                         text_content = await ImageFlowchartProcessor.analyze_flowchart_with_vision(doc.file.path, config)
                         logger.info(f"图片流程图分析完成: {doc.title}, 内容长度: {len(text_content)}")
                     else:
-                        logger.error(f"未找到 AI 配置，无法分析图片: {doc.title}")
+                        logger.error(f"未配置 API Key，无法分析图片: {doc.title}")
                         continue
                 except Exception as e:
                     logger.error(f"图片流程图分析失败 {doc.title}: {e}")
@@ -1138,7 +1198,7 @@ class LightRAGService:
                 continue
 
             # 更新进度：正在处理当前文档
-            await send_progress(progress, f'正在处理: {doc.title}')
+            send_progress(progress, f'正在处理: {doc.title}')
 
             # 添加文档元数据标签
             version_label = self._extract_version_from_title(doc.title)
@@ -1148,15 +1208,15 @@ class LightRAGService:
             # 使用异步插入方法
             try:
                 # 更新进度：开始插入
-                await send_progress(progress, f'正在插入: {doc.title}')
+                send_progress(progress, f'正在插入: {doc.title}')
                 logger.info(f"调用 rag.ainsert() 开始: {doc.title}")
                 await rag.ainsert(tagged_content)
                 logger.info(f"文档插入成功: {doc.title}")
                 inserted_count += 1
-                
+
                 # 等待 LightRAG 完成内部处理，避免锁冲突
                 await asyncio.sleep(2)
-                
+
             except Exception as insert_error:
                 logger.error(f"文档插入失败: {doc.title}, 错误: {insert_error}")
                 import traceback
@@ -1165,21 +1225,82 @@ class LightRAGService:
 
             # 更新进度：文档处理完成
             progress = 10 + int(((idx + 1) / total_docs) * 70)
-            await send_progress(progress, f'已完成: {doc.title}')
+            send_progress(progress, f'已完成: {doc.title}')
 
         # 更新进度：获取统计信息
-        await send_progress(85, '正在生成统计信息...')
+        send_progress(85, '正在生成统计信息...')
+
+        # 关键修复：手动调用 _insert_done 确保所有数据写入磁盘
+        # LightRAG 使用共享存储，需要显式调用 index_done_callback 来持久化数据
+        logger.info("强制保存 LightRAG 数据到磁盘...")
+        try:
+            if hasattr(rag, '_insert_done'):
+                await rag._insert_done()
+                logger.info("LightRAG _insert_done 调用成功")
+            # 额外等待确保文件系统写入完成
+            await asyncio.sleep(3)
+        except Exception as e:
+            logger.warning(f"保存 LightRAG 数据时出错: {e}")
+            import traceback
+            logger.error(f"保存错误堆栈: {traceback.format_exc()}")
+            # 如果保存失败，等待更长时间
+            await asyncio.sleep(5)
+
+        # 验证实体是否成功提取
+        logger.info("验证实体提取结果...")
+        working_dir = Path(self.working_dir)
+        entity_files = [
+            'kv_store_entity_chunks.json',
+            'kv_store_full_entities.json',
+            'vdb_entities.json'
+        ]
+        
+        entity_found = False
+        for ef in entity_files:
+            ef_path = working_dir / ef
+            if ef_path.exists():
+                try:
+                    with open(ef_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        if isinstance(data, dict) and len(data) > 0:
+                            logger.info(f"找到实体数据文件: {ef}, 实体数量: {len(data)}")
+                            entity_found = True
+                            break
+                        elif isinstance(data, list) and len(data) > 0:
+                            logger.info(f"找到实体数据文件: {ef}, 实体数量: {len(data)}")
+                            entity_found = True
+                            break
+                except Exception as e:
+                    logger.warning(f"读取实体文件 {ef} 失败: {e}")
+        
+        if not entity_found:
+            logger.error("严重警告: 未找到任何实体数据，实体提取可能失败！")
+            # 发送完成信号并返回错误
+            progress_queue.put((-1, 'done'))
+            return {
+                'success': False,
+                'error': '实体提取失败，未生成实体数据。请检查 LLM API 是否正常工作。',
+                'inserted_documents': inserted_count,
+                'nodes': 0,
+                'edges': 0
+            }
 
         # 获取统计信息
         stats = await self.get_stats_async()
         stats['success'] = True
         stats['inserted_documents'] = inserted_count
 
+        # 验证统计信息合理性
+        if stats.get('nodes', 0) == 0:
+            logger.error(f"构建完成后实体数量为 0，请检查构建过程。工作目录: {self.working_dir}")
+            stats['success'] = False
+            stats['error'] = '构建完成但未生成实体节点，可能原因：1) LLM API 调用失败 2) 文档内容无法提取实体'
+
         # 更新进度：完成
-        await send_progress(100, '构建完成')
-        
+        send_progress(100, '构建完成')
+
         # 发送完成信号
-        await progress_queue.put((-1, 'done'))
+        progress_queue.put((-1, 'done'))
 
         return stats
 
@@ -1383,6 +1504,7 @@ class LightRAGService:
     def get_stats(self) -> Dict[str, Any]:
         """
         获取知识图谱统计信息
+        兼容多种 LightRAG 版本的存储文件名
 
         Returns:
             统计信息字典
@@ -1407,36 +1529,66 @@ class LightRAGService:
                 files = list(working_dir.glob('*.json'))
                 logger.info(f"工作目录中的文件: {[f.name for f in files]}")
             
-            # 检查图谱是否存在（通过检查实体chunks文件是否存在）
-            # 注意：kv_store_entity_chunks.json 存储的是实体详情，格式为 {entity_name: {...}}
-            # 而 kv_store_full_entities.json 存储的是文档级别的实体列表，格式为 {doc_id: {entity_names: [...]}}
-            entities_file = working_dir / 'kv_store_entity_chunks.json'
-            if entities_file.exists():
-                stats['has_graph'] = True
-                with open(entities_file, 'r', encoding='utf-8') as f:
-                    entities_data = json.load(f)
-                    logger.info(f"实体文件内容类型: {type(entities_data)}, 键数量: {len(entities_data) if isinstance(entities_data, dict) else 'N/A'}")
-                    # 实体数据格式：{entity_name: {chunk_ids: [...]}}
-                    if isinstance(entities_data, dict):
-                        stats['nodes'] = len(entities_data)
-                        logger.info(f"实体数量: {stats['nodes']}")
-            else:
-                logger.warning(f"实体文件不存在: {entities_file}")
+            # 检查图谱是否存在（通过检查实体文件是否存在）
+            # 兼容多种可能的实体存储文件名
+            entity_files = [
+                'kv_store_entity_chunks.json',  # 新版 LightRAG
+                'kv_store_full_entities.json',  # 旧版 LightRAG
+            ]
+            
+            for ef_name in entity_files:
+                entities_file = working_dir / ef_name
+                if entities_file.exists():
+                    stats['has_graph'] = True
+                    try:
+                        with open(entities_file, 'r', encoding='utf-8') as f:
+                            entities_data = json.load(f)
+                            logger.info(f"实体文件 {ef_name} 内容类型: {type(entities_data)}, 键数量: {len(entities_data) if isinstance(entities_data, dict) else 'N/A'}")
+                            # 实体数据格式：{entity_name: {chunk_ids: [...]}} 或 {doc_id: {entity_names: [...]}}
+                            if isinstance(entities_data, dict):
+                                # 如果是文档级别的实体列表，需要计算所有唯一实体
+                                if ef_name == 'kv_store_full_entities.json':
+                                    all_entities = set()
+                                    for doc_entities in entities_data.values():
+                                        if isinstance(doc_entities, dict):
+                                            entity_names = doc_entities.get('entity_names', [])
+                                            all_entities.update(entity_names)
+                                        elif isinstance(doc_entities, list):
+                                            all_entities.update(doc_entities)
+                                    stats['nodes'] = len(all_entities)
+                                else:
+                                    stats['nodes'] = len(entities_data)
+                                logger.info(f"实体数量: {stats['nodes']}")
+                                break
+                    except Exception as e:
+                        logger.warning(f"读取实体文件 {ef_name} 失败: {e}")
+            
+            if stats['nodes'] == 0:
+                logger.warning(f"未找到实体数据文件或实体数量为 0")
 
-            # 读取关系文件 kv_store_relation_chunks.json
-            # 注意：kv_store_relation_chunks.json 存储的是关系详情，格式为 {relation_key: {...}}
-            # 而 kv_store_full_relations.json 存储的是文档级别的关系列表
-            relations_file = working_dir / 'kv_store_relation_chunks.json'
-            if relations_file.exists():
-                with open(relations_file, 'r', encoding='utf-8') as f:
-                    relations_data = json.load(f)
-                    logger.info(f"关系文件内容类型: {type(relations_data)}, 键数量: {len(relations_data) if isinstance(relations_data, dict) else 'N/A'}")
-                    # 关系数据格式：{relation_key: {source: ..., target: ...}}
-                    if isinstance(relations_data, dict):
-                        stats['edges'] = len(relations_data)
-                        logger.info(f"关系数量: {stats['edges']}")
-            else:
-                logger.warning(f"关系文件不存在: {relations_file}")
+            # 读取关系文件（兼容多种文件名）
+            relation_files = [
+                'kv_store_relation_chunks.json',  # 新版 LightRAG
+                'kv_store_full_relations.json',   # 旧版 LightRAG
+            ]
+            
+            for rf_name in relation_files:
+                relations_file = working_dir / rf_name
+                if relations_file.exists():
+                    try:
+                        with open(relations_file, 'r', encoding='utf-8') as f:
+                            relations_data = json.load(f)
+                            logger.info(f"关系文件 {rf_name} 内容类型: {type(relations_data)}, 键数量: {len(relations_data) if isinstance(relations_data, dict) else 'N/A'}")
+                            # 关系数据格式：{relation_key: {source: ..., target: ...}}
+                            if isinstance(relations_data, dict):
+                                stats['edges'] = len(relations_data)
+                                logger.info(f"关系数量: {stats['edges']}")
+                                break
+                    except Exception as e:
+                        logger.warning(f"读取关系文件 {rf_name} 失败: {e}")
+            
+            if stats['edges'] == 0:
+                logger.warning(f"未找到关系数据文件或关系数量为 0")
             
             # 读取文档文件 kv_store_full_docs.json
             docs_file = working_dir / 'kv_store_full_docs.json'
@@ -1482,6 +1634,11 @@ class LightRAGService:
 
             # 从 LightRAG 的图存储中获取所有节点
             try:
+                # 检查图存储是否可用
+                if not rag.chunk_entity_relation_graph:
+                    logger.warning("LightRAG 图存储未初始化，降级到 JSON 方式")
+                    raise Exception("Graph storage not initialized")
+                
                 all_nodes = await rag.chunk_entity_relation_graph.get_all_nodes()
                 logger.info(f"从 LightRAG 获取到 {len(all_nodes)} 个节点")
 
@@ -1657,6 +1814,7 @@ class LightRAGService:
     def _get_graph_data_from_json(self) -> Optional[Dict[str, Any]]:
         """
         从 JSON 文件获取图谱数据（降级方案）
+        兼容多种 LightRAG 版本的存储文件名
         """
         try:
             import json
@@ -1667,33 +1825,57 @@ class LightRAGService:
 
             nodes = []
             edges = []
+            entity_name_to_id = {}
 
-            # 读取实体详细信息 kv_store_entity_chunks.json
-            entities_file = working_dir / 'kv_store_entity_chunks.json'
-            if entities_file.exists():
-                with open(entities_file, 'r', encoding='utf-8') as f:
-                    entities_data = json.load(f)
+            # 兼容多种可能的实体存储文件名
+            entity_files = [
+                'kv_store_entity_chunks.json',  # 新版 LightRAG
+                'kv_store_full_entities.json',  # 旧版 LightRAG
+            ]
+            
+            entities_data = None
+            for ef_name in entity_files:
+                entities_file = working_dir / ef_name
+                if entities_file.exists():
+                    try:
+                        with open(entities_file, 'r', encoding='utf-8') as f:
+                            entities_data = json.load(f)
+                            logger.info(f"读取实体文件: {ef_name}, 数据类型: {type(entities_data)}")
+                            break
+                    except Exception as e:
+                        logger.warning(f"读取实体文件 {ef_name} 失败: {e}")
+            
+            if entities_data and isinstance(entities_data, dict):
+                # 构建节点列表
+                node_id = 0
+                
+                for entity_name, entity_info in entities_data.items():
+                    translated_name = translate_entity_name(entity_name)
+                    
+                    # 处理不同格式的实体信息
+                    if isinstance(entity_info, dict):
+                        count = entity_info.get('count', 1)
+                        description = entity_info.get('description', '')
+                    else:
+                        count = 1
+                        description = ''
 
-                    # 构建节点列表
-                    node_id = 0
-                    entity_name_to_id = {}
-
-                    for entity_name, entity_info in entities_data.items():
-                        translated_name = translate_entity_name(entity_name)
-                        count = entity_info.get('count', 1) if isinstance(entity_info, dict) else 1
-
-                        node = {
-                            'id': node_id,
-                            'label': translated_name,
-                            'original_name': entity_name,
-                            'count': count,
-                            'weight': count,
-                            'category': 0,
-                            'description': '',  # JSON 方式没有描述
-                        }
-                        nodes.append(node)
-                        entity_name_to_id[entity_name] = node_id
-                        node_id += 1
+                    node = {
+                        'id': node_id,
+                        'label': translated_name,
+                        'original_name': entity_name,
+                        'count': count,
+                        'weight': count,
+                        'category': 0,
+                        'description': description,
+                    }
+                    nodes.append(node)
+                    entity_name_to_id[entity_name] = node_id
+                    node_id += 1
+                
+                logger.info(f"构建节点数量: {len(nodes)}")
+            else:
+                logger.warning("未找到实体数据")
 
             # 读取关系详细信息
             relations_file = working_dir / 'kv_store_relation_chunks.json'
@@ -1733,14 +1915,8 @@ class LightRAGService:
         Returns:
             图谱数据字典，包含 nodes 和 edges
         """
-        try:
-            # 使用 asyncio.run 调用异步方法
-            import asyncio
-            return asyncio.run(self.get_graph_data_async())
-        except Exception as e:
-            logger.error(f"获取图谱数据失败: {e}")
-            # 降级到 JSON 方式
-            return self._get_graph_data_from_json()
+        # 直接使用 JSON 方式获取数据，避免异步问题
+        return self._get_graph_data_from_json()
 
     async def compare_versions(self, base_version: str, compare_version: str) -> Dict[str, Any]:
         """

@@ -238,7 +238,7 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
         """执行API请求"""
         api_request = self.get_object()
         environment_id = request.data.get('environment_id')
-        
+
         try:
             # 创建变量解析器
             resolver = VariableResolver()
@@ -248,13 +248,61 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
             if environment_id:
                 env = Environment.objects.get(id=environment_id)
                 variables.update(env.variables)
-            
+
             # 使用前端发送的更新后的数据，如果没有则使用数据库中的数据
             request_params = request.data.get('params', api_request.params)
             request_headers = request.data.get('headers', api_request.headers)
             request_body = request.data.get('body', api_request.body)
             request_method = request.data.get('method', api_request.method)
             request_url = request.data.get('url', api_request.url)
+
+            # 如果 request_params 是字符串，解析为 JSON
+            if isinstance(request_params, str):
+                try:
+                    request_params = json.loads(request_params)
+                except json.JSONDecodeError:
+                    request_params = {}
+
+            # 如果 request_headers 是字符串，解析为 JSON
+            if isinstance(request_headers, str):
+                try:
+                    request_headers = json.loads(request_headers)
+                except json.JSONDecodeError:
+                    request_headers = {}
+
+            # 检查是否是 multipart/form-data 请求（包含文件上传）
+            uploaded_files = {}
+            body_type = request.data.get('body_type', 'none')
+            form_data_items = request.data.get('form_data', [])
+            print(f"DEBUG - body_type: {body_type}")
+            print(f"DEBUG - form_data_items: {form_data_items}")
+            print(f"DEBUG - request.content_type: {request.content_type}")
+
+            # 如果 form_data_items 是字符串，解析为 JSON
+            if isinstance(form_data_items, str):
+                try:
+                    form_data_items = json.loads(form_data_items)
+                except json.JSONDecodeError:
+                    form_data_items = []
+
+            if body_type == 'form-data' and form_data_items:
+                # 处理文件上传
+                print(f"DEBUG - request.FILES: {request.FILES}")
+                print(f"DEBUG - request.FILES.keys(): {list(request.FILES.keys())}")
+                for key in request.FILES:
+                    print(f"DEBUG - processing FILE key: {key}")
+                    if key.startswith('file_'):
+                        param_name = key[5:]  # 去掉 'file_' 前缀
+                        uploaded_files[param_name] = request.FILES[key]
+                        print(f"DEBUG - added uploaded_files[{param_name}] = {request.FILES[key]}")
+                print(f"DEBUG - final uploaded_files: {uploaded_files}")
+
+                # 重建 request_body 以包含文件信息
+                if form_data_items:
+                    request_body = {
+                        'type': 'form-data',
+                        'data': form_data_items
+                    }
 
             # 替换URL中的变量（先解析动态函数，再替换环境变量）
             url = self._replace_variables(request_url or '', variables)
@@ -286,13 +334,14 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
             headers = {}
             if isinstance(request_headers, list):
                 for header_item in request_headers:
-                    if header_item.get('enabled', True) and header_item.get('key'):
+                    # 确保 header_item 是字典类型
+                    if isinstance(header_item, dict) and header_item.get('enabled', True) and header_item.get('key'):
                         key = header_item['key']
                         value = self._replace_variables(str(header_item.get('value', '')), variables)
                         value = resolver.resolve(value)
                         headers[key] = value
-            else:
-                headers = request_headers.copy() if request_headers else {}
+            elif isinstance(request_headers, dict):
+                headers = request_headers.copy()
                 for key, value in headers.items():
                     headers[key] = self._replace_variables(str(value), variables)
                     headers[key] = resolver.resolve(headers[key])
@@ -379,6 +428,85 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
                     data=body_data,
                     timeout=30
                 )
+            elif body_type == 'form-data':
+                if uploaded_files:
+                    # 有文件时使用 multipart 格式
+                    from requests_toolbelt.multipart.encoder import MultipartEncoder
+
+                    # 构建 multipart 数据
+                    multipart_data = {}
+
+                    # 添加普通字段
+                    print(f"DEBUG - body_data: {body_data}")
+                    print(f"DEBUG - body_data type: {type(body_data)}")
+                    if isinstance(body_data, list):
+                        for item in body_data:
+                            print(f"DEBUG - processing item: {item}")
+                            print(f"DEBUG - item type: {type(item)}")
+                            # 检查 type 字段，只要不是 file 类型就添加
+                            item_type = item.get('type', 'string') if isinstance(item, dict) else 'string'
+                            item_key = item.get('key') if isinstance(item, dict) else None
+                            item_value = item.get('value', '') if isinstance(item, dict) else ''
+                            if item_key and item_type != 'file':
+                                multipart_data[item_key] = item_value
+                                print(f"DEBUG - added to multipart_data: {item_key} = {item_value}")
+                            else:
+                                print(f"DEBUG - skipped item: key={item_key}, type={item_type}")
+
+                    # 添加文件字段
+                    print(f"DEBUG - adding files to multipart_data, uploaded_files: {uploaded_files}")
+                    for param_name, file_obj in uploaded_files.items():
+                        print(f"DEBUG - adding file: {param_name}, file_obj: {file_obj}, content_type: {getattr(file_obj, 'content_type', 'N/A')}")
+                        # 确保文件对象在正确的位置
+                        if hasattr(file_obj, 'seek'):
+                            file_obj.seek(0)
+                        # 使用文件对象的 chunks() 方法读取内容
+                        multipart_data[param_name] = (file_obj.name, file_obj, getattr(file_obj, 'content_type', None) or 'application/octet-stream')
+
+                    # 使用 MultipartEncoder 编码数据
+                    print(f"DEBUG - multipart_data before encoding: {multipart_data}")
+                    try:
+                        encoder = MultipartEncoder(fields=multipart_data)
+                    except Exception as e:
+                        print(f"DEBUG - MultipartEncoder error: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        raise
+
+                    # 更新 headers，设置正确的 Content-Type
+                    request_headers_for_send = headers.copy() if headers else {}
+                    request_headers_for_send['Content-Type'] = encoder.content_type
+
+                    response = requests.request(
+                        method=request_method,
+                        url=url,
+                        headers=request_headers_for_send,
+                        params=params,
+                        data=encoder,
+                        timeout=30
+                    )
+                else:
+                    # 没有文件时，将 form-data 转换为 JSON 格式发送
+                    # 因为很多现代 API 只接受 application/json
+                    print(f"DEBUG - no files, converting form-data to JSON")
+                    print(f"DEBUG - body_data: {body_data}")
+                    form_dict = {}
+                    if isinstance(body_data, list):
+                        for item in body_data:
+                            print(f"DEBUG - processing item: {item}")
+                            if item.get('key'):
+                                form_dict[item['key']] = item.get('value', '')
+                                print(f"DEBUG - added to form_dict: {item['key']} = {item.get('value', '')}")
+                    print(f"DEBUG - final form_dict: {form_dict}")
+
+                    response = requests.request(
+                        method=request_method,
+                        url=url,
+                        headers=headers,
+                        params=params,
+                        json=form_dict,
+                        timeout=30
+                    )
             else:
                 # json 类型使用 json 参数，自动序列化
                 # 如果 body_data 是字符串（JSON 解析失败），尝试解析为 JSON
@@ -422,8 +550,14 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
             
             # 执行断言验证
             assertions = request.data.get('assertions', api_request.assertions) or []
+            # 如果 assertions 是字符串，解析为 JSON
+            if isinstance(assertions, str):
+                try:
+                    assertions = json.loads(assertions)
+                except json.JSONDecodeError:
+                    assertions = []
             for assertion in assertions:
-                if assertion.get('type') == 'response_time':
+                if isinstance(assertion, dict) and assertion.get('type') == 'response_time':
                     assertion['actual_time'] = response_time
             assertions_results = execute_assertions(response, assertions)
 
@@ -439,6 +573,12 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
 
             # 执行变量提取
             extractors = request.data.get('variable_extractors', api_request.variable_extractors) or []
+            # 如果 extractors 是字符串，解析为 JSON
+            if isinstance(extractors, str):
+                try:
+                    extractors = json.loads(extractors)
+                except json.JSONDecodeError:
+                    extractors = []
             extraction_result = {'variables': {}, 'results': []}
             if extractors and response_json is not None:
                 extraction_result = extract_variables(
@@ -497,6 +637,11 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
         except Environment.DoesNotExist:
             return Response({'error': '指定的执行环境不存在'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            # 打印完整的错误堆栈
+            import traceback
+            print(f"DEBUG - execute error: {e}")
+            traceback.print_exc()
+            
             # 保存错误历史
             history = RequestHistory.objects.create(
                 request=api_request,

@@ -1,0 +1,1105 @@
+{
+  "版本名称": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c",
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 2,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "版本名称"
+  },
+  "版本说明": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c",
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 2,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "版本说明"
+  },
+  "状态": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c",
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 2,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "状态"
+  },
+  "创建时间": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c",
+      "chunk-20d1d7af32511384bcb336bd7416b83a",
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 3,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "创建时间"
+  },
+  "操作": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c",
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 2,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "操作"
+  },
+  "创建版本": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "创建版本"
+  },
+  "配置版本": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "配置版本"
+  },
+  "编辑版本": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "编辑版本"
+  },
+  "启用版本": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "启用版本"
+  },
+  "停用版本": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "停用版本"
+  },
+  "删除版本": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "删除版本"
+  },
+  "安装技能管理应用": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "安装技能管理应用"
+  },
+  "安装智能体应用": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "安装智能体应用"
+  },
+  "租户管理安装": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "租户管理安装"
+  },
+  "应用市场批量版本配置": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "应用市场批量版本配置"
+  },
+  "应用市场批量升级应用": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "应用市场批量升级应用"
+  },
+  "应用市场批量安装": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c",
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 2,
+    "update_time": 1780056789,
+    "_id": "应用市场批量安装"
+  },
+  "创建版本抽屉": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "创建版本抽屉"
+  },
+  "配置版本抽屉": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "配置版本抽屉"
+  },
+  "toast提示": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "toast提示"
+  },
+  "版本名称已存在": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056775,
+    "update_time": 1780056775,
+    "_id": "版本名称已存在"
+  },
+  "请输入版本名称": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "请输入版本名称"
+  },
+  "最多支持15个字": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "最多支持15个字"
+  },
+  "最多支持100个字": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "最多支持100个字"
+  },
+  "请选择版本": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "请选择版本"
+  },
+  "请选择技能": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "请选择技能"
+  },
+  "无法启用，版本未配置完成": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "无法启用，版本未配置完成"
+  },
+  "开启": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "开启"
+  },
+  "关闭": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "关闭"
+  },
+  "创建智能体": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c",
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 2,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "创建智能体"
+  },
+  "角色权限": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c",
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 2,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "角色权限"
+  },
+  "第三方技能": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c",
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 2,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "第三方技能"
+  },
+  "技能": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "技能"
+  },
+  "智能体管理": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c",
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 2,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "智能体管理"
+  },
+  "智能体": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a",
+      "chunk-6b91f407981af618776cf67b9e8abfe1",
+      "chunk-57e38225d05ddd7ddbc01cb900192499",
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 4,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "智能体"
+  },
+  "关联业务": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "关联业务"
+  },
+  "日志与标注": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a",
+      "chunk-6b91f407981af618776cf67b9e8abfe1",
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 3,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "日志与标注"
+  },
+  "敏感信息": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a",
+      "chunk-6b91f407981af618776cf67b9e8abfe1",
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 3,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "敏感信息"
+  },
+  "学员反馈": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a",
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 2,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "学员反馈"
+  },
+  "分享智能体": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "分享智能体"
+  },
+  "删除智能体": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "删除智能体"
+  },
+  "项目添加智能体": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "项目添加智能体"
+  },
+  "项目工具-智能体列表": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "项目工具-智能体列表"
+  },
+  "项目工具-添加智能体": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "项目工具-添加智能体"
+  },
+  "项目工具-编辑智能体": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "项目工具-编辑智能体"
+  },
+  "项目工具-删除智能体": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "项目工具-删除智能体"
+  },
+  "项目首页-增加智能体入口": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "项目首页-增加智能体入口"
+  },
+  "PC端项目学习页": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056776,
+    "update_time": 1780056776,
+    "_id": "PC端项目学习页"
+  },
+  "H5项目学习页": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a",
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 2,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "H5项目学习页"
+  },
+  "App项目学习页": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a",
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 2,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "App项目学习页"
+  },
+  "用户故事说明-学员端": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "用户故事说明-学员端"
+  },
+  "用户故事说明-智能体": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a",
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 2,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "用户故事说明-智能体"
+  },
+  "智能体名称": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "智能体名称"
+  },
+  "发布班级": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "发布班级"
+  },
+  "智能体状态": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "智能体状态"
+  },
+  "创建人": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "创建人"
+  },
+  "选择智能体": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "选择智能体"
+  },
+  "关联业务名称": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "关联业务名称"
+  },
+  "项目班级名称": {
+    "chunk_ids": [
+      "chunk-20d1d7af32511384bcb336bd7416b83a"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "项目班级名称"
+  },
+  "租户": {
+    "chunk_ids": [
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "租户"
+  },
+  "应用市场": {
+    "chunk_ids": [
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "应用市场"
+  },
+  "共享智能体": {
+    "chunk_ids": [
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "共享智能体"
+  },
+  "关联业务类型": {
+    "chunk_ids": [
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "关联业务类型"
+  },
+  "智能体类型": {
+    "chunk_ids": [
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "智能体类型"
+  },
+  "学员管理": {
+    "chunk_ids": [
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "学员管理"
+  },
+  "版本": {
+    "chunk_ids": [
+      "chunk-6b91f407981af618776cf67b9e8abfe1",
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 2,
+    "update_time": 1780056780,
+    "_id": "版本"
+  },
+  "交互原型图": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "交互原型图"
+  },
+  "关联业务智能体校验流程": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "关联业务智能体校验流程"
+  },
+  "智能体历史会话": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "智能体历史会话"
+  },
+  "智能体退出登录按钮": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "智能体退出登录按钮"
+  },
+  "PC": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "PC"
+  },
+  "H5": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "H5"
+  },
+  "历史数据": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "历史数据"
+  },
+  "租户运营端": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499",
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 2,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "租户运营端"
+  },
+  "项目-首页-工具": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "项目-首页-工具"
+  },
+  "产品方案": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499",
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 2,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "产品方案"
+  },
+  "非功能性需求": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "非功能性需求"
+  },
+  "数据埋点": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "数据埋点"
+  },
+  "工作任务及时间规划": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "工作任务及时间规划"
+  },
+  "第三方学员": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "第三方学员"
+  },
+  "项目A": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "项目A"
+  },
+  "项目B": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "项目B"
+  },
+  "独立智能体": {
+    "chunk_ids": [
+      "chunk-57e38225d05ddd7ddbc01cb900192499"
+    ],
+    "count": 1,
+    "create_time": 1780056777,
+    "update_time": 1780056777,
+    "_id": "独立智能体"
+  },
+  "PRD": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "PRD"
+  },
+  "租户自建智能体": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "租户自建智能体"
+  },
+  "项目关联智能体": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "项目关联智能体"
+  },
+  "文档版本": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "文档版本"
+  },
+  "文件名": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "文件名"
+  },
+  "文档ID": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "文档ID"
+  },
+  "后台原型": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "后台原型"
+  },
+  "学员端原型": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "学员端原型"
+  },
+  "需求评审纪要": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "需求评审纪要"
+  },
+  "UI设计图": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "UI设计图"
+  },
+  "修订记录": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "修订记录"
+  },
+  "朱永": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "朱永"
+  },
+  "单楠": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "单楠"
+  },
+  "应用关系说明": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056778,
+    "update_time": 1780056778,
+    "_id": "应用关系说明"
+  },
+  "按钮权限说明": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "按钮权限说明"
+  },
+  "应用升级的抽屉": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "应用升级的抽屉"
+  },
+  "智能体管理页": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "智能体管理页"
+  },
+  "学员反馈列表": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "学员反馈列表"
+  },
+  "校验流程": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "校验流程"
+  },
+  "需求背景描述": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "需求背景描述"
+  },
+  "目标及衡量标准": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "目标及衡量标准"
+  },
+  "应用关系": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "应用关系"
+  },
+  "校验位置": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "校验位置"
+  },
+  "按钮功能权限总表": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "按钮功能权限总表"
+  },
+  "技能版本管理": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "技能版本管理"
+  },
+  "版本列表": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "版本列表"
+  },
+  "数据名称": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "数据名称"
+  },
+  "数据类型": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "数据类型"
+  },
+  "展示规则": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "展示规则"
+  },
+  "检索规则": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "检索规则"
+  },
+  "排序规则": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "排序规则"
+  },
+  "项目-管理页-首页-工具icon": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "项目-管理页-首页-工具icon"
+  },
+  "项目-管理页-工具-智能体": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "项目-管理页-工具-智能体"
+  },
+  "数据字段表": {
+    "chunk_ids": [
+      "chunk-0e23703c94b8c4b445bbc7251f44159e"
+    ],
+    "count": 1,
+    "create_time": 1780056779,
+    "update_time": 1780056779,
+    "_id": "数据字段表"
+  },
+  "版本配置": {
+    "chunk_ids": [
+      "chunk-bcd837be5ad455ce0c47261924a3cd9c"
+    ],
+    "count": 1,
+    "create_time": 1780056780,
+    "update_time": 1780056780,
+    "_id": "版本配置"
+  },
+  "创建第三方技能": {
+    "chunk_ids": [
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 1,
+    "create_time": 1780056788,
+    "update_time": 1780056788,
+    "_id": "创建第三方技能"
+  },
+  "应用市场批量功能配置": {
+    "chunk_ids": [
+      "chunk-6b91f407981af618776cf67b9e8abfe1"
+    ],
+    "count": 1,
+    "create_time": 1780056788,
+    "update_time": 1780056788,
+    "_id": "应用市场批量功能配置"
+  }
+}

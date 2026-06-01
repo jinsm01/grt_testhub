@@ -277,7 +277,7 @@ const fetchGraphInfo = async () => {
   if (!graphId) return
 
   try {
-    const response = await axios.get(`/api/requirement-analysis/knowledge-graphs/${graphId}/`)
+    const response = await api.get(`/requirement-analysis/knowledge-graphs/${graphId}/`)
     graphInfo.value = response.data
 
     if (graphInfo.value.status !== 'completed') {
@@ -297,7 +297,7 @@ const fetchGraphInfo = async () => {
 // 获取所有图谱列表
 const fetchAllGraphs = async () => {
   try {
-    const response = await axios.get('/api/requirement-analysis/knowledge-graphs/')
+    const response = await axios.get('/requirement-analysis/knowledge-graphs/')
     allGraphs.value = response.data.results || response.data
 
     // 设置默认选中的图谱
@@ -323,7 +323,7 @@ const fetchAllGraphs = async () => {
 const fetchBaseGraphVersions = async () => {
   if (!baseGraphId.value) return
   try {
-    const response = await axios.get(`/api/requirement-analysis/knowledge-graphs/${baseGraphId.value}/versions/`)
+    const response = await api.get(`/requirement-analysis/knowledge-graphs/${baseGraphId.value}/versions/`)
     baseGraphVersions.value = response.data
   } catch (error) {
     console.error('获取基准版本列表失败:', error)
@@ -335,7 +335,7 @@ const fetchBaseGraphVersions = async () => {
 const fetchCompareGraphVersions = async () => {
   if (!compareGraphId.value) return
   try {
-    const response = await axios.get(`/api/requirement-analysis/knowledge-graphs/${compareGraphId.value}/versions/`)
+    const response = await api.get(`/requirement-analysis/knowledge-graphs/${compareGraphId.value}/versions/`)
     compareGraphVersions.value = response.data
   } catch (error) {
     console.error('获取对比版本列表失败:', error)
@@ -368,7 +368,7 @@ const createVersion = async () => {
 
   creatingVersion.value = true
   try {
-    const response = await axios.post(`/api/requirement-analysis/knowledge-graphs/${graphId}/create_version/`, {
+    const response = await api.post(`/requirement-analysis/knowledge-graphs/${graphId}/create_version/`, {
       version_number: createVersionForm.value.version_number,
       version_name: createVersionForm.value.version_name,
       description: createVersionForm.value.description
@@ -404,15 +404,28 @@ const startCompare = async () => {
     return
   }
 
+  // 检查两个版本是否来自同一个图谱
+  if (baseGraphId.value !== compareGraphId.value) {
+    ElMessage.warning('基准版本和对比版本必须来自同一个知识图谱')
+    return
+  }
+
   loading.value = true
   compareResult.value = null
 
   try {
     // 使用真正的版本对比 API
-    const response = await axios.post(`/api/requirement-analysis/knowledge-graphs/${graphId}/compare_versions_real/`, {
+    const response = await api.post(`/requirement-analysis/knowledge-graphs/${graphId}/compare_versions_real/`, {
       base_version_id: baseVersion.value.id,
       compare_version_id: compareVersion.value.id
     })
+
+    // 检查后端返回的成功状态
+    if (!response.data.success) {
+      ElMessage.error(response.data.error || '版本对比失败')
+      compareResult.value = null
+      return
+    }
 
     compareResult.value = response.data
 
