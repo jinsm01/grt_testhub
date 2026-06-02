@@ -809,10 +809,9 @@ def apifox_check_generate(request):
     # 生成唯一任务ID和报告文件名
     task_id = str(uuid.uuid4())[:8]
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    report_filename = f'apifox-check-{timestamp}-{task_id}.html'
-    report_path = os.path.join(REPORTS_DIR, report_filename)
-    
     executed_by = request.user.username if request.user.is_authenticated else 'unknown'
+    report_filename = f'{executed_by}_Apifox_Check_{timestamp}.html'
+    report_path = os.path.join(REPORTS_DIR, report_filename)
 
     # 获取用户自定义的豁免字段（仅启用状态的）
     all_exemptions = config.get('id_field_exemptions', [])

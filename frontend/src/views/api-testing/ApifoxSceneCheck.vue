@@ -1,7 +1,7 @@
 <template>
   <div class="page-container">
     <!-- 配置面板 - 参考 InterfaceList.vue 顶部样式 -->
-    <div class="page-header">
+    <div v-if="!showReportDetail" class="page-header">
       <div class="filter-section">
         <el-input v-model="config.project_id" placeholder="Apifox 项目 ID" clearable style="width: 200px;" />
         <el-input v-model="config.environment_id" placeholder="Apifox 环境 ID" clearable style="width: 200px;" />
@@ -18,6 +18,10 @@
           <el-icon style="margin-right: 4px;"><List /></el-icon>
           规则查看
         </el-button>
+        <el-button @click="exemptionsDrawerVisible = true">
+          <el-icon style="margin-right: 4px;"><CircleCheck /></el-icon>
+          白名单
+        </el-button>
         <el-button type="primary" @click="generateReport" :loading="generating" :disabled="generating">
           <el-icon style="margin-right: 4px;"><VideoPlay /></el-icon>
           {{ generating ? '生成中...' : '开始检查' }}
@@ -25,9 +29,17 @@
       </div>
     </div>
 
-    <!-- 生成进度 -->
-    <div v-if="generating || taskResult" class="card-container progress-card">
-      <div class="card-body">
+    <!-- 生成进度弹窗 -->
+    <el-dialog
+      v-model="progressDialogVisible"
+      title="生成进度"
+      width="480px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      :show-close="!generating"
+      destroy-on-close
+    >
+      <div class="progress-dialog-content">
         <el-alert
           v-if="taskError"
           :title="taskError"
@@ -51,7 +63,10 @@
           <p class="progress-text">{{ progressText }}</p>
         </div>
       </div>
-    </div>
+      <template #footer>
+        <el-button v-if="!generating" @click="progressDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
 
     <!-- 规则查看抽屉 -->
     <el-drawer
@@ -76,27 +91,27 @@
       </div>
     </el-drawer>
 
-    <!-- ID字段豁免列表 -->
-    <div class="card-container exemptions-card">
-      <div class="card-header">
-        <span class="card-title">
-          <el-icon :size="18"><CircleCheck /></el-icon>
-          ID字段豁免列表
-        </span>
-        <div class="header-actions">
+    <!-- 白名单抽屉 -->
+    <el-drawer
+      v-model="exemptionsDrawerVisible"
+      title="ID字段豁免列表"
+      direction="rtl"
+      size="950px"
+      :close-on-press-escape="true"
+      :destroy-on-close="true"
+    >
+      <div class="exemptions-drawer-content">
+        <div class="exemptions-drawer-header">
           <el-button type="primary" size="small" @click="openAddExemptionDialog">
             <el-icon><Plus /></el-icon>
             添加豁免
           </el-button>
         </div>
-      </div>
-      <div class="card-body no-padding">
         <el-table
           :data="exemptionTableData"
           v-loading="exemptionLoading"
           empty-text="暂无豁免字段，点击「添加豁免」创建"
-          stripe
-          :header-cell-style="{ background: '#fafbff', color: '#5a32a3', fontWeight: 600, fontSize: '13px' }"
+          :header-cell-style="{ background: '#ffffff', color: '#5a32a3', fontWeight: 600, fontSize: '14px' }"
         >
           <el-table-column label="豁免ID字段" min-width="180">
             <template #default="{ row }">
@@ -156,7 +171,7 @@
           </el-table-column>
         </el-table>
       </div>
-    </div>
+    </el-drawer>
 
     <!-- 添加/编辑豁免弹窗 -->
     <el-dialog
@@ -199,8 +214,18 @@
       </template>
     </el-dialog>
 
-    <!-- 历史报告 -->
-    <div class="card-container">
+    <!-- 报告详情 - 直接显示 -->
+    <iframe
+      v-if="showReportDetail"
+      :src="reportIframeUrl"
+      class="report-iframe-direct"
+      @load="reportLoading = false"
+      frameborder="0"
+      scrolling="auto"
+    />
+
+    <!-- 历史报告列表 -->
+    <div v-else class="card-container">
       <!-- 加载状态 -->
       <div v-if="loadingReports" class="loading-state">
         <el-skeleton :rows="6" animated />
@@ -226,33 +251,35 @@
               {{ $index + 1 }}
             </template>
           </el-table-column>
-          <el-table-column label="报告文件" min-width="360" header-align="center" show-overflow-tooltip>
+          <el-table-column label="报告文件" min-width="200" header-align="center" show-overflow-tooltip>
             <template #default="{ row }">
               <div style="text-align: center; width: 100%;">
-                <span class="report-link" @click="viewReport(row)">
-                  <el-icon><View /></el-icon> {{ row.filename }}
-                </span>
+                <span class="report-filename">{{ row.filename }}</span>
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="执行人" width="120" header-align="center" align="center">
+          <el-table-column label="执行人" width="200" header-align="center" align="center">
             <template #default="{ row }">
               <span>{{ row.executed_by || '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="文件大小" width="120" header-align="center" align="center">
+          <el-table-column label="文件大小" width="200" header-align="center" align="center">
             <template #default="{ row }">
               <span>{{ formatSize(row.size) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="生成时间" width="180" header-align="center" align="center">
+          <el-table-column label="生成时间" width="200" header-align="center" align="center">
             <template #default="{ row }">
               <span>{{ formatTime(row.created_at) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" header-align="center" align="center" fixed="right">
+          <el-table-column label="操作" width="250" header-align="center" align="center" fixed="right">
             <template #default="{ row }">
               <div class="action-buttons">
+                <el-button type="primary" size="small" class="action-btn view-btn" @click="viewReport(row)">
+                  <el-icon><View /></el-icon>
+                  <span>查看</span>
+                </el-button>
                 <el-button type="danger" size="small" class="action-btn delete-btn" @click="deleteReport(row)">
                   <el-icon><Delete /></el-icon>
                   <span>删除</span>
@@ -276,37 +303,13 @@
         </div>
       </div>
     </div>
-
-    <!-- 报告查看抽屉 -->
-    <el-drawer
-      v-model="reportDrawerVisible"
-      :title="currentReportName"
-      direction="rtl"
-      size="90%"
-      :close-on-press-escape="true"
-      :destroy-on-close="true"
-    >
-      <div v-if="reportLoading" class="report-loading">
-        <div class="loading-spinner">
-          <el-icon class="is-loading" :size="40"><Loading /></el-icon>
-        </div>
-        <p>正在加载报告...</p>
-      </div>
-      <iframe
-        v-show="!reportLoading"
-        :src="reportIframeUrl"
-        class="report-iframe"
-        @load="reportLoading = false"
-        frameborder="0"
-      />
-    </el-drawer>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { DataAnalysis, Setting, Check, VideoPlay, Refresh, FolderOpened, View, Delete, Loading, List, CircleCheck, Plus, Edit } from '@element-plus/icons-vue'
+import { DataAnalysis, Setting, Check, VideoPlay, Refresh, FolderOpened, View, Delete, Loading, List, CircleCheck, Plus, Edit, ArrowLeft } from '@element-plus/icons-vue'
 import api from '@/utils/api'
 
 // 配置
@@ -335,13 +338,19 @@ const pageSize = ref(10)
 const totalReports = ref(0)
 
 // 报告查看
-const reportDrawerVisible = ref(false)
 const reportIframeUrl = ref('')
 const currentReportName = ref('')
 const reportLoading = ref(true)
+const showReportDetail = ref(false)
 
 // 规则查看抽屉
 const rulesDrawerVisible = ref(false)
+
+// 白名单抽屉
+const exemptionsDrawerVisible = ref(false)
+
+// 生成进度弹窗
+const progressDialogVisible = ref(false)
 
 // 检查规则
 const checkRules = [
@@ -526,6 +535,7 @@ const generateReport = async () => {
   }
 
   generating.value = true
+  progressDialogVisible.value = true
   progressText.value = '正在保存配置并启动检查任务...'
   taskResult.value = ''
   taskError.value = ''
@@ -622,12 +632,19 @@ const handleCurrentChange = (val) => {
   loadReports()
 }
 
-// 查看报告
+// 查看报告 - 在当前页显示详情
 const viewReport = (row) => {
   currentReportName.value = row.filename
   reportIframeUrl.value = `/api/api-testing/apifox-check/report/${row.filename}/`
-  reportDrawerVisible.value = true
   reportLoading.value = true
+  showReportDetail.value = true
+}
+
+// 返回列表
+const backToList = () => {
+  showReportDetail.value = false
+  reportIframeUrl.value = ''
+  currentReportName.value = ''
 }
 
 // 删除报告
@@ -678,10 +695,18 @@ onMounted(() => {
 .page-container {
   padding: 24px;
   min-height: calc(100vh - 60px);
-  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  position: relative;
+
+  // 当显示报告详情时，移除 flex 布局限制，让内容自然撑开
+  &:has(.report-iframe-direct) {
+    display: block;
+    padding: 0;
+    min-height: auto;
+  }
 }
 
 // ========== 页面标题栏（参考 InterfaceList.vue 样式） ==========
@@ -782,43 +807,30 @@ onMounted(() => {
 }
 
 // ========== 进度卡片 ==========
-.progress-card {
+// 生成进度弹窗样式
+.progress-dialog-content {
   .progress-bar-wrap {
-    padding: 8px 0;
+    padding: 16px 0;
   }
 
   .progress-info {
-    padding: 4px 0;
+    padding: 8px 0;
   }
 
   .progress-text {
     text-align: center;
     color: #7b42f6;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 500;
-    margin: 12px 0 0 0;
+    margin: 16px 0 0 0;
   }
 }
 
-// ========== 报告链接 ==========
-.report-link {
-  color: #7b42f6;
-  cursor: pointer;
+// ========== 报告文件名（纯文本样式） ==========
+.report-filename {
+  color: #333333;
   font-size: 13px;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    color: #5a32a3;
-    text-decoration: underline;
-  }
-
-  .el-icon {
-    font-size: 14px;
-  }
+  font-weight: 400;
 }
 
 // ========== 操作按钮样式（参考 XMindConverter.vue） ==========
@@ -848,6 +860,19 @@ onMounted(() => {
   span {
     font-size: 12px;
     color: #ffffff !important;
+  }
+
+  &.view-btn {
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #6b32e6 0%, #4a2393 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
+    }
   }
 
   &.delete-btn {
@@ -1067,8 +1092,9 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 400px;
+  height: 100%;
   gap: 20px;
+  background: #ffffff;
 
   .loading-spinner {
     width: 80px;
@@ -1093,9 +1119,19 @@ onMounted(() => {
 
 .report-iframe {
   width: 100%;
-  height: calc(100vh - 70px);
+  height: calc(100vh - 120px);
   border: none;
   border-radius: 0 0 8px 8px;
+}
+
+// ========== 报告详情页样式 ==========
+// 报告详情 iframe 直接显示 - 使用浏览器原生滚动条
+.report-iframe-direct {
+  width: 100%;
+  height: auto;
+  min-height: 100vh;
+  border: none;
+  display: block;
 }
 
 // ========== 规则抽屉内容 ==========
@@ -1305,9 +1341,15 @@ onMounted(() => {
 }
 
 // ========== 豁免列表 ==========
-.exemptions-card {
-  .card-body {
-    padding: 0;
+// 白名单抽屉内容样式
+.exemptions-drawer-content {
+  padding: 20px;
+  overflow-x: hidden;
+
+  .exemptions-drawer-header {
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: flex-end;
   }
 
   .exemption-field-cell {

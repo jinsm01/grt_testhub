@@ -9,14 +9,12 @@ from .models import CheckConfig, ReportData, RuleResult, Scenario
 
 CSS = """
 * { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
-body { max-width: 1600px; margin: 0 auto; padding: 20px; background: #f5f7fa; color: #333; }
+body { max-width: 1600px; margin: 0 auto; padding: 20px; background: #ffffff; color: #333; }
 h1 { text-align: center; color: #1a1a2e; font-size: 28px; border-bottom: 3px solid #e94560; padding-bottom: 12px; }
 h2 { color: #1a1a2e; font-size: 20px; border-left: 4px solid #e94560; padding-left: 12px; margin-top: 32px; }
 h3 { color: #16213e; font-size: 16px; margin-top: 24px; }
-.meta { background: #fff; border-radius: 8px; padding: 16px 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.meta span { margin-right: 32px; }
-.meta b { color: #1a1a2e; }
-.summary-table { width: 100%; border-collapse: collapse; margin: 16px 0; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+h4 { color: #16213e; font-size: 14px; margin-top: 16px; }
+.summary-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
 .summary-table th { background: #1a1a2e; color: #fff; padding: 10px 14px; font-size: 14px; text-align: center; }
 .summary-table td { padding: 10px 14px; font-size: 14px; text-align: center; border-bottom: 1px solid #eee; }
 .summary-table tr:hover td { background: #f0f4ff; }
@@ -28,28 +26,11 @@ h3 { color: #16213e; font-size: 16px; margin-top: 24px; }
 .status-partial { background: #fff3cd; color: #f5a623; font-weight: bold; padding: 2px 8px; border-radius: 4px; }
 .status-ok { background: #d4edda; color: #28a745; font-weight: bold; padding: 2px 8px; border-radius: 4px; }
 .status-skip { background: #e9ecef; color: #6c757d; padding: 2px 8px; border-radius: 4px; }
-.rule-section { background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.rule-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.rule-title { font-size: 18px; font-weight: bold; color: #1a1a2e; }
-.rule-badge { padding: 4px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; }
-.badge-high { background: #e94560; color: #fff; }
-.badge-mid { background: #f5a623; color: #fff; }
-.badge-low { background: #7ed321; color: #fff; }
-.badge-skip { background: #adb5bd; color: #fff; }
-.compliance { font-size: 14px; color: #666; margin-bottom: 12px; }
-.desc { margin: 12px 0; padding-left: 20px; font-size: 14px; line-height: 1.8; }
-.desc li { margin-bottom: 6px; }
-.impact { background: #fff8e1; border-left: 4px solid #f5a623; padding: 12px 16px; margin: 12px 0; border-radius: 0 8px 8px 0; font-size: 14px; }
-.fix { background: #e8f5e9; border-left: 4px solid #28a745; padding: 12px 16px; margin: 12px 0; border-radius: 0 8px 8px 0; font-size: 14px; }
 .data-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
 .data-table th { background: #16213e; color: #fff; padding: 8px 10px; text-align: left; font-size: 12px; white-space: nowrap; }
 .data-table td { padding: 8px 10px; border-bottom: 1px solid #eee; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .data-table tr:nth-child(even) td { background: #f8f9ff; }
 .data-table tr:hover td { background: #e8f0fe; }
-.creator-section { background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.creator-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
-.creator-title { font-size: 18px; font-weight: bold; color: #1a1a2e; }
-.creator-stats { font-size: 14px; color: #666; margin-bottom: 12px; }
 .run-passed { color: #28a745; font-weight: bold; }
 .run-failed { color: #e94560; font-weight: bold; }
 .run-notrun { color: #adb5bd; }
@@ -59,17 +40,6 @@ h3 { color: #16213e; font-size: 16px; margin-top: 24px; }
 .creator-tab { padding: 6px 16px; border-radius: 20px; background: #e9ecef; cursor: pointer; font-size: 13px; transition: background 0.2s; }
 .creator-tab.active { background: #1a1a2e; color: #fff; }
 .creator-tab .count { font-weight: bold; margin-left: 4px; }
-.filter-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; padding: 12px 16px; background: #f8f9ff; border-radius: 8px; font-size: 13px; }
-.filter-bar label { color: #555; margin-right: 4px; }
-.filter-bar select { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
-.filter-bar .filter-result { color: #666; margin-left: 8px; }
-/* Header filters in creator-header */
-.header-filters { display: flex; align-items: center; gap: 6px; font-size: 13px; background: #f8f9ff; padding: 8px 14px; border-radius: 8px; }
-.header-filters label { color: #555; white-space: nowrap; }
-.header-filters select { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; background: #fff; }
-/* Detail filter count above table */
-.detail-filter-bar { display: flex; justify-content: flex-end; margin-bottom: 4px; }
-.detail-filter-bar .filter-result { font-size: 13px; color: #666; background: #f0f4ff; padding: 4px 12px; border-radius: 12px; }
 .detail-row-hidden { display: none; }
 /* Sortable table headers */
 .sortable { cursor: pointer; user-select: none; white-space: nowrap; }
@@ -151,6 +121,7 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
     """Generate a summary section grouped by creator with violation stats, filterable by month and run status."""
     parts = []
     parts.append('<h2>二、按创建人归纳总结</h2>')
+    parts.append('<p style="color:#666;font-size:13px;margin:8px 0;">按创建人统计各人的场景违规情况，支持按月份和运行结果筛选</p>')
 
     # Build scenario map first for lookup
     scenarios_map = _build_scenario_map(scenarios)
@@ -230,26 +201,25 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
         total = data["total_scenarios"]
         compliant = data["compliant_scenarios"]
         viol = data["total_violations"]
-        parts.append(f'<div class="creator-section" id="creator-{idx}" style="{display_style}">')
-        parts.append(f'<div class="creator-header">')
-        parts.append(f'<span class="creator-title">👤 {creator}</span>')
-        # Filter controls in creator-header
-        parts.append('<div class="header-filters">')
-        parts.append('<label>📅 月份：</label>')
-        parts.append(f'<select id="filter-month-{idx}" onchange="applyFilters({idx})">')
+        parts.append(f'<div id="creator-{idx}" style="{display_style};margin-bottom:24px;">')
+        parts.append(f'<h3>👤 {creator}</h3>')
+        # Filter controls
+        parts.append('<div style="margin:12px 0;">')
+        parts.append('<label style="font-size:13px;color:#555;">📅 月份：</label>')
+        parts.append(f'<select id="filter-month-{idx}" onchange="applyFilters({idx})" style="padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px;">')
         parts.append('<option value="all">全部月份</option>')
         for m in sorted_months:
             parts.append(f'<option value="{m}">{m}</option>')
         parts.append('</select>')
-        parts.append('<label style="margin-left:10px;">🏁 结果：</label>')
-        parts.append(f'<select id="filter-status-{idx}" onchange="applyFilters({idx})">')
+        parts.append('<label style="margin-left:16px;font-size:13px;color:#555;">🏁 结果：</label>')
+        parts.append(f'<select id="filter-status-{idx}" onchange="applyFilters({idx})" style="padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px;">')
         parts.append('<option value="all">全部结果</option>')
         status_options = [("passed", "✅ 通过"), ("failed", "❌ 失败"), ("not_run", "⏸️ 未运行"), ("unknown", "❓ 未知")]
         for sv, sl in status_options:
             if sv in all_statuses:
                 parts.append(f'<option value="{sv}">{sl}</option>')
         parts.append('</select>')
-        parts.append('</div></div>')
+        parts.append('</div>')
 
         # Embed all scenario metadata for this creator as JSON (for dynamic stats filtering)
         creator_scenario_list = [s for s in scenarios if (s.creator or "未知") == creator]
@@ -268,21 +238,18 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
         parts.append(f'<script id="scenario-meta-{idx}" type="application/json">{_json.dumps(scenario_meta, ensure_ascii=False)}</script>')
 
         # Stats cards: 总场景数 / 合规场景数 / 违规场景数
-        parts.append('<div class="filter-bar" style="background:#f0f4ff;">')
-        parts.append(f'<span style="font-size:14px;font-weight:bold;color:#1a1a2e;margin-right:8px;">📊 场景统计：</span>')
-        parts.append(f'<span style="color:#333;font-size:14px;"><b>总场景数</b>: <b id="stat-total-{idx}">{total}</b></span>')
-        parts.append(f'<span style="margin:0 12px;color:#ccc;">|</span>')
-        parts.append(f'<span style="color:#28a745;font-weight:bold;font-size:14px;"><b>合规场景</b>: <b id="stat-compliant-{idx}">{compliant}</b></span>')
-        parts.append(f'<span style="margin:0 12px;color:#ccc;">|</span>')
-        parts.append(f'<span style="color:#e94560;font-weight:bold;font-size:14px;"><b>违规场景</b>: <b id="stat-violation-{idx}">{viol}</b></span>')
+        parts.append(f'<p style="margin:12px 0;font-size:14px;">')
+        parts.append(f'<b>📊 场景统计：</b>')
+        parts.append(f'<span style="margin-left:8px;">总场景数: <b id="stat-total-{idx}">{total}</b></span>')
+        parts.append(f'<span style="margin-left:16px;color:#28a745;">合规场景: <b id="stat-compliant-{idx}">{compliant}</b></span>')
+        parts.append(f'<span style="margin-left:16px;color:#e94560;">违规场景: <b id="stat-violation-{idx}">{viol}</b></span>')
         if total > 0:
             pct_compliant = round(compliant / total * 100, 1)
             pct_color = "#e94560" if pct_compliant < 50 else ("#f5a623" if pct_compliant < 80 else "#28a745")
             parts.append(f'<span style="margin-left:16px;font-size:13px;" id="stat-rate-text-{idx}">(合规率 <b id="stat-rate-{idx}" style="color:{pct_color}">{pct_compliant}%</b>)</span>')
-        parts.append('</div>')
+        parts.append('</p>')
 
         # Violation breakdown per rule
-        parts.append('<div class="creator-stats">')
         parts.append('<table class="summary-table">')
         parts.append('<thead><tr><th>规则名称</th><th>违规数</th><th>严重程度</th></tr></thead><tbody>')
         for rr in report.rule_results:
@@ -291,11 +258,10 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
                 sev = SEVERITY_MAP.get(rr.rule.severity, SEVERITY_MAP["mid"])
                 parts.append(f'<tr><td>{rr.rule.name}</td><td><b>{v_count}</b></td><td class="{sev[1]}">{sev[0]}</td></tr>')
         parts.append('</tbody></table>')
-        parts.append('</div>')
 
         # ---- Title + count ----
-        parts.append('<h3>违规场景明细</h3>')
-        parts.append(f'<div class="detail-filter-bar"><span class="filter-result" id="filter-count-{idx}"></span></div>')
+        parts.append('<h4 style="margin-top:20px;margin-bottom:8px;">违规场景明细</h4>')
+        parts.append(f'<p style="text-align:right;font-size:13px;color:#666;margin:4px 0;"><span id="filter-count-{idx}"></span></p>')
 
         # Detailed violation list for this creator
         headers_detail = ["场景ID", "场景名称", "归属目录", "规则", "问题描述", "创建时间", "运行结果"]
@@ -335,7 +301,6 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
                 row_index += 1
 
         parts.append('</tbody></table>')
-        parts.append('</div>')
 
     # JavaScript for tab switching and filtering
     parts.append("""
@@ -539,10 +504,7 @@ def generate_html_report(report: ReportData, config: CheckConfig, scenarios: lis
     parts.append(f'<title>Apifox自动化检查报告 - 项目{report.project_id}</title>')
     parts.append(f'<style>{CSS}</style></head><body>')
     parts.append(f'<h1>Apifox接口自动化编写规范检查报告</h1>')
-    parts.append(f'<div class="meta"><span><b>项目ID：</b>{report.project_id}</span>')
-    parts.append(f'<span><b>环境ID：</b>{report.environment_id}</span>')
-    parts.append(f'<span><b>场景总数：</b>{report.total_scenarios}</span>')
-    parts.append(f'<span><b>检查时间：</b>{report.timestamp}</span></div>')
+    parts.append(f'<p style="margin:12px 0;font-size:14px;"><b>项目ID：</b>{report.project_id} | <b>环境ID：</b>{report.environment_id} | <b>场景总数：</b>{report.total_scenarios} | <b>检查时间：</b>{report.timestamp}</p>')
 
     # Summary table
     parts.append('<h2>一、检查结果总览</h2>')
