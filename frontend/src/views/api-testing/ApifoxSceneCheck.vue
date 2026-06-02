@@ -78,46 +78,80 @@
     </el-drawer>
 
     <!-- 历史报告 -->
-    <div class="card-container reports-card">
-      <div class="card-body no-padding">
+    <div class="card-container">
+      <!-- 加载状态 -->
+      <div v-if="loadingReports" class="loading-state">
+        <el-skeleton :rows="6" animated />
+      </div>
+      
+      <!-- 空状态 -->
+      <div v-else-if="reports.length === 0" class="empty-state">
+        <el-empty description="暂无生成报告，请先配置并点击「开始检查」" />
+      </div>
+
+      <!-- 报告列表 -->
+      <div v-else class="table-wrapper">
         <el-table
+          ref="tableRef"
           :data="reports"
           v-loading="loadingReports"
-          empty-text="暂无生成报告，请先配置并点击「开始检查」"
-          stripe
-          :header-cell-style="{ background: '#fafbff', color: '#5a32a3', fontWeight: 600, fontSize: '13px' }"
+          style="width: 100%"
+          class="custom-table"
+          :header-cell-style="{ background: '#ffffff', color: '#5a32a3', fontWeight: 600, fontSize: '14px' }"
         >
-          <el-table-column label="报告文件" min-width="360" show-overflow-tooltip>
-            <template #default="{ row }">
-              <span class="report-link" @click="viewReport(row)">
-                <el-icon><View /></el-icon> {{ row.filename }}
-              </span>
+          <el-table-column label="序号" width="90" header-align="center" align="center">
+            <template #default="{ $index }">
+              {{ $index + 1 }}
             </template>
           </el-table-column>
-          <el-table-column label="执行人" width="100" align="center" class-name="cell-nowrap">
+          <el-table-column label="报告文件" min-width="360" header-align="center" show-overflow-tooltip>
             <template #default="{ row }">
-              {{ row.executed_by || '-' }}
+              <div style="text-align: center; width: 100%;">
+                <span class="report-link" @click="viewReport(row)">
+                  <el-icon><View /></el-icon> {{ row.filename }}
+                </span>
+              </div>
             </template>
           </el-table-column>
-          <el-table-column label="文件大小" width="120" align="center">
+          <el-table-column label="执行人" width="120" header-align="center" align="center">
             <template #default="{ row }">
-              {{ formatSize(row.size) }}
+              <span>{{ row.executed_by || '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="生成时间" width="180" align="center">
+          <el-table-column label="文件大小" width="120" header-align="center" align="center">
             <template #default="{ row }">
-              {{ formatTime(row.created_at) }}
+              <span>{{ formatSize(row.size) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" align="center" fixed="right">
+          <el-table-column label="生成时间" width="180" header-align="center" align="center">
             <template #default="{ row }">
-              <el-button type="danger" size="small" link @click="deleteReport(row)">
-                <el-icon><Delete /></el-icon>
-                删除
-              </el-button>
+              <span>{{ formatTime(row.created_at) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="100" header-align="center" align="center" fixed="right">
+            <template #default="{ row }">
+              <div class="action-buttons">
+                <el-button type="danger" size="small" class="action-btn delete-btn" @click="deleteReport(row)">
+                  <el-icon><Delete /></el-icon>
+                  <span>删除</span>
+                </el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
+
+        <!-- 分页 -->
+        <div class="pagination-container">
+          <el-pagination
+            v-model:current-page="currentPage"
+            v-model:page-size="pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="totalReports"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+          />
+        </div>
       </div>
     </div>
 
@@ -171,6 +205,12 @@ let pollTimer = null
 // 历史报告
 const reports = ref([])
 const loadingReports = ref(false)
+const tableRef = ref(null)
+
+// 分页相关
+const currentPage = ref(1)
+const pageSize = ref(10)
+const totalReports = ref(0)
 
 // 报告查看
 const reportDrawerVisible = ref(false)
@@ -301,12 +341,31 @@ const loadReports = async () => {
   loadingReports.value = true
   try {
     const res = await api.get('/api-testing/apifox-check/reports/')
-    reports.value = res.data.reports || []
+    const allReports = res.data.reports || []
+    totalReports.value = allReports.length
+    
+    // 分页处理
+    const start = (currentPage.value - 1) * pageSize.value
+    const end = start + pageSize.value
+    reports.value = allReports.slice(start, end)
   } catch (e) {
     ElMessage.error('加载报告列表失败')
   } finally {
     loadingReports.value = false
   }
+}
+
+// 分页大小变化
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  currentPage.value = 1
+  loadReports()
+}
+
+// 页码变化
+const handleCurrentChange = (val) => {
+  currentPage.value = val
+  loadReports()
 }
 
 // 查看报告
@@ -507,52 +566,152 @@ onMounted(() => {
   }
 }
 
-// ========== 表格全局样式覆盖 ==========
-:deep(.el-table) {
-  --el-table-header-bg-color: #fafbff;
-  --el-table-row-hover-bg-color: #f8f7ff;
-  --el-table-stripe-bg-color: #fafaff;
-  border: none;
-  border-radius: 0;
+// ========== 操作按钮样式（参考 XMindConverter.vue） ==========
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
 
-  &::before {
-    display: none;
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px !important;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+
+  .el-icon {
+    font-size: 14px;
+    color: #ffffff !important;
   }
 
-  th {
-    color: #5a32a3 !important;
+  span {
+    font-size: 12px;
+    color: #ffffff !important;
+  }
+
+  &.delete-btn {
+    background: linear-gradient(135deg, #ff4d4f 0%, #f5222d 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
     font-weight: 600 !important;
-    font-size: 13px !important;
-    border-bottom: 1px solid rgba(147, 112, 219, 0.12) !important;
-    padding: 14px 12px !important;
-    white-space: nowrap !important;
 
-    .cell {
-      white-space: nowrap !important;
-      overflow: visible !important;
-      text-overflow: clip !important;
+    &:hover {
+      background: linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(245, 34, 45, 0.4);
+    }
+  }
+}
+
+// ========== 表格全局样式覆盖（参考 InterfaceList.vue） ==========
+:deep(.el-table) {
+  border: none;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+  min-height: 200px;
+  box-shadow: none;
+  transition: all 0.3s ease;
+  background-color: #ffffff !important;
+
+  /* 覆盖 Element Plus 默认主题变量 */
+  --el-color-primary: #7b42f6;
+  --el-color-primary-light-3: #9370db;
+  --el-color-primary-light-5: #a888e0;
+  --el-color-primary-light-7: #c2a9f3;
+  --el-color-primary-light-9: #f8f7ff;
+  --el-border-color: #e9ecef;
+  --el-fill-color-blank: #ffffff;
+  --el-table-header-bg-color: #ffffff;
+  --el-table-row-hover-bg-color: #ffffff;
+  --el-table-tr-bg-color: #ffffff;
+
+  :deep(.el-table__inner-wrapper) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(.el-table__header-wrapper) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(.el-table__header) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(th) {
+    background-color: #ffffff !important;
+    color: #5a32a3 !important;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 1px solid #e9ecef;
+    padding: 16px !important;
+    text-align: center;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: #ffffff !important;
     }
   }
 
-  td {
-    padding: 12px !important;
-    border-bottom: 1px solid #f0f0f0 !important;
-    font-size: 13px;
+  :deep(th .cell) {
+    font-weight: 600;
+    color: #5a32a3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  :deep(.el-table__body-wrapper) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(tr) {
+    cursor: pointer;
+    background-color: #ffffff !important;
+
+    &:hover {
+      background-color: #ffffff !important;
+    }
+  }
+
+  :deep(td) {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e9ecef;
     color: #333;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+    vertical-align: middle;
+    text-align: center;
+    background-color: #ffffff !important;
 
     .cell {
-      white-space: nowrap !important;
-      overflow: visible !important;
-      text-overflow: clip !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
     }
   }
 
-  .el-table__row:hover > td {
-    background-color: #f8f7ff !important;
+  :deep(.el-table__empty-block) {
+    background-color: #ffffff !important;
   }
 
-  .el-table__row--striped > td {
-    background-color: #fafaff !important;
+  :deep(.el-table__fixed-right-patch) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(.el-table__fixed-body-wrapper) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(.el-table__fixed-header-wrapper) {
+    background-color: #ffffff !important;
   }
 }
 
@@ -702,6 +861,181 @@ onMounted(() => {
 
     .el-table__body-wrapper {
       overflow-x: hidden !important;
+    }
+  }
+}
+
+// ========== 表格区域样式（参考 InterfaceList.vue） ==========
+.loading-state {
+  padding: 40px;
+}
+
+.empty-state {
+  padding: 60px 0;
+}
+
+.table-wrapper {
+  padding: 0;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 0;
+  margin-top: 8px;
+  background: transparent;
+  border: none;
+  transition: all 0.3s ease;
+
+  :deep(.el-pagination) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+
+    // 总条数
+    .el-pagination__total {
+      color: #6b7280;
+      font-size: 14px;
+      font-weight: 500;
+      margin-right: 12px;
+    }
+
+    // 每页条数选择器
+    .el-pagination__sizes {
+      margin-right: 12px;
+
+      .el-select {
+        .el-input__wrapper {
+          border-radius: 8px;
+          border: 1px solid #e5e7eb;
+          background: #ffffff;
+          box-shadow: none;
+
+          &:hover {
+            border-color: #a78bfa;
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
+          }
+
+          &.is-focus {
+            border-color: #a78bfa;
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+          }
+        }
+
+        .el-input__inner {
+          color: #374151;
+          font-weight: 500;
+        }
+      }
+    }
+
+    // 上一页/下一页按钮
+    .btn-prev,
+    .btn-next {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      color: #6b7280;
+      transition: all 0.3s ease;
+
+      &:hover:not(:disabled) {
+        background: #f5f3ff;
+        border-color: #a78bfa;
+        color: #8b5cf6;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(167, 139, 250, 0.2);
+      }
+
+      &:disabled {
+        background: #f5f5f5;
+        border-color: #e0e0e0;
+        color: #c0c0c0;
+      }
+
+      .el-icon {
+        font-size: 14px;
+        font-weight: bold;
+      }
+    }
+
+    // 页码按钮
+    .el-pager {
+      display: flex;
+      gap: 8px;
+
+      li {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 8px;
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        color: #6b7280;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover:not(.is-active) {
+          background: #f5f3ff;
+          border-color: #a78bfa;
+          color: #8b5cf6;
+          transform: translateY(-1px);
+        }
+
+        &.is-active {
+          background: #f5f3ff;
+          border-color: #a78bfa;
+          color: #8b5cf6;
+          box-shadow: 0 2px 8px rgba(167, 139, 250, 0.2);
+        }
+
+        &.is-active:hover {
+          background: #ede9fe;
+          border-color: #8b5cf6;
+        }
+      }
+    }
+
+    // 跳转输入框
+    .el-pagination__jump {
+      color: #6b7280;
+      font-weight: 500;
+      margin-left: 12px;
+
+      .el-input {
+        width: 50px;
+        margin: 0 4px;
+
+        .el-input__wrapper {
+          border-radius: 8px;
+          border: 1px solid #e5e7eb;
+          background: #ffffff;
+          box-shadow: none;
+
+          &:hover {
+            border-color: #a78bfa;
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
+          }
+
+          &.is-focus {
+            border-color: #a78bfa;
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+          }
+        }
+
+        .el-input__inner {
+          color: #374151;
+          font-weight: 500;
+          text-align: center;
+        }
+      }
     }
   }
 }
