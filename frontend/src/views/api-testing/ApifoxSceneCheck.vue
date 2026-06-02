@@ -1,71 +1,27 @@
 <template>
   <div class="page-container">
-    <!-- 页面标题 -->
+    <!-- 配置面板 - 参考 InterfaceList.vue 顶部样式 -->
     <div class="page-header">
-      <div class="header-left">
-        <h2 class="page-title">
-          <el-icon :size="26"><DataAnalysis /></el-icon>
-          Apifox 场景检查
-        </h2>
-        <p class="page-subtitle">检查 Apifox 自动化测试场景质量，生成详细检查报告</p>
+      <div class="filter-section">
+        <el-input v-model="config.project_id" placeholder="Apifox 项目 ID" clearable style="width: 200px;" />
+        <el-input v-model="config.environment_id" placeholder="Apifox 环境 ID" clearable style="width: 200px;" />
+        <el-input
+          v-model="config.access_token"
+          placeholder="请输入 Apifox Access Token"
+          show-password
+          clearable
+          style="width: 300px;"
+        />
       </div>
-      <div class="header-right">
-        <el-button
-          type="primary"
-          size="large"
-          class="generate-btn"
-          @click="generateReport"
-          :loading="generating"
-          :disabled="generating"
-        >
-          <el-icon><VideoPlay /></el-icon>
+      <div class="header-actions">
+        <el-button @click="rulesDrawerVisible = true">
+          <el-icon style="margin-right: 4px;"><List /></el-icon>
+          规则查看
+        </el-button>
+        <el-button type="primary" @click="generateReport" :loading="generating" :disabled="generating">
+          <el-icon style="margin-right: 4px;"><VideoPlay /></el-icon>
           {{ generating ? '生成中...' : '开始检查' }}
         </el-button>
-      </div>
-    </div>
-
-    <!-- 配置面板 -->
-    <div class="card-container config-card">
-      <div class="card-header">
-        <span class="card-title">
-          <el-icon :size="18"><Setting /></el-icon>
-          检查配置
-        </span>
-        <el-button
-          type="primary"
-          size="small"
-          @click="saveConfig"
-          :loading="savingConfig"
-        >
-          <el-icon><Check /></el-icon>
-          保存配置
-        </el-button>
-      </div>
-      <div class="card-body">
-        <el-form :model="config" label-width="110px" label-position="left">
-          <el-row :gutter="24">
-            <el-col :span="8">
-              <el-form-item label="Project ID">
-                <el-input v-model="config.project_id" placeholder="Apifox 项目 ID" clearable />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="Environment ID">
-                <el-input v-model="config.environment_id" placeholder="Apifox 环境 ID" clearable />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="Access Token">
-                <el-input
-                  v-model="config.access_token"
-                  placeholder="首次使用请先输入完整 Token 并保存配置"
-                  show-password
-                  clearable
-                />
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form>
       </div>
     </div>
 
@@ -97,43 +53,32 @@
       </div>
     </div>
 
-    <!-- 检查规则说明 -->
-    <div class="card-container rules-card">
-      <div class="card-header">
-        <span class="card-title">
-          <el-icon :size="18"><List /></el-icon>
-          检查规则（7条）
-        </span>
-        <span class="card-subtitle">基于以下规则对场景进行质量评估</span>
-      </div>
-      <div class="card-body no-padding">
+    <!-- 规则查看抽屉 -->
+    <el-drawer
+      v-model="rulesDrawerVisible"
+      title="检查规则说明"
+      direction="rtl"
+      size="950px"
+      :close-on-press-escape="true"
+      :destroy-on-close="true"
+    >
+      <div class="rules-drawer-content">
+        <p class="rules-intro">基于以下规则对场景进行质量评估</p>
         <el-table class="check-rules-table" :data="checkRules" stripe :header-cell-style="{ background: '#fafbff', color: '#5a32a3', fontWeight: 600, fontSize: '13px' }">
           <el-table-column prop="index" label="序号" width="70" align="center" />
-          <el-table-column prop="name" label="规则名称" min-width="200" />
-          <el-table-column prop="severity" label="严重程度" width="110" align="center">
+          <el-table-column prop="name" label="规则名称" min-width="180" />
+          <el-table-column prop="severity" label="严重程度" width="100" align="center">
             <template #default="{ row }">
               <el-tag :type="row.severityType" size="small" effect="dark" round>{{ row.severity }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="desc" label="规则说明" min-width="320" show-overflow-tooltip />
+          <el-table-column prop="desc" label="规则说明" min-width="280" show-overflow-tooltip />
         </el-table>
       </div>
-    </div>
+    </el-drawer>
 
     <!-- 历史报告 -->
     <div class="card-container reports-card">
-      <div class="card-header">
-        <span class="card-title">
-          <el-icon :size="18"><FolderOpened /></el-icon>
-          历史报告 ({{ reports.length }})
-        </span>
-        <div class="header-actions">
-          <el-button size="small" @click="loadReports" :loading="loadingReports" text>
-            <el-icon><Refresh /></el-icon>
-            刷新列表
-          </el-button>
-        </div>
-      </div>
       <div class="card-body no-padding">
         <el-table
           :data="reports"
@@ -233,6 +178,9 @@ const reportIframeUrl = ref('')
 const currentReportName = ref('')
 const reportLoading = ref(true)
 
+// 规则查看抽屉
+const rulesDrawerVisible = ref(false)
+
 // 检查规则
 const checkRules = [
   { index: 1, name: '场景运行通过', severity: '🔴 高', severityType: 'danger', desc: '检查场景最近一次运行是否通过' },
@@ -279,16 +227,24 @@ const saveConfig = async () => {
 const generateReport = async () => {
   // 检查必要参数
   if (!config.project_id || !config.environment_id || !config.access_token) {
-    ElMessage.warning('请填写完整的检查配置（Project ID、Environment ID、Access Token）')
+    ElMessage.warning('请填写完整的检查配置（项目ID、环境ID、令牌）')
     return
   }
 
   generating.value = true
-  progressText.value = '正在启动检查任务...'
+  progressText.value = '正在保存配置并启动检查任务...'
   taskResult.value = ''
   taskError.value = ''
 
   try {
+    // 先保存配置
+    await api.post('/api-testing/apifox-check/config/', {
+      project_id: config.project_id,
+      environment_id: config.environment_id,
+      access_token: config.access_token,
+    })
+
+    // 再启动检查任务
     const res = await api.post('/api-testing/apifox-check/generate/', {
       project_id: config.project_id,
       environment_id: config.environment_id,
@@ -414,74 +370,46 @@ onMounted(() => {
   gap: 20px;
 }
 
-// ========== 页面标题 ==========
+// ========== 页面标题栏（参考 InterfaceList.vue 样式） ==========
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 28px;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%);
+  background: #ffffff;
+  border: 1px solid rgba(147, 112, 219, 0.12);
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.1);
-  border: 1px solid rgba(147, 112, 219, 0.1);
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
+  padding: 20px 24px;
 
-  .header-left {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .page-title {
-    font-size: 24px;
-    font-weight: 700;
-    margin: 0;
+  .filter-section {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    line-height: 1.2;
 
-    .el-icon {
-      background: none;
-      -webkit-text-fill-color: #7b42f6;
+    :deep(.el-input__wrapper) {
+      border-radius: 8px;
+      box-shadow: 0 0 0 1px rgba(147, 112, 219, 0.2) inset;
+      background: #ffffff !important;
+
+      &:hover {
+        box-shadow: 0 0 0 1px #7b42f6 inset;
+      }
+
+      &.is-focus {
+        box-shadow: 0 0 0 1px #7b42f6 inset;
+      }
+    }
+
+    :deep(.el-input__inner) {
+      color: #5a32a3;
+      font-weight: 500;
     }
   }
 
-  .page-subtitle {
-    color: #6d5d8f;
-    font-size: 14px;
-    opacity: 0.9;
-    margin: 0;
-    padding-left: 38px;
-  }
-
-  .header-right {
-    flex-shrink: 0;
-  }
-
-  .generate-btn {
-    height: 44px;
-    padding: 0 28px;
-    font-size: 15px;
-    font-weight: 600;
-    border-radius: 10px;
-    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
-    border-color: transparent;
-    box-shadow: 0 4px 14px rgba(123, 66, 246, 0.35);
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: linear-gradient(135deg, #6b32e6 0%, #4a2393 100%);
-      box-shadow: 0 6px 20px rgba(123, 66, 246, 0.45);
-      transform: translateY(-1px);
-    }
-
-    &:active {
-      transform: translateY(0);
-    }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 }
 
@@ -662,6 +590,25 @@ onMounted(() => {
   }
 }
 
+// 规则查看按钮样式（与开始检查按钮类似，但使用浅色主题）
+:deep(.el-button:not(.el-button--primary)) {
+  background: linear-gradient(135deg, #f3f0ff 0%, #ede9fe 100%);
+  border-color: rgba(123, 66, 246, 0.3);
+  color: #7b42f6;
+  box-shadow: 0 2px 8px rgba(123, 66, 246, 0.15);
+
+  &:hover {
+    background: linear-gradient(135deg, #ede9fe 0%, #e4dcfe 100%);
+    border-color: rgba(123, 66, 246, 0.5);
+    color: #5a32a3;
+    box-shadow: 0 4px 14px rgba(123, 66, 246, 0.25);
+  }
+
+  .el-icon {
+    color: #7b42f6;
+  }
+}
+
 :deep(.el-progress-bar__outer) {
   background-color: #ede9fe;
   border-radius: 10px;
@@ -735,6 +682,28 @@ onMounted(() => {
   height: calc(100vh - 70px);
   border: none;
   border-radius: 0 0 8px 8px;
+}
+
+// ========== 规则抽屉内容 ==========
+.rules-drawer-content {
+  padding: 20px;
+  overflow-x: hidden;
+
+  .rules-intro {
+    color: #6d5d8f;
+    font-size: 14px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(147, 112, 219, 0.1);
+  }
+
+  :deep(.el-table) {
+    overflow-x: hidden;
+
+    .el-table__body-wrapper {
+      overflow-x: hidden !important;
+    }
+  }
 }
 
 // ========== 响应式 ==========
