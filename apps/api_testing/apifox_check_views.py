@@ -21,13 +21,9 @@ from rest_framework import status
 CONFIG_FILE = os.path.join(settings.BASE_DIR, 'data', 'apifox_check_config.json')
 REPORTS_DIR = os.path.join(settings.MEDIA_ROOT, 'apifox-check-reports')
 
-# apifox-check CLI 所在 Python 路径（根据操作系统自动选择）
-import platform
-if platform.system() == 'Windows':
-    PYTHON_EXE = 'python'
-else:
-    # macOS/Linux 使用系统默认的 python3
-    PYTHON_EXE = 'python3'
+# apifox-check CLI 所在 Python 路径（使用当前运行 Django 的 Python，确保依赖一致）
+import sys
+PYTHON_EXE = sys.executable
 
 # 技能脚本目录（相对于项目根目录，跨平台通用）
 SKILL_SCRIPTS_DIR = os.path.join(settings.BASE_DIR, 'skills', 'apifox-scene-check', 'scripts')
@@ -54,12 +50,48 @@ def _load_config():
     _ensure_dirs()
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            config = json.load(f)
+        # 确保 id_field_exemptions 字段存在，并迁移旧格式
+        if 'id_field_exemptions' not in config:
+            config['id_field_exemptions'] = []
+        else:
+            config['id_field_exemptions'] = _migrate_exemptions(config['id_field_exemptions'])
+        return config
     return {
         'project_id': '7366718',
         'environment_id': '39566850',
         'access_token': '',
+        'id_field_exemptions': [],
     }
+
+
+def _migrate_exemptions(exemptions):
+    """将旧格式的字符串列表迁移为新格式的对象列表。
+    旧格式: ["order_id", "user_id"]
+    新格式: [{"field":"order_id","reason":"","added_by":"","added_at":"","enabled":true}, ...]
+    """
+    if not exemptions:
+        return []
+    migrated = []
+    for item in exemptions:
+        if isinstance(item, str):
+            # 旧格式：纯字符串
+            migrated.append({
+                'field': item.strip().lower(),
+                'reason': '',
+                'added_by': '',
+                'added_at': '',
+                'enabled': True,
+            })
+        elif isinstance(item, dict):
+            # 确保必备字段
+            item.setdefault('field', '')
+            item.setdefault('reason', '')
+            item.setdefault('added_by', '')
+            item.setdefault('added_at', '')
+            item.setdefault('enabled', True)
+            migrated.append(item)
+    return migrated
 
 
 def _save_config(config_data):
@@ -81,18 +113,24 @@ def _extract_cli_error(stderr):
     return lines[-1][:400]
 
 
-def _run_apifox_check(project_id, environment_id, access_token, output_path):
+def _run_apifox_check(project_id, environment_id, access_token, output_path, id_field_exemptions=None):
     """运行 apifox-check CLI 生成原始报告"""
     # 构建 Python 命令，添加第三方包路径
     python_cmd = f'"{PYTHON_EXE}"'
+
+    # 构建 --id-exemptions 参数
+    exemptions_arg = ''
+    if id_field_exemptions:
+        exemptions_str = ','.join(id_field_exemptions)
+        exemptions_arg = f", '--id-exemptions', '{exemptions_str}'"
     
     # 检查第三方包目录是否存在
     if os.path.exists(APIFOX_CHECK_DIR):
         # 使用第三方目录中的 apifox_check
-        python_cmd += f' -c "import sys; sys.path.insert(0, \'{THIRD_PARTY_DIR}\'); from apifox_check.cli import main; import sys; sys.argv = [\'apifox-check\', \'--project-id\', \'{project_id}\', \'--environment-id\', \'{environment_id}\', \'--access-token\', \'{access_token}\', \'--output\', r\'{output_path}\']; main(); print(\'DONE\')"'
+        python_cmd += f' -c "import sys; sys.path.insert(0, \'{THIRD_PARTY_DIR}\'); from apifox_check.cli import main; import sys; sys.argv = [\'apifox-check\', \'--project-id\', \'{project_id}\', \'--environment-id\', \'{environment_id}\', \'--access-token\', \'{access_token}\'{exemptions_arg}, \'--output\', r\'{output_path}\']; main(); print(\'DONE\')"'
     else:
         # 尝试从已安装的包中导入
-        python_cmd += f' -c "from apifox_check.cli import main; import sys; sys.argv = [\'apifox-check\', \'--project-id\', \'{project_id}\', \'--environment-id\', \'{environment_id}\', \'--access-token\', \'{access_token}\', \'--output\', r\'{output_path}\']; main(); print(\'DONE\')"'
+        python_cmd += f' -c "from apifox_check.cli import main; import sys; sys.argv = [\'apifox-check\', \'--project-id\', \'{project_id}\', \'--environment-id\', \'{environment_id}\', \'--access-token\', \'{access_token}\'{exemptions_arg}, \'--output\', r\'{output_path}\']; main(); print(\'DONE\')"'
     
     result = subprocess.run(python_cmd, shell=True, capture_output=True, text=True, timeout=300)
     success = result.returncode == 0 and 'DONE' in result.stdout
@@ -554,11 +592,14 @@ def apifox_check_config(request):
         # 返回时隐藏 access_token 的部分内容
         token = config.get('access_token', '')
         masked_token = token[:8] + '****' + token[-4:] if len(token) > 12 else token
+        exemption_data = config.get('id_field_exemptions', [])
         return Response({
             'project_id': config.get('project_id', ''),
             'environment_id': config.get('environment_id', ''),
             'access_token': masked_token,
             'has_token': bool(token),
+            'id_field_exemptions': exemption_data,
+            'id_field_exemptions_enabled': [e['field'] for e in exemption_data if e.get('enabled')],
         })
     
     elif request.method == 'POST':
@@ -576,9 +617,158 @@ def apifox_check_config(request):
                     'error': 'Access Token 不能为脱敏值，请输入完整的 Token',
                     'success': False
                 }, status=status.HTTP_400_BAD_REQUEST)
+            # 校验 token 格式：Apifox Token 通常为 APS-xxx 或长字符串，拒绝明显无效的值
+            if token.endswith('.html') or token.endswith('.json'):
+                return Response({
+                    'error': 'Access Token 格式无效（看起来是文件名），请输入正确的 Apifox Access Token',
+                    'success': False
+                }, status=status.HTTP_400_BAD_REQUEST)
+            if len(token) < 10:
+                return Response({
+                    'error': 'Access Token 长度过短，请输入完整的 Apifox Access Token',
+                    'success': False
+                }, status=status.HTTP_400_BAD_REQUEST)
             config['access_token'] = token
+        # 允许通过 POST 保存豁免列表（批量替换）- 支持新旧格式
+        if 'id_field_exemptions' in data:
+            config['id_field_exemptions'] = _migrate_exemptions(data['id_field_exemptions'])
         _save_config(config)
         return Response({'message': '配置已保存', 'success': True})
+
+
+# Apifox 内置默认豁免字段（不可删除）
+_BUILTIN_EXEMPTIONS = {"scene_id", "template_id", "embd_id", "parser_id", "parent_id", "business_id", "category_id", "relation_template_id"}
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def apifox_check_exemptions(request):
+    """管理 ID 字段豁免列表"""
+    config = _load_config()
+    exemptions = config.get('id_field_exemptions', [])
+
+    if request.method == 'GET':
+        return Response({
+            'builtin': sorted(list(_BUILTIN_EXEMPTIONS)),
+            'user_defined': exemptions,
+            'all': sorted(list(_BUILTIN_EXEMPTIONS) + [e['field'] for e in exemptions if e.get('enabled')]),
+            'success': True,
+        })
+
+    if request.method == 'POST':
+        action = request.data.get('action', '')
+        field = (request.data.get('field') or '').strip().lower()
+
+        if not field and action not in ('delete',):
+            return Response({
+                'error': '请提供字段名(field)',
+                'success': False
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 禁止操作内置豁免字段
+        if field in _BUILTIN_EXEMPTIONS:
+            return Response({
+                'error': f'「{field}」是内置豁免字段，不可操作',
+                'success': False
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        username = request.user.username if request.user.is_authenticated else 'unknown'
+        now = datetime.now().isoformat()
+
+        if action == 'add':
+            # 检查是否已存在
+            existing = next((e for e in exemptions if e['field'] == field), None)
+            if existing:
+                return Response({
+                    'error': f'豁免字段「{field}」已存在',
+                    'success': False
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            reason = (request.data.get('reason') or '').strip()
+            new_item = {
+                'field': field,
+                'reason': reason,
+                'added_by': username,
+                'added_at': now,
+                'enabled': True,
+            }
+            exemptions.append(new_item)
+            config['id_field_exemptions'] = exemptions
+            _save_config(config)
+            return Response({
+                'message': f'已添加豁免字段「{field}」',
+                'item': new_item,
+                'user_defined': exemptions,
+                'success': True,
+            })
+
+        elif action == 'update_reason':
+            existing = next((e for e in exemptions if e['field'] == field), None)
+            if not existing:
+                return Response({
+                    'error': f'豁免字段「{field}」不存在',
+                    'success': False
+                }, status=status.HTTP_400_BAD_REQUEST)
+            existing['reason'] = (request.data.get('reason') or '').strip()
+            config['id_field_exemptions'] = exemptions
+            _save_config(config)
+            return Response({
+                'message': f'已更新豁免字段「{field}」的理由',
+                'item': existing,
+                'user_defined': exemptions,
+                'success': True,
+            })
+
+        elif action == 'toggle':
+            existing = next((e for e in exemptions if e['field'] == field), None)
+            if not existing:
+                return Response({
+                    'error': f'豁免字段「{field}」不存在',
+                    'success': False
+                }, status=status.HTTP_400_BAD_REQUEST)
+            existing['enabled'] = not existing.get('enabled', True)
+            config['id_field_exemptions'] = exemptions
+            _save_config(config)
+            new_status = '启用' if existing['enabled'] else '停用'
+            return Response({
+                'message': f'豁免字段「{field}」已{new_status}',
+                'item': existing,
+                'user_defined': exemptions,
+                'success': True,
+            })
+
+        elif action == 'delete':
+            # 支持按 field 删除或按 index 删除
+            index = request.data.get('index')
+            if index is not None and isinstance(index, int) and 0 <= index < len(exemptions):
+                removed = exemptions.pop(index)
+                config['id_field_exemptions'] = exemptions
+                _save_config(config)
+                return Response({
+                    'message': f'已删除豁免字段「{removed["field"]}」',
+                    'user_defined': exemptions,
+                    'success': True,
+                })
+            elif field:
+                existing = next((e for e in exemptions if e['field'] == field), None)
+                if existing:
+                    exemptions.remove(existing)
+                    config['id_field_exemptions'] = exemptions
+                    _save_config(config)
+                    return Response({
+                        'message': f'已删除豁免字段「{field}」',
+                        'user_defined': exemptions,
+                        'success': True,
+                    })
+            return Response({
+                'error': f'豁免字段不存在',
+                'success': False
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'error': f'不支持的操作: {action}',
+            'success': False
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
@@ -605,6 +795,13 @@ def apifox_check_generate(request):
             'error': '缺少必要参数：project_id, environment_id, access_token',
             'success': False
         }, status=status.HTTP_400_BAD_REQUEST)
+
+    # 校验 access_token 不是文件名等无效值
+    if access_token.endswith('.html') or access_token.endswith('.json'):
+        return Response({
+            'error': '配置中的 Access Token 无效（可能被错误覆盖），请在「检查配置」中重新填写正确的 Apifox Access Token',
+            'success': False
+        }, status=status.HTTP_400_BAD_REQUEST)
     
     # 确保目录存在
     _ensure_dirs()
@@ -617,6 +814,11 @@ def apifox_check_generate(request):
     
     executed_by = request.user.username if request.user.is_authenticated else 'unknown'
 
+    # 获取用户自定义的豁免字段（仅启用状态的）
+    all_exemptions = config.get('id_field_exemptions', [])
+    id_field_exemptions = [e['field'] for e in all_exemptions if e.get('enabled', True)]
+    # 内置豁免已在 rules.py 中默认包含，仅传递用户自定义项即可
+    
     _task_status[task_id] = {
         'status': 'running',
         'progress': '正在生成原始报告...',
@@ -633,15 +835,17 @@ def apifox_check_generate(request):
             # Step 1: 生成原始报告
             _task_status[task_id]['progress'] = '正在从 Apifox 获取场景数据...'
             success, stdout, stderr = _run_apifox_check(
-                project_id, environment_id, access_token, report_path
+                project_id, environment_id, access_token, report_path, id_field_exemptions
             )
             if not success:
                 _task_status[task_id]['status'] = 'failed'
-                _task_status[task_id]['error'] = f'原始报告生成失败: {stderr[:500]}'
+                error_detail = stderr[:500] if stderr else '原始报告生成失败（无详细错误）'
+                _task_status[task_id]['error'] = f'原始报告生成失败: {error_detail}'
                 _save_report_meta(report_filename, {
                     'executed_by': executed_by,
                     'created_at': _task_status[task_id]['created_at'],
                     'status': 'failed',
+                    'error': error_detail,
                 })
                 return
             
@@ -650,11 +854,13 @@ def apifox_check_generate(request):
             success, stdout, stderr = _run_apply_exclusions(report_path)
             if not success:
                 _task_status[task_id]['status'] = 'failed'
-                _task_status[task_id]['error'] = f'后处理失败: {stderr[:500]}'
+                error_detail = stderr[:500] if stderr else '后处理失败（无详细错误）'
+                _task_status[task_id]['error'] = f'后处理失败: {error_detail}'
                 _save_report_meta(report_filename, {
                     'executed_by': executed_by,
                     'created_at': _task_status[task_id]['created_at'],
                     'status': 'failed',
+                    'error': error_detail,
                 })
                 return
 
@@ -688,14 +894,17 @@ def apifox_check_generate(request):
                 'executed_by': executed_by,
                 'created_at': _task_status[task_id]['created_at'],
                 'status': 'failed',
+                'error': '报告生成超时（超过300秒）',
             })
         except Exception as e:
             _task_status[task_id]['status'] = 'failed'
-            _task_status[task_id]['error'] = str(e)[:500]
+            error_msg = str(e)[:500]
+            _task_status[task_id]['error'] = error_msg
             _save_report_meta(report_filename, {
                 'executed_by': executed_by,
                 'created_at': _task_status[task_id]['created_at'],
                 'status': 'failed',
+                'error': error_msg,
             })
     
     thread = threading.Thread(target=generate_task, daemon=True)

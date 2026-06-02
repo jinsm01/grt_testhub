@@ -12,6 +12,7 @@ from .checker import init_user_config, load_config, run_checks
 from .fetcher import fetch_all_scenarios, read_token_from_config
 from .models import ReportData
 from .reporter import generate_html_report, write_report
+from .rules import set_id_field_exemptions
 
 
 def parse_args():
@@ -27,6 +28,7 @@ def parse_args():
     parser.add_argument("--format", choices=["html", "json", "text"], default="html", help="输出格式(默认: html)")
     parser.add_argument("--rules", type=str, help="仅运行指定规则ID(逗号分隔, 如: env-switching,assertions-after-request)")
     parser.add_argument("--exclude", type=str, help="排除指定规则ID(逗号分隔, 如: folder-structure)")
+    parser.add_argument("--id-exemptions", type=str, help="ID字段豁免列表(逗号分隔, 如: scene_id,template_id)")
     parser.add_argument("--verbose", action="store_true", help="详细输出进度信息")
     parser.add_argument("--list-rules", action="store_true", help="列出所有可用规则并退出")
     parser.add_argument("--init-config", action="store_true", help="生成默认规则配置文件到~/.apifox-check/rules.yaml")
@@ -73,6 +75,15 @@ async def main_async():
     # Parse rule filters
     rule_ids = args.rules.split(",") if args.rules else None
     exclude_ids = args.exclude.split(",") if args.exclude else None
+
+    # Apply ID field exemptions
+    if args.id_exemptions:
+        extra_exemptions = [x.strip() for x in args.id_exemptions.split(",") if x.strip()]
+        if extra_exemptions and args.verbose:
+            print(f"应用 ID 字段豁免: {extra_exemptions}")
+    else:
+        extra_exemptions = None
+    set_id_field_exemptions(extra_exemptions)
 
     # Step 1: Fetch data
     if args.verbose:

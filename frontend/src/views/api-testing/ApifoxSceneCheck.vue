@@ -120,6 +120,129 @@
       </div>
     </div>
 
+    <!-- ID字段豁免列表 -->
+    <div class="card-container exemptions-card">
+      <div class="card-header">
+        <span class="card-title">
+          <el-icon :size="18"><CircleCheck /></el-icon>
+          ID字段豁免列表
+        </span>
+        <div class="header-actions">
+          <el-button type="primary" size="small" @click="openAddExemptionDialog">
+            <el-icon><Plus /></el-icon>
+            添加豁免
+          </el-button>
+        </div>
+      </div>
+      <div class="card-body no-padding">
+        <el-table
+          :data="exemptionTableData"
+          v-loading="exemptionLoading"
+          empty-text="暂无豁免字段，点击「添加豁免」创建"
+          stripe
+          :header-cell-style="{ background: '#fafbff', color: '#5a32a3', fontWeight: 600, fontSize: '13px' }"
+        >
+          <el-table-column label="豁免ID字段" min-width="180">
+            <template #default="{ row }">
+              <span class="exemption-field-cell">
+                <el-tag
+                  :type="row._builtin ? 'info' : ''"
+                  size="small"
+                  :class="row._builtin ? 'builtin-tag' : 'user-tag'"
+                  disable-transitions
+                >{{ row.field }}</el-tag>
+                <el-tag v-if="row._builtin" type="info" size="small" effect="plain" class="ml-2">内置</el-tag>
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="豁免理由" min-width="200" show-overflow-tooltip>
+            <template #default="{ row }">
+              <span v-if="row.reason" class="reason-text">{{ row.reason }}</span>
+              <span v-else class="reason-placeholder">-</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="添加人" width="110" align="center">
+            <template #default="{ row }">
+              {{ row.added_by || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="添加时间" width="170" align="center">
+            <template #default="{ row }">
+              {{ row._builtin ? '-' : (formatTime(row.added_at) || '-') }}
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-switch
+                v-if="!row._builtin"
+                v-model="row.enabled"
+                size="small"
+                @change="toggleExemption(row)"
+                :loading="row._toggling"
+              />
+              <el-tag v-else type="success" size="small" effect="dark">启用</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="180" align="center" fixed="right">
+            <template #default="{ row }">
+              <template v-if="!row._builtin">
+                <el-button class="action-btn edit-btn" size="small" @click="openEditReasonDialog(row)">
+                  <el-icon><Edit /></el-icon>
+                  <span>编辑</span>
+                </el-button>
+                <el-button class="action-btn delete-btn" size="small" @click="deleteExemption(row)">
+                  <el-icon><Delete /></el-icon>
+                  <span>删除</span>
+                </el-button>
+              </template>
+              <span v-else class="builtin-hint">系统管理</span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </div>
+
+    <!-- 添加/编辑豁免弹窗 -->
+    <el-dialog
+      v-model="exemptionDialogVisible"
+      :title="editingExemption ? '编辑豁免理由' : '添加豁免字段'"
+      width="480px"
+      :close-on-click-modal="false"
+      destroy-on-close
+    >
+      <el-form :model="exemptionForm" label-width="90px" label-position="left">
+        <el-form-item label="豁免字段名" required>
+          <el-input
+            v-model="exemptionForm.field"
+            placeholder="输入ID字段名，如 order_id"
+            :disabled="!!editingExemption"
+            clearable
+            @keyup.enter="submitExemptionForm"
+          />
+          <div class="form-tip">匹配以 _id 或 Id 结尾的字段名（不区分大小写）</div>
+        </el-form-item>
+        <el-form-item label="豁免理由">
+          <el-input
+            v-model="exemptionForm.reason"
+            type="textarea"
+            :rows="3"
+            placeholder="请说明为什么该字段不需要检查，如：该ID由系统自动生成，非外部传入"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="exemptionDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="submitExemptionForm"
+          :loading="exemptionSubmitting"
+          :disabled="!exemptionForm.field.trim()"
+        >
+          {{ editingExemption ? '保存' : '添加' }}
+        </el-button>
+      </template>
+    </el-dialog>
+
     <!-- 历史报告 -->
     <div class="card-container reports-card">
       <div class="card-header">
@@ -203,9 +326,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { DataAnalysis, Setting, Check, VideoPlay, Refresh, FolderOpened, View, Delete, Loading, List } from '@element-plus/icons-vue'
+import { DataAnalysis, Setting, Check, VideoPlay, Refresh, FolderOpened, View, Delete, Loading, List, CircleCheck, Plus, Edit } from '@element-plus/icons-vue'
 import api from '@/utils/api'
 
 // 配置
@@ -243,6 +366,138 @@ const checkRules = [
   { index: 6, name: '名称参数自动化标识', severity: '🔴 高', severityType: 'danger', desc: 'name/title字段是否含"自动化"标识且为动态值' },
   { index: 7, name: '前置后置目录跳过统计', severity: '⏭️ 跳过', severityType: 'info', desc: '排除规则，不产生违规判定' },
 ]
+
+// ID字段豁免列表
+const builtinExemptions = ref([])
+const userExemptions = ref([])
+const exemptionLoading = ref(false)
+const exemptionTableData = computed(() => {
+  const builtin = builtinExemptions.value.map(f => ({
+    field: f,
+    reason: '系统内置豁免字段',
+    added_by: 'system',
+    added_at: '',
+    enabled: true,
+    _builtin: true,
+  }))
+  const user = userExemptions.value.map(e => ({
+    ...e,
+    _builtin: false,
+  }))
+  return [...builtin, ...user]
+})
+
+// 添加/编辑弹窗
+const exemptionDialogVisible = ref(false)
+const editingExemption = ref(null)
+const exemptionSubmitting = ref(false)
+const exemptionForm = reactive({ field: '', reason: '' })
+
+// 加载豁免列表
+const loadExemptions = async () => {
+  exemptionLoading.value = true
+  try {
+    const res = await api.get('/api-testing/apifox-check/exemptions/')
+    builtinExemptions.value = res.data.builtin || []
+    userExemptions.value = res.data.user_defined || []
+  } catch (e) {
+    console.error('加载豁免列表失败:', e)
+  } finally {
+    exemptionLoading.value = false
+  }
+}
+
+// 打开添加弹窗
+const openAddExemptionDialog = () => {
+  editingExemption.value = null
+  exemptionForm.field = ''
+  exemptionForm.reason = ''
+  exemptionDialogVisible.value = true
+}
+
+// 打开编辑理由弹窗
+const openEditReasonDialog = (row) => {
+  editingExemption.value = row
+  exemptionForm.field = row.field
+  exemptionForm.reason = row.reason || ''
+  exemptionDialogVisible.value = true
+}
+
+// 提交弹窗表单
+const submitExemptionForm = async () => {
+  const field = exemptionForm.field.trim().toLowerCase()
+  if (!field) return
+  exemptionSubmitting.value = true
+  try {
+    if (editingExemption.value) {
+      // 编辑理由
+      const res = await api.post('/api-testing/apifox-check/exemptions/', {
+        action: 'update_reason',
+        field: editingExemption.value.field,
+        reason: exemptionForm.reason.trim(),
+      })
+      // 更新本地数据
+      const idx = userExemptions.value.findIndex(e => e.field === editingExemption.value.field)
+      if (idx >= 0) userExemptions.value[idx] = res.data.item
+      ElMessage.success(res.data.message || '更新成功')
+    } else {
+      // 添加
+      const res = await api.post('/api-testing/apifox-check/exemptions/', {
+        action: 'add',
+        field: field,
+        reason: exemptionForm.reason.trim(),
+      })
+      userExemptions.value = res.data.user_defined || []
+      ElMessage.success(res.data.message || '添加成功')
+    }
+    exemptionDialogVisible.value = false
+  } catch (e) {
+    ElMessage.error(e.response?.data?.error || '操作失败')
+  } finally {
+    exemptionSubmitting.value = false
+  }
+}
+
+// 启停开关
+const toggleExemption = async (row) => {
+  row._toggling = true
+  try {
+    const res = await api.post('/api-testing/apifox-check/exemptions/', {
+      action: 'toggle',
+      field: row.field,
+    })
+    // 更新本地数据
+    const idx = userExemptions.value.findIndex(e => e.field === row.field)
+    if (idx >= 0) userExemptions.value[idx] = res.data.item
+    ElMessage.success(res.data.message)
+  } catch (e) {
+    row.enabled = !row.enabled // 回滚
+    ElMessage.error(e.response?.data?.error || '操作失败')
+  } finally {
+    row._toggling = false
+  }
+}
+
+// 删除豁免
+const deleteExemption = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除豁免字段「${row.field}」吗？删除后将恢复对该字段的检查。`,
+      '确认删除',
+      { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' }
+    )
+    await api.post('/api-testing/apifox-check/exemptions/', {
+      action: 'delete',
+      field: row.field,
+    })
+    userExemptions.value = userExemptions.value.filter(e => e.field !== row.field)
+    ElMessage.success(`已删除豁免字段「${row.field}」`)
+  } catch (e) {
+    if (e !== 'cancel') {
+      ElMessage.error(e.response?.data?.error || '删除失败')
+    }
+  }
+}
 
 // 加载配置
 const loadConfig = async () => {
@@ -400,6 +655,7 @@ const formatTime = (isoStr) => {
 onMounted(() => {
   loadConfig()
   loadReports()
+  loadExemptions()
 })
 </script>
 
@@ -752,5 +1008,107 @@ onMounted(() => {
       }
     }
   }
+}
+
+// ========== 豁免列表 ==========
+.exemptions-card {
+  .card-body {
+    padding: 0;
+  }
+
+  .exemption-field-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .builtin-tag {
+    background: #f0edff;
+    border-color: #d4c9f0;
+    color: #5a32a3;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  .user-tag {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: #1890ff;
+    border-color: #91d5ff;
+    background: #e6f7ff;
+  }
+
+  .ml-2 {
+    margin-left: 6px;
+  }
+
+  .reason-text {
+    color: #555;
+    font-size: 13px;
+  }
+
+  .reason-placeholder {
+    color: #c0c0c0;
+  }
+
+  .builtin-hint {
+    color: #b0a8c4;
+    font-size: 12px;
+  }
+
+  // 操作按钮（与项目管理页统一风格）
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: none;
+    transition: all 0.25s ease;
+
+    .el-icon {
+      font-size: 13px;
+      color: #ffffff;
+    }
+
+    span {
+      color: #ffffff;
+    }
+
+    &:hover {
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  .edit-btn {
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+    box-shadow: 0 2px 8px rgba(123, 66, 246, 0.25);
+
+    &:hover {
+      background: linear-gradient(135deg, #6b32e6 0%, #4a2393 100%);
+      box-shadow: 0 4px 14px rgba(123, 66, 246, 0.35);
+    }
+  }
+
+  .delete-btn {
+    background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%);
+    box-shadow: 0 2px 8px rgba(255, 77, 79, 0.25);
+
+    &:hover {
+      background: linear-gradient(135deg, #e8383a 0%, #b9101a 100%);
+      box-shadow: 0 4px 14px rgba(255, 77, 79, 0.35);
+    }
+  }
+}
+
+.form-tip {
+  font-size: 12px;
+  color: #9a8bbd;
+  margin-top: 4px;
+  line-height: 1.4;
 }
 </style>

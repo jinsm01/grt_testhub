@@ -284,7 +284,32 @@ ID_FIELD_PATTERN = re.compile(
 
 # ID-like field names that are exempt from hardcoded check
 # (e.g. scene_id is a config/classifier field, not a resource ID)
-ID_FIELD_EXEMPTIONS = {"scene_id", "template_id", "embd_id", "parser_id", "parent_id", "business_id", "category_id"}
+_DEFAULT_ID_FIELD_EXEMPTIONS = {"scene_id", "template_id", "embd_id", "parser_id", "parent_id", "business_id", "category_id", "relation_template_id"}
+
+# 运行时豁免列表（默认包含内置豁免项）
+ID_FIELD_EXEMPTIONS = set(_DEFAULT_ID_FIELD_EXEMPTIONS)
+
+
+def get_id_field_exemptions() -> set:
+    """获取当前的 ID 字段豁免列表。"""
+    return set(ID_FIELD_EXEMPTIONS)
+
+
+def set_id_field_exemptions(extra: list[str] | None = None) -> set:
+    """设置运行时额外豁免字段（保留内置默认项 + 合并额外项）。
+    
+    Args:
+        extra: 额外的豁免字段列表，若为 None 则仅使用默认值
+    Returns:
+        合并后的完整豁免集合
+    """
+    global ID_FIELD_EXEMPTIONS
+    ID_FIELD_EXEMPTIONS = set(_DEFAULT_ID_FIELD_EXEMPTIONS)
+    if extra:
+        for item in extra:
+            if item and isinstance(item, str):
+                ID_FIELD_EXEMPTIONS.add(item.strip().lower())
+    return set(ID_FIELD_EXEMPTIONS)
 
 
 def _looks_like_id_field(field_name: str) -> bool:

@@ -18,7 +18,8 @@ from .views_scenario import (
 from .apifox_check_views import (
     apifox_check_config, apifox_check_generate,
     apifox_check_task_status, apifox_check_reports,
-    apifox_check_report_detail, apifox_check_report_delete
+    apifox_check_report_detail, apifox_check_report_delete,
+    apifox_check_exemptions,
 )
 
 router = DefaultRouter()
@@ -57,6 +58,8 @@ urlpatterns = [
     path('api-testing/apifox/import-v2/', apifox_import_v2_execute, name='apifox-import-v2-execute-alt'),
     # Apifox 场景检查 - 配置管理
     path('api-testing/apifox-check/config/', apifox_check_config, name='apifox-check-config'),
+    # Apifox 场景检查 - ID字段豁免管理
+    path('api-testing/apifox-check/exemptions/', apifox_check_exemptions, name='apifox-check-exemptions'),
     # Apifox 场景检查 - 生成报告
     path('api-testing/apifox-check/generate/', apifox_check_generate, name='apifox-check-generate'),
     # Apifox 场景检查 - 任务状态
