@@ -63,8 +63,7 @@
       :destroy-on-close="true"
     >
       <div class="rules-drawer-content">
-        <p class="rules-intro">基于以下规则对场景进行质量评估</p>
-        <el-table class="check-rules-table" :data="checkRules" stripe :header-cell-style="{ background: '#fafbff', color: '#5a32a3', fontWeight: 600, fontSize: '13px' }">
+        <el-table class="check-rules-table" :data="checkRules" :header-cell-style="{ background: '#ffffff', color: '#5a32a3', fontWeight: 600, fontSize: '14px' }">
           <el-table-column prop="index" label="序号" width="70" align="center" />
           <el-table-column prop="name" label="规则名称" min-width="180" />
           <el-table-column prop="severity" label="严重程度" width="100" align="center">
@@ -223,13 +222,13 @@ const rulesDrawerVisible = ref(false)
 
 // 检查规则
 const checkRules = [
-  { index: 1, name: '场景运行通过', severity: '🔴 高', severityType: 'danger', desc: '检查场景最近一次运行是否通过' },
-  { index: 2, name: '单场景步骤数不超过10步', severity: '🟡 中', severityType: 'warning', desc: '不含引用其他场景或分组的步骤' },
-  { index: 3, name: '增删改后查询断言', severity: '🔴 高', severityType: 'danger', desc: 'POST/PUT/DELETE/PATCH后是否有/search查询并断言' },
-  { index: 4, name: 'Id参数不能写死', severity: '🔴 高', severityType: 'danger', desc: '请求body中Id参数是否硬编码' },
-  { index: 5, name: '参数来源校验', severity: '🔴 高', severityType: 'danger', desc: '后续步骤参数是否从前置步骤或变量获取' },
-  { index: 6, name: '名称参数自动化标识', severity: '🔴 高', severityType: 'danger', desc: 'name/title字段是否含"自动化"标识且为动态值' },
-  { index: 7, name: '前置后置目录跳过统计', severity: '⏭️ 跳过', severityType: 'info', desc: '排除规则，不产生违规判定' },
+  { index: 1, name: '场景运行通过', severity: '高', severityType: 'danger', desc: '检查场景最近一次运行是否通过' },
+  { index: 2, name: '单场景步骤数不超过10步', severity: '中', severityType: 'warning', desc: '不含引用其他场景或分组的步骤' },
+  { index: 3, name: '增删改后查询断言', severity: '高', severityType: 'danger', desc: 'POST/PUT/DELETE/PATCH后是否有/Search查询并断言' },
+  { index: 4, name: 'Id参数不能写死', severity: '高', severityType: 'danger', desc: '请求Body中ID参数是否硬编码' }, 
+  { index: 5, name: '参数来源校验', severity: '高', severityType: 'danger', desc: '后续步骤参数是否从前置步骤或变量获取' },
+  { index: 6, name: '名称参数自动化标识', severity: '高', severityType: 'danger', desc: 'Name/Title字段是否含"自动化"标识且为动态值' },
+  { index: 7, name: '前置后置目录跳过统计', severity: '跳过', severityType: 'info', desc: '排除规则，不产生违规判定' },
 ]
 
 // 加载配置
@@ -460,8 +459,8 @@ onMounted(() => {
     }
 
     :deep(.el-input__inner) {
-      color: #5a32a3;
-      font-weight: 500;
+      color: #333333;
+      font-weight: 400;
     }
   }
 
@@ -847,14 +846,6 @@ onMounted(() => {
 .rules-drawer-content {
   padding: 20px;
   overflow-x: hidden;
-
-  .rules-intro {
-    color: #6d5d8f;
-    font-size: 14px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(147, 112, 219, 0.1);
-  }
 
   :deep(.el-table) {
     overflow-x: hidden;
