@@ -135,129 +135,143 @@ def testcase_modules(request):
 @permission_classes([permissions.IsAuthenticated])
 def testcase_statistics(request):
     """获取主线用例统计数据（不按项目权限隔离，展示所有用例）"""
-    # 获取所有用例，不再按项目权限过滤
-    queryset = TestCase.objects.all().select_related('author', 'project')
+    import traceback
+    import logging
+    logger = logging.getLogger(__name__)
     
-    # 按项目统计（展示所有项目）
-    all_projects = Project.objects.all()
-    project_stats = []
-    for project in all_projects:
-        project_cases = queryset.filter(project=project)
-        project_stats.append({
-            'project_id': project.id,
-            'project_name': project.name,
-            'total': project_cases.count(),
-            'draft': project_cases.filter(status='draft').count(),
-            'active': project_cases.filter(status='active').count(),
-            'deprecated': project_cases.filter(status='deprecated').count(),
-            'high_priority': project_cases.filter(priority='high').count() + project_cases.filter(priority='critical').count(),
-        })
-    
-    # 按状态统计
-    status_stats = {
-        'draft': queryset.filter(status='draft').count(),
-        'active': queryset.filter(status='active').count(),
-        'deprecated': queryset.filter(status='deprecated').count(),
-    }
-    
-    # 按优先级统计
-    priority_stats = {
-        'critical': queryset.filter(priority='critical').count(),
-        'high': queryset.filter(priority='high').count(),
-        'medium': queryset.filter(priority='medium').count(),
-        'low': queryset.filter(priority='low').count(),
-    }
-    
-    # 按作者统计（包含优先级细分和积分）
-    # 用例数量统计所有用例，积分只统计审核通过的用例
-    approved_queryset = queryset.filter(review_status='approved')
-    author_stats = []
-    from django.db.models import Count
-    authors = queryset.values('author__username').annotate(count=Count('id')).order_by('-count')[:10]
-    for author in authors:
-        username = author['author__username']
-        author_cases = queryset.filter(author__username=username)
-        # 用例数量（所有用例）
-        critical = author_cases.filter(priority='critical').count()
-        high = author_cases.filter(priority='high').count()
-        medium = author_cases.filter(priority='medium').count()
-        low = author_cases.filter(priority='low').count()
-        # 积分（只统计审核通过的用例）
-        approved_cases = approved_queryset.filter(author__username=username)
-        approved_critical = approved_cases.filter(priority='critical').count()
-        approved_high = approved_cases.filter(priority='high').count()
-        approved_medium = approved_cases.filter(priority='medium').count()
-        approved_low = approved_cases.filter(priority='low').count()
-        score = (approved_critical + approved_high) // 5 + (approved_medium + approved_low) // 10
-        author_stats.append({
-            'username': username,
-            'count': author['count'],
-            'critical': critical,
-            'high': high,
-            'medium': medium,
-            'low': low,
-            'score': score,
-            'all_approved': author_cases.filter(review_status='approved').count() == author_cases.count(),
-        })
-    
-    # 按月份统计（近6个月）
-    from django.utils import timezone
-    from datetime import timedelta
-    monthly_stats = []
-    
-    # 获取活跃作者列表（按贡献量排序取前8个）
-    top_authors = [a['username'] for a in author_stats[:8]] if author_stats else []
-    
-    for i in range(6):
-        month_start = timezone.now() - timedelta(days=30 * i)
-        month_start = month_start.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        if i == 0:
-            month_end = timezone.now()
-        else:
-            month_end = month_start + timedelta(days=30)
+    try:
+        # 获取所有用例，不再按项目权限过滤
+        queryset = TestCase.objects.all().select_related('author', 'project')
+        logger.info(f"Total cases: {queryset.count()}")
         
-        month_cases = queryset.filter(created_at__gte=month_start, created_at__lt=month_end)
+        # 按项目统计（展示所有项目）
+        all_projects = Project.objects.all()
+        project_stats = []
+        for project in all_projects:
+            project_cases = queryset.filter(project=project)
+            project_stats.append({
+                'project_id': project.id,
+                'project_name': project.name,
+                'total': project_cases.count(),
+                'draft': project_cases.filter(status='draft').count(),
+                'active': project_cases.filter(status='active').count(),
+                'deprecated': project_cases.filter(status='deprecated').count(),
+                'high_priority': project_cases.filter(priority='high').count() + project_cases.filter(priority='critical').count(),
+            })
         
-        # 按作者统计该月新增用例（按优先级细分）
+        # 按状态统计
+        status_stats = {
+            'draft': queryset.filter(status='draft').count(),
+            'active': queryset.filter(status='active').count(),
+            'deprecated': queryset.filter(status='deprecated').count(),
+        }
+        
+        # 按优先级统计
+        priority_stats = {
+            'critical': queryset.filter(priority='critical').count(),
+            'high': queryset.filter(priority='high').count(),
+            'medium': queryset.filter(priority='medium').count(),
+            'low': queryset.filter(priority='low').count(),
+        }
+        
+        # 按作者统计（包含优先级细分和积分）
         # 用例数量统计所有用例，积分只统计审核通过的用例
-        author_detail_counts = {}
-        for author in top_authors:
-            author_cases = month_cases.filter(author__username=author)
+        approved_queryset = queryset.filter(review_status='approved')
+        author_stats = []
+        from django.db.models import Count
+        authors = queryset.exclude(author__isnull=True).exclude(author__username__isnull=True).values('author__username').annotate(count=Count('id')).order_by('-count')[:10]
+        for author in authors:
+            username = author['author__username']
+            author_cases = queryset.filter(author__username=username)
             # 用例数量（所有用例）
-            author_detail_counts[author] = {
-                'critical': author_cases.filter(priority='critical').count(),
-                'high': author_cases.filter(priority='high').count(),
-                'medium': author_cases.filter(priority='medium').count(),
-                'low': author_cases.filter(priority='low').count(),
-                'total': author_cases.count(),
-            }
+            critical = author_cases.filter(priority='critical').count()
+            high = author_cases.filter(priority='high').count()
+            medium = author_cases.filter(priority='medium').count()
+            low = author_cases.filter(priority='low').count()
             # 积分（只统计审核通过的用例）
-            approved_cases = month_cases.filter(author__username=author, review_status='approved')
+            approved_cases = approved_queryset.filter(author__username=username)
             approved_critical = approved_cases.filter(priority='critical').count()
             approved_high = approved_cases.filter(priority='high').count()
             approved_medium = approved_cases.filter(priority='medium').count()
             approved_low = approved_cases.filter(priority='low').count()
-            author_detail_counts[author]['score'] = (approved_critical + approved_high) // 5 + (approved_medium + approved_low) // 10
-            # 是否全部审核通过
-            author_detail_counts[author]['all_approved'] = author_cases.filter(review_status='approved').count() == author_cases.count()
+            score = (approved_critical + approved_high) // 5 + (approved_medium + approved_low) // 10
+            author_stats.append({
+                'username': username,
+                'count': author['count'],
+                'critical': critical,
+                'high': high,
+                'medium': medium,
+                'low': low,
+                'score': score,
+                'all_approved': author_cases.filter(review_status='approved').count() == author_cases.count(),
+            })
         
-        monthly_stats.append({
-            'month': month_start.strftime('%Y-%m'),
-            'count': month_cases.count(),
-            'active': month_cases.filter(status='active').count(),
-            'author_detail_counts': author_detail_counts,
+        # 按月份统计（近6个月）
+        monthly_stats = []
+        
+        # 获取活跃作者列表（按贡献量排序取前8个）
+        top_authors = [a['username'] for a in author_stats[:8]] if author_stats else []
+        
+        for i in range(6):
+            month_start = timezone.now() - timezone.timedelta(days=30 * i)
+            month_start = month_start.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            if i == 0:
+                month_end = timezone.now()
+            else:
+                month_end = month_start + timezone.timedelta(days=30)
+            
+            month_cases = queryset.filter(created_at__gte=month_start, created_at__lt=month_end)
+            
+            # 按作者统计该月新增用例（按优先级细分）
+            # 用例数量统计所有用例，积分只统计审核通过的用例
+            author_detail_counts = {}
+            for author in top_authors:
+                author_cases = month_cases.filter(author__username=author)
+                # 用例数量（所有用例）
+                author_detail_counts[author] = {
+                    'critical': author_cases.filter(priority='critical').count(),
+                    'high': author_cases.filter(priority='high').count(),
+                    'medium': author_cases.filter(priority='medium').count(),
+                    'low': author_cases.filter(priority='low').count(),
+                    'total': author_cases.count(),
+                }
+                # 积分（只统计审核通过的用例）
+                approved_cases = month_cases.filter(author__username=author, review_status='approved')
+                approved_critical = approved_cases.filter(priority='critical').count()
+                approved_high = approved_cases.filter(priority='high').count()
+                approved_medium = approved_cases.filter(priority='medium').count()
+                approved_low = approved_cases.filter(priority='low').count()
+                author_detail_counts[author]['score'] = (approved_critical + approved_high) // 5 + (approved_medium + approved_low) // 10
+                # 是否全部审核通过
+                author_detail_counts[author]['all_approved'] = author_cases.filter(review_status='approved').count() == author_cases.count()
+            
+            monthly_stats.append({
+                'month': month_start.strftime('%Y-%m'),
+                'count': month_cases.count(),
+                'active': month_cases.filter(status='active').count(),
+                'author_detail_counts': author_detail_counts,
+            })
+        monthly_stats.reverse()
+        
+        return Response({
+            'total': queryset.count(),
+            'status_stats': status_stats,
+            'priority_stats': priority_stats,
+            'project_stats': project_stats,
+            'author_stats': author_stats,
+            'monthly_stats': monthly_stats,
+            'top_authors': top_authors,
         })
-    monthly_stats.reverse()
-    
-    return Response({
-        'total': queryset.count(),
-        'status_stats': status_stats,
-        'priority_stats': priority_stats,
-        'project_stats': project_stats,
-        'author_stats': author_stats,
-        'monthly_stats': monthly_stats,
-        'top_authors': top_authors,
-    })
+    except Exception as e:
+        import sys
+        import traceback
+        logger.error(f"testcase_statistics error: {type(e).__name__}: {str(e)}")
+        logger.error(traceback.format_exc())
+        return Response({
+            'error': str(e),
+            'type': type(e).__name__,
+            'detail': traceback.format_exception(type(e), e, e.__traceback__),
+        }, status=500)
 
 
 @api_view(['GET'])

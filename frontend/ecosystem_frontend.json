@@ -1,0 +1,14 @@
+{
+  "apps": [{
+    "name": "frontend",
+    "script": "npm",
+    "args": "run dev",
+    "interpreter": "none",
+    "cwd": "/Users/grt/Documents/GitHub/grt_testhub/frontend",
+    "autorestart": true,
+    "watch": false,
+    "exp_backoff_restart_delay": 100,
+    "max_restarts": 10,
+    "min_uptime": "10s"
+  }]
+}

@@ -68,18 +68,15 @@ class RAGService:
         try:
             from apps.requirement_analysis.models import AIModelConfig
 
-            # 构建查询条件
-            query = {'is_active': True}
-            if user:
-                query['created_by'] = user
-
-            # 优先查找 knowledge_base 角色的配置
-            kb_query = query.copy()
-            kb_query['role'] = 'knowledge_base'
+            # 优先查找 knowledge_base 角色的配置（系统级配置，不限制创建者）
+            kb_query = {'is_active': True, 'role': 'knowledge_base'}
             config = AIModelConfig.objects.filter(**kb_query).first()
 
             if not config:
                 # 如果没有 knowledge_base 配置，使用任意一个激活的配置作为 fallback
+                query = {'is_active': True}
+                if user:
+                    query['created_by'] = user
                 config = AIModelConfig.objects.filter(**query).first()
                 if config:
                     logger.warning(f"未找到 knowledge_base 角色的模型配置，使用 {config.role} 角色配置 '{config.name}' 作为替代")

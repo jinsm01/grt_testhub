@@ -1,0 +1,11 @@
+{
+  "apps": [{
+    "name": "backend",
+    "script": "manage.py",
+    "interpreter": "/Users/grt/Documents/GitHub/grt_testhub/venv/bin/python",
+    "args": "runserver 0.0.0.0:8000",
+    "cwd": "/Users/grt/Documents/GitHub/grt_testhub",
+    "autorestart": true,
+    "watch": false
+  }]
+}
