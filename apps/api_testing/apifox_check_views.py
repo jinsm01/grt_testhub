@@ -115,24 +115,33 @@ def _extract_cli_error(stderr):
 
 def _run_apifox_check(project_id, environment_id, access_token, output_path, id_field_exemptions=None):
     """运行 apifox-check CLI 生成原始报告"""
-    # 构建 Python 命令，添加第三方包路径
-    python_cmd = f'"{PYTHON_EXE}"'
+    # 构建命令行参数列表（避免 shell 字符串拼接的转义问题）
+    cmd_args = [
+        PYTHON_EXE,
+        '-c',
+        (
+            'from apifox_check.cli import main; '
+            'import sys; '
+            f'sys.argv = [\'apifox-check\', \'--project-id\', {project_id!r}, \'--environment-id\', {environment_id!r}, \'--access-token\', {access_token!r}'
+            + (f', \'--id-exemptions\', {",".join(id_field_exemptions)!r}' if id_field_exemptions else '')
+            + f', \'--output\', {output_path!r}]; '
+            'main(); '
+            'print(\'DONE\')'
+        ),
+    ]
 
-    # 构建 --id-exemptions 参数
-    exemptions_arg = ''
-    if id_field_exemptions:
-        exemptions_str = ','.join(id_field_exemptions)
-        exemptions_arg = f", '--id-exemptions', '{exemptions_str}'"
-    
-    # 检查第三方包目录是否存在
+    # 通过环境变量设置 PYTHONPATH，避免 Windows 路径反斜杠转义问题
+    env = os.environ.copy()
+    pythonpath_parts = []
     if os.path.exists(APIFOX_CHECK_DIR):
-        # 使用第三方目录中的 apifox_check
-        python_cmd += f' -c "import sys; sys.path.insert(0, \'{THIRD_PARTY_DIR}\'); from apifox_check.cli import main; import sys; sys.argv = [\'apifox-check\', \'--project-id\', \'{project_id}\', \'--environment-id\', \'{environment_id}\', \'--access-token\', \'{access_token}\'{exemptions_arg}, \'--output\', r\'{output_path}\']; main(); print(\'DONE\')"'
-    else:
-        # 尝试从已安装的包中导入
-        python_cmd += f' -c "from apifox_check.cli import main; import sys; sys.argv = [\'apifox-check\', \'--project-id\', \'{project_id}\', \'--environment-id\', \'{environment_id}\', \'--access-token\', \'{access_token}\'{exemptions_arg}, \'--output\', r\'{output_path}\']; main(); print(\'DONE\')"'
-    
-    result = subprocess.run(python_cmd, shell=True, capture_output=True, text=True, timeout=300)
+        pythonpath_parts.append(THIRD_PARTY_DIR)
+    existing_pythonpath = env.get('PYTHONPATH', '')
+    if existing_pythonpath:
+        pythonpath_parts.append(existing_pythonpath)
+    if pythonpath_parts:
+        env['PYTHONPATH'] = os.pathsep.join(pythonpath_parts)
+
+    result = subprocess.run(cmd_args, capture_output=True, text=True, timeout=300, env=env, cwd=settings.BASE_DIR)
     success = result.returncode == 0 and 'DONE' in result.stdout
     if not success:
         error_msg = _extract_cli_error(result.stderr)

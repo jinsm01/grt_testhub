@@ -53,7 +53,7 @@ LOCAL_APPS = [
     'apps.ui_automation.apps.UiAutomationConfig',
     'apps.app_automation.apps.AppAutomationConfig',  # APP自动化测试
     'apps.core',
-    'apps.data_factory',
+    # 'apps.data_factory',  # 依赖 pandas 未安装
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -93,15 +93,8 @@ ASGI_APPLICATION = 'backend.asgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': config('DB_NAME', default='testhub'),
-        'USER': config('DB_USER', default='root'),
-        'PASSWORD': config('DB_PASSWORD', default='root'),
-        'HOST': config('DB_HOST', default='127.0.0.1'),
-        'PORT': config('DB_PORT', default='3306'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 

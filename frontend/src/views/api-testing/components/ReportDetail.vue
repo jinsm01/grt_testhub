@@ -98,7 +98,7 @@
         <!-- 当前创建人详情 -->
         <div v-if="activeCreator" class="creator-detail">
           <!-- 违规规则统计 -->
-          <el-table :data="activeCreator.ruleViolations" class="violation-summary-table">
+          <el-table :data="filteredRuleViolations" class="violation-summary-table">
             <el-table-column label="序号" width="100" align="center">
               <template #default="{ $index }">
                 {{ $index + 1 }}
@@ -290,6 +290,44 @@ const filteredStats = computed(() => {
   }
 })
 
+// 过滤后的规则违规统计（基于筛选后的场景重新计算各规则违规数）
+const filteredRuleViolations = computed(() => {
+  if (!activeCreator.value) return []
+  const rawRules = activeCreator.value.ruleViolations
+  if (!rawRules || rawRules.length === 0) return []
+
+  // 从筛选后的场景中，按去重场景统计每个规则的违规数
+  const ruleCountMap = {}
+  const ruleMetaMap = {} // 保存 ruleName 和 severity
+
+  // 初始化所有规则的元信息和计数
+  rawRules.forEach(r => {
+    ruleCountMap[r.ruleName] = 0
+    ruleMetaMap[r.ruleName] = { severity: r.severity }
+  })
+
+  // 遍历筛选后且违规的场景，按场景去重：同一场景在同一规则下只计1次
+  filteredScenarios.value.forEach(s => {
+    if (s.is_violation && Array.isArray(s.violations)) {
+      // 收集该场景涉及的所有规则名（自动去重，用 Set）
+      const violatedRuleNames = new Set(
+        s.violations.filter(v => v.ruleName && ruleCountMap.hasOwnProperty(v.ruleName)).map(v => v.ruleName)
+      )
+      // 每个规则 +1（每个场景每规则最多贡献1次计数）
+      violatedRuleNames.forEach(rn => {
+        ruleCountMap[rn]++
+      })
+    }
+  })
+
+  // 构建结果数组
+  return rawRules.map(r => ({
+    ruleName: r.ruleName,
+    count: ruleCountMap[r.ruleName],
+    severity: ruleMetaMap[r.ruleName].severity
+  }))
+})
+
 // 处理排序
 const handleSort = ({ prop, order }) => {
   sortConfig.value = { prop, order }
@@ -343,10 +381,11 @@ const getStatusClass = (row) => {
 // 打开违规明细抽屉
 const openViolationDrawer = (ruleRow) => {
   currentRuleName.value = ruleRow.ruleName
-  // 筛选当前规则的所有违规场景
-  currentRuleScenarios.value = activeCreator.value?.scenarios?.filter(s => 
-    s.ruleName === ruleRow.ruleName && s.is_violation
-  ) || []
+  // 从当前筛选后的场景中，找出 violations 数组中包含该规则的场景
+  currentRuleScenarios.value = filteredScenarios.value.filter(s => {
+    if (!s.is_violation || !Array.isArray(s.violations)) return false
+    return s.violations.some(v => v.ruleName === ruleRow.ruleName)
+  })
   violationDrawerVisible.value = true
 }
 

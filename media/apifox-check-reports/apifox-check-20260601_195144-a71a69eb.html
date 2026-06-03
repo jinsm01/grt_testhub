@@ -6111,6 +6111,96 @@ function updateStats(idx, monthVal, statusVal) {
             rateTextEl.style.display = 'none';
         }
     }
+    // Update rule violation table based on visible detail rows
+    updateRuleTableFromRows(idx, monthVal, statusVal);
+}
+
+function updateRuleTableFromRows(idx, monthVal, statusVal) {
+    var table = document.getElementById('detail-table-' + idx);
+    var statsDiv = document.getElementById('creator-' + idx);
+    if (!table || !statsDiv) return;
+    var rows = table.querySelectorAll('tr.detail-row');
+    // Count unique scenarios per rule from visible rows
+    var ruleScenarioCounts = {};
+    var seen = {};
+    for (var i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        // Skip hidden rows (from month/status filter)
+        if (r.classList.contains('detail-row-hidden')) continue;
+        // Skip excluded/fixture rows (same as applyFilters logic)
+        if (r.getAttribute('data-exclude') === 'true' || r.getAttribute('data-fixture-skip') === 'true') continue;
+        // Also apply month/status filter on data attributes as a safety net
+        var m = r.getAttribute('data-month') || '';
+        var s = r.getAttribute('data-runstatus') || '';
+        if (monthVal !== 'all' && m !== monthVal) continue;
+        if (statusVal !== 'all' && s !== statusVal) continue;
+        var cells = r.querySelectorAll('td');
+        if (cells.length < 4) continue;
+        var scenarioId = cells[0].textContent.trim();
+        var ruleName = cells[3].textContent.trim();
+        var key = scenarioId + '::' + ruleName;
+        if (seen[key]) continue;
+        seen[key] = true;
+        ruleScenarioCounts[ruleName] = (ruleScenarioCounts[ruleName] || 0) + 1;
+    }
+    // Find the rule stats table and rebuild tbody
+    var summaryTable = statsDiv.querySelector('.creator-stats .summary-table');
+    if (!summaryTable) return;
+    var oldTbody = summaryTable.querySelector('tbody');
+    if (!oldTbody) return;
+
+    // Build severity map from original tbody rows (first time only), then cache it
+    var severityMap = {
+        'severity-high': ['🔴 高', 'severity-high'],
+        'severity-mid': ['🟡 中', 'severity-mid'],
+        'severity-low': ['🟢 低', 'severity-low'],
+        'severity-skip': ['⏭️ 跳过', 'severity-skip']
+    };
+    // Cache original rule severity info on the summaryTable element so it survives tbody rebuilds
+    if (!summaryTable._ruleSeverityCache) {
+        var cache = {};
+        var origRows = oldTbody.querySelectorAll('tr');
+        for (var k = 0; k < origRows.length; k++) {
+            var tds = origRows[k].querySelectorAll('td');
+            if (tds.length < 3) continue;
+            var rn = tds[0].textContent.trim();
+            var sevClass = '';
+            var sevText = '';
+            for (var cls in severityMap) {
+                if (tds[2].classList.contains(cls)) {
+                    sevClass = severityMap[cls][1];
+                    sevText = severityMap[cls][0];
+                    break;
+                }
+            }
+            if (sevClass) {
+                cache[rn] = { class: sevClass, text: sevText };
+            }
+        }
+        summaryTable._ruleSeverityCache = cache;
+    }
+    var ruleSeverityCache = summaryTable._ruleSeverityCache;
+
+    // Build new tbody directly from ruleScenarioCounts (not from old tbody rows)
+    var html = '';
+    var hasData = false;
+    // Sort rule names alphabetically for consistent display
+    var ruleNames = Object.keys(ruleScenarioCounts).sort();
+    for (var ri = 0; ri < ruleNames.length; ri++) {
+        var rName = ruleNames[ri];
+        var count = ruleScenarioCounts[rName];
+        if (count > 0) {
+            hasData = true;
+            var sevInfo = ruleSeverityCache[rName];
+            var sevClass = sevInfo ? sevInfo.class : 'severity-mid';
+            var sevText = sevInfo ? sevInfo.text : '🟡 中';
+            html += '<tr><td>' + rName + '</td><td><b>' + count + '</b></td><td class="' + sevClass + '">' + sevText + '</td></tr>';
+        }
+    }
+    if (!hasData) {
+        html = '<tr><td colspan="3" style="text-align:center;color:#999;padding:20px;">该筛选条件下无违规数据</td></tr>';
+    }
+    oldTbody.innerHTML = html;
 }
 
 // Apply filter on page load for the first (visible) creator

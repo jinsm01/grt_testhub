@@ -647,6 +647,133 @@ def patch_sort_detail_table(html):
     return html
 
 
+def patch_update_rule_table_from_rows(html):
+    """Fix updateRuleTableFromRows to:
+    1. Skip excluded/fixture rows and apply month/status filter
+    2. Build tbody from ruleScenarioCounts instead of oldTbody rows (fixes stale data issue)
+
+    Without fix #1, rows with data-exclude/data-fixture-skip attributes (skipped by
+    applyFilters) would still be counted in the rule violation table.
+
+    Without fix #2, after filtering to a month with no data, oldTbody is replaced with
+    a 'no data' row. Subsequent filters to months WITH data cannot find rule names
+    in the oldTbody, so the table permanently shows 'no data'.
+    """
+    # Fix 1: Insert skip logic for exclude/fixture rows + month/status filter
+    old_skip = (
+        "        if (r.classList.contains('detail-row-hidden')) continue;\n"
+        "        var cells = r.querySelectorAll('td');"
+    )
+    new_skip = (
+        "        if (r.classList.contains('detail-row-hidden')) continue;\n"
+        "        // Skip excluded/fixture rows (same as applyFilters logic)\n"
+        "        if (r.getAttribute('data-exclude') === 'true' || r.getAttribute('data-fixture-skip') === 'true') continue;\n"
+        "        // Also apply month/status filter on data attributes as a safety net\n"
+        "        var m = r.getAttribute('data-month') || '';\n"
+        "        var s = r.getAttribute('data-runstatus') || '';\n"
+        "        if (monthVal !== 'all' && m !== monthVal) continue;\n"
+        "        if (statusVal !== 'all' && s !== statusVal) continue;\n"
+        "        var cells = r.querySelectorAll('td');"
+    )
+    html = html.replace(old_skip, new_skip)
+
+    # Fix 2: Replace the oldTbody-dependent tbody-building section with a version
+    # that builds directly from ruleScenarioCounts and caches severity info.
+    old_build = (
+        "    // Build new tbody\n"
+        "    var severityMap = {\n"
+        "        'severity-high': ['🔴 高', 'severity-high'],\n"
+        "        'severity-mid': ['🟡 中', 'severity-mid'],\n"
+        "        'severity-low': ['🟢 低', 'severity-low'],\n"
+        "        'severity-skip': ['⏭️ 跳过', 'severity-skip']\n"
+        "    };\n"
+        "    var html = '';\n"
+        "    var hasData = false;\n"
+        "    // Try to preserve original rule order and severity from existing rows\n"
+        "    var existingRows = oldTbody.querySelectorAll('tr');\n"
+        "    for (var j = 0; j < existingRows.length; j++) {\n"
+        "        var er = existingRows[j];\n"
+        "        var ec = er.querySelectorAll('td');\n"
+        "        if (ec.length < 3) continue;\n"
+        "        var rName = ec[0].textContent.trim();\n"
+        "        var count = ruleScenarioCounts[rName] || 0;\n"
+        "        if (count > 0) {\n"
+        "            hasData = true;\n"
+        "            var sevClass = '';\n"
+        "            var sevText = '';\n"
+        "            for (var cls in severityMap) {\n"
+        "                if (ec[2].classList.contains(cls)) {\n"
+        "                    sevClass = severityMap[cls][1];\n"
+        "                    sevText = severityMap[cls][0];\n"
+        "                    break;\n"
+        "                }\n"
+        "            }\n"
+        "            if (!sevClass) { sevClass = 'severity-mid'; sevText = '🟡 中'; }\n"
+        "            html += '<tr><td>' + rName + '</td><td><b>' + count + '</b></td><td class=\"' + sevClass + '\">' + sevText + '</td></tr>';\n"
+        "        }\n"
+        "    }\n"
+        "    if (!hasData) {\n"
+        "        html = '<tr><td colspan=\"3\" style=\"text-align:center;color:#999;padding:20px;\">该筛选条件下无违规数据</td></tr>';\n"
+        "    }\n"
+        "    oldTbody.innerHTML = html;\n"
+        "}"
+    )
+    new_build = (
+        "    // Build new tbody from ruleScenarioCounts (not from oldTbody rows)\n"
+        "    var severityMap = {\n"
+        "        'severity-high': ['🔴 高', 'severity-high'],\n"
+        "        'severity-mid': ['🟡 中', 'severity-mid'],\n"
+        "        'severity-low': ['🟢 低', 'severity-low'],\n"
+        "        'severity-skip': ['⏭️ 跳过', 'severity-skip']\n"
+        "    };\n"
+        "    // Cache original rule severity info on the summaryTable element\n"
+        "    if (!summaryTable._ruleSeverityCache) {\n"
+        "        var cache = {};\n"
+        "        var origRows = oldTbody.querySelectorAll('tr');\n"
+        "        for (var k = 0; k < origRows.length; k++) {\n"
+        "            var tds = origRows[k].querySelectorAll('td');\n"
+        "            if (tds.length < 3) continue;\n"
+        "            var rn = tds[0].textContent.trim();\n"
+        "            var sevClass = '';\n"
+        "            var sevText = '';\n"
+        "            for (var cls in severityMap) {\n"
+        "                if (tds[2].classList.contains(cls)) {\n"
+        "                    sevClass = severityMap[cls][1];\n"
+        "                    sevText = severityMap[cls][0];\n"
+        "                    break;\n"
+        "                }\n"
+        "            }\n"
+        "            if (sevClass) {\n"
+        "                cache[rn] = { class: sevClass, text: sevText };\n"
+        "            }\n"
+        "        }\n"
+        "        summaryTable._ruleSeverityCache = cache;\n"
+        "    }\n"
+        "    var ruleSeverityCache = summaryTable._ruleSeverityCache;\n"
+        "    var html = '';\n"
+        "    var hasData = false;\n"
+        "    var ruleNames = Object.keys(ruleScenarioCounts).sort();\n"
+        "    for (var ri = 0; ri < ruleNames.length; ri++) {\n"
+        "        var rName = ruleNames[ri];\n"
+        "        var count = ruleScenarioCounts[rName];\n"
+        "        if (count > 0) {\n"
+        "            hasData = true;\n"
+        "            var sevInfo = ruleSeverityCache[rName];\n"
+        "            var sevClass = sevInfo ? sevInfo.class : 'severity-mid';\n"
+        "            var sevText = sevInfo ? sevInfo.text : '🟡 中';\n"
+        "            html += '<tr><td>' + rName + '</td><td><b>' + count + '</b></td><td class=\"' + sevClass + '\">' + sevText + '</td></tr>';\n"
+        "        }\n"
+        "    }\n"
+        "    if (!hasData) {\n"
+        "        html = '<tr><td colspan=\"3\" style=\"text-align:center;color:#999;padding:20px;\">该筛选条件下无违规数据</td></tr>';\n"
+        "    }\n"
+        "    oldTbody.innerHTML = html;\n"
+        "}"
+    )
+    html = html.replace(old_build, new_build)
+    return html
+
+
 def main():
     if len(sys.argv) < 2:
         # Default: look for report in current directory
@@ -693,7 +820,8 @@ def main():
     html = patch_apply_filters(html)
     html = patch_update_stats(html)
     html = patch_sort_detail_table(html)
-    print('\nPatched JS functions (applyFilters, updateStats, sortDetailTable).')
+    html = patch_update_rule_table_from_rows(html)
+    print('\nPatched JS functions (applyFilters, updateStats, sortDetailTable, updateRuleTableFromRows).')
 
     # Step 8: Inject UI features (violation toggle, compliant sort) — always run
     html = inject_css_styles(html)

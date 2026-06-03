@@ -224,6 +224,9 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
         # Embed all scenario metadata for this creator as JSON (for dynamic stats filtering)
         creator_scenario_list = [s for s in scenarios if (s.creator or "未知") == creator]
         scenario_meta = []
+        # Build per-scenario rule violation mapping: scenario_id -> set of violated rule_ids
+        # This represents "which rules this scenario violates" (unique rules per scenario)
+        scenario_rule_violations = {}  # scenario_id -> {rule_id: true}
         for s in creator_scenario_list:
             scenario_meta.append({
                 "id": s.id,
@@ -234,8 +237,28 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
                 "created_at": _format_created_at(s.created_at),
                 "is_violation": s.id in data["violation_scenario_ids"],
             })
+            # Collect unique violated rule IDs for this scenario
+            violated_rules = set()
+            for rr in report.rule_results:
+                for r in rr.results:
+                    if r.passed or r.scenario_id is None:
+                        continue
+                    if r.scenario_id == s.id:
+                        violated_rules.add(rr.rule.id)
+            if violated_rules:
+                scenario_rule_violations[s.id] = list(violated_rules)
         import json as _json
         parts.append(f'<script id="scenario-meta-{idx}" type="application/json">{_json.dumps(scenario_meta, ensure_ascii=False)}</script>')
+        # Embed rules info and per-scenario rule violations for dynamic table rebuild
+        rules_info = []
+        for rr in report.rule_results:
+            rules_info.append({
+                "id": rr.rule.id,
+                "name": rr.rule.name,
+                "severity": rr.rule.severity,
+            })
+        parts.append(f'<script id="rules-info-{idx}" type="application/json">{_json.dumps(rules_info, ensure_ascii=False)}</script>')
+        parts.append(f'<script id="scenario-rule-violations-{idx}" type="application/json">{_json.dumps(scenario_rule_violations, ensure_ascii=False)}</script>')
 
         # Stats cards: 总场景数 / 合规场景数 / 违规场景数
         parts.append(f'<p style="margin:12px 0;font-size:14px;">')
@@ -249,9 +272,11 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
             parts.append(f'<span style="margin-left:16px;font-size:13px;" id="stat-rate-text-{idx}">(合规率 <b id="stat-rate-{idx}" style="color:{pct_color}">{pct_compliant}%</b>)</span>')
         parts.append('</p>')
 
-        # Violation breakdown per rule
-        parts.append('<table class="summary-table">')
-        parts.append('<thead><tr><th>规则名称</th><th>违规数</th><th>严重程度</th></tr></thead><tbody>')
+        # Violation breakdown per rule (tbody will be rebuilt by JS on filter)
+        parts.append('<div class="creator-stats">')
+        parts.append(f'<table class="summary-table" id="rule-table-{idx}">')
+        parts.append('<thead><tr><th>规则名称</th><th>违规数</th><th>严重程度</th></tr></thead>')
+        parts.append(f'<tbody id="rule-table-body-{idx}">')
         for rr in report.rule_results:
             v_count = data["violations"].get(rr.rule.id, 0)
             if v_count > 0:
@@ -387,6 +412,60 @@ function updateStats(idx, monthVal, statusVal) {
             rateTextEl.style.display = 'none';
         }
     }
+    // Update rule violation table dynamically based on filtered scenarios
+    updateRuleTable(idx, monthVal, statusVal);
+}
+
+function updateRuleTable(idx, monthVal, statusVal) {
+    var rulesEl = document.getElementById('rules-info-' + idx);
+    var violEl = document.getElementById('scenario-rule-violations-' + idx);
+    var metaEl = document.getElementById('scenario-meta-' + idx);
+    var tbodyEl = document.getElementById('rule-table-body-' + idx);
+    if (!rulesEl || !violEl || !metaEl || !tbodyEl) return;
+    var rulesInfo, scenarioViolations, allScenarios;
+    try {
+        rulesInfo = JSON.parse(rulesEl.textContent);
+        scenarioViolations = JSON.parse(violEl.textContent);
+        allScenarios = JSON.parse(metaEl.textContent);
+    } catch(e) { return; }
+    // Build set of scenario IDs that pass the current filters (keys as strings for JSON object lookup)
+    var filteredScenarioIds = {};
+    for (var i = 0; i < allScenarios.length; i++) {
+        var sc = allScenarios[i];
+        if (monthVal !== 'all' && sc.month !== monthVal) continue;
+        if (statusVal !== 'all' && sc.run_status !== statusVal) continue;
+        filteredScenarioIds[String(sc.id)] = true;
+    }
+    // Count how many filtered scenarios violate each rule (unique scenarios per rule)
+    var ruleCounts = {};
+    for (var sid in scenarioViolations) {
+        if (!filteredScenarioIds[sid]) continue;
+        var violatedRuleIds = scenarioViolations[sid];
+        for (var j = 0; j < violatedRuleIds.length; j++) {
+            var rid = violatedRuleIds[j];
+            ruleCounts[rid] = (ruleCounts[rid] || 0) + 1;
+        }
+    }
+    // Rebuild tbody HTML
+    var severityMap = {
+        'high': ['高', 'severity-high'],
+        'mid': ['中', 'severity-mid'],
+        'low': ['低', 'severity-low'],
+        'skip': ['跳过', 'severity-skip']
+    };
+    var html = '';
+    for (var i = 0; i < rulesInfo.length; i++) {
+        var rule = rulesInfo[i];
+        var count = ruleCounts[rule.id] || 0;
+        if (count > 0) {
+            var sev = severityMap[rule.severity] || severityMap['mid'];
+            html += '<tr><td>' + rule.name + '</td><td><b>' + count + '</b></td><td class="' + sev[1] + '">' + sev[0] + '</td></tr>';
+        }
+    }
+    if (!html) {
+        html = '<tr><td colspan="3" style="text-align:center;color:#999;padding:20px;">该筛选条件下无违规数据</td></tr>';
+    }
+    tbodyEl.innerHTML = html;
 }
 
 // Apply filter on page load for the first (visible) creator
