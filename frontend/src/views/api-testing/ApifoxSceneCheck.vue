@@ -255,6 +255,11 @@
               </div>
             </template>
           </el-table-column>
+          <el-table-column label="场景总数" width="120" header-align="center" align="center">
+            <template #default="{ row }">
+              <span>{{ row.total_scenarios !== null && row.total_scenarios !== undefined ? row.total_scenarios : '-' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="执行人" width="200" header-align="center" align="center">
             <template #default="{ row }">
               <span>{{ row.executed_by || '-' }}</span>

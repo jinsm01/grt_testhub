@@ -945,11 +945,25 @@ def apifox_check_reports(request):
                 filepath = os.path.join(REPORTS_DIR, f)
                 stat = os.stat(filepath)
                 meta = _load_report_meta(f)
+                
+                # 尝试从 JSON 文件中读取场景总数
+                total_scenarios = None
+                json_filename = f.replace('.html', '.json')
+                json_filepath = os.path.join(REPORTS_DIR, json_filename)
+                if os.path.exists(json_filepath):
+                    try:
+                        with open(json_filepath, 'r', encoding='utf-8') as jf:
+                            json_data = json.load(jf)
+                            total_scenarios = json_data.get('total_scenarios')
+                    except Exception:
+                        pass
+                
                 reports.append({
                     'filename': f,
                     'size': stat.st_size,
                     'created_at': datetime.fromtimestamp(stat.st_mtime).isoformat(),
                     'executed_by': meta.get('executed_by', ''),
+                    'total_scenarios': total_scenarios,
                 })
     return Response({'reports': reports})
 

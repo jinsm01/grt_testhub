@@ -1,14 +1,5 @@
 <template>
   <div class="report-detail-container">
-    <!-- 返回按钮 -->
-    <div class="report-header">
-      <el-button @click="$emit('back')">
-        <el-icon><ArrowLeft /></el-icon>
-        返回列表
-      </el-button>
-      <h2 class="report-title">Apifox接口自动化编写规范检查报告</h2>
-    </div>
-
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-state">
       <el-skeleton :rows="10" animated />
@@ -16,41 +7,32 @@
 
     <!-- 报告内容 -->
     <div v-else-if="reportData" class="report-content">
-      <!-- 基本信息 -->
-      <div class="report-meta">
-        <span><b>项目ID：</b>{{ reportData.project_id }}</span>
-        <span><b>环境ID：</b>{{ reportData.environment_id }}</span>
-        <span><b>场景总数：</b>{{ reportData.total_scenarios }}</span>
-        <span><b>检查时间：</b>{{ reportData.timestamp }}</span>
-      </div>
-
       <!-- 一、检查结果总览 -->
       <section class="report-section">
         <h2 class="section-title">一、检查结果总览</h2>
         <el-table :data="reportData.rule_results" class="summary-table">
-          <el-table-column type="index" label="序号" width="70" align="center" />
-          <el-table-column prop="rule.id" label="规则ID" min-width="150" />
-          <el-table-column prop="rule.name" label="规则名称" min-width="180" />
-          <el-table-column prop="rule.description" label="规则说明" min-width="250" show-overflow-tooltip />
-          <el-table-column label="合规率" width="100" align="center">
+          <el-table-column type="index" label="序号" width="60" align="center" />
+          <el-table-column prop="rule.name" label="规则名称" width="170" show-overflow-tooltip />
+          <el-table-column prop="rule.description" label="规则说明" min-width="40" show-overflow-tooltip />
+          <el-table-column label="合规率" width="110" align="center">
             <template #default="{ row }">
-              <span :class="getComplianceRateClass(row.compliance_rate)">
+              <span :class="getComplianceRateClass(row.compliance_rate)" style="white-space: nowrap;">
                 {{ row.compliance_rate.toFixed(1) }}%
               </span>
             </template>
           </el-table-column>
           <el-table-column label="严重程度" width="100" align="center">
             <template #default="{ row }">
-              <el-tag :type="getSeverityType(row.rule.severity)" size="small" effect="dark" round>
+              <span class="status-badge" :class="row.rule.severity">
                 {{ getSeverityLabel(row.rule.severity) }}
-              </el-tag>
+              </span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="100" align="center">
+          <el-table-column label="状态" width="120" align="center">
             <template #default="{ row }">
-              <el-tag :type="getStatusType(row)" size="small" effect="dark" round>
+              <span class="status-badge" :class="getStatusClass(row)">
                 {{ getStatusLabel(row) }}
-              </el-tag>
+              </span>
             </template>
           </el-table-column>
         </el-table>
@@ -325,6 +307,13 @@ const getStatusType = (row) => {
   return 'warning'
 }
 
+// 获取状态样式类（用于自定义徽章）
+const getStatusClass = (row) => {
+  if (row.failed_count === 0) return 'success'
+  if (row.compliance_rate < 50) return 'danger'
+  return 'warning'
+}
+
 // 格式化运行状态
 const formatRunStatus = (status) => {
   const map = {
@@ -344,7 +333,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .report-detail-container {
-  padding: 24px;
+  padding: 0;
   background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
   min-height: calc(100vh - 60px);
 }
@@ -377,10 +366,11 @@ onMounted(() => {
 
 .report-section {
   background: #fff;
-  padding: 24px;
+  padding: 20px;
   border-radius: 12px;
   margin-bottom: 20px;
   box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
+  border: 1px solid rgba(147, 112, 219, 0.12);
 }
 
 .section-title {
@@ -397,6 +387,61 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
+// 状态徽章样式 - 参考 XMindConverter.vue
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+
+  // 严重程度样式 - 高
+  &.high {
+    background: #fff1f0;
+    color: #f5222d;
+  }
+
+  // 严重程度样式 - 中
+  &.mid {
+    background: #fff7e6;
+    color: #fa8c16;
+  }
+
+  // 严重程度样式 - 低
+  &.low {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  // 严重程度样式 - 跳过
+  &.skip {
+    background: #f5f5f5;
+    color: #8c8c8c;
+  }
+
+  // 状态样式 - 基本合规
+  &.success {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  // 状态样式 - 严重违规
+  &.danger {
+    background: #fff1f0;
+    color: #f5222d;
+  }
+
+  // 状态样式 - 部分违规
+  &.warning {
+    background: #fff7e6;
+    color: #fa8c16;
+  }
+}
+
 .creator-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -407,48 +452,83 @@ onMounted(() => {
 .creator-tab {
   padding: 8px 16px;
   border-radius: 20px;
-  background: #e9ecef;
+  background: #f5f3ff;
+  border: 1px solid rgba(123, 66, 246, 0.2);
   cursor: pointer;
   font-size: 13px;
-  transition: all 0.2s;
-  
+  font-weight: 500;
+  color: #5a32a3;
+  transition: all 0.3s ease;
+
   &:hover {
-    background: #dee2e6;
+    background: #ede9fe;
+    border-color: rgba(123, 66, 246, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(123, 66, 246, 0.15);
   }
-  
+
   &.active {
-    background: #7b42f6;
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+    border-color: #7b42f6;
     color: #fff;
+    box-shadow: 0 4px 12px rgba(123, 66, 246, 0.3);
   }
-  
+
   .count {
-    font-weight: bold;
+    font-weight: 600;
     margin-left: 4px;
   }
 }
 
 .creator-detail {
-  padding: 16px;
-  background: #f8f9ff;
-  border-radius: 8px;
+  padding: 20px;
+  background: #f8f7ff;
+  border-radius: 12px;
+  border: 1px solid rgba(147, 112, 219, 0.1);
 }
 
 .creator-name {
   font-size: 16px;
-  color: #16213e;
+  font-weight: 600;
+  color: #5a32a3;
   margin-bottom: 16px;
+  padding-left: 10px;
+  border-left: 4px solid #7b42f6;
 }
 
 .filter-bar {
   margin-bottom: 16px;
+
+  :deep(.el-select) {
+    .el-input__wrapper {
+      border-radius: 8px;
+      box-shadow: 0 0 0 1px rgba(147, 112, 219, 0.2) inset;
+      background: #ffffff;
+
+      &:hover {
+        box-shadow: 0 0 0 1px #7b42f6 inset;
+      }
+
+      &.is-focus {
+        box-shadow: 0 0 0 1px #7b42f6 inset;
+      }
+    }
+
+    .el-input__inner {
+      color: #333;
+      font-weight: 400;
+    }
+  }
 }
 
 .stats-bar {
   margin-bottom: 16px;
-  padding: 12px;
+  padding: 16px;
   background: #fff;
   border-radius: 8px;
   font-size: 14px;
+  border: 1px solid rgba(147, 112, 219, 0.1);
+  box-shadow: 0 2px 8px rgba(147, 112, 219, 0.05);
 }
 
 .detail-title {
@@ -468,6 +548,132 @@ onMounted(() => {
 .violation-summary-table,
 .detail-table {
   margin-top: 12px;
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: none;
+  background-color: transparent !important;
+
+  /* 覆盖 Element Plus 默认主题变量 */
+  --el-color-primary: #7b42f6;
+  --el-color-primary-light-3: #9370db;
+  --el-color-primary-light-5: #a888e0;
+  --el-color-primary-light-7: #c2a9f3;
+  --el-color-primary-light-9: #f8f7ff;
+  --el-border-color: #e9ecef;
+  --el-border-color-light: #e9ecef;
+  --el-border-color-lighter: #e9ecef;
+  --el-fill-color-light: #ffffff;
+  --el-fill-color-lighter: #ffffff;
+  --el-fill-color-blank: #ffffff;
+  --el-text-color-primary: #333;
+  --el-text-color-regular: #333;
+  --el-text-color-secondary: #666;
+  --el-text-color-placeholder: #999;
+  --el-table-header-bg-color: #ffffff;
+  --el-table-row-hover-bg-color: #f8f7ff;
+  --el-table-stripe-bg-color: #fafaff;
+
+  &::before {
+    display: none;
+  }
+
+  // 表头样式
+  :deep(.el-table__header-wrapper) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(.el-table__header) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(th) {
+    background-color: #ffffff !important;
+    color: #5a32a3 !important;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0 !important;
+    text-align: center;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: #ffffff !important;
+    }
+  }
+
+  :deep(th .cell) {
+    background-color: #ffffff !important;
+    color: #5a32a3 !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    line-height: 24px !important;
+    padding: 16px !important;
+  }
+
+  :deep(.el-table__body-wrapper) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(.el-table__row) {
+    transition: all 0.3s ease;
+    background-color: #ffffff !important;
+    line-height: 24px;
+
+    &:hover {
+      background-color: #f8f7ff !important;
+    }
+
+    &.el-table__row--striped {
+      background-color: #fafaff !important;
+    }
+  }
+
+  :deep(td) {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e9ecef;
+    color: #333;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+    transition: all 0.3s ease;
+    vertical-align: middle;
+
+    .cell {
+      overflow: visible;
+      white-space: nowrap;
+    }
+  }
+
+  // 空状态
+  :deep(.el-table__empty-block) {
+    padding: 60px 0;
+    background: #ffffff !important;
+
+    :deep(.el-table__empty-text) {
+      color: #666;
+      font-size: 14px;
+      line-height: 24px;
+    }
+  }
+
+  // 修复固定列样式
+  :deep(.el-table__fixed-right) {
+    background-color: #ffffff !important;
+    height: 100% !important;
+  }
+
+  :deep(.el-table__fixed-right-patch) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(.el-table__fixed-body-wrapper) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(.el-table__fixed-header-wrapper) {
+    background-color: #ffffff !important;
+  }
 }
 
 .rate-low { color: #e94560; font-weight: bold; }
@@ -476,8 +682,10 @@ onMounted(() => {
 
 .loading-state,
 .error-state {
-  padding: 40px;
+  padding: 60px 40px;
   background: #fff;
   border-radius: 12px;
+  border: 1px solid rgba(147, 112, 219, 0.12);
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
 }
 </style>
