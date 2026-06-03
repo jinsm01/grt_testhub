@@ -40,8 +40,31 @@
 
       <!-- 二、按创建人归纳总结 -->
       <section class="report-section">
-        <h2 class="section-title">二、按创建人归纳总结</h2>
-        <p class="section-desc">按创建人统计各人的场景违规情况，支持按月份和运行结果筛选</p>
+        <div class="section-header-with-filter">
+          <div class="section-header-left">
+            <h2 class="section-title">二、按创建人归纳总结</h2>
+            <p class="section-desc-inline">按创建人统计各人的场景违规情况，支持按月份和运行结果筛选</p>
+          </div>
+          <!-- 筛选器 -->
+          <div class="filter-bar-inline">
+            <el-select v-model="filters.month" placeholder="月份" style="width: 120px;">
+              <el-option label="全部月份" value="all" />
+              <el-option
+                v-for="month in availableMonths"
+                :key="month"
+                :label="month"
+                :value="month"
+              />
+            </el-select>
+            <el-select v-model="filters.status" placeholder="运行结果" style="width: 140px; margin-left: 12px;">
+              <el-option label="全部结果" value="all" />
+              <el-option label="通过" value="passed" />
+              <el-option label="失败" value="failed" />
+              <el-option label="未运行" value="not_run" />
+              <el-option label="未知" value="unknown" />
+            </el-select>
+          </div>
+        </div>
 
         <!-- 创建人 Tabs -->
         <div class="creator-tabs">
@@ -61,26 +84,6 @@
         <div v-if="activeCreator" class="creator-detail">
           <h3 class="creator-name">{{ activeCreator.name }}</h3>
 
-          <!-- 筛选器 -->
-          <div class="filter-bar">
-            <el-select v-model="filters.month" placeholder="月份" style="width: 120px;">
-              <el-option label="全部月份" value="all" />
-              <el-option
-                v-for="month in availableMonths"
-                :key="month"
-                :label="month"
-                :value="month"
-              />
-            </el-select>
-            <el-select v-model="filters.status" placeholder="运行结果" style="width: 140px; margin-left: 12px;">
-              <el-option label="全部结果" value="all" />
-              <el-option label="通过" value="passed" />
-              <el-option label="失败" value="failed" />
-              <el-option label="未运行" value="not_run" />
-              <el-option label="未知" value="unknown" />
-            </el-select>
-          </div>
-
           <!-- 场景统计 -->
           <div class="stats-bar">
             <b>场景统计：</b>
@@ -94,13 +97,13 @@
 
           <!-- 违规规则统计 -->
           <el-table :data="activeCreator.ruleViolations" class="violation-summary-table">
-            <el-table-column prop="ruleName" label="规则名称" />
-            <el-table-column prop="count" label="违规数" width="100" align="center" />
-            <el-table-column label="严重程度" width="100" align="center">
+            <el-table-column prop="ruleName" label="规则名称" min-width="120" show-overflow-tooltip />
+            <el-table-column prop="count" label="违规数" width="120" align="center" />
+            <el-table-column label="严重程度" width="120" align="center">
               <template #default="{ row }">
-                <el-tag :type="getSeverityType(row.severity)" size="small" effect="dark" round>
+                <span class="status-badge" :class="row.severity">
                   {{ getSeverityLabel(row.severity) }}
-                </el-tag>
+                </span>
               </template>
             </el-table-column>
           </el-table>
@@ -385,6 +388,66 @@ onMounted(() => {
   color: #666;
   font-size: 13px;
   margin-bottom: 16px;
+}
+
+// 标题、描述和筛选器同行布局
+.section-header-with-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+
+  .section-header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex: 1;
+    min-width: 300px;
+  }
+
+  .section-title {
+    margin-bottom: 0;
+    flex-shrink: 0;
+    line-height: 1.4;
+  }
+
+  .section-desc-inline {
+    color: #666;
+    font-size: 13px;
+    margin: 0;
+    line-height: 1.4;
+    padding-top: 2px;
+  }
+
+  .filter-bar-inline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+
+    :deep(.el-select) {
+      .el-input__wrapper {
+        border-radius: 8px;
+        box-shadow: 0 0 0 1px rgba(147, 112, 219, 0.2) inset;
+        background: #ffffff;
+
+        &:hover {
+          box-shadow: 0 0 0 1px #7b42f6 inset;
+        }
+
+        &.is-focus {
+          box-shadow: 0 0 0 1px #7b42f6 inset;
+        }
+      }
+
+      .el-input__inner {
+        color: #333;
+        font-weight: 400;
+      }
+    }
+  }
 }
 
 // 状态徽章样式 - 参考 XMindConverter.vue
@@ -679,6 +742,73 @@ onMounted(() => {
 .rate-low { color: #e94560; font-weight: bold; }
 .rate-mid { color: #f5a623; font-weight: bold; }
 .rate-high { color: #28a745; font-weight: bold; }
+
+// 违规规则统计表格样式 - 参考规则总览
+.violation-summary-table {
+  margin-top: 16px;
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #ffffff !important;
+
+  :deep(.el-table__header-wrapper) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(.el-table__header) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(th) {
+    background-color: #ffffff !important;
+    color: #5a32a3 !important;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 1px solid #e9ecef;
+    padding: 12px 16px !important;
+    text-align: center;
+
+    &:hover {
+      background-color: #ffffff !important;
+    }
+  }
+
+  :deep(th .cell) {
+    background-color: #ffffff !important;
+    color: #5a32a3 !important;
+    font-weight: 600 !important;
+  }
+
+  :deep(.el-table__body-wrapper) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(.el-table__row) {
+    background-color: #ffffff !important;
+
+    &:hover {
+      background-color: #f8f7ff !important;
+    }
+  }
+
+  :deep(td) {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #333;
+    font-size: 14px;
+    font-weight: 400;
+
+    .cell {
+      overflow: visible;
+      white-space: nowrap;
+    }
+  }
+
+  // 最后一行无边框
+  :deep(.el-table__row:last-child td) {
+    border-bottom: none;
+  }
+}
 
 .loading-state,
 .error-state {
