@@ -256,3 +256,60 @@ export function analyzeModuleFocusIntelligent(recordId, module, options = {}) {
     timeout: 120000  // AI分析可能需要较长时间，设置2分钟超时
   })
 }
+
+// ========== AI 评分量表生成管理 ==========
+
+/**
+ * 获取AI量表生成记录列表
+ * @param {Object} params - { status?: string, search?: string }
+ */
+export function getRubricRecords(params = {}) {
+  return request({
+    url: '/data-factory/rubric/records/',
+    method: 'get',
+    params
+  })
+}
+
+/**
+ * 获取AI量表生成记录详情（含完整数据）
+ */
+export function getRubricDetail(recordId) {
+  return request({
+    url: `/data-factory/rubric/${recordId}/`,
+    method: 'get'
+  })
+}
+
+/**
+ * 创建并执行量表生成任务
+ * @param {FormData} formData - 包含 name, note_count, pass_ratio, [file]
+ */
+export function generateRubric(formData) {
+  return request({
+    url: '/data-factory/rubric/generate/',
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+}
+
+/**
+ * 删除AI量表生成记录
+ */
+export function deleteRubricRecord(recordId) {
+  return request({
+    url: `/data-factory/rubric/${recordId}/delete/`,
+    method: 'delete'
+  })
+}
+
+/**
+ * 获取AI量表统计信息
+ */
+export function getRubricStatistics() {
+  return request({
+    url: '/data-factory/rubric/statistics/',
+    method: 'get'
+  })
+}

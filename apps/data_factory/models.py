@@ -209,3 +209,70 @@ class BugAnalysisSummaryRecord(models.Model):
             'risk_modules': self.summary_data.get('risk_modules', []),
             'ai_insight': self.ai_insight,
         }
+
+
+class AIRubricRecord(models.Model):
+    """AI 评分量表生成记录"""
+
+    STATUS_CHOICES = (
+        ('running', '生成中'),
+        ('done', '已完成'),
+        ('error', '失败'),
+    )
+
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用户')
+    name = models.CharField(max_length=200, verbose_name='任务名称')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='running', verbose_name='状态')
+
+    # 上传的源文件
+    source_file = models.FileField(upload_to='rubric/sources/%Y/%m/', null=True, blank=True, verbose_name='源文件')
+    source_file_name = models.CharField(max_length=255, blank=True, default='', verbose_name='源文件名')
+
+    # 配置参数
+    note_count = models.IntegerField(default=20, verbose_name='心得数量')
+    pass_ratio = models.FloatField(default=0.6, verbose_name='得分心得比例')
+
+    # 生成的结果文件
+    rubric_file = models.FileField(upload_to='rubric/output/%Y/%m/', null=True, blank=True, verbose_name='量表文件(XLSX)')
+    notes_file = models.FileField(upload_to='rubric/notes/%Y/%m/', null=True, blank=True, verbose_name='心得文件(DOCX)')
+
+    # 生成的数据（JSON格式保存）
+    rubric_data = models.JSONField(default=list, verbose_name='量表数据')
+    notes_data = models.JSONField(default=list, verbose_name='心得数据')
+
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+
+    class Meta:
+        db_table = 'df_ai_rubric_record'
+        verbose_name = 'AI量表生成记录'
+        verbose_name_plural = verbose_name
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_status_display()}) @{self.created_at:%Y-%m-%d %H:%M}"
+
+    def to_list_dict(self) -> dict:
+        """转换为列表展示格式"""
+        d = {
+            'id': self.id,
+            'name': self.name,
+            'status': self.status,
+            'source_file_name': self.source_file_name,
+            'note_count': self.note_count,
+            'pass_ratio': self.pass_ratio,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        }
+        # 已完成的记录附带完整数据，供前端下载使用
+        if self.status in ('done', 'error'):
+            d['rubric_data'] = self.rubric_data or []
+            d['notes_data'] = self.notes_data or []
+        else:
+            d['rubric_data'] = []
+            d['notes_data'] = []
+        return d
