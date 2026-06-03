@@ -47,7 +47,16 @@
           </div>
           <!-- 筛选器 -->
           <div class="filter-bar-inline">
-            <el-select v-model="filters.month" placeholder="月份" style="width: 120px;">
+            <!-- 创建人选择 -->
+            <el-select v-model="activeCreatorIndex" placeholder="选择创建人" style="width: 180px;">
+              <el-option
+                v-for="(creator, idx) in creators"
+                :key="idx"
+                :label="creator.name + ' (' + creator.total + '/' + creator.compliant + '/' + creator.violations + ')'"
+                :value="idx"
+              />
+            </el-select>
+            <el-select v-model="filters.month" placeholder="月份" style="width: 120px; margin-left: 12px;">
               <el-option label="全部月份" value="all" />
               <el-option
                 v-for="month in availableMonths"
@@ -66,38 +75,36 @@
           </div>
         </div>
 
-        <!-- 创建人 Tabs -->
-        <div class="creator-tabs">
-          <div
-            v-for="(creator, idx) in creators"
-            :key="idx"
-            class="creator-tab"
-            :class="{ active: activeCreatorIndex === idx }"
-            @click="switchCreator(idx)"
-          >
-            {{ creator.name }}
-            <span class="count">({{ creator.total }}/{{ creator.compliant }}/{{ creator.violations }})</span>
+        <!-- 场景统计 -->
+        <div v-if="activeCreator" class="stats-cards">
+          <div class="stat-card total">
+            <div class="stat-label">总场景数</div>
+            <div class="stat-value">{{ filteredStats.total }}</div>
+          </div>
+          <div class="stat-card compliant">
+            <div class="stat-label">合规场景</div>
+            <div class="stat-value">{{ filteredStats.compliant }}</div>
+          </div>
+          <div class="stat-card violation">
+            <div class="stat-label">违规场景</div>
+            <div class="stat-value">{{ filteredStats.violations }}</div>
+          </div>
+          <div class="stat-card rate" v-if="filteredStats.total > 0">
+            <div class="stat-label">合规率</div>
+            <div class="stat-value" :style="{ color: getComplianceColor(filteredStats.complianceRate) }">{{ filteredStats.complianceRate.toFixed(1) }}%</div>
           </div>
         </div>
 
         <!-- 当前创建人详情 -->
         <div v-if="activeCreator" class="creator-detail">
-          <h3 class="creator-name">{{ activeCreator.name }}</h3>
-
-          <!-- 场景统计 -->
-          <div class="stats-bar">
-            <b>场景统计：</b>
-            <span>总场景数: <b>{{ filteredStats.total }}</b></span>
-            <span style="margin-left: 16px; color: #28a745;">合规场景: <b>{{ filteredStats.compliant }}</b></span>
-            <span style="margin-left: 16px; color: #e94560;">违规场景: <b>{{ filteredStats.violations }}</b></span>
-            <span v-if="filteredStats.total > 0" style="margin-left: 16px; font-size: 13px;">
-              (合规率 <b :style="{ color: getComplianceColor(filteredStats.complianceRate) }">{{ filteredStats.complianceRate.toFixed(1) }}%</b>)
-            </span>
-          </div>
-
           <!-- 违规规则统计 -->
           <el-table :data="activeCreator.ruleViolations" class="violation-summary-table">
-            <el-table-column prop="ruleName" label="规则名称" min-width="120" show-overflow-tooltip />
+            <el-table-column label="序号" width="100" align="center">
+              <template #default="{ $index }">
+                {{ $index + 1 }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="ruleName" label="规则名称" min-width="80" show-overflow-tooltip />
             <el-table-column prop="count" label="违规数" width="120" align="center" />
             <el-table-column label="严重程度" width="120" align="center">
               <template #default="{ row }">
@@ -106,34 +113,51 @@
                 </span>
               </template>
             </el-table-column>
-          </el-table>
-
-          <!-- 违规场景明细 -->
-          <h4 class="detail-title">违规场景明细</h4>
-          <p class="detail-count">显示 {{ filteredScenarios.length }} / {{ activeCreator.scenarios.length }} 条</p>
-
-          <el-table
-            :data="filteredScenarios"
-            class="detail-table"
-            @sort-change="handleSort"
-          >
-            <el-table-column prop="id" label="场景ID" width="100" sortable />
-            <el-table-column prop="name" label="场景名称" min-width="180" show-overflow-tooltip sortable />
-            <el-table-column prop="folder" label="归属目录" min-width="150" show-overflow-tooltip />
-            <el-table-column prop="ruleName" label="规则" min-width="150" />
-            <el-table-column label="问题描述" min-width="200" show-overflow-tooltip>
+            <el-table-column label="操作" width="100" align="center">
               <template #default="{ row }">
-                {{ row.message }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="created_at" label="创建时间" width="150" sortable />
-            <el-table-column label="运行结果" width="100" align="center">
-              <template #default="{ row }">
-                <span v-html="formatRunStatus(row.run_status)" />
+                <el-button type="primary" size="small" class="view-btn" @click="openViolationDrawer(row)">
+                  <el-icon><View /></el-icon>
+                  <span>查看</span>
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
         </div>
+
+        <!-- 违规明细抽屉 -->
+        <el-drawer
+          v-model="violationDrawerVisible"
+          :title="currentRuleName + ' - 违规明细'"
+          size="80%"
+          :close-on-click-modal="true"
+          class="violation-drawer"
+        >
+          <div class="drawer-content">
+            <p class="drawer-count">显示 {{ filteredRuleScenarios.length }} 条违规场景</p>
+            <el-table
+              :data="filteredRuleScenarios"
+              class="detail-table"
+              @sort-change="handleSort"
+              stripe
+              border
+            >
+              <el-table-column prop="id" label="场景ID" width="100" sortable />
+              <el-table-column prop="name" label="场景名称" min-width="180" show-overflow-tooltip sortable />
+              <el-table-column prop="folder" label="归属目录" min-width="150" show-overflow-tooltip />
+              <el-table-column label="问题描述" min-width="200" show-overflow-tooltip>
+                <template #default="{ row }">
+                  {{ row.message }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="created_at" label="创建时间" width="150" sortable />
+              <el-table-column label="运行结果" width="100" align="center">
+                <template #default="{ row }">
+                  <span v-html="formatRunStatus(row.run_status)" />
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-drawer>
       </section>
     </div>
 
@@ -146,7 +170,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, View } from '@element-plus/icons-vue'
 import api from '@/utils/api'
 
 const props = defineProps({
@@ -171,6 +195,11 @@ const sortConfig = ref({
   prop: '',
   order: ''
 })
+
+// 抽屉相关状态
+const violationDrawerVisible = ref(false)
+const currentRuleName = ref('')
+const currentRuleScenarios = ref([])
 
 // 严重程度映射
 const SEVERITY_MAP = {
@@ -261,12 +290,6 @@ const filteredStats = computed(() => {
   }
 })
 
-// 切换创建人
-const switchCreator = (idx) => {
-  activeCreatorIndex.value = idx
-  filters.value = { month: 'all', status: 'all' }
-}
-
 // 处理排序
 const handleSort = ({ prop, order }) => {
   sortConfig.value = { prop, order }
@@ -316,6 +339,52 @@ const getStatusClass = (row) => {
   if (row.compliance_rate < 50) return 'danger'
   return 'warning'
 }
+
+// 打开违规明细抽屉
+const openViolationDrawer = (ruleRow) => {
+  currentRuleName.value = ruleRow.ruleName
+  // 筛选当前规则的所有违规场景
+  currentRuleScenarios.value = activeCreator.value?.scenarios?.filter(s => 
+    s.ruleName === ruleRow.ruleName && s.is_violation
+  ) || []
+  violationDrawerVisible.value = true
+}
+
+// 抽屉中显示的规则场景列表
+const filteredRuleScenarios = computed(() => {
+  let result = currentRuleScenarios.value
+  
+  // 应用月份筛选
+  if (filters.value.month !== 'all') {
+    result = result.filter(s => s.month === filters.value.month)
+  }
+  
+  // 应用状态筛选
+  if (filters.value.status !== 'all') {
+    result = result.filter(s => s.run_status === filters.value.status)
+  }
+  
+  // 排序
+  if (sortConfig.value.prop && sortConfig.value.order) {
+    result = [...result].sort((a, b) => {
+      let va = a[sortConfig.value.prop]
+      let vb = b[sortConfig.value.prop]
+      
+      // 数值比较
+      if (typeof va === 'number' && typeof vb === 'number') {
+        return sortConfig.value.order === 'ascending' ? va - vb : vb - va
+      }
+      
+      // 字符串比较
+      va = String(va || '')
+      vb = String(vb || '')
+      const cmp = va.localeCompare(vb, 'zh-CN')
+      return sortConfig.value.order === 'ascending' ? cmp : -cmp
+    })
+  }
+  
+  return result
+})
 
 // 格式化运行状态
 const formatRunStatus = (status) => {
@@ -369,9 +438,9 @@ onMounted(() => {
 
 .report-section {
   background: #fff;
-  padding: 20px;
+  padding: 24px;
   border-radius: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
   border: 1px solid rgba(147, 112, 219, 0.12);
 }
@@ -396,7 +465,7 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 
   .section-header-left {
@@ -505,49 +574,8 @@ onMounted(() => {
   }
 }
 
-.creator-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.creator-tab {
-  padding: 8px 16px;
-  border-radius: 20px;
-  background: #f5f3ff;
-  border: 1px solid rgba(123, 66, 246, 0.2);
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-  color: #5a32a3;
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: #ede9fe;
-    border-color: rgba(123, 66, 246, 0.4);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(123, 66, 246, 0.15);
-  }
-
-  &.active {
-    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
-    border-color: #7b42f6;
-    color: #fff;
-    box-shadow: 0 4px 12px rgba(123, 66, 246, 0.3);
-  }
-
-  .count {
-    font-weight: 600;
-    margin-left: 4px;
-  }
-}
-
 .creator-detail {
-  padding: 20px;
-  background: #f8f7ff;
-  border-radius: 12px;
-  border: 1px solid rgba(147, 112, 219, 0.1);
+  padding: 0;
 }
 
 .creator-name {
@@ -592,6 +620,72 @@ onMounted(() => {
   font-size: 14px;
   border: 1px solid rgba(147, 112, 219, 0.1);
   box-shadow: 0 2px 8px rgba(147, 112, 219, 0.05);
+}
+
+// 统计卡片容器
+.stats-cards {
+  display: flex;
+  gap: 16px;
+  margin: 0 0 24px 0;
+  flex-wrap: wrap;
+}
+
+// 统计卡片
+.stat-card {
+  flex: 1;
+  min-width: 140px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(147, 112, 219, 0.1);
+  box-shadow: 0 2px 12px rgba(147, 112, 219, 0.08);
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(147, 112, 219, 0.15);
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+
+  // 不同类型卡片的颜色主题
+  &.total {
+    border-left: 4px solid #7b42f6;
+    .stat-value {
+      color: #7b42f6;
+    }
+  }
+
+  &.compliant {
+    border-left: 4px solid #52c41a;
+    .stat-value {
+      color: #52c41a;
+    }
+  }
+
+  &.violation {
+    border-left: 4px solid #f5222d;
+    .stat-value {
+      color: #f5222d;
+    }
+  }
+
+  &.rate {
+    border-left: 4px solid #fa8c16;
+    .stat-value {
+      color: #fa8c16;
+    }
+  }
 }
 
 .detail-title {
@@ -743,9 +837,41 @@ onMounted(() => {
 .rate-mid { color: #f5a623; font-weight: bold; }
 .rate-high { color: #28a745; font-weight: bold; }
 
+// 违规明细抽屉样式
+.violation-drawer {
+  :deep(.el-drawer__header) {
+    margin-bottom: 0;
+    padding: 20px;
+    border-bottom: 1px solid #e9ecef;
+
+    .el-drawer__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+  }
+
+  :deep(.el-drawer__body) {
+    padding: 0;
+    background: #f5f3ff;
+  }
+
+  .drawer-content {
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .drawer-count {
+    margin: 0 0 16px 0;
+    font-size: 13px;
+    color: #666;
+  }
+}
+
 // 违规规则统计表格样式 - 参考规则总览
 .violation-summary-table {
-  margin-top: 16px;
+  margin-top: 0;
   border: none;
   border-radius: 8px;
   overflow: hidden;
@@ -767,6 +893,7 @@ onMounted(() => {
     border-bottom: 1px solid #e9ecef;
     padding: 12px 16px !important;
     text-align: center;
+    vertical-align: middle;
 
     &:hover {
       background-color: #ffffff !important;
@@ -797,6 +924,7 @@ onMounted(() => {
     color: #333;
     font-size: 14px;
     font-weight: 400;
+    vertical-align: middle;
 
     .cell {
       overflow: visible;
@@ -807,6 +935,39 @@ onMounted(() => {
   // 最后一行无边框
   :deep(.el-table__row:last-child td) {
     border-bottom: none;
+  }
+
+  // 查看按钮样式 - 参考 XMindConverter.vue
+  :deep(.view-btn) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px !important;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    transition: all 0.3s ease;
+    vertical-align: middle;
+
+    .el-icon {
+      font-size: 14px;
+      color: #ffffff !important;
+    }
+
+    span {
+      font-size: 12px;
+      color: #ffffff !important;
+    }
+
+    &:hover {
+      background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
+    }
   }
 }
 
