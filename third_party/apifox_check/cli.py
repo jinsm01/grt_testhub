@@ -11,7 +11,7 @@ from datetime import datetime
 from .checker import init_user_config, load_config, run_checks
 from .fetcher import fetch_all_scenarios, read_token_from_config
 from .models import ReportData
-from .reporter import generate_html_report, write_report
+from .reporter import generate_html_report, write_report, generate_json_report, write_json_report
 from .rules import set_id_field_exemptions
 
 
@@ -119,6 +119,11 @@ async def main_async():
         html = generate_html_report(report_data, config, scenarios)
         output_path = write_report(html, args.output)
         print(f"\nHTML报告已生成: {output_path}")
+        # Also generate JSON report for Vue frontend
+        json_data = generate_json_report(report_data, scenarios)
+        json_path = args.output.replace(".html", ".json")
+        write_json_report(json_data, json_path)
+        print(f"JSON报告已生成: {json_path}")
 
     elif args.format == "json":
         report_dict = {

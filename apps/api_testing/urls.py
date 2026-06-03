@@ -19,7 +19,7 @@ from .apifox_check_views import (
     apifox_check_config, apifox_check_generate,
     apifox_check_task_status, apifox_check_reports,
     apifox_check_report_detail, apifox_check_report_delete,
-    apifox_check_exemptions,
+    apifox_check_exemptions, apifox_check_report_json,
 )
 
 router = DefaultRouter()
@@ -68,6 +68,8 @@ urlpatterns = [
     path('api-testing/apifox-check/reports/', apifox_check_reports, name='apifox-check-reports'),
     # Apifox 场景检查 - 删除报告 (必须在详情前面，避免被详情模式匹配)
     path('api-testing/apifox-check/report/<str:filename>/delete/', apifox_check_report_delete, name='apifox-check-report-delete'),
+    # Apifox 场景检查 - 报告JSON数据 (必须在HTML详情前面，避免被详情模式匹配)
+    path('api-testing/apifox-check/report/<str:filename>/json/', apifox_check_report_json, name='apifox-check-report-json'),
     # Apifox 场景检查 - 报告详情 (HTML)
     path('api-testing/apifox-check/report/<str:filename>/', apifox_check_report_detail, name='apifox-check-report-detail'),
 ]

@@ -1,0 +1,483 @@
+<template>
+  <div class="report-detail-container">
+    <!-- 返回按钮 -->
+    <div class="report-header">
+      <el-button @click="$emit('back')">
+        <el-icon><ArrowLeft /></el-icon>
+        返回列表
+      </el-button>
+      <h2 class="report-title">Apifox接口自动化编写规范检查报告</h2>
+    </div>
+
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-state">
+      <el-skeleton :rows="10" animated />
+    </div>
+
+    <!-- 报告内容 -->
+    <div v-else-if="reportData" class="report-content">
+      <!-- 基本信息 -->
+      <div class="report-meta">
+        <span><b>项目ID：</b>{{ reportData.project_id }}</span>
+        <span><b>环境ID：</b>{{ reportData.environment_id }}</span>
+        <span><b>场景总数：</b>{{ reportData.total_scenarios }}</span>
+        <span><b>检查时间：</b>{{ reportData.timestamp }}</span>
+      </div>
+
+      <!-- 一、检查结果总览 -->
+      <section class="report-section">
+        <h2 class="section-title">一、检查结果总览</h2>
+        <el-table :data="reportData.rule_results" class="summary-table">
+          <el-table-column type="index" label="序号" width="70" align="center" />
+          <el-table-column prop="rule.id" label="规则ID" min-width="150" />
+          <el-table-column prop="rule.name" label="规则名称" min-width="180" />
+          <el-table-column prop="rule.description" label="规则说明" min-width="250" show-overflow-tooltip />
+          <el-table-column label="合规率" width="100" align="center">
+            <template #default="{ row }">
+              <span :class="getComplianceRateClass(row.compliance_rate)">
+                {{ row.compliance_rate.toFixed(1) }}%
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="严重程度" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="getSeverityType(row.rule.severity)" size="small" effect="dark" round>
+                {{ getSeverityLabel(row.rule.severity) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="getStatusType(row)" size="small" effect="dark" round>
+                {{ getStatusLabel(row) }}
+              </el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+      </section>
+
+      <!-- 二、按创建人归纳总结 -->
+      <section class="report-section">
+        <h2 class="section-title">二、按创建人归纳总结</h2>
+        <p class="section-desc">按创建人统计各人的场景违规情况，支持按月份和运行结果筛选</p>
+
+        <!-- 创建人 Tabs -->
+        <div class="creator-tabs">
+          <div
+            v-for="(creator, idx) in creators"
+            :key="idx"
+            class="creator-tab"
+            :class="{ active: activeCreatorIndex === idx }"
+            @click="switchCreator(idx)"
+          >
+            {{ creator.name }}
+            <span class="count">({{ creator.total }}/{{ creator.compliant }}/{{ creator.violations }})</span>
+          </div>
+        </div>
+
+        <!-- 当前创建人详情 -->
+        <div v-if="activeCreator" class="creator-detail">
+          <h3 class="creator-name">{{ activeCreator.name }}</h3>
+
+          <!-- 筛选器 -->
+          <div class="filter-bar">
+            <el-select v-model="filters.month" placeholder="月份" style="width: 120px;">
+              <el-option label="全部月份" value="all" />
+              <el-option
+                v-for="month in availableMonths"
+                :key="month"
+                :label="month"
+                :value="month"
+              />
+            </el-select>
+            <el-select v-model="filters.status" placeholder="运行结果" style="width: 140px; margin-left: 12px;">
+              <el-option label="全部结果" value="all" />
+              <el-option label="通过" value="passed" />
+              <el-option label="失败" value="failed" />
+              <el-option label="未运行" value="not_run" />
+              <el-option label="未知" value="unknown" />
+            </el-select>
+          </div>
+
+          <!-- 场景统计 -->
+          <div class="stats-bar">
+            <b>场景统计：</b>
+            <span>总场景数: <b>{{ filteredStats.total }}</b></span>
+            <span style="margin-left: 16px; color: #28a745;">合规场景: <b>{{ filteredStats.compliant }}</b></span>
+            <span style="margin-left: 16px; color: #e94560;">违规场景: <b>{{ filteredStats.violations }}</b></span>
+            <span v-if="filteredStats.total > 0" style="margin-left: 16px; font-size: 13px;">
+              (合规率 <b :style="{ color: getComplianceColor(filteredStats.complianceRate) }">{{ filteredStats.complianceRate.toFixed(1) }}%</b>)
+            </span>
+          </div>
+
+          <!-- 违规规则统计 -->
+          <el-table :data="activeCreator.ruleViolations" class="violation-summary-table">
+            <el-table-column prop="ruleName" label="规则名称" />
+            <el-table-column prop="count" label="违规数" width="100" align="center" />
+            <el-table-column label="严重程度" width="100" align="center">
+              <template #default="{ row }">
+                <el-tag :type="getSeverityType(row.severity)" size="small" effect="dark" round>
+                  {{ getSeverityLabel(row.severity) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+
+          <!-- 违规场景明细 -->
+          <h4 class="detail-title">违规场景明细</h4>
+          <p class="detail-count">显示 {{ filteredScenarios.length }} / {{ activeCreator.scenarios.length }} 条</p>
+
+          <el-table
+            :data="filteredScenarios"
+            class="detail-table"
+            @sort-change="handleSort"
+          >
+            <el-table-column prop="id" label="场景ID" width="100" sortable />
+            <el-table-column prop="name" label="场景名称" min-width="180" show-overflow-tooltip sortable />
+            <el-table-column prop="folder" label="归属目录" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="ruleName" label="规则" min-width="150" />
+            <el-table-column label="问题描述" min-width="200" show-overflow-tooltip>
+              <template #default="{ row }">
+                {{ row.message }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="created_at" label="创建时间" width="150" sortable />
+            <el-table-column label="运行结果" width="100" align="center">
+              <template #default="{ row }">
+                <span v-html="formatRunStatus(row.run_status)" />
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </section>
+    </div>
+
+    <!-- 错误状态 -->
+    <div v-else-if="error" class="error-state">
+      <el-empty :description="error" />
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue'
+import { ArrowLeft } from '@element-plus/icons-vue'
+import api from '@/utils/api'
+
+const props = defineProps({
+  filename: {
+    type: String,
+    required: true
+  }
+})
+
+defineEmits(['back'])
+
+// 状态
+const loading = ref(false)
+const error = ref('')
+const reportData = ref(null)
+const activeCreatorIndex = ref(0)
+const filters = ref({
+  month: 'all',
+  status: 'all'
+})
+const sortConfig = ref({
+  prop: '',
+  order: ''
+})
+
+// 严重程度映射
+const SEVERITY_MAP = {
+  high: { label: '高', type: 'danger' },
+  mid: { label: '中', type: 'warning' },
+  low: { label: '低', type: 'success' },
+  skip: { label: '跳过', type: 'info' }
+}
+
+// 加载报告数据
+const loadReport = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const res = await api.get(`/api-testing/apifox-check/report/${props.filename}/json/`)
+    reportData.value = res.data
+    activeCreatorIndex.value = 0
+  } catch (err) {
+    error.value = err.response?.data?.error || '加载报告失败'
+  } finally {
+    loading.value = false
+  }
+}
+
+// 创建人列表
+const creators = computed(() => {
+  if (!reportData.value?.creators) return []
+  return reportData.value.creators
+})
+
+// 当前选中的创建人
+const activeCreator = computed(() => {
+  return creators.value[activeCreatorIndex.value] || null
+})
+
+// 可用的月份列表
+const availableMonths = computed(() => {
+  if (!activeCreator.value) return []
+  const months = new Set()
+  activeCreator.value.scenarios.forEach(s => {
+    if (s.month) months.add(s.month)
+  })
+  return Array.from(months).sort()
+})
+
+// 过滤后的场景列表
+const filteredScenarios = computed(() => {
+  if (!activeCreator.value) return []
+  
+  let result = activeCreator.value.scenarios.filter(s => {
+    const monthMatch = filters.value.month === 'all' || s.month === filters.value.month
+    const statusMatch = filters.value.status === 'all' || s.run_status === filters.value.status
+    return monthMatch && statusMatch
+  })
+  
+  // 排序
+  if (sortConfig.value.prop && sortConfig.value.order) {
+    result = [...result].sort((a, b) => {
+      let va = a[sortConfig.value.prop]
+      let vb = b[sortConfig.value.prop]
+      
+      // 数值比较
+      if (typeof va === 'number' && typeof vb === 'number') {
+        return sortConfig.value.order === 'ascending' ? va - vb : vb - va
+      }
+      
+      // 字符串比较
+      va = String(va || '')
+      vb = String(vb || '')
+      const cmp = va.localeCompare(vb, 'zh-CN')
+      return sortConfig.value.order === 'ascending' ? cmp : -cmp
+    })
+  }
+  
+  return result
+})
+
+// 过滤后的统计
+const filteredStats = computed(() => {
+  const total = filteredScenarios.value.length
+  const violations = filteredScenarios.value.filter(s => s.is_violation).length
+  const compliant = total - violations
+  return {
+    total,
+    compliant,
+    violations,
+    complianceRate: total > 0 ? (compliant / total * 100) : 0
+  }
+})
+
+// 切换创建人
+const switchCreator = (idx) => {
+  activeCreatorIndex.value = idx
+  filters.value = { month: 'all', status: 'all' }
+}
+
+// 处理排序
+const handleSort = ({ prop, order }) => {
+  sortConfig.value = { prop, order }
+}
+
+// 获取合规率样式类
+const getComplianceRateClass = (rate) => {
+  if (rate < 50) return 'rate-low'
+  if (rate < 80) return 'rate-mid'
+  return 'rate-high'
+}
+
+// 获取严重程度标签
+const getSeverityLabel = (severity) => {
+  return SEVERITY_MAP[severity]?.label || severity
+}
+
+// 获取严重程度类型
+const getSeverityType = (severity) => {
+  return SEVERITY_MAP[severity]?.type || 'info'
+}
+
+// 获取合规率颜色
+const getComplianceColor = (rate) => {
+  if (rate < 50) return '#e94560'
+  if (rate < 80) return '#f5a623'
+  return '#28a745'
+}
+
+// 获取状态标签
+const getStatusLabel = (row) => {
+  if (row.failed_count === 0) return '基本合规'
+  if (row.compliance_rate < 50) return '严重违规'
+  return '部分违规'
+}
+
+// 获取状态类型
+const getStatusType = (row) => {
+  if (row.failed_count === 0) return 'success'
+  if (row.compliance_rate < 50) return 'danger'
+  return 'warning'
+}
+
+// 格式化运行状态
+const formatRunStatus = (status) => {
+  const map = {
+    passed: '<span style="color: #28a745; font-weight: bold;">通过</span>',
+    failed: '<span style="color: #e94560; font-weight: bold;">失败</span>',
+    not_run: '<span style="color: #adb5bd;">未运行</span>',
+    running: '<span style="color: #f5a623; font-weight: bold;">运行中</span>',
+    unknown: '<span style="color: #6c757d;">未知</span>'
+  }
+  return map[status] || map.unknown
+}
+
+onMounted(() => {
+  loadReport()
+})
+</script>
+
+<style scoped lang="scss">
+.report-detail-container {
+  padding: 24px;
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  min-height: calc(100vh - 60px);
+}
+
+.report-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.report-title {
+  font-size: 20px;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.report-meta {
+  background: #fff;
+  padding: 16px 24px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  
+  span {
+    margin-right: 24px;
+    font-size: 14px;
+    color: #333;
+  }
+}
+
+.report-section {
+  background: #fff;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
+}
+
+.section-title {
+  font-size: 18px;
+  color: #1a1a2e;
+  border-left: 4px solid #7b42f6;
+  padding-left: 12px;
+  margin-bottom: 16px;
+}
+
+.section-desc {
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.creator-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.creator-tab {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: #e9ecef;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: #dee2e6;
+  }
+  
+  &.active {
+    background: #7b42f6;
+    color: #fff;
+  }
+  
+  .count {
+    font-weight: bold;
+    margin-left: 4px;
+  }
+}
+
+.creator-detail {
+  padding: 16px;
+  background: #f8f9ff;
+  border-radius: 8px;
+}
+
+.creator-name {
+  font-size: 16px;
+  color: #16213e;
+  margin-bottom: 16px;
+}
+
+.filter-bar {
+  margin-bottom: 16px;
+}
+
+.stats-bar {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.detail-title {
+  margin-top: 20px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.detail-count {
+  text-align: right;
+  font-size: 13px;
+  color: #666;
+  margin: 4px 0;
+}
+
+.summary-table,
+.violation-summary-table,
+.detail-table {
+  margin-top: 12px;
+}
+
+.rate-low { color: #e94560; font-weight: bold; }
+.rate-mid { color: #f5a623; font-weight: bold; }
+.rate-high { color: #28a745; font-weight: bold; }
+
+.loading-state,
+.error-state {
+  padding: 40px;
+  background: #fff;
+  border-radius: 12px;
+}
+</style>

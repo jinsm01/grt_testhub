@@ -214,14 +214,11 @@
       </template>
     </el-dialog>
 
-    <!-- 报告详情 - 直接显示 -->
-    <iframe
+    <!-- 报告详情 - 使用 Vue 组件渲染 -->
+    <ReportDetail
       v-if="showReportDetail"
-      :src="reportIframeUrl"
-      class="report-iframe-direct"
-      @load="reportLoading = false"
-      frameborder="0"
-      scrolling="auto"
+      :filename="currentReportName"
+      @back="backToList"
     />
 
     <!-- 历史报告列表 -->
@@ -311,6 +308,7 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { DataAnalysis, Setting, Check, VideoPlay, Refresh, FolderOpened, View, Delete, Loading, List, CircleCheck, Plus, Edit, ArrowLeft } from '@element-plus/icons-vue'
 import api from '@/utils/api'
+import ReportDetail from './components/ReportDetail.vue'
 
 // 配置
 const config = reactive({
@@ -338,9 +336,7 @@ const pageSize = ref(10)
 const totalReports = ref(0)
 
 // 报告查看
-const reportIframeUrl = ref('')
 const currentReportName = ref('')
-const reportLoading = ref(true)
 const showReportDetail = ref(false)
 
 // 规则查看抽屉
@@ -635,15 +631,12 @@ const handleCurrentChange = (val) => {
 // 查看报告 - 在当前页显示详情
 const viewReport = (row) => {
   currentReportName.value = row.filename
-  reportIframeUrl.value = `/api/api-testing/apifox-check/report/${row.filename}/`
-  reportLoading.value = true
   showReportDetail.value = true
 }
 
 // 返回列表
 const backToList = () => {
   showReportDetail.value = false
-  reportIframeUrl.value = ''
   currentReportName.value = ''
 }
 
@@ -700,13 +693,6 @@ onMounted(() => {
   flex-direction: column;
   gap: 20px;
   position: relative;
-
-  // 当显示报告详情时，移除 flex 布局限制，让内容自然撑开
-  &:has(.report-iframe-direct) {
-    display: block;
-    padding: 0;
-    min-height: auto;
-  }
 }
 
 // ========== 页面标题栏（参考 InterfaceList.vue 样式） ==========
@@ -1122,16 +1108,6 @@ onMounted(() => {
   height: calc(100vh - 120px);
   border: none;
   border-radius: 0 0 8px 8px;
-}
-
-// ========== 报告详情页样式 ==========
-// 报告详情 iframe 直接显示 - 使用浏览器原生滚动条
-.report-iframe-direct {
-  width: 100%;
-  height: auto;
-  min-height: 100vh;
-  border: none;
-  display: block;
 }
 
 // ========== 规则抽屉内容 ==========

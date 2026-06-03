@@ -555,3 +555,141 @@ def write_report(html: str, output_path: str) -> str:
     with open(p, "w", encoding="utf-8") as f:
         f.write(html)
     return str(p.resolve())
+
+
+def generate_json_report(report: ReportData, scenarios: list[Scenario] | None = None) -> dict:
+    """Generate JSON format report data for Vue frontend rendering."""
+    global scenarios_map
+    if scenarios:
+        scenarios_map = _build_scenario_map(scenarios)
+    else:
+        scenarios_map.clear()
+
+    # Build rule results
+    rule_results = []
+    for rr in report.rule_results:
+        rule_results.append({
+            "rule": {
+                "id": rr.rule.id,
+                "name": rr.rule.name,
+                "severity": rr.rule.severity,
+                "description": rr.rule.description,
+            },
+            "passed_count": rr.passed_count,
+            "failed_count": rr.failed_count,
+            "compliance_rate": rr.compliance_rate,
+        })
+
+    # Build creator summary
+    creators = []
+    if scenarios and scenarios_map:
+        creator_data = _build_creator_data(scenarios, report)
+        for idx, (creator, data) in enumerate(creator_data.items()):
+            # Build scenarios for this creator
+            creator_scenarios = []
+            for s in data["scenarios"]:
+                # Find violations for this scenario
+                violations = []
+                for rr in report.rule_results:
+                    for r in rr.results:
+                        if not r.passed and r.scenario_id == s.id:
+                            violations.append({
+                                "rule_id": rr.rule.id,
+                                "ruleName": rr.rule.name,
+                                "message": r.message,
+                                "details": r.details,
+                            })
+
+                creator_scenarios.append({
+                    "id": s.id,
+                    "name": s.name or "-",
+                    "folder": s.folder_path or "-",
+                    "month": _extract_created_month(s.created_at),
+                    "run_status": s.last_run_status or "unknown",
+                    "created_at": _format_created_at(s.created_at),
+                    "is_violation": s.id in data["violation_scenario_ids"],
+                    "violations": violations,
+                    "ruleName": violations[0]["ruleName"] if violations else "",
+                    "message": violations[0]["message"] if violations else "",
+                })
+
+            # Build rule violations summary
+            rule_violations = []
+            for rr in report.rule_results:
+                v_count = data["violations"].get(rr.rule.id, 0)
+                if v_count > 0:
+                    rule_violations.append({
+                        "ruleName": rr.rule.name,
+                        "count": v_count,
+                        "severity": rr.rule.severity,
+                    })
+
+            creators.append({
+                "index": idx,
+                "name": creator,
+                "total": data["total_scenarios"],
+                "compliant": data["compliant_scenarios"],
+                "violations": data["total_violations"],
+                "scenarios": creator_scenarios,
+                "ruleViolations": rule_violations,
+            })
+
+    return {
+        "project_id": report.project_id,
+        "environment_id": report.environment_id,
+        "total_scenarios": report.total_scenarios,
+        "timestamp": report.timestamp,
+        "rule_results": rule_results,
+        "creators": creators,
+    }
+
+
+def _build_creator_data(scenarios: list[Scenario], report: ReportData) -> dict:
+    """Build creator data mapping for JSON report."""
+    creator_data = {}
+
+    for s in scenarios:
+        creator = s.creator or "未知"
+        if creator not in creator_data:
+            creator_data[creator] = {
+                "scenarios": [],
+                "total_scenarios": 0,
+                "compliant_scenarios": 0,
+                "total_violations": 0,
+                "violations": {},
+                "violation_scenario_ids": set(),
+            }
+        creator_data[creator]["scenarios"].append(s)
+        creator_data[creator]["total_scenarios"] += 1
+
+    # Count violations per creator
+    for rr in report.rule_results:
+        for r in rr.results:
+            if r.passed or r.scenario_id is None:
+                continue
+            sc = scenarios_map.get(r.scenario_id)
+            if not sc:
+                continue
+            creator = sc.creator or "未知"
+            if creator not in creator_data:
+                continue
+            creator_data[creator]["violations"][rr.rule.id] = creator_data[creator]["violations"].get(rr.rule.id, 0) + 1
+            creator_data[creator]["total_violations"] += 1
+            creator_data[creator]["violation_scenario_ids"].add(r.scenario_id)
+
+    # Calculate compliant scenarios
+    for creator, data in creator_data.items():
+        data["compliant_scenarios"] = data["total_scenarios"] - len(data["violation_scenario_ids"])
+
+    return creator_data
+
+
+def write_json_report(json_data: dict, output_path: str) -> str:
+    """Write JSON report to file."""
+    from pathlib import Path
+    import json as _json
+    p = Path(output_path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with open(p, "w", encoding="utf-8") as f:
+        _json.dump(json_data, f, ensure_ascii=False, indent=2)
+    return str(p.resolve())

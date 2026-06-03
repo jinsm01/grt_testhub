@@ -980,4 +980,33 @@ def apifox_check_report_delete(request, filename):
     meta_file = os.path.join(REPORTS_DIR, filename + '.meta.json')
     if os.path.exists(meta_file):
         os.remove(meta_file)
+    # 同时删除JSON文件
+    json_file = os.path.join(REPORTS_DIR, filename.replace('.html', '.json'))
+    if os.path.exists(json_file):
+        os.remove(json_file)
     return Response({'success': True, 'message': '报告已删除'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def apifox_check_report_json(request, filename):
+    """获取报告JSON数据（用于Vue前端渲染）"""
+    # 首先尝试查找对应的JSON文件
+    json_filename = filename.replace('.html', '.json')
+    json_filepath = os.path.join(REPORTS_DIR, json_filename)
+    
+    # 如果JSON文件存在，直接返回
+    if os.path.exists(json_filepath):
+        with open(json_filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return Response(data)
+    
+    # 如果JSON文件不存在，但HTML文件存在，返回错误提示
+    html_filepath = os.path.join(REPORTS_DIR, filename)
+    if os.path.exists(html_filepath):
+        return Response(
+            {'error': '该报告没有JSON格式数据，请重新生成报告'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    raise Http404('报告文件不存在')
