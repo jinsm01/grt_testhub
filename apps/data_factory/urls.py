@@ -22,6 +22,14 @@ from .bug_analysis_view import (
     bug_analysis_summary_detail,
     bug_analysis_summary_delete,
 )
+# AI 评分量表生成视图
+from .rubric_view import (
+    rubric_records,
+    rubric_detail,
+    rubric_generate,
+    rubric_delete,
+    rubric_statistics,
+)
 
 router = DefaultRouter()
 router.register(r'', DataFactoryViewSet, basename='data-factory')
@@ -59,4 +67,11 @@ urlpatterns = [
     path('bug-analysis/summaries/', bug_analysis_summaries, name='bug-analysis-summaries'),  # GET 汇总分析列表
     path('bug-analysis/summaries/<int:summary_id>/', bug_analysis_summary_detail, name='bug-analysis-summary-detail'),  # GET 汇总分析详情
     path('bug-analysis/summaries/<int:summary_id>/delete/', bug_analysis_summary_delete, name='bug-analysis-summary-delete'),  # DELETE
+
+    # === AI 评分量表生成管理 ===
+    path('rubric/records/', rubric_records, name='rubric-records'),
+    path('rubric/generate/', rubric_generate, name='rubric-generate'),
+    path('rubric/statistics/', rubric_statistics, name='rubric-statistics'),
+    path('rubric/<int:record_id>/', rubric_detail, name='rubric-detail'),
+    path('rubric/<int:record_id>/delete/', rubric_delete, name='rubric-delete'),
 ]
