@@ -7,6 +7,18 @@ from datetime import datetime
 
 from .models import CheckConfig, ReportData, RuleResult, Scenario
 
+
+def _is_fixture_dir(scenario: Scenario) -> bool:
+    """Check if a scenario is under a 前置/后置 (pre/post) directory."""
+    path = scenario.folder_path
+    if not path:
+        return False
+    parts = path.split("/")
+    for p in parts:
+        if p in ("前置", "后置"):
+            return True
+    return False
+
 CSS = """
 * { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
 body { max-width: 1600px; margin: 0 auto; padding: 20px; background: #ffffff; color: #333; }
@@ -127,8 +139,11 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
     scenarios_map = _build_scenario_map(scenarios)
 
     # Count unique scenarios per creator first (total)
+    # Filter out scenarios in 前置/后置 directories
     creator_scenarios = defaultdict(set)  # creator -> set of scenario ids
     for s in scenarios:
+        if _is_fixture_dir(s):
+            continue
         creator = s.creator or "未知"
         creator_scenarios[creator].add(s.id)
 
@@ -178,9 +193,12 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
     sorted_creators = sorted(creator_data.items(), key=lambda x: x[1]["total_violations"], reverse=True)
 
     # Collect all months and run statuses for filter options (global)
+    # Filter out scenarios in 前置/后置 directories
     all_months = set()
     all_statuses = set()
     for s in scenarios:
+        if _is_fixture_dir(s):
+            continue
         all_months.add(_extract_created_month(s.created_at))
         all_statuses.add(s.last_run_status or "unknown")
     sorted_months = sorted([m for m in all_months if m != "未知"], reverse=True)
@@ -222,7 +240,8 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
         parts.append('</div>')
 
         # Embed all scenario metadata for this creator as JSON (for dynamic stats filtering)
-        creator_scenario_list = [s for s in scenarios if (s.creator or "未知") == creator]
+        # Filter out scenarios in 前置/后置 directories
+        creator_scenario_list = [s for s in scenarios if (s.creator or "未知") == creator and not _is_fixture_dir(s)]
         scenario_meta = []
         # Build per-scenario rule violation mapping: scenario_id -> set of violated rule_ids
         # This represents "which rules this scenario violates" (unique rules per scenario)
@@ -728,6 +747,9 @@ def _build_creator_data(scenarios: list[Scenario], report: ReportData) -> dict:
     creator_data = {}
 
     for s in scenarios:
+        # Filter out scenarios in 前置/后置 directories
+        if _is_fixture_dir(s):
+            continue
         creator = s.creator or "未知"
         if creator not in creator_data:
             creator_data[creator] = {
