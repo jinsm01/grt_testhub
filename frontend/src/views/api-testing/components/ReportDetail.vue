@@ -320,12 +320,14 @@ const filteredRuleViolations = computed(() => {
     }
   })
 
-  // 构建结果数组
-  return rawRules.map(r => ({
-    ruleName: r.ruleName,
-    count: ruleCountMap[r.ruleName],
-    severity: ruleMetaMap[r.ruleName].severity
-  }))
+  // 构建结果数组，只保留有违规的规则
+  return rawRules
+    .map(r => ({
+      ruleName: r.ruleName,
+      count: ruleCountMap[r.ruleName],
+      severity: ruleMetaMap[r.ruleName].severity
+    }))
+    .filter(r => r.count > 0)
 })
 
 // 处理排序
