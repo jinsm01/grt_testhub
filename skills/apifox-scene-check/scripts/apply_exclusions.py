@@ -609,6 +609,65 @@ def patch_apply_filters(html):
     return html
 
 
+def patch_switch_creator(html):
+    """Fix switchCreator to synchronize month/status filter state across tabs.
+
+    When switching between creator tabs, the month and status filter values
+    should be carried over from the previously active tab.
+    """
+    # Add global filter state variables before switchCreator (only if not already present)
+    if "_currentMonthFilter" not in html or "_currentStatusFilter" not in html:
+        old_func_start = "function switchCreator(idx) {"
+        new_func_start = (
+            "// Track current filter values for synchronization across tabs\n"
+            "var _currentMonthFilter = 'all';\n"
+            "var _currentStatusFilter = 'all';\n\n"
+            "function switchCreator(idx) {"
+        )
+        html = html.replace(old_func_start, new_func_start)
+
+    # Add sync logic inside switchCreator before the sections loop
+    # Only patch if the sync logic is not already present (check for "Sync the target")
+    if "Sync the target tab's dropdowns" not in html:
+        old_sync = (
+            "    for (var i = 0; i < sections.length; i++) {\n"
+            "        if (sections[i].id === 'creator-' + idx) {\n"
+            "            sections[i].style.display = '';\n"
+            "            applyFilters(i);"
+        )
+        new_sync = (
+            "    // Sync the target tab's dropdowns to the global filter state\n"
+            "    var targetMonth = document.getElementById('filter-month-' + idx);\n"
+            "    var targetStatus = document.getElementById('filter-status-' + idx);\n"
+            "    if (targetMonth && _currentMonthFilter !== 'all') targetMonth.value = _currentMonthFilter;\n"
+            "    if (targetStatus && _currentStatusFilter !== 'all') targetStatus.value = _currentStatusFilter;\n"
+            "    for (var i = 0; i < sections.length; i++) {\n"
+            "        if (sections[i].id === 'creator-' + idx) {\n"
+            "            sections[i].style.display = '';\n"
+            "            applyFilters(i);"
+        )
+        html = html.replace(old_sync, new_sync)
+
+    # Add save filter state in applyFilters (only if not already present)
+    if "Save current filter values for cross-tab synchronization" not in html:
+        old_save = (
+            "    var monthVal = monthEl ? monthEl.value : 'all';\n"
+            "    var statusVal = statusEl ? statusEl.value : 'all';\n"
+            "    var visible = 0;"
+        )
+        new_save = (
+            "    var monthVal = monthEl ? monthEl.value : 'all';\n"
+            "    var statusVal = statusEl ? statusEl.value : 'all';\n"
+            "    // Save current filter values for cross-tab synchronization\n"
+            "    _currentMonthFilter = monthVal;\n"
+            "    _currentStatusFilter = statusVal;\n"
+            "    var visible = 0;"
+        )
+        html = html.replace(old_save, new_save)
+
+    return html
+
+
 def patch_update_stats(html):
     """Fix updateStats to filter out fixture/setup scenarios (for new-version CLI output).
     
@@ -651,6 +710,7 @@ def patch_update_rule_table_from_rows(html):
     """Fix updateRuleTableFromRows to:
     1. Skip excluded/fixture rows and apply month/status filter
     2. Build tbody from ruleScenarioCounts instead of oldTbody rows (fixes stale data issue)
+    3. Filter ruleScenarioCounts by scenario-rule-months when month filter is active
 
     Without fix #1, rows with data-exclude/data-fixture-skip attributes (skipped by
     applyFilters) would still be counted in the rule violation table.
@@ -658,6 +718,9 @@ def patch_update_rule_table_from_rows(html):
     Without fix #2, after filtering to a month with no data, oldTbody is replaced with
     a 'no data' row. Subsequent filters to months WITH data cannot find rule names
     in the oldTbody, so the table permanently shows 'no data'.
+
+    Without fix #3, the rule violation counts don't reflect the selected month filter
+    because ruleScenarioCounts aggregates all months.
     """
     # Fix 1: Insert skip logic for exclude/fixture rows + month/status filter
     old_skip = (
@@ -677,8 +740,9 @@ def patch_update_rule_table_from_rows(html):
     )
     html = html.replace(old_skip, new_skip)
 
-    # Fix 2: Replace the oldTbody-dependent tbody-building section with a version
-    # that builds directly from ruleScenarioCounts and caches severity info.
+    # Fix 2+3: Replace the oldTbody-dependent tbody-building section with a version
+    # that builds directly from ruleScenarioCounts, caches severity info, and
+    # filters counts by scenario-rule-months when month filter is active.
     old_build = (
         "    // Build new tbody\n"
         "    var severityMap = {\n"
@@ -750,12 +814,37 @@ def patch_update_rule_table_from_rows(html):
         "        summaryTable._ruleSeverityCache = cache;\n"
         "    }\n"
         "    var ruleSeverityCache = summaryTable._ruleSeverityCache;\n"
+        "    // Load scenario-rule-months if available for month-filtered counts\n"
+        "    var monthsEl = document.getElementById('scenario-rule-months-' + idx);\n"
+        "    var scenarioRuleMonths = {};\n"
+        "    if (monthsEl) {\n"
+        "        try { scenarioRuleMonths = JSON.parse(monthsEl.textContent); } catch(e) {}\n"
+        "    }\n"
+        "    // Fallback: build from scenario-meta if months element missing\n"
+        "    if (Object.keys(scenarioRuleMonths).length === 0) {\n"
+        "        var metaEl2 = document.getElementById('scenario-meta-' + idx);\n"
+        "        if (metaEl2) {\n"
+        "            var allMeta;\n"
+        "            try { allMeta = JSON.parse(metaEl2.textContent); } catch(e) {}\n"
+        "            if (allMeta) {\n"
+        "                for (var mi = 0; mi < allMeta.length; mi++) {\n"
+        "                    var msc = allMeta[mi];\n"
+        "                    scenarioRuleMonths[String(msc.id)] = msc.month;\n"
+        "                }\n"
+        "            }\n"
+        "        }\n"
+        "    }\n"
         "    var html = '';\n"
         "    var hasData = false;\n"
         "    var ruleNames = Object.keys(ruleScenarioCounts).sort();\n"
         "    for (var ri = 0; ri < ruleNames.length; ri++) {\n"
         "        var rName = ruleNames[ri];\n"
-        "        var count = ruleScenarioCounts[rName];\n"
+        "        var count = 0;\n"
+        "        var sidMap = ruleScenarioCounts[rName];\n"
+        "        for (var sid in sidMap) {\n"
+        "            if (monthVal !== 'all' && scenarioRuleMonths[sid] && scenarioRuleMonths[sid] !== monthVal) continue;\n"
+        "            count += sidMap[sid];\n"
+        "        }\n"
         "        if (count > 0) {\n"
         "            hasData = true;\n"
         "            var sevInfo = ruleSeverityCache[rName];\n"
@@ -771,6 +860,185 @@ def patch_update_rule_table_from_rows(html):
         "}"
     )
     html = html.replace(old_build, new_build)
+    return html
+
+
+def patch_legacy_rule_table(html):
+    """For legacy reports that have scenario-meta and updateStats but lack
+    updateRuleTable/updateRuleTableFromRows entirely. Injects a complete
+    updateRuleTable function and wires it into updateStats so the rule
+    violation table dynamically follows month/status filters.
+
+    This handles the "middle-version" reports where:
+    - scenario-meta JSON is present
+    - applyFilters / updateStats exist
+    - but the rule summary table is static HTML with no JS rebuild logic
+    """
+    # Only patch if neither updateRuleTable nor updateRuleTableFromRows exists
+    if 'function updateRuleTable' in html or 'function updateRuleTableFromRows' in html:
+        return html
+
+    # 1. Wire updateRuleTable call into updateStats
+    old_update_stats_end = (
+        "    // Update rule violation table dynamically based on filtered scenarios\n"
+        "    updateRuleTable(idx, monthVal, statusVal);\n"
+        "}"
+    )
+    # If the old pattern exists (shouldn't in pure legacy), skip
+    if old_update_stats_end in html:
+        return html
+
+    # Try to find the end of updateStats and add the call
+    # Legacy updateStats ends with rateTextEl.style.display = 'none'; then }
+    legacy_end = (
+        "        } else {\n"
+        "            rateTextEl.style.display = 'none';\n"
+        "        }\n"
+        "    }\n"
+        "}"
+    )
+    if legacy_end in html:
+        new_legacy_end = (
+        "        } else {\n"
+        "            rateTextEl.style.display = 'none';\n"
+        "        }\n"
+        "    }\n"
+        "    // Update rule violation table dynamically based on filtered scenarios\n"
+        "    updateRuleTable(idx, monthVal, statusVal);\n"
+        "}"
+        )
+        html = html.replace(legacy_end, new_legacy_end)
+    else:
+        # Fallback: try another pattern
+        alt_end = (
+            "            rateTextEl.style.display = 'none';\n"
+            "        }\n"
+            "    }\n"
+            "}\n"
+            "\n"
+            "// Apply filter on page load"
+        )
+        new_alt_end = (
+            "            rateTextEl.style.display = 'none';\n"
+            "        }\n"
+            "    }\n"
+            "    // Update rule violation table dynamically based on filtered scenarios\n"
+            "    updateRuleTable(idx, monthVal, statusVal);\n"
+            "}\n"
+            "\n"
+            "// Apply filter on page load"
+        )
+        html = html.replace(alt_end, new_alt_end)
+
+    # 2. Inject updateRuleTable function before the final </script>
+    update_rule_table_js = """
+// Dynamically rebuild rule violation table based on filtered scenarios
+function updateRuleTable(idx, monthVal, statusVal) {
+    var metaEl = document.getElementById('scenario-meta-' + idx);
+    var table = document.getElementById('detail-table-' + idx);
+    var statsDiv = document.getElementById('creator-' + idx);
+    if (!metaEl || !table || !statsDiv) return;
+
+    var allScenarios;
+    try { allScenarios = JSON.parse(metaEl.textContent); } catch(e) { return; }
+
+    // Build set of scenario IDs that pass the current filters
+    var filteredScenarioIds = {};
+    for (var i = 0; i < allScenarios.length; i++) {
+        var sc = allScenarios[i];
+        if (monthVal !== 'all' && sc.month !== monthVal) continue;
+        if (statusVal !== 'all' && sc.run_status !== statusVal) continue;
+        var folder = sc.folder || '';
+        var name = sc.name || '';
+        if (folder.indexOf('前置') !== -1 || folder.indexOf('后置') !== -1) continue;
+        if (name.indexOf('前置') !== -1 || name.indexOf('后置') !== -1) continue;
+        filteredScenarioIds[String(sc.id)] = true;
+    }
+
+    // Count violations per rule from visible detail rows
+    var ruleCounts = {};
+    var rows = table.querySelectorAll('tr.detail-row');
+    for (var i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        if (r.classList.contains('detail-row-hidden')) continue;
+        if (r.getAttribute('data-exclude') === 'true' || r.getAttribute('data-fixture-skip') === 'true') continue;
+        var cells = r.querySelectorAll('td');
+        if (cells.length < 4) continue;
+        var scenarioId = cells[0].textContent.trim();
+        var ruleName = cells[3].textContent.trim();
+        if (!filteredScenarioIds[scenarioId]) continue;
+        ruleCounts[ruleName] = (ruleCounts[ruleName] || 0) + 1;
+    }
+
+    // Find summary table and rebuild tbody
+    var summaryTable = statsDiv.querySelector('.creator-stats .summary-table');
+    if (!summaryTable) return;
+    var oldTbody = summaryTable.querySelector('tbody');
+    if (!oldTbody) return;
+
+    // Cache severity info from original rows
+    var severityMap = {
+        'severity-high': ['\\u1f534 \\u9ad8', 'severity-high'],
+        'severity-mid': ['\\u1f7e1 \\u4e2d', 'severity-mid'],
+        'severity-low': ['\\u1f7e2 \\u4f4e', 'severity-low'],
+        'severity-skip': ['\\u23ed\\ufe0f \\u8df3\\u8fc7', 'severity-skip']
+    };
+    if (!summaryTable._ruleSeverityCache) {
+        var cache = {};
+        var origRows = oldTbody.querySelectorAll('tr');
+        for (var k = 0; k < origRows.length; k++) {
+            var tds = origRows[k].querySelectorAll('td');
+            if (tds.length < 3) continue;
+            var rn = tds[0].textContent.trim();
+            var sevClass = '';
+            var sevText = '';
+            for (var cls in severityMap) {
+                if (tds[2].classList.contains(cls)) {
+                    sevClass = severityMap[cls][1];
+                    sevText = severityMap[cls][0];
+                    break;
+                }
+            }
+            if (sevClass) {
+                cache[rn] = { class: sevClass, text: sevText };
+            }
+        }
+        summaryTable._ruleSeverityCache = cache;
+    }
+    var ruleSeverityCache = summaryTable._ruleSeverityCache;
+
+    var html = '';
+    var hasData = false;
+    var ruleNames = Object.keys(ruleCounts).sort();
+    for (var ri = 0; ri < ruleNames.length; ri++) {
+        var rName = ruleNames[ri];
+        var count = ruleCounts[rName];
+        if (count > 0) {
+            hasData = true;
+            var sevInfo = ruleSeverityCache[rName];
+            var sevClass = sevInfo ? sevInfo.class : 'severity-mid';
+            var sevText = sevInfo ? sevInfo.text : '\\u1f7e1 \\u4e2d';
+            html += '<tr><td>' + rName + '</td><td><b>' + count + '</b></td><td class="' + sevClass + '">' + sevText + '</td></tr>';
+        }
+    }
+    if (!hasData) {
+        html = '<tr><td colspan="3" style="text-align:center;color:#999;padding:20px;">\\u8be5\\u7b5b\\u9009\\u6761\\u4ef6\\u4e0b\\u65e0\\u8fdd\\u89c4\\u6570\\u636e</td></tr>';
+    }
+    oldTbody.innerHTML = html;
+}
+"""
+
+    # Find a good place to inject: before the last </script> tag that contains DOMContentLoaded
+    # or before the sortDetailTable function
+    inject_marker = "// Sort detail table by column"
+    if inject_marker in html:
+        html = html.replace(inject_marker, update_rule_table_js + "\n" + inject_marker)
+    else:
+        # Fallback: inject before the final </script>
+        last_script = html.rfind('</script>')
+        if last_script != -1:
+            html = html[:last_script] + update_rule_table_js + "\n" + html[last_script:]
+
     return html
 
 
@@ -817,11 +1085,13 @@ def main():
         html = update_creator_tabs(html, exclusion_map, all_excluded)
 
     # Step 7: Patch missing JS functions (for new-version CLI output that lacks them)
+    html = patch_switch_creator(html)
     html = patch_apply_filters(html)
     html = patch_update_stats(html)
     html = patch_sort_detail_table(html)
     html = patch_update_rule_table_from_rows(html)
-    print('\nPatched JS functions (applyFilters, updateStats, sortDetailTable, updateRuleTableFromRows).')
+    html = patch_legacy_rule_table(html)
+    print('\nPatched JS functions (switchCreator, applyFilters, updateStats, sortDetailTable, updateRuleTableFromRows, legacyRuleTable).')
 
     # Step 8: Inject UI features (violation toggle, compliant sort) — always run
     html = inject_css_styles(html)

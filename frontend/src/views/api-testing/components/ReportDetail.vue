@@ -144,9 +144,11 @@
               <el-table-column prop="id" label="场景ID" width="100" sortable />
               <el-table-column prop="name" label="场景名称" min-width="180" show-overflow-tooltip sortable />
               <el-table-column prop="folder" label="归属目录" min-width="150" show-overflow-tooltip />
-              <el-table-column label="问题描述" min-width="200" show-overflow-tooltip>
+              <el-table-column label="问题描述" min-width="200">
                 <template #default="{ row }">
-                  {{ row.message }}
+                  <el-tooltip :content="row.message" placement="top" :show-after="300">
+                    <span class="message-ellipsis">{{ row.message }}</span>
+                  </el-tooltip>
                 </template>
               </el-table-column>
               <el-table-column prop="created_at" label="创建时间" width="150" sortable />
@@ -877,6 +879,16 @@ onMounted(() => {
 .rate-low { color: #e94560; font-weight: bold; }
 .rate-mid { color: #f5a623; font-weight: bold; }
 .rate-high { color: #28a745; font-weight: bold; }
+
+// 问题描述列：超出宽度打点，tooltip 展示全部
+.message-ellipsis {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
 
 // 违规明细抽屉样式
 .violation-drawer {

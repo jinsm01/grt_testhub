@@ -468,6 +468,22 @@ class ScenarioStepViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # 校验：单场景步骤数不能超过10条（只统计接口请求步骤，不含引用场景/分组；同时有场景级前置脚本和后置脚本时豁免）
+        scenario = AutomationScenario.objects.get(id=scenario_id)
+        has_pre = bool(scenario.pre_script and scenario.pre_script.strip())
+        has_post = bool(scenario.post_script and scenario.post_script.strip())
+        if not (has_pre and has_post):
+            # 只统计接口请求步骤，排除引用场景、分组、脚本等非请求步骤
+            existing_step_count = ScenarioStep.objects.filter(
+                scenario_id=scenario_id, is_deleted=False,
+                step_type='request'
+            ).count()
+            if existing_step_count >= 10:
+                return Response(
+                    {'error': '单场景步骤数不能超过10条'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
         # 获取最大步骤编号
         max_step = ScenarioStep.objects.filter(
             scenario_id=scenario_id

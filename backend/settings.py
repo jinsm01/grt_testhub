@@ -53,7 +53,7 @@ LOCAL_APPS = [
     'apps.ui_automation.apps.UiAutomationConfig',
     'apps.app_automation.apps.AppAutomationConfig',  # APP自动化测试
     'apps.core',
-    'apps.data_factory',
+    'apps.data_factory',  # Bug分析、数据工厂等工具
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -97,16 +97,20 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': config('DB_NAME', default='testhub'),
         'USER': config('DB_USER', default='root'),
-        'PASSWORD': config('DB_PASSWORD', default='root'),
+        'PASSWORD': config('DB_PASSWORD', default='password'),
         'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='3306'),
+        'PORT': config('DB_PORT', default='3306', cast=int),
         'OPTIONS': {
             'charset': 'utf8mb4',
             'use_unicode': True,
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
 
+# PyMySQL 初始化
+import pymysql
+pymysql.install_as_MySQLdb()
 
 AUTH_PASSWORD_VALIDATORS = [
     {

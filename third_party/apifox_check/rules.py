@@ -14,14 +14,38 @@ from .models import CheckResult, Scenario, Step
 # ---------------------------------------------------------------------------
 
 def _is_fixture_dir(scenario: Scenario) -> bool:
-    """Check if a scenario is under a 前置/后置 (pre/post) directory."""
+    """Check if a scenario is under a 前置/后置 directory (for other rules)."""
     path = scenario.folder_path
-    if not path:
-        return False
-    parts = path.split("/")
-    for p in parts:
-        if p in ("前置", "后置"):
-            return True
+    if path:
+        parts = path.split("/")
+        for p in parts:
+            if p in ("前置", "后置"):
+                return True
+    return False
+
+
+def _has_fixture_step(scenario: Scenario, listen_type: str) -> bool:
+    """Check if the scenario's steps contain a fixture step of the given type.
+
+    Args:
+        listen_type: "prerequest" for pre-steps, "test" for post-steps.
+    """
+    steps = scenario.steps or []
+
+    for st in steps:
+        if not st.events or not isinstance(st.events, list):
+            continue
+        for ev in st.events:
+            if not isinstance(ev, dict):
+                continue
+            listen = ev.get("listen", "")
+            if listen == listen_type:
+                script = ev.get("script", {})
+                if isinstance(script, dict) and script.get("exec", []):
+                    return True
+                if isinstance(script, str) and script.strip():
+                    return True
+
     return False
 
 
@@ -168,6 +192,9 @@ def check_scenario_run_passed(scenarios: list[Scenario], params: dict) -> list[C
 def check_scenario_step_count(scenarios: list[Scenario], params: dict) -> list[CheckResult]:
     """Check that single scenario has at most N actual API test steps.
 
+    Only exempts when the scenario has BOTH pre-script AND post-script
+    configured at the scenario level (item[0].event or options).
+
     Counts only 'http' type steps that are NOT part of a referenced scenario.
     Excludes:
       - group steps (pre/post hooks markers and scenario reference markers)
@@ -178,36 +205,54 @@ def check_scenario_step_count(scenarios: list[Scenario], params: dict) -> list[C
     max_steps = params.get("max_steps", 10)
 
     for s in scenarios:
-        if _is_fixture_dir(s):
-            continue
+        # 判断场景是否同时有前置脚本和后置脚本（场景级别，同时存在才豁免步骤数限制）
+        has_both = s.has_pre_script and s.has_post_script
+
+        # 防御：确保 steps 不为 None（兼容旧数据）
+        steps = s.steps or []
+
         # Count http steps that are NOT part of a referenced scenario
-        actual_steps = [st for st in s.steps if st.type == "http" and not st.is_group_ref]
+        actual_steps = [st for st in steps if st.type == "http" and not st.is_group_ref]
         # Count all referenced steps (both group markers and http steps inside ref scope)
-        ref_steps = [st for st in s.steps if st.is_group_ref]
-        
+        ref_steps = [st for st in steps if st.is_group_ref]
+
         count = len(actual_steps)
-        total = len(s.steps)
+        total = len(steps)
         ref_count = len(ref_steps)
-        
-        if count > max_steps:
-            results.append(CheckResult(
-                rule_id="scenario-step-count",
-                scenario_id=s.id,
-                scenario_name=s.name,
-                severity="mid",
-                passed=False,
-                message=f"场景有{count}个实际步骤(超过阈值{max_steps})，含{ref_count}个引用场景步骤 (total_steps={total}; actual_steps={count}; ref_steps={ref_count})",
-                details={"total_steps": total, "actual_steps": count, "ref_steps": ref_count},
-            ))
-        else:
+
+        # 同时有前置和后置步骤的场景：豁免步骤数限制
+        if has_both:
             results.append(CheckResult(
                 rule_id="scenario-step-count",
                 scenario_id=s.id,
                 scenario_name=s.name,
                 severity="mid",
                 passed=True,
-                message=f"场景有{count}个实际步骤，含{ref_count}个引用场景步骤，符合阈值要求",
-                details={"total_steps": total, "actual_steps": count, "ref_steps": ref_count},
+                message=f"场景同时有前置和后置步骤，豁免步骤数限制(当前{count}个实际步骤，含{ref_count}个引用场景步骤)",
+                details={"total_steps": total, "actual_steps": count, "ref_steps": ref_count, "has_pre_post": True},
+            ))
+
+        elif count > max_steps:
+            # 不同时具备前置和后置步骤，且步骤超限 → 违规
+            results.append(CheckResult(
+                rule_id="scenario-step-count",
+                scenario_id=s.id,
+                scenario_name=s.name,
+                severity="mid",
+                passed=False,
+                message=f"场景不同时具备前置和后置步骤，且步骤超限({count}个实际步骤>阈值{max_steps})，含{ref_count}个引用场景步骤 (total_steps={total}; actual_steps={count}; ref_steps={ref_count})",
+                details={"total_steps": total, "actual_steps": count, "ref_steps": ref_count, "has_pre_post": False},
+            ))
+        else:
+            # 不同时具备前置和后置步骤，但步骤未超限 → 合规
+            results.append(CheckResult(
+                rule_id="scenario-step-count",
+                scenario_id=s.id,
+                scenario_name=s.name,
+                severity="mid",
+                passed=True,
+                message=f"场景不同时具备前置和后置步骤，有{count}个实际步骤(符合阈值≤{max_steps})，含{ref_count}个引用场景步骤",
+                details={"total_steps": total, "actual_steps": count, "ref_steps": ref_count, "has_pre_post": False},
             ))
     return results
 
@@ -221,7 +266,8 @@ def check_crud_query_assert(scenarios: list[Scenario], params: dict) -> list[Che
     for s in scenarios:
         if _is_fixture_dir(s):
             continue
-        for i, step in enumerate(s.steps):
+        steps = s.steps or []
+        for i, step in enumerate(steps):
             if step.is_group_ref or not step.request_method:
                 continue
             if not _is_crud_method(step.request_method):
@@ -229,8 +275,8 @@ def check_crud_query_assert(scenarios: list[Scenario], params: dict) -> list[Che
 
             # Check if there is a subsequent GET/POST step with assertions
             has_query_verify = False
-            for j in range(i + 1, len(s.steps)):
-                next_step = s.steps[j]
+            for j in range(i + 1, len(steps)):
+                next_step = steps[j]
                 if next_step.is_group_ref:
                     continue
                 if _is_query_method(next_step.request_method or ""):
@@ -346,7 +392,8 @@ def check_no_hardcoded_id(scenarios: list[Scenario], params: dict) -> list[Check
     for s in scenarios:
         if _is_fixture_dir(s):
             continue
-        for step in s.steps:
+        steps = s.steps or []
+        for step in steps:
             if step.is_group_ref or not step.request_method:
                 continue
             if not _is_crud_method(step.request_method):
@@ -387,8 +434,9 @@ def check_param_from_prev_step(scenarios: list[Scenario], params: dict) -> list[
 
         # Collect variable names set by previous steps (from assertions/extractions)
         prev_vars = set()
+        steps = s.steps or []
 
-        for i, step in enumerate(s.steps):
+        for i, step in enumerate(steps):
             if step.is_group_ref:
                 continue
             if not step.request_method:
@@ -465,7 +513,8 @@ def check_auto_name_tag(scenarios: list[Scenario], params: dict) -> list[CheckRe
     for s in scenarios:
         if _is_fixture_dir(s):
             continue
-        for step in s.steps:
+        steps = s.steps or []
+        for step in steps:
             if step.is_group_ref or not step.request_method:
                 continue
             # Only check POST/PUT (create/edit)

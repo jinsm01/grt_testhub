@@ -32,10 +32,17 @@ class Scenario:
     folder_id: int | None = None
     priority: int | None = None
     options: dict | None = None
-    steps: list[Step] = field(default_factory=list)
+    steps: list[Step] | None = None  # 允许传入 None，post_init 中修正为 []
+    has_pre_script: bool = False  # 场景自身是否配置了前置脚本
+    has_post_script: bool = False  # 场景自身是否配置了后置脚本
     creator: str = ""
     created_at: str = ""
     last_run_status: str = ""  # passed / failed / not_run
+
+    def __post_init__(self):
+        # 防御性处理：确保 steps 永不为 None
+        if self.steps is None:
+            object.__setattr__(self, 'steps', [])
 
 
 @dataclass

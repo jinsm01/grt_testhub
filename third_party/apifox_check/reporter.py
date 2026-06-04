@@ -243,9 +243,13 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
         # Filter out scenarios in 前置/后置 directories
         creator_scenario_list = [s for s in scenarios if (s.creator or "未知") == creator and not _is_fixture_dir(s)]
         scenario_meta = []
-        # Build per-scenario rule violation mapping: scenario_id -> set of violated rule_ids
-        # This represents "which rules this scenario violates" (unique rules per scenario)
-        scenario_rule_violations = {}  # scenario_id -> {rule_id: true}
+        # Build per-scenario rule violation mapping:
+        # scenario_rule_violations: scenario_id -> set of violated rule_ids (for is_violation check)
+        # scenario_rule_counts: scenario_id -> {rule_id: count} (for correct violation count stats)
+        # scenario_rule_months: scenario_id -> month string (for filtering counts in updateRuleTable)
+        scenario_rule_violations = {}
+        scenario_rule_counts = {}
+        scenario_rule_months = {}
         for s in creator_scenario_list:
             scenario_meta.append({
                 "id": s.id,
@@ -256,16 +260,22 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
                 "created_at": _format_created_at(s.created_at),
                 "is_violation": s.id in data["violation_scenario_ids"],
             })
-            # Collect unique violated rule IDs for this scenario
+            # Collect unique violated rule IDs and their counts for this scenario
             violated_rules = set()
+            rule_counts = {}
             for rr in report.rule_results:
                 for r in rr.results:
                     if r.passed or r.scenario_id is None:
                         continue
                     if r.scenario_id == s.id:
                         violated_rules.add(rr.rule.id)
+                        rule_counts[rr.rule.id] = rule_counts.get(rr.rule.id, 0) + 1
             if violated_rules:
                 scenario_rule_violations[s.id] = list(violated_rules)
+            if rule_counts:
+                scenario_rule_counts[s.id] = rule_counts
+            # Also embed per-scenario per-rule month info so updateRuleTable can filter correctly
+            scenario_rule_months[s.id] = _extract_created_month(s.created_at)
         import json as _json
         parts.append(f'<script id="scenario-meta-{idx}" type="application/json">{_json.dumps(scenario_meta, ensure_ascii=False)}</script>')
         # Embed rules info and per-scenario rule violations for dynamic table rebuild
@@ -278,6 +288,8 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
             })
         parts.append(f'<script id="rules-info-{idx}" type="application/json">{_json.dumps(rules_info, ensure_ascii=False)}</script>')
         parts.append(f'<script id="scenario-rule-violations-{idx}" type="application/json">{_json.dumps(scenario_rule_violations, ensure_ascii=False)}</script>')
+        parts.append(f'<script id="scenario-rule-counts-{idx}" type="application/json">{_json.dumps(scenario_rule_counts, ensure_ascii=False)}</script>')
+        parts.append(f'<script id="scenario-rule-months-{idx}" type="application/json">{_json.dumps(scenario_rule_months, ensure_ascii=False)}</script>')
 
         # Stats cards: 总场景数 / 合规场景数 / 违规场景数
         parts.append(f'<p style="margin:12px 0;font-size:14px;">')
@@ -296,6 +308,8 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
         parts.append(f'<table class="summary-table" id="rule-table-{idx}">')
         parts.append('<thead><tr><th>规则名称</th><th>违规数</th><th>严重程度</th></tr></thead>')
         parts.append(f'<tbody id="rule-table-body-{idx}">')
+        # Initial render: only show rules with violations for the creator's first month (or all if no data)
+        # We rebuild via JS on page load, so this static HTML is just a fallback.
         for rr in report.rule_results:
             v_count = data["violations"].get(rr.rule.id, 0)
             if v_count > 0:
@@ -331,8 +345,9 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
                             detail_str += f"{k}=[{', '.join(str(x) for x in v[:3])}]; "
                 detail_str = detail_str.rstrip("; ")[:200]
                 month_val = _extract_created_month(sc.created_at)
-                run_val = sc.last_run_status or "unknown"
-                parts.append(f'<tr class="detail-row" data-month="{month_val}" data-runstatus="{run_val}">')
+                # 使用规则检查状态作为显示结果，而非 Apifox 执行结果
+                rule_status = "failed" if not r.passed else "passed"
+                parts.append(f'<tr class="detail-row" data-month="{month_val}" data-runstatus="{rule_status}">')
                 parts.append(f'<td>{r.scenario_id}</td>')
                 parts.append(f'<td>{r.scenario_name or "-"}</td>')
                 parts.append(f'<td>{sc.folder_path or "-"}</td>')
@@ -340,7 +355,10 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
                 full_msg = r.message + (" (" + detail_str + ")" if detail_str else "")
                 parts.append(f'<td class="tooltip-cell"><span class="tooltip-cell-inner">{full_msg[:60]}{"..." if len(full_msg) > 60 else ""}</span><div class="tooltip-text" data-tooltip="{full_msg}">{full_msg}</div></td>')
                 parts.append(f'<td>{_format_created_at(sc.created_at)}</td>')
-                parts.append(f'<td>{_format_run_status(run_val)}</td>')
+                # 显示规则合规状态：违规=失败，通过=通过
+                status_class = 'run-failed' if not r.passed else 'run-passed'
+                status_text = '失败' if not r.passed else '通过'
+                parts.append(f'<td class="{status_class}"><b>{status_text}</b></td>')
                 parts.append('</tr>')
                 row_index += 1
 
@@ -349,9 +367,18 @@ def _generate_creator_summary(scenarios: list[Scenario], report: ReportData) -> 
     # JavaScript for tab switching and filtering
     parts.append("""
 <script>
+// Track current filter values for synchronization across tabs
+var _currentMonthFilter = 'all';
+var _currentStatusFilter = 'all';
+
 function switchCreator(idx) {
     var sections = document.querySelectorAll('[id^="creator-"]');
     var tabs = document.querySelectorAll('[id^="ctab-"]');
+    // Sync the target tab's dropdowns to the global filter state
+    var targetMonth = document.getElementById('filter-month-' + idx);
+    var targetStatus = document.getElementById('filter-status-' + idx);
+    if (targetMonth && _currentMonthFilter !== 'all') targetMonth.value = _currentMonthFilter;
+    if (targetStatus && _currentStatusFilter !== 'all') targetStatus.value = _currentStatusFilter;
     for (var i = 0; i < sections.length; i++) {
         if (sections[i].id === 'creator-' + idx) {
             sections[i].style.display = '';
@@ -375,6 +402,9 @@ function applyFilters(idx) {
     var rows = table.querySelectorAll('tr.detail-row');
     var monthVal = monthEl ? monthEl.value : 'all';
     var statusVal = statusEl ? statusEl.value : 'all';
+    // Save current filter values for cross-tab synchronization
+    _currentMonthFilter = monthVal;
+    _currentStatusFilter = statusVal;
     var visible = 0;
     for (var i = 0; i < rows.length; i++) {
         var r = rows[i];
@@ -407,6 +437,10 @@ function updateStats(idx, monthVal, statusVal) {
         var sc = allScenarios[i];
         if (monthVal !== 'all' && sc.month !== monthVal) continue;
         if (statusVal !== 'all' && sc.run_status !== statusVal) continue;
+        var folder = sc.folder || '';
+        var name = sc.name || '';
+        if (folder.indexOf('前置') !== -1 || folder.indexOf('后置') !== -1) continue;
+        if (name.indexOf('前置') !== -1 || name.indexOf('后置') !== -1) continue;
         filteredTotal++;
         if (sc.is_violation) filteredViol++;
     }
@@ -437,32 +471,47 @@ function updateStats(idx, monthVal, statusVal) {
 
 function updateRuleTable(idx, monthVal, statusVal) {
     var rulesEl = document.getElementById('rules-info-' + idx);
-    var violEl = document.getElementById('scenario-rule-violations-' + idx);
+    var countsEl = document.getElementById('scenario-rule-counts-' + idx);
+    var monthsEl = document.getElementById('scenario-rule-months-' + idx);
     var metaEl = document.getElementById('scenario-meta-' + idx);
     var tbodyEl = document.getElementById('rule-table-body-' + idx);
-    if (!rulesEl || !violEl || !metaEl || !tbodyEl) return;
-    var rulesInfo, scenarioViolations, allScenarios;
+    if (!rulesEl || !countsEl || !metaEl || !tbodyEl) return;
+    var rulesInfo, scenarioRuleCounts, scenarioRuleMonths, allScenarios;
     try {
         rulesInfo = JSON.parse(rulesEl.textContent);
-        scenarioViolations = JSON.parse(violEl.textContent);
+        scenarioRuleCounts = JSON.parse(countsEl.textContent);
+        scenarioRuleMonths = monthsEl ? JSON.parse(monthsEl.textContent) : {};
         allScenarios = JSON.parse(metaEl.textContent);
     } catch(e) { return; }
+    // Fallback: build scenarioRuleMonths from scenario-meta if not embedded
+    if (Object.keys(scenarioRuleMonths).length === 0) {
+        for (var i = 0; i < allScenarios.length; i++) {
+            var sc = allScenarios[i];
+            scenarioRuleMonths[String(sc.id)] = sc.month;
+        }
+    }
     // Build set of scenario IDs that pass the current filters (keys as strings for JSON object lookup)
     var filteredScenarioIds = {};
     for (var i = 0; i < allScenarios.length; i++) {
         var sc = allScenarios[i];
         if (monthVal !== 'all' && sc.month !== monthVal) continue;
         if (statusVal !== 'all' && sc.run_status !== statusVal) continue;
+        var folder = sc.folder || '';
+        var name = sc.name || '';
+        if (folder.indexOf('前置') !== -1 || folder.indexOf('后置') !== -1) continue;
+        if (name.indexOf('前置') !== -1 || name.indexOf('后置') !== -1) continue;
         filteredScenarioIds[String(sc.id)] = true;
     }
-    // Count how many filtered scenarios violate each rule (unique scenarios per rule)
+    // Sum violation counts per rule from scenario-rule-counts, but also check scenario-rule-months
+    // because a scenario may have violations in multiple rules but only one month entry.
     var ruleCounts = {};
-    for (var sid in scenarioViolations) {
+    for (var sid in scenarioRuleCounts) {
         if (!filteredScenarioIds[sid]) continue;
-        var violatedRuleIds = scenarioViolations[sid];
-        for (var j = 0; j < violatedRuleIds.length; j++) {
-            var rid = violatedRuleIds[j];
-            ruleCounts[rid] = (ruleCounts[rid] || 0) + 1;
+        // Double-check month filter using scenario-rule-months (defensive filter)
+        if (monthVal !== 'all' && scenarioRuleMonths[sid] && scenarioRuleMonths[sid] !== monthVal) continue;
+        var countsMap = scenarioRuleCounts[sid];
+        for (var rid in countsMap) {
+            ruleCounts[rid] = (ruleCounts[rid] || 0) + countsMap[rid];
         }
     }
     // Rebuild tbody HTML
@@ -495,6 +544,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (section.style.display !== 'none') {
             applyFilters(i);
             break;
+        }
+    }
+    // Also trigger filter rebuild for all hidden creator sections so their rule tables are correct if switched to
+    for (var i = 0; ; i++) {
+        var section = document.getElementById('creator-' + i);
+        if (!section) break;
+        if (section.style.display === 'none') {
+            applyFilters(i);
         }
     }
 
