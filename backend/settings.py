@@ -53,7 +53,7 @@ LOCAL_APPS = [
     'apps.ui_automation.apps.UiAutomationConfig',
     'apps.app_automation.apps.AppAutomationConfig',  # APP自动化测试
     'apps.core',
-    # 'apps.data_factory',  # 依赖 pandas 未安装
+    'apps.data_factory',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

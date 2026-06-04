@@ -67,7 +67,7 @@ urlpatterns = [
     path('api/app-automation/', include('apps.app_automation.urls')),  # APP自动化测试
     path('api/', include('apps.api_testing.urls')),
     path('api/core/', include('apps.core.urls')),
-    # path('api/data-factory/', include('apps.data_factory.urls')),  # 依赖 pandas 未安装
+    path('api/data-factory/', include('apps.data_factory.urls')),
 ]
 
 # API测试 Allure 报告访问 - 使用自定义视图确保 UTF-8 编码
