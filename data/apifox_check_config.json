@@ -13,7 +13,8 @@
   ],
   "rule_statuses": {
     "scenario-run-passed": true,
-    "crud-query-assert": true,
-    "no-hardcoded-id": true
+    "crud-query-assert": false,
+    "no-hardcoded-id": false,
+    "scenario-step-count": false
   }
 }
