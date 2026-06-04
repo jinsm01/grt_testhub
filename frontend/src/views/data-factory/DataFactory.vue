@@ -1078,7 +1078,7 @@ import {
   Refresh, Download, Briefcase, Monitor, IceCream, Suitcase, Van, Collection, Coordinate,
   Folder, Cpu, Headset, Chicken, Food
 } from '@element-plus/icons-vue'
-import axios from 'axios'
+import api from '@/utils/api'
 import * as XLSX from 'xlsx'
 import { useUserStore } from '@/stores/user'
 
@@ -1418,7 +1418,7 @@ const getScenarioIcon = (scenario) => {
 
 const fetchCategories = async () => {
   try {
-    const response = await axios.get('/api/data-factory/categories/')
+    const response = await api.get('/data-factory/categories/')
     categories.value = response.data.categories
   } catch (error) {
     ElMessage.error(t('dataFactory.messages.fetchCategoriesFailed'))
@@ -1427,7 +1427,7 @@ const fetchCategories = async () => {
 
 const fetchScenarios = async () => {
   try {
-    const response = await axios.get('/api/data-factory/categories/')
+    const response = await api.get('/data-factory/categories/')
     const scenarioMap = {}
     response.data.categories.forEach(category => {
       category.tools.forEach(tool => {
@@ -1640,7 +1640,7 @@ const executeTool = async () => {
   executing.value = true
   try {
     const input_data = buildInputData()
-    const response = await axios.post('/api/data-factory/', {
+    const response = await api.post('/data-factory/', {
       tool_name: currentTool.value.name,
       tool_category: currentCategory.value,
       tool_scenario: currentTool.value.scenario || 'other',
@@ -1765,7 +1765,7 @@ const handleJsonInput = async () => {
   debounceTimer = setTimeout(async () => {
     if (currentTool.value?.name === 'format_json' && toolForm.value.json_str) {
       try {
-        const response = await axios.post('/api/data-factory/', {
+        const response = await api.post('/data-factory/', {
           tool_name: 'format_json',
           tool_category: 'json',
           tool_scenario: 'data_validation',
@@ -1951,7 +1951,7 @@ const handleJsonDiffInput = async () => {
       return
     }
     try {
-      const response = await axios.post('/api/data-factory/', {
+      const response = await api.post('/data-factory/', {
         tool_name: 'json_diff_enhanced',
         tool_category: 'json',
         tool_scenario: 'data_validation',
@@ -1973,7 +1973,7 @@ const handleJsonDiffInput = async () => {
 const handleJsonPathInput = async () => {
   if (currentTool.value?.name === 'jsonpath_query' && toolForm.value.json_str && toolForm.value.jsonpath_expr) {
     try {
-      const response = await axios.post('/api/data-factory/', {
+      const response = await api.post('/data-factory/', {
         tool_name: 'jsonpath_query',
         tool_category: 'json',
         tool_scenario: 'data_validation',
@@ -2349,7 +2349,7 @@ const debouncedFetchHistory = debounce(async () => {
   historyLoading.value = true
   
   try {
-    const response = await axios.get('/api/data-factory/', {
+    const response = await api.get('/data-factory/', {
       params: {
         page: historyCurrentPage.value,
         page_size: historyPageSize.value,
@@ -2380,7 +2380,7 @@ const fetchHistory = async () => {
       params.search = historySearchQuery.value
     }
 
-    const response = await axios.get('/api/data-factory/', { params })
+    const response = await api.get('/data-factory/', { params })
 
     historyRecords.value = response.data.results
     historyTotal.value = response.data.count
@@ -2422,7 +2422,7 @@ const fetchStatistics = async () => {
   
   statsLoading.value = true
   try {
-    const response = await axios.get('/api/data-factory/statistics/', {
+    const response = await api.get('/data-factory/statistics/', {
       params: {
         _t: Date.now()
       }
@@ -2455,7 +2455,7 @@ const deleteRecord = async (record) => {
       }
     )
 
-    const response = await axios.delete(`/api/data-factory/${record.id}/`)
+    const response = await api.delete(`/data-factory/${record.id}/`)
     ElMessage.success(t('dataFactory.history.deleteSuccess'))
 
     // 立即刷新数据，确保总数一致
@@ -2796,7 +2796,7 @@ const saveRecordName = async (record) => {
   }
   
   try {
-    await axios.patch(`/api/data-factory/${record.id}/`, {
+    await api.patch(`/data-factory/${record.id}/`, {
       custom_name: newName
     })
     
@@ -2842,7 +2842,7 @@ const saveEditRecord = async () => {
   }
   
   try {
-    await axios.patch(`/api/data-factory/${editingRecord.value.id}/`, {
+    await api.patch(`/data-factory/${editingRecord.value.id}/`, {
       custom_name: newName
     })
     

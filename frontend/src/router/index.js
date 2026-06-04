@@ -9,6 +9,7 @@ import ProjectList from '@/views/projects/ProjectList.vue'
 import Home from '@/views/Home.vue'
 import DataFactory from '@/views/data-factory/DataFactory.vue'
 import ExcelDataFiller from '@/views/data-factory/ExcelDataFiller.vue'
+import AIRubricGenerator from '@/views/data-factory/AIRubricGenerator.vue'
 import ApiProjectManagement from '@/views/api-testing/ProjectManagement.vue'
 import ApiInterfaceManagement from '@/views/api-testing/InterfaceManagement.vue'
 import ApiInterfaceList from '@/views/api-testing/InterfaceList.vue'
@@ -485,6 +486,11 @@ const routes = [
         path: 'excel-filler',
         name: 'ExcelDataFiller',
         component: ExcelDataFiller
+      },
+      {
+        path: 'ai-rubric',
+        name: 'AIRubricGenerator',
+        component: AIRubricGenerator
       }
     ]
   },
