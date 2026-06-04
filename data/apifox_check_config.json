@@ -15,6 +15,7 @@
     "scenario-run-passed": true,
     "crud-query-assert": false,
     "no-hardcoded-id": false,
-    "scenario-step-count": false
+    "scenario-step-count": false,
+    "param-from-prev-step": true
   }
 }
