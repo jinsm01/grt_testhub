@@ -5,27 +5,22 @@ import os
 import re
 import logging
 
-# 导入双解析器 - 实现健壮的导入机制
-_has_xmind = False
-try:
-    import xmind
-    _has_xmind = True
-    logging.debug("成功导入xmind模块")
-except ImportError:
-    logging.warning("无法导入xmind模块，将仅使用xmindparser解析XMind Zen格式")
+# 延迟导入 - 避免模块缓存问题
+def _get_xmindparser():
+    """延迟导入 xmindparser"""
+    try:
+        from xmindparser import xmind_to_dict
+        return xmind_to_dict
+    except ImportError:
+        raise ImportError("请安装xmindparser: pip install xmindparser")
 
-_has_xmindparser = False
-try:
-    from xmindparser import xmind_to_dict
-    _has_xmindparser = True
-    logging.debug("成功导入xmindparser模块")
-except ImportError:
-    logging.error("无法导入xmindparser模块，请安装: pip install xmindparser")
-    raise ImportError("请安装xmindparser: pip install xmindparser")
-
-# 确保至少有一个解析器可用
-if not (_has_xmind or _has_xmindparser):
-    raise ImportError("请至少安装一个解析器: xmind 或 xmindparser")
+def _get_xmind():
+    """延迟导入 xmind"""
+    try:
+        import xmind
+        return xmind
+    except ImportError:
+        return None
 
 # 避免循环导入 - 先导入非循环依赖的模块
 from .parser import xmind_to_testsuites
@@ -55,8 +50,12 @@ def get_xmind_testsuites(xmind_file):
     """Load the XMind file and parse to `xmind2testcase.metadata.TestSuite` list"""
     xmind_file = get_absolute_path(xmind_file)
     
+    # 延迟导入解析器
+    xmind_to_dict = _get_xmindparser()
+    xmind = _get_xmind()
+    
     # Try to parse using xmindparser first (for XMind Zen format)
-    if _has_xmindparser:
+    if xmind_to_dict:
         try:
             logging.info("Trying to parse with xmindparser (for XMind Zen format)")
             xmind_content_dict = xmind_to_dict(xmind_file)
@@ -76,11 +75,11 @@ def get_xmind_testsuites(xmind_file):
         except Exception as e:
             logging.warning("Failed to parse with xmindparser: %s, falling back to xmind library", e)
             # If xmind is not available, raise the error
-            if not _has_xmind:
+            if not xmind:
                 raise e
     
     # Fall back to original xmind library (for classic XMind format)
-    if _has_xmind:
+    if xmind:
         try:
             logging.info("Trying to parse with xmind library (for classic XMind format)")
             workbook = xmind.load(xmind_file)

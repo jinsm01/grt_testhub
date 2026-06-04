@@ -5,7 +5,7 @@ from apps.projects.models import Project
 import json
 import httpx
 import asyncio
-from typing import Dict, Any, List, AsyncIterator
+from typing import Dict, Any, List
 import logging
 
 logger = logging.getLogger(__name__)
@@ -719,7 +719,7 @@ class AIModelService:
             messages: List[Dict[str, str]],
             callback=None,
             max_tokens: int = None
-    ) -> AsyncIterator[str]:
+    ) -> str:
         """
         流式调用OpenAI兼容格式的API，支持自动续写
         """

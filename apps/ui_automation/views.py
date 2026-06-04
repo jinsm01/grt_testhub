@@ -4419,6 +4419,7 @@ def convert_xmind_to_excel(request):
     """
     import tempfile
     import os
+    import io
     from django.http import FileResponse
     from xmind2testcase.xlsx import xmind_to_xlsx_file
     from xmind2testcase.utils import get_xmind_testcase_list
@@ -4493,8 +4494,6 @@ def convert_xmind_to_excel(request):
         response['Content-Disposition'] = f'attachment; filename="{xlsx_filename}"'
         response['X-Import-Record-Id'] = str(import_record.id)
         
-        # 标记临时目录以便后续清理（通过中间件或信号）
-        # 这里我们不立即清理，让文件在响应发送后再清理
         return response
 
     except Exception as e:
@@ -4548,6 +4547,8 @@ class XmindImportRecordViewSet(viewsets.ModelViewSet):
         """
         import tempfile
         import os
+        import io
+        import shutil
         from django.http import FileResponse
 
         # 获取导入记录
@@ -4561,39 +4562,54 @@ class XmindImportRecordViewSet(viewsets.ModelViewSet):
         if not import_record.import_data:
             return Response({'error': '该记录没有测试用例数据'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # 创建持久的临时目录
+        temp_dir = tempfile.mkdtemp()
+        
         try:
-            # 创建临时目录
-            with tempfile.TemporaryDirectory() as temp_dir:
-                # 获取创建人用户名
-                case_owner = import_record.created_by.username if import_record.created_by else '王盼阳'
+            # 获取创建人用户名
+            case_owner = import_record.created_by.username if import_record.created_by else '王盼阳'
 
-                # 生成 Excel 文件
-                xlsx_file_path = self._generate_excel_from_data(
-                    import_record.import_data,
-                    import_record.file_name,
-                    temp_dir,
-                    case_owner
-                )
+            # 生成 Excel 文件
+            xlsx_file_path = self._generate_excel_from_data(
+                import_record.import_data,
+                import_record.file_name,
+                temp_dir,
+                case_owner
+            )
 
-                # 读取生成的 Excel 文件并返回
-                xlsx_filename = os.path.basename(xlsx_file_path)
+            # 读取生成的 Excel 文件到内存
+            xlsx_filename = os.path.basename(xlsx_file_path)
+            
+            with open(xlsx_file_path, 'rb') as f:
+                file_content = f.read()
+            
+            # 创建内存中的文件对象
+            file_like = io.BytesIO(file_content)
 
-                response = FileResponse(
-                    open(xlsx_file_path, 'rb'),
-                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                )
-                response['Content-Disposition'] = f'attachment; filename="{xlsx_filename}"'
+            response = FileResponse(
+                file_like,
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{xlsx_filename}"'
 
-                return response
+            return response
 
         except Exception as e:
             logger.error(f'生成 Excel 文件失败: {str(e)}')
             return Response({'error': f'生成 Excel 文件失败: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finally:
+            # 清理临时目录
+            try:
+                if os.path.exists(temp_dir):
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+            except Exception as cleanup_error:
+                logger.warning(f'清理临时目录失败: {str(cleanup_error)}')
 
     def _generate_excel_from_data(self, testcases, original_filename, temp_dir, case_owner='王盼阳'):
         """
         根据测试用例数据生成 Excel 文件
         """
+        import time
         from openpyxl import Workbook
         from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
         from openpyxl.utils import get_column_letter
@@ -4637,7 +4653,17 @@ class XmindImportRecordViewSet(viewsets.ModelViewSet):
         # 保存文件
         base_name = original_filename.rsplit('.', 1)[0] if '.' in original_filename else original_filename
         xlsx_file = os.path.join(temp_dir, f'{base_name}.xlsx')
-        wb.save(xlsx_file)
+        
+        # 添加保存重试机制
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                wb.save(xlsx_file)
+                break
+            except (PermissionError, OSError) as e:
+                if attempt == max_retries - 1:
+                    raise Exception(f'无法保存文件 {xlsx_file}: {str(e)}')
+                time.sleep(0.5)
 
         return xlsx_file
 

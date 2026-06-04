@@ -97,21 +97,21 @@ const form = reactive({
   position: ''
 })
 
-const rules = {
+const rules = computed(() => ({
   username: [
-    { required: true, message: computed(() => t('auth.usernameRequired')), trigger: 'blur' },
-    { min: 2, max: 20, message: computed(() => t('auth.usernameLength')), trigger: 'blur' }
+    { required: true, message: t('auth.usernameRequired'), trigger: 'blur' },
+    { min: 3, max: 20, message: t('auth.usernameLength'), trigger: 'blur' }
   ],
   email: [
-    { required: true, message: computed(() => t('auth.emailRequired')), trigger: 'blur' },
-    { type: 'email', message: computed(() => t('auth.emailFormat')), trigger: 'blur' }
+    { required: true, message: t('auth.emailRequired'), trigger: 'blur' },
+    { type: 'email', message: t('auth.emailFormat'), trigger: 'blur' }
   ],
   password: [
-    { required: true, message: computed(() => t('auth.passwordRequired')), trigger: 'blur' },
-    { min: 6, message: computed(() => t('auth.passwordLength')), trigger: 'blur' }
+    { required: true, message: t('auth.passwordRequired'), trigger: 'blur' },
+    { min: 6, message: t('auth.passwordLength'), trigger: 'blur' }
   ],
   password_confirm: [
-    { required: true, message: computed(() => t('auth.confirmPasswordRequired')), trigger: 'blur' },
+    { required: true, message: t('auth.confirmPasswordRequired'), trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
         if (value !== form.password) {
@@ -123,7 +123,7 @@ const rules = {
       trigger: 'blur'
     }
   ]
-}
+}))
 
 const handleRegister = async () => {
   if (!formRef.value) return

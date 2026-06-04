@@ -113,7 +113,34 @@ def _extract_cli_error(stderr):
     return lines[-1][:400]
 
 
-def _run_apifox_check(project_id, environment_id, access_token, output_path, id_field_exemptions=None):
+def _get_default_rules():
+    """获取内置默认规则定义（来自 YAML 配置）"""
+    return [
+        {'id': 'scenario-run-passed',      'name': '场景运行通过',           'severity': 'high', 'desc': '检查场景最近一次运行是否通过'},
+        {'id': 'scenario-step-count',       'name': '单场景步骤数不超过10步',   'severity': 'mid', 'desc': '检查单个测试场景步骤数是否超过10步（不包含引用其他场景或分组的步骤）'},
+        {'id': 'crud-query-assert',         'name': '增删改后查询断言',       'severity': 'high', 'desc': '增删改(POST/PUT/DELETE/PATCH)操作后是否/search查询步骤并使用断言校验'},
+        {'id': 'no-hardcoded-id',           'name': 'Id参数不能写死',          'severity': 'high', 'desc': '检查步骤请求body中带有Id的参数是否硬编码而非使用变量'},
+        {'id': 'param-from-prev-step',      'name': '参数来源校验',           'severity': 'high', 'desc': '检查后续步骤用到的参数是否从前置步骤中或变量获取，而非硬编码'},
+        {'id': 'auto-name-tag',             'name': '名称参数自动化标识',     'severity': 'high', 'desc': '检查POST/PUT步骤中name/title等字段是否含"自动化"标识且为动态值（提取token步骤除外）'},
+        {'id': 'fixture-dir-skip',          'name': '前置后置目录跳过统计',   'severity': 'skip', 'desc': '前置/后置目录下的场景不参与校验统计'},
+    ]
+
+
+def _load_rule_statuses():
+    """从配置文件加载用户设置的规则启用/停用状态"""
+    config = _load_config()
+    return config.get('rule_statuses', {})
+
+
+def _save_rule_statuses(rule_statuses):
+    """保存规则启用/停用状态到配置文件"""
+    config = _load_config()
+    config['rule_statuses'] = rule_statuses
+    _save_config(config)
+
+
+def _run_apifox_check(project_id, environment_id, access_token, output_path,
+                       id_field_exemptions=None, disabled_rule_ids=None):
     """运行 apifox-check CLI 生成原始报告"""
     # 构建命令行参数列表（避免 shell 字符串拼接的转义问题）
     cmd_args = [
@@ -124,6 +151,7 @@ def _run_apifox_check(project_id, environment_id, access_token, output_path, id_
             'import sys; '
             f'sys.argv = [\'apifox-check\', \'--project-id\', {project_id!r}, \'--environment-id\', {environment_id!r}, \'--access-token\', {access_token!r}'
             + (f', \'--id-exemptions\', {",".join(id_field_exemptions)!r}' if id_field_exemptions else '')
+            + (f', \'--exclude\', {",".join(disabled_rule_ids)!r}' if disabled_rule_ids else '')
             + f', \'--output\', {output_path!r}]; '
             'main(); '
             'print(\'DONE\')'
@@ -645,6 +673,113 @@ def apifox_check_config(request):
         return Response({'message': '配置已保存', 'success': True})
 
 
+# ============================================================
+# 检查规则管理 API
+# ============================================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def apifox_check_rules(request):
+    """获取或更新检查规则的启用/停用状态"""
+    if request.method == 'GET':
+        default_rules = _get_default_rules()
+        rule_statuses = _load_rule_statuses()
+
+        rules = []
+        for idx, rule in enumerate(default_rules, 1):
+            rule_id = rule['id']
+            # 用户设置的状态，默认为启用
+            enabled = rule_statuses.get(rule_id, True) if isinstance(rule_statuses, dict) else True
+            rules.append({
+                'index': idx,
+                'id': rule_id,
+                'name': rule['name'],
+                'severity': {'high': '高', 'mid': '中', 'low': '低', 'skip': '跳过'}.get(rule['severity'], rule['severity']),
+                'desc': rule['desc'],
+                'enabled': enabled,
+                # 前端 tag 类型映射
+                'severityType': {'high': 'danger', 'mid': 'warning', 'low': '', 'skip': 'info'}.get(rule['severity'], ''),
+            })
+
+        return Response({
+            'rules': rules,
+            'success': True,
+        })
+
+    elif request.method == 'POST':
+        action = request.data.get('action', '')
+
+        if action == 'toggle':
+            # 切换单条规则的启用/停用状态
+            rule_id = request.data.get('rule_id', '')
+            enabled = request.data.get('enabled')
+
+            if not rule_id:
+                return Response({
+                    'error': '请提供规则 ID',
+                    'success': False
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            if enabled is None:
+                return Response({
+                    'error': '请提供 enabled 状态 (true/false)',
+                    'success': False
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # 验证规则是否存在
+            valid_ids = {r['id'] for r in _get_default_rules()}
+            if rule_id not in valid_ids:
+                return Response({
+                    'error': f'规则「{rule_id}」不存在',
+                    'success': False
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # 保存状态
+            rule_statuses = _load_rule_statuses()
+            rule_statuses[rule_id] = bool(enabled)
+            _save_rule_statuses(rule_statuses)
+
+            status_text = '启用' if enabled else '停用'
+            return Response({
+                'message': f'规则已{status_text}',
+                'rule_id': rule_id,
+                'enabled': bool(enabled),
+                'success': True,
+            })
+
+        elif action == 'batch_toggle':
+            # 批量切换多条规则的状态
+            items = request.data.get('items', [])
+            if not isinstance(items, list):
+                return Response({
+                    'error': 'items 应为数组格式: [{"rule_id": "xxx", "enabled": true}]',
+                    'success': False
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            valid_ids = {r['id'] for r in _get_default_rules()}
+            rule_statuses = _load_rule_statuses()
+            updated = []
+            for item in items:
+                rid = item.get('rule_id', '')
+                en = item.get('enabled')
+                if rid and rid in valid_ids and en is not None:
+                    rule_statuses[rid] = bool(en)
+                    updated.append(rid)
+
+            _save_rule_statuses(rule_statuses)
+            return Response({
+                'message': f'已批量更新 {len(updated)} 条规则状态',
+                'updated_count': len(updated),
+                'success': True,
+            })
+
+        else:
+            return Response({
+                'error': '未知操作，支持: toggle / batch_toggle',
+                'success': False
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
 # Apifox 内置默认豁免字段（不可删除）
 _BUILTIN_EXEMPTIONS = {"scene_id", "template_id", "embd_id", "parser_id", "parent_id", "business_id", "category_id", "relation_template_id"}
 
@@ -826,6 +961,10 @@ def apifox_check_generate(request):
     all_exemptions = config.get('id_field_exemptions', [])
     id_field_exemptions = [e['field'] for e in all_exemptions if e.get('enabled', True)]
     # 内置豁免已在 rules.py 中默认包含，仅传递用户自定义项即可
+
+    # 获取停用的规则 ID 列表（用于 --exclude 参数）
+    rule_statuses = _load_rule_statuses()
+    disabled_rule_ids = [rid for rid, enabled in rule_statuses.items() if not enabled]
     
     _task_status[task_id] = {
         'status': 'running',
@@ -843,7 +982,8 @@ def apifox_check_generate(request):
             # Step 1: 生成原始报告
             _task_status[task_id]['progress'] = '正在从 Apifox 获取场景数据...'
             success, stdout, stderr = _run_apifox_check(
-                project_id, environment_id, access_token, report_path, id_field_exemptions
+                project_id, environment_id, access_token, report_path,
+                id_field_exemptions, disabled_rule_ids=disabled_rule_ids
             )
             if not success:
                 _task_status[task_id]['status'] = 'failed'

@@ -71,14 +71,20 @@
     <!-- 规则查看抽屉 -->
     <el-drawer
       v-model="rulesDrawerVisible"
-      title="检查规则说明"
+      title="检查规则总览"
       direction="rtl"
       size="950px"
       :close-on-press-escape="true"
-      :destroy-on-close="true"
+      :destroy-on-close="false"
+      @opened="loadRules"
     >
       <div class="rules-drawer-content">
-        <el-table class="check-rules-table" :data="checkRules" :header-cell-style="{ background: '#ffffff', color: '#5a32a3', fontWeight: 600, fontSize: '14px' }">
+        <el-table
+          class="check-rules-table"
+          :data="checkRules"
+          :header-cell-style="{ background: '#ffffff', color: '#5a32a3', fontWeight: 600, fontSize: '14px' }"
+          v-loading="rulesLoading"
+        >
           <el-table-column prop="index" label="序号" width="70" align="center" />
           <el-table-column prop="name" label="规则名称" min-width="180" />
           <el-table-column prop="severity" label="严重程度" width="100" align="center">
@@ -86,7 +92,19 @@
               <el-tag :type="row.severityType" size="small" effect="dark" round>{{ row.severity }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="desc" label="规则说明" min-width="280" show-overflow-tooltip />
+          <el-table-column prop="desc" label="规则说明" min-width="260" show-overflow-tooltip />
+          <el-table-column prop="enabled" label="状态" width="120" align="center">
+            <template #default="{ row }">
+              <el-switch
+                v-model="row.enabled"
+                active-text="启用"
+                inactive-text="停用"
+                inline-prompt
+                :loading="row._toggling"
+                @change="(val) => toggleRule(row, val)"
+              />
+            </template>
+          </el-table-column>
         </el-table>
       </div>
     </el-drawer>
@@ -346,23 +364,56 @@ const showReportDetail = ref(false)
 
 // 规则查看抽屉
 const rulesDrawerVisible = ref(false)
+const rulesLoading = ref(false)
 
-// 白名单抽屉
+// 检查规则（从后端API动态加载）
+const checkRules = ref([
+  { index: 1, name: '场景运行通过', severity: '高', severityType: 'danger', desc: '检查场景最近一次运行是否通过', enabled: true },
+  { index: 2, name: '单场景步骤数不超过10步', severity: '中', severityType: 'warning', desc: '不含引用其他场景或分组的步骤', enabled: true },
+  { index: 3, name: '增删改后查询断言', severity: '高', severityType: 'danger', desc: 'POST/PUT/DELETE/PATCH后是否有/Search查询并断言', enabled: true },
+  { index: 4, name: 'Id参数不能写死', severity: '高', severityType: 'danger', desc: '请求Body中ID参数是否硬编码', enabled: true },
+  { index: 5, name: '参数来源校验', severity: '高', severityType: 'danger', desc: '后续步骤参数是否从前置步骤或变量获取', enabled: true },
+  { index: 6, name: '名称参数自动化标识', severity: '高', severityType: 'danger', desc: 'Name/Title字段是否含"自动化"标识且为动态值', enabled: true },
+  { index: 7, name: '前置后置目录跳过统计', severity: '跳过', severityType: 'info', desc: '排除规则，不产生违规判定', enabled: true },
+])
+
+// 加载检查规则
+const loadRules = async () => {
+  rulesLoading.value = true
+  try {
+    const res = await api.get('/api-testing/apifox-check/rules/')
+    if (res.data.rules && res.data.rules.length > 0) {
+      checkRules.value = res.data.rules.map(r => ({ ...r, _toggling: false }))
+    }
+  } catch (e) {
+    console.error('加载检查规则失败:', e)
+  } finally {
+    rulesLoading.value = false
+  }
+}
+
+// 切换单条规则启用/停用
+const toggleRule = async (row, val) => {
+  row._toggling = true
+  try {
+    const res = await api.post('/api-testing/apifox-check/rules/', {
+      action: 'toggle',
+      rule_id: row.id,
+      enabled: val,
+    })
+    ElMessage.success(res.data.message || (val ? '规则已启用' : '规则已停用'))
+  } catch (e) {
+    // 回滚状态
+    row.enabled = !val
+    ElMessage.error(e.response?.data?.error || '操作失败')
+  } finally {
+    row._toggling = false
+  }
+}
 const exemptionsDrawerVisible = ref(false)
 
 // 生成进度弹窗
 const progressDialogVisible = ref(false)
-
-// 检查规则
-const checkRules = [
-  { index: 1, name: '场景运行通过', severity: '高', severityType: 'danger', desc: '检查场景最近一次运行是否通过' },
-  { index: 2, name: '单场景步骤数不超过10步', severity: '中', severityType: 'warning', desc: '不含引用其他场景或分组的步骤' },
-  { index: 3, name: '增删改后查询断言', severity: '高', severityType: 'danger', desc: 'POST/PUT/DELETE/PATCH后是否有/Search查询并断言' },
-  { index: 4, name: 'Id参数不能写死', severity: '高', severityType: 'danger', desc: '请求Body中ID参数是否硬编码' }, 
-  { index: 5, name: '参数来源校验', severity: '高', severityType: 'danger', desc: '后续步骤参数是否从前置步骤或变量获取' },
-  { index: 6, name: '名称参数自动化标识', severity: '高', severityType: 'danger', desc: 'Name/Title字段是否含"自动化"标识且为动态值' },
-  { index: 7, name: '前置后置目录跳过统计', severity: '跳过', severityType: 'info', desc: '排除规则，不产生违规判定' },
-]
 
 // ID字段豁免列表
 const builtinExemptions = ref([])

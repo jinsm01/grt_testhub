@@ -52,7 +52,7 @@
               <el-option
                 v-for="(creator, idx) in creators"
                 :key="idx"
-                :label="creator.name + ' (' + creator.total + '/' + creator.compliant + '/' + creator.violations + ')'"
+                :label="creator.name"
                 :value="idx"
               />
             </el-select>

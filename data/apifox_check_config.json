@@ -1,7 +1,7 @@
 {
   "project_id": " 7366718",
   "environment_id": "39566850",
-  "access_token": "afxp_aa7bb2R3NrXkSN4BKMLgb6PRGj9GqtGljoqh",
+  "access_token": "afxp_6171c7kKs4Zk7PfZYotKwz9N99MMzA6s0EAS",
   "id_field_exemptions": [
     {
       "field": "wpy_id",
@@ -10,5 +10,10 @@
       "added_at": "2026-06-02T11:29:20.654480",
       "enabled": true
     }
-  ]
+  ],
+  "rule_statuses": {
+    "scenario-run-passed": true,
+    "crud-query-assert": true,
+    "no-hardcoded-id": true
+  }
 }

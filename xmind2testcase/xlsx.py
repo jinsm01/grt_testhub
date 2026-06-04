@@ -3,6 +3,7 @@
 # _*_ coding:utf-8 _*_  
 import logging
 import os
+import time
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
@@ -80,12 +81,17 @@ def xmind_to_xlsx_file(xmind_file, case_owner='王盼阳', output_dir=None):
         xlsx_file = xmind_file[:-6] + '.xlsx'
     
     # 使用 openpyxl 的 save 方法保存时，如果文件已存在可能会出现问题
-    # 先尝试删除已存在的文件
-    try:
-        if os.path.exists(xlsx_file):
-            os.remove(xlsx_file)
-    except OSError:
-        pass  # 文件不存在或无法删除，忽略
+    # 先尝试删除已存在的文件（添加重试机制）
+    if os.path.exists(xlsx_file):
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                os.remove(xlsx_file)
+                break
+            except (PermissionError, OSError) as e:
+                if attempt == max_retries - 1:
+                    raise Exception(f'无法删除已存在的文件 {xlsx_file}: {str(e)}')
+                time.sleep(0.5)
     
     # 使用临时文件名保存，避免中文路径问题
     # openpyxl 在 Windows 上处理中文路径可能有问题，使用英文临时文件名
@@ -93,12 +99,17 @@ def xmind_to_xlsx_file(xmind_file, case_owner='王盼阳', output_dir=None):
     temp_xlsx = tf.mktemp(suffix='.xlsx', dir=output_dir or os.path.dirname(xmind_file))
     wb.save(temp_xlsx)
     
-    # 重命名为最终文件名
-    try:
-        os.rename(temp_xlsx, xlsx_file)
-    except OSError:
-        # 如果重命名失败（例如中文路径问题），保留临时文件名
-        xlsx_file = temp_xlsx
+    # 重命名为最终文件名（添加重试机制）
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            os.rename(temp_xlsx, xlsx_file)
+            break
+        except OSError as e:
+            if attempt == max_retries - 1:
+                # 如果重命名失败（例如中文路径问题），保留临时文件名
+                xlsx_file = temp_xlsx
+            time.sleep(0.5)
     
     logging.info('Convert XMind file(%s) to a XLSX file(%s) successfully!', xmind_file, xlsx_file)
     
