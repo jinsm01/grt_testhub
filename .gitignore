@@ -91,3 +91,7 @@ nginx.conf
 .env.example
 Makefile
 build-multiplatform.sh
+
+# MySQL 数据目录 (运行时生成，不应纳入版本控制)
+mysql_data/
+data/*.sqlite3
