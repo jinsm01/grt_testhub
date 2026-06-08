@@ -13,7 +13,8 @@ from .views import (
 )
 from .views_scenario import (
     AutomationScenarioViewSet, ScenarioStepViewSet, ScenarioExecutionViewSet,
-    apifox_import_v2_validate, apifox_import_v2_execute
+    apifox_import_v2_validate, apifox_import_v2_execute,
+    upload_temp_file, cleanup_temp_files, get_temp_file_info
 )
 from .apifox_check_views import (
     apifox_check_config, apifox_check_rules, apifox_check_generate,
@@ -74,6 +75,10 @@ urlpatterns = [
     path('api-testing/apifox-check/report/<str:filename>/json/', apifox_check_report_json, name='apifox-check-report-json'),
     # Apifox 场景检查 - 报告详情 (HTML)
     path('api-testing/apifox-check/report/<str:filename>/', apifox_check_report_detail, name='apifox-check-report-detail'),
+    # 临时文件上传管理
+    path('api-testing/temp-files/upload/', upload_temp_file, name='upload-temp-file'),
+    path('api-testing/temp-files/cleanup/', cleanup_temp_files, name='cleanup-temp-files'),
+    path('api-testing/temp-files/info/', get_temp_file_info, name='get-temp-file-info'),
 ]
 
 # 添加媒体文件路由

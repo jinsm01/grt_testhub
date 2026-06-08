@@ -460,8 +460,9 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
                         # 确保文件对象在正确的位置
                         if hasattr(file_obj, 'seek'):
                             file_obj.seek(0)
-                        # 使用文件对象的 chunks() 方法读取内容
-                        multipart_data[param_name] = (file_obj.name, file_obj, getattr(file_obj, 'content_type', None) or 'application/octet-stream')
+                        # 读取文件内容为字节
+                        file_content = file_obj.read() if hasattr(file_obj, 'read') else b''
+                        multipart_data[param_name] = (file_obj.name, file_content, getattr(file_obj, 'content_type', None) or 'application/octet-stream')
 
                     # 使用 MultipartEncoder 编码数据
                     print(f"DEBUG - multipart_data before encoding: {multipart_data}")
@@ -1569,7 +1570,106 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
                     start_time = time.time()
                     
                     # 根据请求体类型决定使用 data 还是 json 参数
-                    if body_type == 'raw':
+                    if body_type in ['form-data', 'formdata']:
+                        # form-data 类型：使用 multipart 编码
+                        print(f"[DEBUG views.py] 处理 form-data 请求")
+                        multipart_data = {}
+                        has_files = False
+                        
+                        if isinstance(body_data, list):
+                            for item in body_data:
+                                if isinstance(item, dict) and item.get('key'):
+                                    item_key = item.get('key')
+                                    item_value = item.get('value', '')
+                                    item_type = item.get('type', 'string')
+                                    
+                                    print(f"[DEBUG views.py] 处理字段: {item_key}={item_value}, type={item_type}")
+                                    
+                                    if item_type == 'file':
+                                        has_files = True
+                                        file_path = item.get('file_path')
+                                        
+                                        if file_path:
+                                            full_file_path = os.path.join(settings.MEDIA_ROOT, file_path)
+                                            if os.path.exists(full_file_path):
+                                                try:
+                                                    with open(full_file_path, 'rb') as f:
+                                                        file_content = f.read()
+                                                    
+                                                    file_name = os.path.basename(full_file_path)
+                                                    if '_' in file_name and len(file_name.split('_')[0]) == 8:
+                                                        original_name = file_name.split('_', 1)[1]
+                                                    else:
+                                                        original_name = file_name
+                                                    
+                                                    multipart_data[item_key] = (
+                                                        original_name,
+                                                        file_content,
+                                                        item.get('content_type') or 'application/octet-stream'
+                                                    )
+                                                except Exception as e:
+                                                    logger.error(f"读取文件失败: {e}")
+                                                    multipart_data[item_key] = (item_value, b'', 'application/octet-stream')
+                                            else:
+                                                logger.warning(f"文件不存在: {full_file_path}")
+                                                multipart_data[item_key] = (item_value, b'', 'application/octet-stream')
+                                        else:
+                                            multipart_data[item_key] = (item_value, b'', 'application/octet-stream')
+                                    else:
+                                        # 普通字段
+                                        multipart_data[item_key] = (None, str(item_value))
+                        
+                        print(f"[DEBUG views.py] 最终 multipart_data: {multipart_data}")
+                        print(f"[DEBUG views.py] has_files: {has_files}")
+                        
+                        if has_files:
+                            # 使用 MultipartEncoder
+                            try:
+                                from requests_toolbelt.multipart.encoder import MultipartEncoder
+                                encoder = MultipartEncoder(fields=multipart_data)
+                                request_headers = headers.copy() if headers else {}
+                                request_headers['Content-Type'] = encoder.content_type
+                                response = requests.request(
+                                    method=effective_method,
+                                    url=url,
+                                    headers=request_headers,
+                                    params=params,
+                                    data=encoder,
+                                    timeout=30
+                                )
+                            except ImportError:
+                                logger.warning("requests_toolbelt 未安装")
+                                form_dict = {}
+                                for key, value in multipart_data.items():
+                                    if isinstance(value, tuple):
+                                        form_dict[key] = value[1] if value[0] is None else value[0]
+                                    else:
+                                        form_dict[key] = value
+                                response = requests.request(
+                                    method=effective_method,
+                                    url=url,
+                                    headers=headers,
+                                    params=params,
+                                    data=form_dict,
+                                    timeout=30
+                                )
+                        else:
+                            # 没有文件，转换为普通 form 数据
+                            form_dict = {}
+                            for key, value in multipart_data.items():
+                                if isinstance(value, tuple):
+                                    form_dict[key] = value[1] if value[0] is None else value[0]
+                                else:
+                                    form_dict[key] = value
+                            response = requests.request(
+                                method=effective_method,
+                                url=url,
+                                headers=headers,
+                                params=params,
+                                data=form_dict,
+                                timeout=30
+                            )
+                    elif body_type == 'raw':
                         # raw 类型：尝试解析为 JSON，如果成功则作为 JSON 发送
                         if isinstance(body_data, str):
                             try:
