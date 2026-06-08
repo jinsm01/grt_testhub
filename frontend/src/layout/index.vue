@@ -408,8 +408,8 @@
               <span>智能填充</span>
             </el-menu-item>
             <el-menu-item index="/data-factory/ai-rubric">
-              <el-icon><MagicStick /></el-icon>
-              <span style="color:#7c3aed;">AI量表生成管理</span>
+              <el-icon><ScaleToOriginal /></el-icon>
+              <span style="color:#7c3aed;">量表生成</span>
             </el-menu-item>
           </template>
         </el-menu>
@@ -871,7 +871,7 @@ const breadcrumbTitle = computed(() => {
     '/data-factory/by-category': '数据工具箱',
     '/data-factory/history': '使用记录',
     '/data-factory/excel-filler': '智能填充',
-    '/data-factory/ai-rubric': 'AI量表生成管理',
+    '/data-factory/ai-rubric': '量表生成',
 
     '/profile': t('nav.profile')
   }

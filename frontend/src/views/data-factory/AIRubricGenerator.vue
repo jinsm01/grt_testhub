@@ -1,101 +1,129 @@
 <template>
   <div class="ai-rubric-container">
     <el-card class="main-card" shadow="never">
-      <!-- 上传区域标题 - 参考生成记录样式 -->
-      <div class="section-header">
-        <div class="section-title">
-          <el-icon><Upload /></el-icon>
-          <span>文件上传</span>
-        </div>
-      </div>
-
-      <!-- 上传区域 -->
-      <div v-show="!uploadedFile" class="upload-container">
-        <el-upload
-          ref="uploadRef"
-          class="upload-area"
-          drag
-          :auto-upload="false"
-          :limit="1"
-          :show-file-list="false"
-          accept=".docx,.pdf,.txt,.png,.jpg,.jpeg,.xlsx"
-          @change="handleFileChange"
+      <!-- 步骤卡片 -->
+      <div class="step-cards">
+        <div
+          v-for="(step, index) in stepList"
+          :key="index"
+          class="step-card"
+          :class="{
+            'is-active': currentStep === index,
+            'is-completed': currentStep > index,
+            'is-clickable': currentStep !== index
+          }"
+          @click="goToStep(index)"
         >
-          <el-icon class="upload-icon"><UploadFilled /></el-icon>
-          <div class="upload-text">
-            <p>拖拽文件到此处，或 <em>点击选择文件</em></p>
-            <p class="upload-desc">支持 .docx / .pdf / .txt / .png / .jpg 格式，AI将自动分析内容并生成评分量表和学习心得</p>
-            <p class="upload-tip">最大 20MB</p>
+          <div class="step-number">{{ index + 1 }}</div>
+          <div class="step-info">
+            <div class="step-title">{{ step.title }}</div>
+            <div class="step-desc">{{ step.desc }}</div>
           </div>
-        </el-upload>
+          <el-icon v-if="currentStep > index" class="step-check"><CircleCheck /></el-icon>
+        </div>
       </div>
 
-      <!-- 已选文件信息 -->
-      <div v-if="uploadedFile" class="file-info-row">
-        <div class="file-item">
-          <img v-if="isImageFile(uploadedFile.name)" :src="getImagePreview(uploadedFile)" class="file-thumb" />
-          <el-icon v-else class="file-doc-icon"><Document /></el-icon>
-          <span class="file-name">{{ uploadedFile.name }}</span>
-          <span class="file-size">({{ formatFileSize(uploadedFile.size) }})</span>
+      <!-- 步骤1: 上传文件与配置 -->
+      <div v-if="currentStep === 0" class="step-content">
+        <!-- 配置表单 -->
+        <div class="config-form">
+          <div class="config-row">
+            <label class="config-label">任务名称</label>
+            <el-input v-model="form.taskName" placeholder="例：AI技术与学科融合评分量表" />
+          </div>
+          <div class="config-row">
+            <label class="config-label">心得数量</label>
+            <el-select v-model="form.noteCount" style="width: 100%">
+              <el-option label="10 条" :value="10" />
+              <el-option label="20 条（推荐）" :value="20" />
+              <el-option label="30 条" :value="30" />
+            </el-select>
+          </div>
+          <div class="config-row">
+            <label class="config-label">得分心得比例</label>
+            <el-select v-model="form.passRatio" style="width: 100%">
+              <el-option label="各占50%" :value="0.5" />
+              <el-option label="60% 得 / 40% 不" :value="0.6" />
+              <el-option label="70% 得 / 30% 不" :value="0.7" />
+            </el-select>
+          </div>
+          <div class="config-row">
+            <label class="config-label">心得字数</label>
+            <el-select v-model="form.noteLength" style="width: 100%">
+              <el-option label="100 字左右" :value="100" />
+              <el-option label="300 字左右（推荐）" :value="300" />
+              <el-option label="500 字左右" :value="500" />
+            </el-select>
+          </div>
         </div>
-        <el-button link class="file-remove-btn" @click="clearFile">
-          <el-icon><Close /></el-icon>
-        </el-button>
+
+        <!-- 上传区域 -->
+        <div v-show="!uploadedFile" class="upload-container">
+          <el-upload
+            ref="uploadRef"
+            class="upload-area"
+            drag
+            :auto-upload="false"
+            :limit="1"
+            :show-file-list="false"
+            accept=".docx,.pdf,.txt,.png,.jpg,.jpeg,.xlsx"
+            @change="handleFileChange"
+          >
+            <el-icon class="upload-icon"><Upload /></el-icon>
+            <div class="upload-text">
+              <p>拖拽文件到此处，或 <em>点击上传</em></p>
+              <p class="upload-tip">支持 .docx / .pdf / .txt / .png / .jpg 格式，最大 20MB</p>
+            </div>
+          </el-upload>
+        </div>
+
+        <!-- 已选文件信息 -->
+        <div v-if="uploadedFile" class="file-info-row">
+          <div class="file-item">
+            <img v-if="isImageFile(uploadedFile.name)" :src="getImagePreview(uploadedFile)" class="file-thumb" />
+            <el-icon v-else class="file-doc-icon"><Document /></el-icon>
+            <span class="file-name">{{ uploadedFile.name }}</span>
+            <span class="file-size">({{ formatFileSize(uploadedFile.size) }})</span>
+          </div>
+          <el-button link class="file-remove-btn" @click="clearFile">
+            <el-icon><Close /></el-icon>
+          </el-button>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="step-actions">
+          <el-button 
+            type="primary" 
+            class="gen-btn" 
+            @click="startGenerate" 
+            :disabled="!form.taskName.trim() || generating"
+            :loading="generating"
+          >
+            <el-icon><Promotion /></el-icon>
+            开始生成
+          </el-button>
+          <span class="config-tip">若生成失败，则会取用默认模板并根据配置项生成量表和心得</span>
+        </div>
       </div>
 
-      <!-- 配置行 -->
-      <div class="config-row">
-        <div class="config-item config-name-item">
-          <label class="config-label">任务名称</label>
-          <el-input v-model="form.taskName" placeholder="例：AI技术与学科融合评分量表" />
-        </div>
-        <div class="config-item config-count-item">
-          <label class="config-label">心得数量</label>
-          <el-select v-model="form.noteCount">
-            <el-option label="10 条" :value="10" />
-            <el-option label="20 条（推荐）" :value="20" />
-            <el-option label="30 条" :value="30" />
-          </el-select>
-        </div>
-        <div class="config-item config-ratio-item">
-          <label class="config-label">得分心得比例</label>
-          <el-select v-model="form.passRatio">
-            <el-option label="各占50%" :value="0.5" />
-            <el-option label="60% 得 / 40% 不" :value="0.6" />
-            <el-option label="70% 得 / 30% 不" :value="0.7" />
-          </el-select>
-        </div>
-        <div class="config-item config-length-item">
-          <label class="config-label">心得字数</label>
-          <el-select v-model="form.noteLength">
-            <el-option label="100 字左右" :value="100" />
-            <el-option label="300 字左右（推荐）" :value="300" />
-            <el-option label="500 字左右" :value="500" />
-          </el-select>
-        </div>
-        <el-button 
-          type="primary" 
-          class="gen-btn" 
-          @click="startGenerate" 
-          :disabled="!form.taskName.trim() || generating"
-          :loading="generating"
-        >
-          <el-icon><MagicStick /></el-icon>
-          开始生成
-        </el-button>
-      </div>
-      <p class="config-tip">若生成失败，则会取用默认模板并根据配置项生成量表和心得</p>
-
-      <!-- 分割线 -->
-      <div class="section-divider"></div>
-
-      <!-- 记录列表 -->
-      <div class="records-section">
+      <!-- 步骤2: 生成记录 -->
+      <div v-if="currentStep === 1" class="step-content">
         <div class="card-header">
           <div class="card-title">
             <el-icon><List /></el-icon>
             <span>生成记录</span>
-            <el-tag size="small" type="info" effect="plain" class="title-tag">共 {{ filteredRecords.length }} 条</el-tag>
+          </div>
+        </div>
+
+        <div class="filter-row">
+          <div class="search-bar">
+            <el-input
+              v-model="searchText"
+              placeholder="搜索任务名称"
+              clearable
+              prefix-icon="Search"
+              @input="onSearch"
+            />
           </div>
           <div class="filter-tabs">
             <div
@@ -110,82 +138,80 @@
           </div>
         </div>
 
-        <div class="search-bar">
-          <el-input
-            v-model="searchText"
-            placeholder="搜索任务名称..."
-            clearable
-            prefix-icon="Search"
-            @input="onSearch"
-          />
-        </div>
-
-        <!-- 表格 -->
+        <!-- 表格 - 参考 XMindConverter.vue 结构 -->
         <el-table
+          ref="tableRef"
           :data="paginatedRecords"
           stripe
           v-loading="tableLoading"
           empty-text="暂无生成记录，上传文件后点击「开始生成」"
-          class="records-table"
+          style="width: 100%"
         >
-          <el-table-column prop="id" label="序号" width="65" align="center">
+          <el-table-column label="序号" width="80" header-align="center" align="center">
             <template #default="{ $index }">{{ (currentPage - 1) * pageSize + $index + 1 }}</template>
           </el-table-column>
-          <el-table-column label="任务名称" min-width="180">
+          <el-table-column label="任务名称" min-width="150" show-overflow-tooltip header-align="center" align="center">
             <template #default="{ row }">
-              <el-link type="primary" @click="previewRecord(row)" :underline="false" class="task-name-link">
-                {{ row.name }}
-              </el-link>
+              <span>{{ row.name }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="source_file_name" label="关联文件" width="120" align="center">
+          <el-table-column label="关联文件" min-width="120" header-align="center" align="center">
             <template #default="{ row }">
-              <span class="file-name-text">{{ row.source_file_name || '-' }}</span>
+              <span>{{ row.source_file_name || '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="100" align="center">
+          <el-table-column label="状态" width="120" header-align="center" align="center">
             <template #default="{ row }">
               <span :class="['status-badge', row.status]">
                 {{ statusText(row.status) }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="心得数量" width="90" align="center">
+          <el-table-column label="心得数量" min-width="100" header-align="center" align="center">
             <template #default="{ row }">
-              {{ row.note_count || '-' }} 条
-              <small v-if="row.status === 'done'" class="ratio-text">
-                ({{ Math.round(row.pass_ratio * 100) }}%得分)
-              </small>
+              <span v-if="row.note_count">{{ row.note_count }} 条</span>
+              <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column prop="created_at" label="生成时间" width="160" align="center" />
-          <el-table-column label="操作" width="220" fixed="right">
+          <el-table-column label="生成时间" width="200" show-overflow-tooltip header-align="center" align="center">
             <template #default="{ row }">
-              <template v-if="row.status === 'done' || row.status === 'error'">
-                <el-button size="small" type="primary" link @click="previewRecord(row)">
-                  <el-icon><View /></el-icon> 预览
-                </el-button>
-                <el-button size="small" type="success" link @click="downloadXlsx(row)">
-                  <el-icon><Download /></el-icon> 量表
-                </el-button>
-                <el-button size="small" type="warning" link @click="downloadDocx(row)">
-                  <el-icon><Download /></el-icon> 心得
-                </el-button>
-                <el-button size="small" type="danger" link @click="showDeleteDialog(row.id)">
-                  <el-icon><Delete /></el-icon>
-                </el-button>
-              </template>
-              <template v-else-if="row.status === 'running'">
-                <span class="status-badge running">处理中</span>
-                <el-button size="small" type="danger" link @click="showDeleteDialog(row.id)">
-                  <el-icon><Delete /></el-icon>
-                </el-button>
-              </template>
-              <template v-else>
-                <el-button size="small" type="danger" link @click="showDeleteDialog(row.id)">
-                  <el-icon><Delete /></el-icon>
-                </el-button>
-              </template>
+              <span class="time-text">{{ row.created_at }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="330" fixed="right" header-align="center" align="center">
+            <template #default="{ row }">
+              <div class="action-buttons">
+                <template v-if="row.status === 'done' || row.status === 'error'">
+                  <el-button size="small" type="primary" class="action-btn view-btn" @click="previewRecord(row)">
+                    <el-icon><View /></el-icon>
+                    <span>预览</span>
+                  </el-button>
+                  <el-button size="small" type="success" class="action-btn xlsx-btn" @click="downloadXlsx(row)">
+                    <el-icon><Download /></el-icon>
+                    <span>量表</span>
+                  </el-button>
+                  <el-button size="small" type="warning" class="action-btn docx-btn" @click="downloadDocx(row)">
+                    <el-icon><Download /></el-icon>
+                    <span>心得</span>
+                  </el-button>
+                  <el-button size="small" type="danger" class="action-btn delete-btn" @click="showDeleteDialog(row.id)">
+                    <el-icon><Delete /></el-icon>
+                    <span>删除</span>
+                  </el-button>
+                </template>
+                <template v-else-if="row.status === 'running'">
+                  <el-button size="small" type="danger" class="action-btn delete-btn" @click="showDeleteDialog(row.id)">
+                    <el-icon><Delete /></el-icon>
+                    <span>删除</span>
+                  </el-button>
+                </template>
+                <template v-else>
+                  <el-button size="small" type="danger" class="action-btn delete-btn" @click="showDeleteDialog(row.id)">
+                    <el-icon><Delete /></el-icon>
+                    <span>删除</span>
+                  </el-button>
+                </template>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -304,11 +330,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onActivated, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   DataAnalysis, CircleCheck, Loading, Document, Upload, UploadFilled,
-  MagicStick, List, View, Download, Delete, Close, WarningFilled, Search
+  Promotion, List, View, Download, Delete, Close, WarningFilled, Search
 } from '@element-plus/icons-vue'
 import * as XLSX from 'xlsx'
 import { getRubricRecords, generateRubric, deleteRubricRecord, getRubricStatistics } from '@/api/data-factory'
@@ -318,6 +344,7 @@ const tableLoading = ref(false)
 const generating = ref(false)
 const uploadRef = ref()
 const uploadedFile = ref(null)
+const tableRef = ref(null)
 const currentFilter = ref('all')
 const searchText = ref('')
 const currentPage = ref(1)
@@ -329,6 +356,26 @@ const deleteDialogVisible = ref(false)
 const deleteTargetId = ref(null)
 const deleteLoading = ref(false)
 const records = ref([])
+const currentStep = ref(0)
+
+// 步骤列表
+const stepList = [
+  { title: '上传配置', desc: '配置任务参数并上传文件' },
+  { title: '生成记录', desc: '查看和管理生成记录' }
+]
+
+// 跳转到指定步骤
+const goToStep = (index) => {
+  // 允许在两个步骤之间自由切换
+  // 步骤0（上传配置）始终可访问
+  // 步骤1（生成记录）在已有记录后可访问
+  if (index === 0) {
+    currentStep.value = index
+  } else if (index === 1) {
+    // 步骤1始终可访问（因为记录列表始终存在）
+    currentStep.value = index
+  }
+}
 
 // 统计数据
 const stats = reactive({
@@ -471,9 +518,9 @@ async function startGenerate() {
   try {
     const params = new FormData()
     params.append('name', form.taskName.trim())
-    params.append('note_count', form.noteCount)
-    params.append('pass_ratio', form.passRatio)
-    params.append('note_length', form.noteLength)
+    params.append('note_count', String(form.noteCount))
+    params.append('pass_ratio', String(form.passRatio))
+    params.append('note_length', String(form.noteLength))
     if (uploadedFile.value) {
       params.append('file', uploadedFile.value.raw || uploadedFile.value)
     }
@@ -484,6 +531,8 @@ async function startGenerate() {
       clearFile()
       await fetchRecords()
       await fetchStats()
+      // 自动跳转到生成记录步骤
+      currentStep.value = 1
     } else {
       ElMessage.error(res.data.error || '创建失败')
     }
@@ -665,6 +714,15 @@ function downloadCurrentDocx() {
 onMounted(async () => {
   await Promise.all([fetchRecords(), fetchStats()])
 })
+
+// 在页面切换回来时刷新表格布局，修复固定列显示异常问题
+onActivated(() => {
+  nextTick(() => {
+    if (tableRef.value) {
+      tableRef.value.doLayout()
+    }
+  })
+})
 </script>
 
 <style lang="scss" scoped>
@@ -691,6 +749,194 @@ onMounted(async () => {
     flex: 1;
     display: flex;
     flex-direction: column;
+  }
+}
+
+// ====== 步骤卡片样式 ======
+.step-cards {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 0 20px;
+}
+
+.step-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%);
+  border: 2px solid rgba(147, 112, 219, 0.15);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+
+  &:hover {
+    border-color: rgba(147, 112, 219, 0.3);
+    box-shadow: 0 4px 16px rgba(147, 112, 219, 0.1);
+  }
+
+  // 当前步骤 - 紫色高亮
+  &.is-active {
+    background: linear-gradient(135deg, #7b42f6 0%, #9f7aea 100%);
+    border-color: #7b42f6;
+    box-shadow: 0 4px 20px rgba(123, 66, 246, 0.3);
+
+    .step-number {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .step-title {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .step-desc {
+      color: rgba(255, 255, 255, 0.85);
+    }
+  }
+
+  // 已完成步骤 - 绿色
+  &.is-completed {
+    background: linear-gradient(135deg, #f6ffed 0%, #e6f7d6 100%);
+    border-color: #52c41a;
+    cursor: pointer;
+
+    .step-number {
+      background: #52c41a;
+      color: #fff;
+      border-color: #52c41a;
+    }
+
+    .step-title {
+      color: #52c41a;
+      font-weight: 600;
+    }
+
+    .step-desc {
+      color: #73d13d;
+    }
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(82, 196, 26, 0.15);
+    }
+  }
+
+  // 可点击步骤（非当前步骤）
+  &.is-clickable {
+    cursor: pointer;
+
+    &:hover {
+      border-color: rgba(123, 66, 246, 0.4);
+      box-shadow: 0 4px 16px rgba(123, 66, 246, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .step-number {
+      background: rgba(123, 66, 246, 0.1);
+      color: #7b42f6;
+      border-color: rgba(123, 66, 246, 0.3);
+    }
+
+    .step-title {
+      color: #7b42f6;
+    }
+
+    .step-desc {
+      color: #9f7aea;
+    }
+  }
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 50%;
+  border: 2px solid;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.step-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.step-title {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  transition: all 0.3s ease;
+}
+
+.step-desc {
+  font-size: 12px;
+  line-height: 1.4;
+  transition: all 0.3s ease;
+}
+
+.step-check {
+  font-size: 20px;
+  color: #52c41a;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 20px;
+}
+
+.step-actions {
+  margin-top: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+
+  .gen-btn {
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+    border: none;
+    font-weight: 600;
+    padding: 12px 32px;
+    font-size: 15px;
+    transition: all 0.25s ease;
+
+    .el-icon {
+      margin-right: 6px;
+    }
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      background: #c0c4cc;
+      border-color: #c0c4cc;
+    }
+  }
+
+  .config-tip {
+    font-size: 13px;
+    color: #909399;
+    margin: 0;
+    padding: 0;
   }
 }
 
@@ -794,95 +1040,51 @@ onMounted(async () => {
 
 // ====== 上传区域 ======
 .upload-container {
+  margin-top: 20px;
   margin-bottom: 20px;
 }
 
 .upload-area {
-  :deep(.el-upload) {
-    width: 100%;
-  }
+  width: 100%;
 
   :deep(.el-upload-dragger) {
-    border: 2px dashed #c4b5fd !important;
-    background: linear-gradient(180deg, #f5f0ff 0%, #ede9fe 100%) !important;
-    border-radius: 12px !important;
-    transition: all 0.3s;
-    height: auto !important;
-    min-height: 280px !important;
-    padding: 24px 20px 40px !important;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
+    background: linear-gradient(135deg, #faf8ff 0%, #f5f3ff 100%);
+    border: 2px dashed rgba(147, 112, 219, 0.3);
+    border-radius: 12px;
+    transition: all 0.3s ease;
 
     &:hover {
-      border-color: #7b42f6 !important;
-      background: linear-gradient(180deg, #ede9fe 0%, #ddd6fe 100%) !important;
+      border-color: #7b42f6;
+      background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
     }
   }
 }
 
-// 上传区域头部样式
-.upload-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-
-  .upload-header-icon {
-    color: #7b42f6;
-    font-size: 18px;
-  }
-
-  .upload-header-title {
-    font-weight: 600;
-    font-size: 16px;
-    color: #333;
-  }
-
-  .title-tag {
-    margin-left: 4px;
-  }
-}
-
-.upload-header-desc {
-  font-size: 12.5px;
-  color: #9ca3af;
-  margin: 0 0 24px;
-  text-align: center;
-}
-
 .upload-icon {
   font-size: 48px;
-  color: #a78bfa;
-  margin-top: 8px;
+  color: #7b42f6;
+  margin-bottom: 10px;
 }
 
 .upload-text {
-  font-size: 14px;
-  color: #374151;
-  font-weight: 500;
-  margin-top: 12px;
   text-align: center;
+
+  p {
+    color: #666;
+    font-size: 14px;
+  }
 
   em {
     color: #7b42f6;
     font-style: normal;
-    cursor: pointer;
+    font-weight: 500;
   }
-}
-
-.upload-desc {
-  font-size: 13px;
-  color: #6b7280;
-  margin-top: 12px;
-  line-height: 1.5;
 }
 
 .upload-tip {
   font-size: 12px;
-  color: #9ca3af;
-  margin-top: 6px;
+  color: #999;
+  margin-top: 10px;
 }
 
 .upload-btn {
@@ -953,66 +1155,33 @@ onMounted(async () => {
   }
 }
 
-// ====== 配置行 ======
-.config-row {
+// ====== 配置表单 ======
+.config-form {
   display: flex;
+  flex-direction: column;
   gap: 16px;
-  align-items: flex-end;
-  flex-wrap: nowrap;
 
-  .config-item {
+  .config-row {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    flex: 1;
+    gap: 8px;
 
     .config-label {
-      font-size: 13px;
-      color: #666;
+      font-size: 14px;
+      color: #606266;
       font-weight: 500;
     }
-  }
 
-  .config-name-item,
-  .config-count-item,
-  .config-ratio-item,
-  .config-length-item {
-    flex: 1;
-    min-width: 0;
-  }
-
-  :deep(.el-input__wrapper),
-  :deep(.el-select .el-input__wrapper) {
-    border-radius: 8px;
-    height: 36px;
-  }
-
-  .gen-btn {
-    border-radius: 8px;
-    padding: 0 26px;
-    height: 36px;
-    font-size: 14px;
-    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
-    border: none;
-
-    &:hover {
-      background: linear-gradient(135deg, #8a5af7 0%, #6a42b3 100%);
+    :deep(.el-input__wrapper),
+    :deep(.el-select .el-input__wrapper) {
+      border-radius: 8px;
+      height: 40px;
     }
 
-    &:active {
-      background: linear-gradient(135deg, #6a35d9 0%, #4a2891 100%);
-    }
-
-    &.is-disabled {
-      background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%);
+    :deep(.el-input__inner) {
+      font-size: 14px;
     }
   }
-}
-
-.config-tip {
-  margin-top: 12px;
-  font-size: 12px;
-  color: #909399;
 }
 
 // ====== 分割线 ======
@@ -1022,17 +1191,14 @@ onMounted(async () => {
   margin: 24px 0;
 }
 
-// ====== 记录区域 ======
-.records-section {
-  .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-}
-
 // ====== 筛选标签 ======
+// 记录列表头部
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
 .filter-tabs {
   display: flex;
   gap: 4px;
@@ -1062,18 +1228,169 @@ onMounted(async () => {
   }
 }
 
+// ====== 筛选行 ======
+.filter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
 // ====== 搜索栏 ======
 .search-bar {
-  margin-bottom: 16px;
+  width: 240px;
 
   :deep(.el-input__wrapper) {
     border-radius: 8px;
   }
 }
 
-// ====== 表格样式 ======
-.records-table {
-  // 直接覆盖表头单元格样式 - 参考 XMindConverter.vue
+// ====== 表格样式 - 参考 XMindConverter.vue ======
+.el-table {
+  flex: 1;
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 200px;
+  box-shadow: none;
+  transition: all 0.3s ease;
+  background-color: #ffffff !important;
+
+  /* 覆盖 Element Plus 默认主题变量 */
+  --el-color-primary: #7b42f6;
+  --el-color-primary-light-3: #9370db;
+  --el-color-primary-light-5: #a888e0;
+  --el-color-primary-light-7: #c2a9f3;
+  --el-color-primary-light-9: #f8f7ff;
+  --el-border-color: #e9ecef;
+  --el-border-color-light: #e9ecef;
+  --el-border-color-lighter: #e9ecef;
+  --el-fill-color-light: #ffffff;
+  --el-fill-color-lighter: #ffffff;
+  --el-fill-color-blank: #ffffff;
+  --el-text-color-primary: #333;
+  --el-text-color-regular: #333;
+  --el-text-color-secondary: #666;
+  --el-text-color-placeholder: #999;
+  --el-table-header-bg-color: #ffffff;
+  --el-table-row-hover-bg-color: #f8f7ff;
+  --el-table-stripe-bg-color: #fafaff;
+
+  &::before {
+    display: none;
+  }
+
+  // 表头包装器
+  :deep(.el-table__header-wrapper) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(.el-table__header) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(th) {
+    background-color: #ffffff !important;
+    color: #5a32a3 !important;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0 !important;
+    text-align: center;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: #ffffff !important;
+    }
+  }
+
+  :deep(th .cell) {
+    background-color: #ffffff !important;
+    color: #5a32a3 !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    line-height: 24px !important;
+    padding: 16px !important;
+  }
+
+  :deep(.el-table__body-wrapper) {
+    background-color: #ffffff !important;
+  }
+
+  :deep(.el-table__row) {
+    transition: all 0.3s ease;
+    background-color: #ffffff !important;
+    line-height: 24px;
+
+    &:hover {
+      background-color: #f8f7ff !important;
+    }
+
+    &.el-table__row--striped {
+      background-color: #fafaff !important;
+    }
+  }
+
+  :deep(td) {
+    padding: 0 !important;
+    border-bottom: 1px solid #e9ecef;
+    color: #333;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+    transition: all 0.3s ease;
+    vertical-align: middle;
+  }
+
+  // 单元格内容容器 - 确保 align 属性生效
+  :deep(td .cell) {
+    line-height: 24px;
+    padding: 14px 16px;
+  }
+
+  // 强制所有单元格内容根据 align 属性对齐
+  :deep(td.is-center .cell) {
+    text-align: center !important;
+  }
+
+  :deep(td.is-left .cell) {
+    text-align: left !important;
+  }
+
+  // 空状态
+  :deep(.el-table__empty-block) {
+    padding: 60px 0;
+    background: #ffffff !important;
+
+    :deep(.el-table__empty-text) {
+      color: #666;
+      font-size: 14px;
+      line-height: 24px;
+    }
+  }
+
+  // 确保整个表格容器都使用正确的背景色
+  &.el-table--enable-row-hover {
+    background-color: #ffffff !important;
+  }
+
+  // 覆盖表格行的默认样式
+  :deep(.el-table__row) {
+    background-color: #ffffff !important;
+  }
+
+  // 覆盖表格行的条纹样式
+  :deep(.el-table__row.el-table__row--striped) {
+    background-color: #fafaff !important;
+  }
+
+  // 覆盖表格行的 hover 样式
+  :deep(.el-table__row:hover) {
+    background-color: #f8f7ff !important;
+  }
+
+  // 直接覆盖表头单元格样式
   :deep(.el-table__header th) {
     background-color: #ffffff !important;
     color: #5a32a3 !important;
@@ -1104,21 +1421,87 @@ onMounted(async () => {
   :deep(.el-table__fixed-header-wrapper) {
     background-color: #ffffff !important;
   }
+}
 
-  .task-name-link {
-    font-weight: 500;
+// ====== 操作按钮样式 ======
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px !important;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+
+  .el-icon {
+    font-size: 14px;
+    color: #ffffff !important;
   }
 
-  .file-name-text {
+  span {
     font-size: 12px;
-    color: #666;
+    color: #ffffff !important;
   }
 
-  .ratio-text {
-    color: #999;
-    font-size: 11px;
-    display: block;
-    margin-top: 2px;
+  &.view-btn {
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
+    }
+  }
+
+  &.xlsx-btn {
+    background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #73d13d 0%, #52c41a 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(82, 196, 26, 0.4);
+    }
+  }
+
+  &.docx-btn {
+    background: linear-gradient(135deg, #fa8c16 0%, #d97706 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #ffc53d 0%, #fa8c16 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(250, 140, 22, 0.4);
+    }
+  }
+
+  &.delete-btn {
+    background: linear-gradient(135deg, #ff4d4f 0%, #f5222d 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(245, 34, 45, 0.4);
+    }
   }
 }
 
@@ -1126,25 +1509,35 @@ onMounted(async () => {
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+  justify-content: center;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
   font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
 
   &.done {
-    background: #d1fae5;
-    color: #059669;
+    background: #f6ffed;
+    color: #52c41a;
   }
 
   &.running {
-    background: #dbeafe;
-    color: #2563eb;
+    background: #fff7e6;
+    color: #fa8c16;
   }
 
   &.error {
-    background: #fee2e2;
-    color: #dc2626;
+    background: #fff1f0;
+    color: #f5222d;
   }
+}
+
+// 时间文本样式
+.time-text {
+  color: #666;
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 // ====== 分页 ======
