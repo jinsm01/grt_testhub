@@ -114,7 +114,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="记录名称" min-width="200" show-overflow-tooltip header-align="center" align="left">
+          <el-table-column label="记录名称" min-width="200" show-overflow-tooltip header-align="center" align="center">
             <template #default="{ row }">
               <span class="record-name-text">
                 {{ row.custom_name || getToolDisplayName(row.tool_name) }}
