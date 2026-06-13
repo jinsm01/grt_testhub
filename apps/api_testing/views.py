@@ -46,7 +46,6 @@ from .utils import execute_assertions
 from .operation_logger import log_operation
 from .variable_resolver import VariableResolver
 from .variable_extractor import extract_variables, save_variables_to_environment
-from .scenario_engine.context import ScenarioContext
 from .serializers import (
     ApiProjectSerializer, ApiCollectionSerializer, ApiRequestSerializer,
     EnvironmentSerializer, RequestHistorySerializer, TestSuiteSerializer,
