@@ -16,6 +16,7 @@ import re
 import random
 import time
 import os
+import threading
 
 from .models import (
     UiProject, LocatorStrategy, Element, TestScript, TestSuite,
@@ -2963,7 +2964,8 @@ class AICaseViewSet(viewsets.ModelViewSet):
 
         def run_task():
             # 注册停止信号
-            STOP_SIGNALS[execution_record.id] = False
+            with _STOP_SIGNALS_LOCK:
+                STOP_SIGNALS[execution_record.id] = False
 
             # 关键修复：关闭旧连接，避免子线程共享主线程的连接
             try:
@@ -3020,6 +3022,20 @@ class AICaseViewSet(viewsets.ModelViewSet):
                             if content:
                                 execution_record.logs += content
                                 await sync_to_async(safe_save)(execution_record, update_fields=['logs'])
+                            return
+
+                        # 处理页面快照
+                        if step_info.get('type') == 'snapshot':
+                            execution_record.snapshot_data = {
+                                'url': step_info.get('url', ''),
+                                'title': step_info.get('title', ''),
+                                'element_count': step_info.get('element_count', 0),
+                                'elements': step_info.get('elements', []),
+                                'snapshot_text': step_info.get('content', ''),
+                                'auto': step_info.get('auto', False),
+                                'timestamp': timezone.now().isoformat()
+                            }
+                            await sync_to_async(safe_save)(execution_record, update_fields=['snapshot_data'])
                             return
 
                         # 处理任务状态
@@ -3100,11 +3116,12 @@ class AICaseViewSet(viewsets.ModelViewSet):
                     pass
             finally:
                 # 清理停止信号
-                if execution_record.id in STOP_SIGNALS:
-                    del STOP_SIGNALS[execution_record.id]
+                with _STOP_SIGNALS_LOCK:
+                    if execution_record.id in STOP_SIGNALS:
+                        del STOP_SIGNALS[execution_record.id]
 
         thread = threading.Thread(target=run_task)
-        thread.daemon = True
+        thread.daemon = False
         thread.start()
 
         return Response({
@@ -3191,6 +3208,7 @@ class AICaseViewSet(viewsets.ModelViewSet):
 
 # 全局停止信号字典 {execution_id: bool}
 STOP_SIGNALS = {}
+_STOP_SIGNALS_LOCK = threading.Lock()
 
 
 class AIExecutionRecordViewSet(viewsets.ModelViewSet):
@@ -3674,7 +3692,8 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
 
         def run_task():
             # 注册停止信号
-            STOP_SIGNALS[execution_record.id] = False
+            with _STOP_SIGNALS_LOCK:
+                STOP_SIGNALS[execution_record.id] = False
 
             # 关键修复：关闭旧连接，避免子线程共享主线程的连接
             try:
@@ -3745,6 +3764,20 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                                 execution_record.logs += content
                                 # 立即保存到数据库，确保前端轮询能看到最新日志
                                 await sync_to_async(safe_save)(execution_record, update_fields=['logs'])
+                            return
+
+                        # 处理页面快照
+                        if step_info.get('type') == 'snapshot':
+                            execution_record.snapshot_data = {
+                                'url': step_info.get('url', ''),
+                                'title': step_info.get('title', ''),
+                                'element_count': step_info.get('element_count', 0),
+                                'elements': step_info.get('elements', []),
+                                'snapshot_text': step_info.get('content', ''),
+                                'auto': step_info.get('auto', False),
+                                'timestamp': timezone.now().isoformat()
+                            }
+                            await sync_to_async(safe_save)(execution_record, update_fields=['snapshot_data'])
                             return
 
                         # 处理任务状态
@@ -3833,11 +3866,12 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                     pass
             finally:
                 # 清理停止信号
-                if execution_record.id in STOP_SIGNALS:
-                    del STOP_SIGNALS[execution_record.id]
+                with _STOP_SIGNALS_LOCK:
+                    if execution_record.id in STOP_SIGNALS:
+                        del STOP_SIGNALS[execution_record.id]
 
         thread = threading.Thread(target=run_task)
-        thread.daemon = True
+        thread.daemon = False
         thread.start()
 
         return Response({
@@ -3850,20 +3884,21 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
         """停止正在执行的任务"""
         try:
             execution_id = int(pk)
-            if execution_id in STOP_SIGNALS:
-                STOP_SIGNALS[execution_id] = True
-                return Response({'message': '已发送停止信号'})
-            else:
-                # 如果不在内存中，可能已经结束，或者重启过服务
-                # 尝试直接更新数据库状态
-                record = self.get_object()
-                if record.status == 'running':
-                    record.status = 'stopped'
-                    record.end_time = timezone.now()
-                    record.logs += "\n[System] 任务被强制标记为停止（未在运行队列中找到）。"
-                    record.save()
-                    return Response({'message': '任务已标记为停止'})
-                return Response({'message': '任务不在运行中'}, status=status.HTTP_400_BAD_REQUEST)
+            with _STOP_SIGNALS_LOCK:
+                if execution_id in STOP_SIGNALS:
+                    STOP_SIGNALS[execution_id] = True
+                    return Response({'message': '已发送停止信号'})
+
+            # 如果不在内存中，可能已经结束，或者重启过服务
+            # 尝试直接更新数据库状态
+            record = self.get_object()
+            if record.status == 'running':
+                record.status = 'stopped'
+                record.end_time = timezone.now()
+                record.logs += "\n[System] 任务被强制标记为停止（未在运行队列中找到）。"
+                record.save()
+                return Response({'message': '任务已标记为停止'})
+            return Response({'message': '任务不在运行中'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -4229,6 +4264,11 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
         ai_test_suite.execution_status = 'running'
         ai_test_suite.save()
 
+        # 在主线程中提取用户ID，避免子线程中使用 request.user 触发 ORM 惰性查询
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        executed_by_user_id = request.user.id if request.user and request.user.is_authenticated else None
+
         def run_suite_task():
             STOP_SIGNALS = {}
 
@@ -4278,16 +4318,25 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                     for suite_ai_case in suite_ai_cases_list:
                         ai_case = suite_ai_case.ai_case
 
+                        # 在子线程中重新获取用户对象，避免 ORM 对象跨线程共享
+                        executed_by_user = None
+                        if executed_by_user_id:
+                            try:
+                                executed_by_user = User.objects.filter(id=executed_by_user_id).first()
+                            except Exception:
+                                executed_by_user = None
+
                         execution_record = AIExecutionRecord.objects.create(
                             project=ai_test_suite.project,
                             ai_case=ai_case,
                             case_name=ai_case.name,
                             task_description=ai_case.task_description,
                             status='running',
-                            executed_by=request.user,
+                            executed_by=executed_by_user,
                             logs="正在分析任务...\n"
                         )
-                        STOP_SIGNALS[execution_record.id] = False
+                        with _STOP_SIGNALS_LOCK:
+                            STOP_SIGNALS[execution_record.id] = False
 
                         try:
                             async def should_stop():
@@ -4305,6 +4354,20 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                                         if content:
                                             execution_record.logs += content
                                             await sync_to_async(safe_save)(execution_record, update_fields=['logs'])
+                                        return
+
+                                    # 处理页面快照
+                                    if step_info.get('type') == 'snapshot':
+                                        execution_record.snapshot_data = {
+                                            'url': step_info.get('url', ''),
+                                            'title': step_info.get('title', ''),
+                                            'element_count': step_info.get('element_count', 0),
+                                            'elements': step_info.get('elements', []),
+                                            'snapshot_text': step_info.get('content', ''),
+                                            'auto': step_info.get('auto', False),
+                                            'timestamp': timezone.now().isoformat()
+                                        }
+                                        await sync_to_async(safe_save)(execution_record, update_fields=['snapshot_data'])
                                         return
 
                                     task_id = step_info.get('task_id')
@@ -4361,8 +4424,9 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                             except:
                                 logger.error(f"保存失败状态时出错: {e}")
                         finally:
-                            if execution_record.id in STOP_SIGNALS:
-                                del STOP_SIGNALS[execution_record.id]
+                            with _STOP_SIGNALS_LOCK:
+                                if execution_record.id in STOP_SIGNALS:
+                                    del STOP_SIGNALS[execution_record.id]
 
                         if execution_record.status == 'passed':
                             passed_count += 1
@@ -4402,7 +4466,7 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                 safe_save(ai_test_suite)
 
         thread = threading.Thread(target=run_suite_task)
-        thread.daemon = True
+        thread.daemon = False
         thread.start()
 
         return Response({

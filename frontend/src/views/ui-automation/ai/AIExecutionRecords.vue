@@ -102,29 +102,9 @@
       </div>
     </div>
 
-    <!-- 详情对话框 -->
-    <el-dialog v-model="showDetailDialog" :title="$t('uiAutomation.ai.executionRecords.executionDetail')" width="800px">
+    <!-- 详情抽屉 -->
+    <el-drawer v-model="showDetailDialog" :title="$t('uiAutomation.ai.executionRecords.executionDetail')" size="800px" direction="rtl">
       <div v-if="currentRecord" class="record-detail">
-        <div class="detail-item">
-          <span class="label">{{ $t('uiAutomation.ai.executionRecords.caseName') }}:</span>
-          <span class="value">{{ currentRecord.case_name }}</span>
-        </div>
-
-        <div class="detail-item">
-          <span class="label">{{ $t('uiAutomation.ai.executionRecords.status') }}:</span>
-          <el-tag :type="getStatusTag(currentRecord.status)">
-            {{ getStatusText(currentRecord.status) }}
-          </el-tag>
-        </div>
-        <div class="detail-item">
-          <span class="label">{{ $t('uiAutomation.ai.executionRecords.startTime') }}:</span>
-          <span>{{ formatDate(null, null, currentRecord.start_time) }}</span>
-        </div>
-        <div class="detail-item">
-          <span class="label">{{ $t('uiAutomation.ai.executionRecords.duration') }}:</span>
-          <span>{{ currentRecord.duration ? currentRecord.duration.toFixed(2) + ' ' + $t('uiAutomation.ai.executionRecords.seconds') : $t('uiAutomation.ai.executionRecords.unknown') }}</span>
-        </div>
-
         <!-- 任务描述 -->
         <div v-if="currentRecord.task_description" class="detail-item mt-15">
           <span class="label">{{ $t('uiAutomation.ai.executionRecords.taskDescription') }}:</span>
@@ -151,7 +131,7 @@
           <el-button @click="showDetailDialog = false">{{ $t('uiAutomation.common.close') }}</el-button>
         </div>
       </template>
-    </el-dialog>
+    </el-drawer>
 
     <!-- 报告对话框 -->
     <AIExecutionReport
@@ -1126,6 +1106,10 @@ onUnmounted(() => {
 
 // 详情对话框样式
 .record-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
   .detail-item {
     margin-bottom: 15px;
     .label {
@@ -1136,11 +1120,12 @@ onUnmounted(() => {
   }
 
   .log-container {
+    flex: 1;
+    min-height: 0;
     background-color: #1e1e1e;
     color: #fff;
     padding: 15px;
     border-radius: 8px;
-    max-height: 400px;
     overflow-y: auto;
     font-family: monospace;
 

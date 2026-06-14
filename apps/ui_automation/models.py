@@ -1119,6 +1119,7 @@ class AIExecutionRecord(models.Model):
     logs = models.TextField(blank=True, default='', verbose_name='执行日志')
     steps_completed = models.JSONField(default=list, verbose_name='已完成步骤')
     planned_tasks = models.JSONField(default=list, verbose_name='规划任务') # 规划的任务列表 [{'id': 1, 'description': '...', 'status': 'pending'}]
+    snapshot_data = models.JSONField(default=dict, blank=True, verbose_name='页面快照数据', help_text='当前页面可交互元素的快照，格式：{"url": "...", "title": "...", "element_count": N, "elements": [...], "snapshot_text": "..."}')
     executed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name='执行人')
     gif_path = models.CharField(max_length=500, null=True, blank=True, verbose_name='GIF录制路径')
     screenshots_sequence = models.JSONField(default=list, verbose_name='截图序列')

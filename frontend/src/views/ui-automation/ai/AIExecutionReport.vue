@@ -1,8 +1,9 @@
 <template>
-  <el-dialog
+  <el-drawer
     v-model="visible"
     :title="`${$t('uiAutomation.ai.executionReport.title')} - ${reportTypeDisplay}`"
-    width="1000px"
+    size="1000px"
+    direction="rtl"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
     :modal="true"
@@ -244,7 +245,7 @@
         <img :src="gifUrl" alt="Execution GIF" class="gif-image" />
       </div>
     </el-dialog>
-  </el-dialog>
+  </el-drawer>
 </template>
 
 <script setup>
@@ -598,7 +599,7 @@ const handleClose = () => {
 }
 
 .report-container {
-  max-height: 600px;
+  height: 100%;
   overflow-y: auto;
   padding-right: 10px;
 }
