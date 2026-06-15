@@ -998,7 +998,7 @@ class BaseBrowserAgent:
                 if match:
                     numbered_lines.append(match.group(1).strip())
 
-            if len(numbered_lines) >= 2 and len(numbered_lines) >= len(lines) * 0.5:
+            if len(numbered_lines) >= 1 and len(numbered_lines) >= len(lines) * 0.5:
                 cleaned_steps = []
                 for desc in numbered_lines:
                     while True:
@@ -1583,32 +1583,70 @@ class PersistentBrowserSession:
         
         planned_tasks = []
         try:
-            prompt = f"Break down this task into steps: {task_description}. Return JSON list of strings."
-            response = await self.llm.ainvoke(prompt)
-            content = response.content.strip() if hasattr(response, 'content') else str(response)
-            
-            try:
-                import json
-                match = re.search(r'(\[.*\])', content, re.DOTALL)
-                if match: 
-                    planned_tasks = json.loads(match.group(1))
-            except:
-                pass
-            
+            # 快速路径：如果用户输入已经是编号步骤，直接解析，不走 LLM
+            lines = [line.strip() for line in task_description.split('\n') if line.strip()]
+            numbered_lines = []
+            for line in lines:
+                match = re.match(r'^\s*\d+[\.\s、:)\]]\s*(.*)', line)
+                if match:
+                    numbered_lines.append(match.group(1).strip())
+
+            if len(numbered_lines) >= 1 and len(numbered_lines) >= len(lines) * 0.5:
+                cleaned_steps = []
+                for desc in numbered_lines:
+                    while True:
+                        m = re.match(r'^\s*\d+[\.\s、:]+(.*)', desc)
+                        if not m:
+                            break
+                        desc = m.group(1).strip()
+                    if desc:
+                        cleaned_steps.append(desc)
+                planned_tasks = [{'id': i + 1, 'description': s, 'status': 'pending'} for i, s in enumerate(cleaned_steps)]
+                logger.info(f"[run_single_case] Parsed numbered steps directly, skipping LLM for case: {case_name}")
+            else:
+                # 尝试从缓存获取
+                try:
+                    from .ai_cache import TaskAnalysisCache
+                    cached_result = TaskAnalysisCache.get(task_description)
+                    if cached_result is not None:
+                        planned_tasks = cached_result
+                        logger.info(f"[run_single_case] Cache hit, skipping LLM call for case: {case_name}")
+                except Exception as e:
+                    logger.warning(f"[run_single_case] Cache check failed: {e}")
+
             if not planned_tasks:
-                planned_tasks = [s.strip() for s in task_description.split('\n') if s.strip()]
-            
-            cleaned_steps = []
-            for s in planned_tasks:
-                desc = s
-                while True:
-                    match = re.match(r'^\s*\d+[\.\s、:]+(.*)', desc)
-                    if not match: break
-                    desc = match.group(1).strip()
-                if desc:
-                    cleaned_steps.append(desc)
-            
-            planned_tasks = [{'id': i + 1, 'description': s, 'status': 'pending'} for i, s in enumerate(cleaned_steps)]
+                prompt = f"Break down this task into steps: {task_description}. Return JSON list of strings."
+                response = await self.llm.ainvoke(prompt)
+                content = response.content.strip() if hasattr(response, 'content') else str(response)
+                
+                try:
+                    import json
+                    match = re.search(r'(\[.*\])', content, re.DOTALL)
+                    if match: 
+                        planned_tasks = json.loads(match.group(1))
+                except:
+                    pass
+                
+                if not planned_tasks:
+                    planned_tasks = [s.strip() for s in task_description.split('\n') if s.strip()]
+                
+                cleaned_steps = []
+                for s in planned_tasks:
+                    desc = s
+                    while True:
+                        match = re.match(r'^\s*\d+[\.\s、:]+(.*)', desc)
+                        if not match: break
+                        desc = match.group(1).strip()
+                    if desc:
+                        cleaned_steps.append(desc)
+                
+                planned_tasks = [{'id': i + 1, 'description': s, 'status': 'pending'} for i, s in enumerate(cleaned_steps)]
+                
+                try:
+                    from .ai_cache import TaskAnalysisCache
+                    TaskAnalysisCache.set(task_description, planned_tasks, ttl_hours=24)
+                except Exception as e:
+                    logger.warning(f"[run_single_case] Cache save failed: {e}")
         except:
             planned_tasks = [{'id': 1, 'description': task_description, 'status': 'pending'}]
         
@@ -1634,6 +1672,13 @@ class PersistentBrowserSession:
                     desc = match.group(1).strip()
                 cleaned_tasks.append(f"{t['id']}. {desc}")
             final_task += "\n".join(cleaned_tasks)
+            final_task += "\n\nPERFORMANCE OPTIMIZATION RULES:\n"
+            final_task += "1. NO JAVASCRIPT IN INPUT: Never type or input JavaScript code into form fields, text boxes, or any user input areas. Only type plain text, numbers, or natural language as a normal user would.\n"
+            final_task += "2. DROPDOWN & MODAL ISOLATION: If you need to open a dropdown or modal, ONLY select from that dropdown/modal in the CURRENT step. Do NOT combine other page interactions in the same step.\n"
+            final_task += "3. ULTRALIGHT THINKING: For simple interactions (click, input, navigate), respond within 50 tokens. Do NOT explain your reasoning.\n"
+            final_task += "4. RETRY LOGIC: If an action fails (e.g., element not found), retry ONCE with a slightly different approach (scroll, wait, or alternative selector). After one retry, mark as failed and continue.\n"
+            final_task += "5. DO NOT REPEAT: If an action was just performed (e.g., a link was already clicked), do NOT attempt to click it again. Instead, verify the result or move to the next step.\n"
+            final_task += "6. VERIFICATION: Before marking a sub-task complete, verify the result matches the expected outcome (e.g., correct page loaded, correct text displayed).\n"
         
         final_task += "\n\nSNAPSHOT INSTRUCTION:\n"
         final_task += "You can call 'snapshot_page' at any time to get a text list of all interactive elements on the current page.\n"
@@ -1707,6 +1752,13 @@ class PersistentBrowserSession:
                                 step_has_task_complete = True
                                 step_marked_task_id = action_dict['mark_task_complete'].get('task_id')
                                 last_marked_task_id = step_marked_task_id
+                                # 调用回调更新任务状态，与单场景执行保持一致
+                                if step_callback:
+                                    data = {'task_id': int(step_marked_task_id), 'status': 'completed'}
+                                    if asyncio.iscoroutinefunction(step_callback):
+                                        await step_callback(data)
+                                    else:
+                                        step_callback(data)
                                 break
                         
                         has_real_action = False
@@ -1866,12 +1918,13 @@ class PersistentBrowserSession:
             return str(action)
     
     async def close_async(self):
-        """异步关闭浏览器会话"""
+        """异步关闭浏览器会话 - 强制杀死浏览器进程"""
         # 优先关闭 browser_session，因为它管理实际的浏览器实例
         if self.browser_session:
             try:
-                await self.browser_session.close()
-                logger.info("✓ browser_session 已关闭")
+                # BrowserSession 没有 close()，只有 kill() 能真正关闭浏览器进程
+                await self.browser_session.kill()
+                logger.info("✓ browser_session 已强制关闭")
             except Exception as e:
                 logger.warning(f"关闭 browser_session 时出错: {e}")
         
@@ -1884,7 +1937,7 @@ class PersistentBrowserSession:
                 pass
     
     def close(self):
-        """同步关闭浏览器会话 - 确保浏览器被正确关闭"""
+        """同步关闭浏览器会话 - 确保浏览器进程被正确杀死"""
         import asyncio
         
         # 优先关闭 browser_session，因为它管理实际的浏览器实例
@@ -1899,16 +1952,16 @@ class PersistentBrowserSession:
                 if loop and loop.is_running():
                     # 如果事件循环正在运行，需要创建一个新任务并等待它完成
                     # 使用 run_coroutine_threadsafe 在运行中的循环中执行关闭
-                    future = asyncio.run_coroutine_threadsafe(self.browser_session.close(), loop)
+                    future = asyncio.run_coroutine_threadsafe(self.browser_session.kill(), loop)
                     try:
                         future.result(timeout=10)  # 等待最多10秒
-                        logger.info("✓ browser_session 已关闭")
+                        logger.info("✓ browser_session 已强制关闭")
                     except Exception as e:
                         logger.warning(f"等待 browser_session 关闭时超时或出错: {e}")
                 else:
                     # 没有运行的事件循环，直接运行
-                    asyncio.run(self.browser_session.close())
-                    logger.info("✓ browser_session 已关闭")
+                    asyncio.run(self.browser_session.kill())
+                    logger.info("✓ browser_session 已强制关闭")
             except Exception as e:
                 logger.warning(f"关闭 browser_session 时出错: {e}")
         

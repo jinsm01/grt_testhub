@@ -4410,10 +4410,20 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                             execution_record.end_time = timezone.now()
                             execution_record.duration = (execution_record.end_time - execution_record.start_time).total_seconds()
 
-                            # 处理GIF录制文件
-                            self._process_gif_recording(execution_record, history)
+                            # 自动标记已完成的任务
+                            if execution_record.planned_tasks:
+                                self._auto_mark_completed_tasks(execution_record)
 
-                            safe_save(execution_record)
+                            # 处理GIF录制文件（放到后台线程，避免阻塞下一个用例衔接）
+                            import threading
+                            def _process_gif_background():
+                                try:
+                                    self._process_gif_recording(execution_record, history)
+                                    safe_save(execution_record)
+                                except Exception as e:
+                                    logger.warning(f"后台处理GIF录制文件失败: {e}")
+                            gif_thread = threading.Thread(target=_process_gif_background, daemon=True)
+                            gif_thread.start()
                         except Exception as e:
                             execution_record.status = 'failed'
                             execution_record.end_time = timezone.now()
@@ -4474,6 +4484,35 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
             'suite_id': ai_test_suite.id,
             'case_count': len(suite_ai_cases_list)
         }, status=status.HTTP_200_OK)
+
+    def _auto_mark_completed_tasks(self, execution_record):
+        """
+        自动标记已完成的任务
+        通过分析执行历史和当前任务状态，自动标记那些已经执行但未被标记完成的任务
+        """
+        try:
+            # 记录初始状态
+            initial_completed = 0
+            initial_pending = 0
+            if execution_record.planned_tasks:
+                initial_completed = len([t for t in execution_record.planned_tasks if t.get('status') == 'completed'])
+                initial_pending = len([t for t in execution_record.planned_tasks if t.get('status') == 'pending'])
+                logger.info(f"📊 Before auto-mark: {initial_completed} completed, {initial_pending} pending tasks")
+
+            # 如果执行成功，标记所有任务为完成
+            if execution_record.status == 'passed' and execution_record.planned_tasks:
+                auto_marked_count = 0
+                for task in execution_record.planned_tasks:
+                    # 只对标记为pending的任务进行处理
+                    if task.get('status') == 'pending':
+                        task['status'] = 'completed'
+                        auto_marked_count += 1
+                        logger.info(f"🔒 Auto-marked task {task['id']} as completed")
+
+                if auto_marked_count > 0:
+                    logger.info(f"✨ Auto-marked {auto_marked_count} tasks as completed")
+        except Exception as e:
+            logger.error(f"自动标记完成任务时出错: {e}", exc_info=True)
 
 
 @api_view(['POST'])
