@@ -20,9 +20,9 @@
       </el-button>
       <div class="filter-bar-spacer"></div>
       <el-button
+        v-if="selectedRecords.length > 0"
         type="danger"
         class="batch-delete-btn"
-        :disabled="selectedRecords.length === 0"
         @click="batchDeleteRecords"
         :loading="isDeleting"
       >
@@ -149,6 +149,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, View, Document, Location, Search } from '@element-plus/icons-vue'
@@ -157,6 +158,7 @@ import AIExecutionReport from './AIExecutionReport.vue'
 import AIElementLocator from './AIElementLocator.vue'
 
 const { t } = useI18n()
+const router = useRouter()
 const records = ref([])
 const loading = ref(false)
 const searchText = ref('')
@@ -233,8 +235,7 @@ const viewDetail = (row) => {
 
 // 查看报告
 const viewReport = (row) => {
-  reportRecordId.value = row.id
-  showReportDialog.value = true
+  router.push(`/ai-intelligent-mode/execution-report/${row.id}`)
 }
 
 // 查看元素定位
@@ -246,8 +247,7 @@ const viewElementLocator = (row) => {
 // 从详情页打开报告
 const openReportFromDetail = () => {
   if (currentRecord.value) {
-    reportRecordId.value = currentRecord.value.id
-    showReportDialog.value = true
+    router.push(`/ai-intelligent-mode/execution-report/${currentRecord.value.id}`)
   }
 }
 

@@ -93,8 +93,8 @@
       </div>
     </div>
 
-    <!-- 创建/编辑对话框 -->
-    <el-dialog v-model="showEditDialog" :title="isEdit ? $t('uiAutomation.ai.caseList.editCase') : $t('uiAutomation.ai.caseList.createCase')" width="600px">
+    <!-- 创建/编辑抽屉 -->
+    <el-drawer v-model="showEditDialog" :title="isEdit ? $t('uiAutomation.ai.caseList.editCase') : $t('uiAutomation.ai.caseList.createCase')" size="600px" direction="rtl">
       <el-form :model="editForm" :rules="formRules" ref="editFormRef" label-width="100px">
         <el-form-item :label="$t('uiAutomation.ai.caseList.caseName')" prop="name">
           <el-input v-model="editForm.name" :placeholder="$t('uiAutomation.ai.caseNamePlaceholder')" />
@@ -112,12 +112,12 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <span class="dialog-footer">
+        <span class="drawer-footer">
           <el-button @click="showEditDialog = false">{{ $t('uiAutomation.common.cancel') }}</el-button>
           <el-button type="primary" @click="confirmEdit" :loading="saving">{{ $t('uiAutomation.common.save') }}</el-button>
         </span>
       </template>
-    </el-dialog>
+    </el-drawer>
   </div>
 </template>
 

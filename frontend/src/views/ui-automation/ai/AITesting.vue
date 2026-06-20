@@ -21,7 +21,7 @@
 
         <div class="form-actions">
           <div class="form-options">
-            <el-form-item :label="$t('uiAutomation.ai.gifRecording')" class="gif-option">
+            <el-form-item label="步骤截图" class="gif-option">
               <div class="gif-switch-wrapper">
                 <el-switch
                   v-model="taskForm.enableGif"
@@ -29,7 +29,7 @@
                   :inactive-text="$t('uiAutomation.ai.off')"
                 />
                 <span class="gif-tip">
-                  {{ $t('uiAutomation.ai.gifTip') }}
+                  开启后每执行一步自动截图，可在报告详细步骤中查看
                 </span>
               </div>
             </el-form-item>

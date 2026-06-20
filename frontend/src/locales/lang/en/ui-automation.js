@@ -544,6 +544,7 @@ export default {
     // AI Execution Report
     executionReport: {
       title: 'AI Test Execution Report',
+      reportSuffix: ' Report',
       backToList: 'Back to List',
       basicInfo: 'Basic Info',
       caseName: 'Case Name',
@@ -583,6 +584,7 @@ export default {
       skipped: 'Skipped',
       // Timeline
       taskTimeline: 'Task Execution Timeline',
+      taskPlan: 'Task Plan',
       task: 'Task',
       // Detailed steps
       stepDetails: 'Execution Step Details',

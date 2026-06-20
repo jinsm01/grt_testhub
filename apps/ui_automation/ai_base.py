@@ -7,13 +7,12 @@ import os
 # 禁用 browser-use 遥测
 os.environ['ANONYMIZED_TELEMETRY'] = 'false'
 
-import logging
-logger = logging.getLogger('django')
-
 import asyncio
+import base64
 import functools
 import json
 import re
+from datetime import datetime
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
@@ -248,7 +247,10 @@ def _apply_browser_use_patches():
                 output_format = kwargs.pop('output_format', None)
                 if output_format:
                     kwargs['response_format'] = {"type": "json_object"}
-    
+
+                # browser-use Agent 可能传递 session_id，但底层 openai 客户端不支持，需过滤
+                kwargs.pop('session_id', None)
+
                 # Add retry logic for LLM invocation
                 max_retries = 2  # 重试次数为2次
                 last_exception = None
@@ -849,6 +851,7 @@ class BaseBrowserAgent:
         self.execution_mode = 'text'
         self.enable_gif = enable_gif  # GIF录制开关
         self.case_name = case_name or "Adhoc Task"  # 用例名称
+        self.screenshots_sequence = []  # 每步截图路径列表
 
         # Snapshot 状态
         self.current_snapshot = None
@@ -1278,6 +1281,36 @@ class BaseBrowserAgent:
                                     callback(data)
                                 last_marked_task_id = next_expected_task_id
 
+                        # 每步截图：在步骤执行完成后保存当前页面截图
+                        # 优化：只对有实际操作的步骤截图，降低质量，fire-and-forget 完全不阻塞主流程
+                        if self.enable_gif and has_real_action:
+                            try:
+                                from django.conf import settings
+                                browser_session = getattr(agent_instance, 'browser_session', None)
+                                if browser_session:
+                                    page = await browser_session.get_current_page()
+                                    if page:
+                                        # 截图必须在后台完成，任何等待都不能阻塞 on_step_end
+                                        # 通过参数传递 page 和 step_idx，避免闭包变量被后续迭代覆盖
+                                        async def _capture_and_save(_page, _step_idx):
+                                            try:
+                                                b64 = await _page.screenshot(format='jpeg', quality=50)
+                                                ts = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]
+                                                safe_case = "".join(c for c in self.case_name if c.isalnum() or c in ('_', '-')).rstrip()
+                                                rel_path = f"media/ai_screenshots/{safe_case}_{ts}_step_{_step_idx:03d}.jpg"
+                                                abs_path = os.path.join(settings.BASE_DIR, rel_path)
+                                                os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+                                                with open(abs_path, 'wb') as f:
+                                                    f.write(base64.b64decode(b64))
+                                                self.screenshots_sequence.append(rel_path)
+                                                logger.info(f"📸 Screenshot saved for step {_step_idx}: {rel_path}")
+                                            except Exception as inner_err:
+                                                logger.warning(f"⚠️ Screenshot bg failed for step {_step_idx}: {inner_err}")
+                                        # 完全不等待，纯后台执行
+                                        asyncio.create_task(_capture_and_save(page, i + 1))
+                            except Exception as screenshot_err:
+                                logger.warning(f"⚠️ Screenshot init failed for step {i+1}: {screenshot_err}")
+
                     except Exception as e:
                         logger.warning(f"⚠️ Error in on_step_end processing step {i+1}: {e}", exc_info=True)
                 last_processed_step = len(history)
@@ -1356,7 +1389,7 @@ class BaseBrowserAgent:
                 logger.warning(f"⚠️ Unmarked actions: {executed_tasks_info['unmarked_actions']}")
                 logger.warning("⚠️ This indicates the AI agent did not follow the 'mark_task_complete' rule properly.")
 
-        return history
+        return {'history': history, 'screenshots_sequence': self.screenshots_sequence}
 
     def _find_executed_tasks(self, history):
         """

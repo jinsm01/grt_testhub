@@ -57,6 +57,60 @@ def extract_step_info(s, step_index):
     """提取步骤信息的辅助函数，确保返回可读的步骤描述"""
     step_info = {'step': step_index}
 
+    # Action 名称中文映射
+    ACTION_NAME_MAP = {
+        'click_element': '点击',
+        'input_text': '输入',
+        'go_to_url': '访问',
+        'navigate': '访问',
+        'open_tab': '打开标签页',
+        'mark_task_complete': '标记任务完成',
+        'done': '完成',
+        'snapshot_page': '截图',
+        'scroll': '滚动',
+        'wait': '等待',
+        'extract_content': '提取内容',
+        'switch_tab': '切换标签页',
+        'close_tab': '关闭标签页',
+    }
+
+    def format_action(action_name, params):
+        """格式化单个 action 为中文可读字符串"""
+        cn_name = ACTION_NAME_MAP.get(action_name, action_name)
+        if action_name == 'done':
+            # done 操作只显示成功/失败，不显示长文本
+            success = params.get('success') if isinstance(params, dict) else None
+            return f'{cn_name}(成功={success})' if success is not None else cn_name
+        if action_name == 'mark_task_complete':
+            task_id = params.get('task_id') if isinstance(params, dict) else None
+            return f'{cn_name}(任务ID={task_id})' if task_id is not None else cn_name
+        if action_name in ('click_element', 'navigate'):
+            if isinstance(params, dict):
+                idx = params.get('index')
+                url = params.get('url')
+                if idx is not None:
+                    return f'{cn_name}[{idx}]'
+                if url is not None:
+                    return f'{cn_name}({url})'
+        if action_name == 'input_text':
+            if isinstance(params, dict):
+                idx = params.get('index')
+                text = params.get('text', '')
+                # 隐藏密码类输入
+                display_text = text if len(text) <= 20 else text[:20] + '...'
+                if idx is not None:
+                    return f"{cn_name}[{idx}]: '{display_text}'"
+                return f"{cn_name}: '{display_text}'"
+        if action_name == 'go_to_url':
+            if isinstance(params, dict):
+                url = params.get('url', '')
+                return f'{cn_name}({url})'
+        # 通用格式化
+        if isinstance(params, dict):
+            param_str = ', '.join(f'{k}={v}' for k, v in params.items())
+            return f'{cn_name}({param_str})'
+        return f'{cn_name}({params})'
+
     # 尝试多种方式提取可读信息
     if hasattr(s, 'action'):
         # 如果有action属性
@@ -79,19 +133,27 @@ def extract_step_info(s, step_index):
                 step_info['action'] = attrs
         else:
             step_info['action'] = str(action_data)
-    elif hasattr(s, 'model_output'):
-        # 如果有model_output属性
+    elif hasattr(s, 'model_output') and s.model_output:
+        # browser-use AgentOutput: 提取 action 列表为可读字符串
         output_data = s.model_output
-        if isinstance(output_data, str):
-            step_info['action'] = output_data
-        elif hasattr(output_data, '__dict__'):
-            # 提取model_output的关键信息
-            attrs = {'type': 'model_output'}
-            for key in ['action', 'description', 'goal', 'coordinate', 'text']:
-                if hasattr(output_data, key):
-                    value = getattr(output_data, key)
-                    attrs[key] = str(value) if value else None
-            step_info['action'] = attrs
+        actions = getattr(output_data, 'action', None)
+        if actions:
+            action_strs = []
+            for action in actions:
+                try:
+                    # Pydantic model -> dict
+                    if hasattr(action, 'model_dump'):
+                        action_dict = action.model_dump(exclude_none=True, mode='json')
+                    elif hasattr(action, '__dict__'):
+                        action_dict = dict(action.__dict__)
+                    else:
+                        action_dict = {}
+                    # action_dict 形如 {"click_element": {"index": 14}}
+                    for action_name, params in action_dict.items():
+                        action_strs.append(format_action(action_name, params))
+                except Exception:
+                    action_strs.append(str(action))
+            step_info['action'] = ' | '.join(action_strs) if action_strs else str(actions)
         else:
             step_info['action'] = str(output_data)
     elif hasattr(s, '__dict__'):
@@ -3058,12 +3120,14 @@ class AICaseViewSet(viewsets.ModelViewSet):
                     except Exception as e:
                         logger.error(f"更新步骤状态失败: {e}", exc_info=True)
 
-                history = run_full_process_sync(
+                result = run_full_process_sync(
                     ai_case.task_description,
                     analysis_callback=on_analysis_complete,
                     step_callback=on_step_update,
                     should_stop=should_stop
                 )
+                history = result.get('history') if isinstance(result, dict) else result
+                screenshots = result.get('screenshots_sequence', []) if isinstance(result, dict) else []
 
                 # 检查是否是手动停止
                 if should_stop():
@@ -3089,17 +3153,26 @@ class AICaseViewSet(viewsets.ModelViewSet):
                 # 格式化 history 为日志 (如果不是停止状态)
                 steps = []
                 if history:
-                    if hasattr(history, 'steps'):
-                        steps = [extract_step_info(s, i) for i, s in enumerate(history.steps)]
+                    # browser-use AgentHistoryList 使用 history 属性存储步骤
+                    history_items = getattr(history, 'history', []) or getattr(history, 'steps', [])
+                    steps = [extract_step_info(s, i) for i, s in enumerate(history_items)]
+
+                # 关联截图到步骤
+                for idx, step in enumerate(steps):
+                    if idx < len(screenshots):
+                        step['screenshot'] = screenshots[idx]
+                    # 确保 step_number 存在，reports.py 依赖此字段
+                    step['step_number'] = step.get('step_number', idx + 1)
 
                 execution_record.steps_completed = steps
+                execution_record.screenshots_sequence = screenshots
 
                 # 自动标记已完成的任务
                 if execution_record.planned_tasks:
                     self._auto_mark_completed_tasks(execution_record)
 
-                # 处理GIF录制文件
-                self._process_gif_recording(execution_record, history)
+                # 处理GIF录制文件（已改为每步截图，不再合成GIF）
+                # self._process_gif_recording(execution_record, history)
 
                 safe_save(execution_record)
 
@@ -3805,15 +3878,17 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                     except Exception as e:
                         logger.error(f"更新步骤状态失败: {e}", exc_info=True)
 
-                history = run_full_process_sync(
+                result = run_full_process_sync(
                     task_description,
                     analysis_callback=on_analysis_complete,
                     step_callback=on_step_update,
                     should_stop=should_stop_async,  # 传递异步版本
                     execution_mode=execution_mode,
-                    enable_gif=enable_gif,  # 传递GIF录制开关
-                    case_name=task_description[:50] if task_description else "Adhoc Task"  # 传递用例名称用于GIF文件命名
+                    enable_gif=enable_gif,  # 传递步骤截图开关
+                    case_name=task_description[:50] if task_description else "Adhoc Task"  # 传递用例名称用于截图文件命名
                 )
+                history = result.get('history') if isinstance(result, dict) else result
+                screenshots = result.get('screenshots_sequence', []) if isinstance(result, dict) else []
 
                 # 检查是否是手动停止 (使用同步版本)
                 if should_stop_sync():
@@ -3839,17 +3914,26 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                 # 格式化 history 为日志 (如果不是停止状态)
                 steps = []
                 if history:
-                    if hasattr(history, 'steps'):
-                        steps = [extract_step_info(s, i) for i, s in enumerate(history.steps)]
+                    # browser-use AgentHistoryList 使用 history 属性存储步骤
+                    history_items = getattr(history, 'history', []) or getattr(history, 'steps', [])
+                    steps = [extract_step_info(s, i) for i, s in enumerate(history_items)]
+
+                # 关联截图到步骤
+                for idx, step in enumerate(steps):
+                    if idx < len(screenshots):
+                        step['screenshot'] = screenshots[idx]
+                    # 确保 step_number 存在，reports.py 依赖此字段
+                    step['step_number'] = step.get('step_number', idx + 1)
 
                 execution_record.steps_completed = steps
+                execution_record.screenshots_sequence = screenshots
 
                 # 自动标记已完成的任务
                 if execution_record.planned_tasks:
                     self._auto_mark_completed_tasks(execution_record)
 
-                # 处理GIF录制文件
-                self._process_gif_recording(execution_record, history)
+                # 处理GIF录制文件（已改为每步截图，不再合成GIF）
+                # self._process_gif_recording(execution_record, history)
 
                 safe_save(execution_record)
 
@@ -4003,6 +4087,8 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                 report = generator.generate_detailed_report()
             elif report_type == 'performance':
                 report = generator.generate_performance_report()
+            elif report_type == 'full':
+                report = generator.generate_full_report()
             else:  # summary
                 report = generator.generate_summary_report()
 
@@ -4045,11 +4131,14 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                 report_data = generator.generate_detailed_report()
             elif report_type == 'performance':
                 report_data = generator.generate_performance_report()
+            elif report_type == 'full':
+                report_data = generator.generate_full_report()
             else:  # summary
                 report_data = generator.generate_summary_report()
 
-            # 生成PDF
-            pdf_generator = AIReportPDFGenerator(report_data, report_type)
+            # 生成PDF（full 类型按 detailed 模板生成）
+            pdf_report_type = report_type if report_type != 'full' else 'detailed'
+            pdf_generator = AIReportPDFGenerator(report_data, pdf_report_type)
             pdf_buffer = pdf_generator.generate()
 
             # 生成文件名

@@ -315,6 +315,35 @@ class AIExecutionReportGenerator:
             'gif_path': self.record.gif_path  # 添加GIF路径
         }
 
+    def generate_full_report(self) -> Dict[str, Any]:
+        """
+        生成完整报告（合并摘要、详细步骤、性能分析）
+
+        Returns:
+            包含所有报告数据的字典
+        """
+        summary = self.generate_summary_report()
+        detailed = self.generate_detailed_report()
+        performance = self.generate_performance_report()
+
+        return {
+            'overview': summary.get('overview') or detailed.get('overview'),
+            'statistics': summary.get('statistics') or detailed.get('statistics'),
+            'timeline': summary.get('timeline'),
+            'steps': summary.get('steps'),
+            'detailed_steps': detailed.get('detailed_steps'),
+            'errors': detailed.get('errors'),
+            'screenshots': detailed.get('screenshots'),
+            'task_progression': detailed.get('task_progression'),
+            'metrics': performance.get('metrics') or summary.get('metrics'),
+            'step_performance': performance.get('step_performance'),
+            'bottlenecks': performance.get('bottlenecks'),
+            'action_distribution': performance.get('action_distribution') or summary.get('action_distribution'),
+            'recommendations': performance.get('recommendations'),
+            'execution_details': summary.get('execution_details') or detailed.get('execution_details') or performance.get('execution_details'),
+            'gif_path': summary.get('gif_path') or detailed.get('gif_path') or performance.get('gif_path'),
+        }
+
     def _parse_detailed_steps(self, logs: str, steps_completed: List) -> List[Dict[str, Any]]:
         """解析详细步骤信息"""
         detailed_steps = []
@@ -452,6 +481,8 @@ class AIExecutionReportGenerator:
         # 基于操作复杂度分配权重
         def get_step_complexity(action_str):
             """根据操作类型返回复杂度权重"""
+            if isinstance(action_str, dict):
+                action_str = str(action_str)
             if not action_str:
                 return 1.0
 

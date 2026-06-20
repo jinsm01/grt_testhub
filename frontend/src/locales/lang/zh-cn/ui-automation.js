@@ -549,6 +549,7 @@ export default {
     // AI执行报告
     executionReport: {
       title: 'AI测试执行报告',
+      reportSuffix: '报告',
       backToList: '返回列表',
       basicInfo: '基本信息',
       caseName: '用例名称',
@@ -588,6 +589,7 @@ export default {
       skipped: '跳过',
       // 时间线
       taskTimeline: '任务执行时间线',
+      taskPlan: '任务规划',
       task: '任务',
       // 详细步骤
       stepDetails: '执行步骤详情',

@@ -1,0 +1,32 @@
+{
+  "project_id": "7366718",
+  "environment_id": "39566850",
+  "access_token": "afxp_aa7bb2R3NrXkSN4BKMLgb6PRGj9GqtGljoqh",
+  "id_field_exemptions": [
+    {
+      "field": "54",
+      "reason": "热",
+      "added_by": "金绍敏",
+      "added_at": "2026-06-09T16:32:38.569571",
+      "enabled": false
+    },
+    {
+      "field": "呜呜呜大的",
+      "reason": "得到的",
+      "added_by": "金绍敏",
+      "added_at": "2026-06-09T16:53:49.984959",
+      "enabled": false
+    },
+    {
+      "field": "13",
+      "reason": "1",
+      "added_by": "金绍敏",
+      "added_at": "2026-06-09T17:45:33.791935",
+      "enabled": true
+    }
+  ],
+  "rule_statuses": {
+    "fixture-dir-skip": true,
+    "scenario-run-passed": true
+  }
+}

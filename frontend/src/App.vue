@@ -48,13 +48,18 @@ onMounted(() => {
 }
 
 /* 全局复选框样式 - 紫色渐变主题 */
-.el-checkbox.is-checked .el-checkbox__inner {
+.el-checkbox.is-checked .el-checkbox__inner,
+.el-checkbox__input.is-indeterminate .el-checkbox__inner {
   background: linear-gradient(135deg, #5a32a3 0%, #7b42f6 100%) !important;
   border-color: #5a32a3 !important;
 }
 
 .el-checkbox.is-checked .el-checkbox__inner::after {
   border-color: #ffffff !important;
+}
+
+.el-checkbox__input.is-indeterminate .el-checkbox__inner::before {
+  background-color: #ffffff !important;
 }
 
 .el-checkbox__input.is-checked + .el-checkbox__label {
