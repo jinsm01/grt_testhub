@@ -3411,7 +3411,7 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                         element_info['locator_strategy'] = locator.get('strategy')
                         element_info['locator_value'] = locator.get('value')
             
-            if element_info['element_name'] or element_info['locator_value']:
+            if element_info['element_name']:
                 return element_info
             
             return None
@@ -3519,7 +3519,8 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
     
     def _generate_playwright_code(self, strategy, value, element_name, action_type):
         """生成Playwright代码"""
-        code = f'# {element_name}\n'
+        code = ''
+        label = strategy or 'locator'
         
         if strategy == 'xpath':
             code += f'element = page.locator("xpath={value}")\n'
@@ -3541,11 +3542,12 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
         elif action_type == 'select':
             code += 'await element.select_option("option_value")\n'
         
-        return code
+        return [{'label': label, 'code': code.strip()}]
     
     def _generate_selenium_code(self, strategy, value, element_name, action_type):
         """生成Selenium代码"""
-        code = f'# {element_name}\n'
+        code = ''
+        label = strategy or 'xpath'
         
         if strategy == 'xpath':
             code += f'element = driver.find_element(By.XPATH, "{value}")\n'
@@ -3565,11 +3567,12 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
         elif action_type == 'select':
             code += 'Select(element).select_by_value("option_value")\n'
         
-        return code
+        return [{'label': label, 'code': code.strip()}]
     
     def _generate_puppeteer_code(self, strategy, value, element_name, action_type):
         """生成Puppeteer代码"""
-        code = f'// {element_name}\n'
+        code = ''
+        label = strategy or 'css'
         
         if strategy == 'xpath':
             code += f'const element = await page.$x("{value}");\n'
@@ -3596,66 +3599,44 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                 code += '  await element.type("your_value");\n'
         
         code += '}\n'
-        return code
+        return [{'label': label, 'code': code.strip()}]
     
     def _generate_playwright_text_code(self, element_name, description, action_type):
         """基于文本描述生成Playwright代码"""
-        code = f'# {element_name}\n'
-        code += f'# 描述: {description}\n\n'
+        samples = []
         
         if action_type == 'click':
-            code += f'# 方式1: 通过文本查找\n'
-            code += f'await page.get_by_text("{element_name}").click()\n\n'
-            code += f'# 方式2: 通过角色查找\n'
-            code += f'await page.get_by_role("button", name="{element_name}").click()\n'
+            samples.append({'label': '通过文本查找', 'code': f'await page.get_by_text("{element_name}").click()'})
+            samples.append({'label': '通过角色查找', 'code': f'await page.get_by_role("button", name="{element_name}").click()'})
         elif action_type == 'fill':
-            code += f'# 方式1: 通过标签查找\n'
-            code += f'await page.get_by_label("{element_name}").fill("your_value")\n\n'
-            code += f'# 方式2: 通过占位符查找\n'
-            code += f'await page.get_by_placeholder("{element_name}").fill("your_value")\n'
+            samples.append({'label': '通过标签查找', 'code': f'await page.get_by_label("{element_name}").fill("your_value")'})
+            samples.append({'label': '通过占位符查找', 'code': f'await page.get_by_placeholder("{element_name}").fill("your_value")'})
         
-        return code
+        return samples
     
     def _generate_selenium_text_code(self, element_name, description, action_type):
         """基于文本描述生成Selenium代码"""
-        code = f'# {element_name}\n'
-        code += f'# 描述: {description}\n\n'
+        samples = []
         
         if action_type == 'click':
-            code += f'# 方式1: 通过链接文本\n'
-            code += f'driver.find_element(By.LINK_TEXT, "{element_name}").click()\n\n'
-            code += f'# 方式2: 通过部分链接文本\n'
-            code += f'driver.find_element(By.PARTIAL_LINK_TEXT, "{element_name}").click()\n\n'
-            code += f'# 方式3: 通过XPath包含文本\n'
-            code += f'driver.find_element(By.XPATH, f"//*[contains(text(), \'{element_name}\')]").click()\n'
+            samples.append({'label': '通过链接文本', 'code': f'driver.find_element(By.LINK_TEXT, "{element_name}").click()'})
+            samples.append({'label': '通过部分链接文本', 'code': f'driver.find_element(By.PARTIAL_LINK_TEXT, "{element_name}").click()'})
         elif action_type == 'fill':
-            code += f'# 通过XPath查找输入框\n'
-            code += f'input_element = driver.find_element(By.XPATH, f"//input[contains(@placeholder, \'{element_name}\') or contains(@name, \'{element_name}\')]")\n'
-            code += 'input_element.send_keys("your_value")\n'
+            samples.append({'label': '通过XPath查找输入框', 'code': f'input_element = driver.find_element(By.XPATH, f"//input[contains(@placeholder, \'{element_name}\') or contains(@name, \'{element_name}\')]")\ninput_element.send_keys("your_value")'})
         
-        return code
+        return samples
     
     def _generate_puppeteer_text_code(self, element_name, description, action_type):
         """基于文本描述生成Puppeteer代码"""
-        code = f'// {element_name}\n'
-        code += f'// 描述: {description}\n\n'
+        samples = []
         
         if action_type == 'click':
-            code += f'// 方式1: 通过文本选择器\n'
-            code += f'await page.click(`::-p-text("{element_name}")`);\n\n'
-            code += f'// 方式2: 通过XPath\n'
-            code += f'const elements = await page.$x(`//*[contains(text(), "{element_name}")]`);\n'
-            code += 'if (elements.length > 0) {\n'
-            code += '  await elements[0].click();\n'
-            code += '}\n'
+            samples.append({'label': '通过文本选择器', 'code': f'await page.click(`::-p-text("{element_name}")`);'})
+            samples.append({'label': '通过XPath', 'code': f'const elements = await page.$x(`//*[contains(text(), "{element_name}")]`);\nif (elements.length > 0) {{\n  await elements[0].click();\n}}'})
         elif action_type == 'fill':
-            code += f'// 通过XPath查找输入框\n'
-            code += f'const inputs = await page.$x(`//input[contains(@placeholder, "{element_name}")]`);\n'
-            code += 'if (inputs.length > 0) {\n'
-            code += '  await inputs[0].type("your_value");\n'
-            code += '}\n'
+            samples.append({'label': '通过XPath查找输入框', 'code': f'const inputs = await page.$x(`//input[contains(@placeholder, "{element_name}")]`);\nif (inputs.length > 0) {{\n  await inputs[0].type("your_value");\n}}'})
         
-        return code
+        return samples
     
     def _extract_locator_from_action(self, action):
         """从action对象中提取定位器"""

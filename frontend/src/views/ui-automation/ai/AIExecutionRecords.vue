@@ -72,7 +72,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="executed_by.username" :label="$t('uiAutomation.ai.executionRecords.executor')" width="120" header-align="center" align="center" />
-        <el-table-column :label="$t('uiAutomation.common.operation')" width="320" fixed="right" header-align="center" align="center">
+        <el-table-column :label="$t('uiAutomation.common.operation')" width="240" fixed="right" header-align="center" align="center">
           <template #default="{ row }">
             <div class="action-buttons">
               <el-button size="small" type="primary" class="action-btn view-btn" @click="viewDetail(row)">
@@ -82,10 +82,6 @@
               <el-button size="small" type="success" class="action-btn report-btn" @click="viewReport(row)">
                 <el-icon><Document /></el-icon>
                 <span>{{ $t('uiAutomation.ai.executionRecords.viewReport') }}</span>
-              </el-button>
-              <el-button size="small" type="primary" class="action-btn element-btn" @click="viewElementLocator(row)">
-                <el-icon><Location /></el-icon>
-                <span>{{ $t('uiAutomation.ai.elementLocator.viewElements') }}</span>
               </el-button>
             </div>
           </template>
@@ -106,46 +102,99 @@
     </div>
 
     <!-- 详情抽屉 -->
-    <el-drawer v-model="showDetailDialog" :title="$t('uiAutomation.ai.executionRecords.executionDetail')" size="800px" direction="rtl">
+    <el-drawer v-model="showDetailDialog" :title="$t('uiAutomation.ai.executionRecords.executionDetail')" size="1000px" direction="rtl">
       <div v-if="currentRecord" class="record-detail">
-        <!-- 任务描述 -->
-        <div v-if="currentRecord.task_description" class="detail-item mt-15">
-          <span class="label">{{ $t('uiAutomation.ai.executionRecords.taskDescription') }}:</span>
-        </div>
-        <div v-if="currentRecord.task_description" class="task-description-container">
-          <div class="task-description-content">
-            <div v-for="(line, index) in getFormattedLines(currentRecord.task_description)" :key="index" class="description-line" v-html="formatLineWithLinks(line)">
+        <el-tabs v-model="detailActiveTab" @tab-change="handleDetailTabChange">
+          <el-tab-pane :label="$t('uiAutomation.ai.executionRecords.executionLogs')" name="logs">
+            <div class="log-container">
+              <div
+                v-for="(line, index) in formatLogLines(currentRecord.logs)"
+                :key="index"
+                :class="['log-line', getLogLineClass(line)]"
+              >
+                {{ line }}
+              </div>
             </div>
-          </div>
-        </div>
+          </el-tab-pane>
 
-        <!-- 执行日志 -->
-        <div class="detail-item mt-15">
-          <span class="label">{{ $t('uiAutomation.ai.executionRecords.executionLogs') }}:</span>
-        </div>
-        <div class="log-container">
-          <pre>{{ currentRecord.logs }}</pre>
-        </div>
+          <el-tab-pane :label="$t('uiAutomation.ai.elementLocator.title')" name="elements">
+            <div v-if="elementLoading" class="loading-container">
+              <el-loading-directive />
+            </div>
+            <div v-else-if="elementError" class="error-container">
+              <el-alert
+                :title="elementError"
+                type="error"
+                show-icon
+                :closable="false"
+              />
+            </div>
+            <div v-else-if="!elementData" class="empty-container">
+              <el-empty :description="$t('uiAutomation.ai.elementLocator.noData')" />
+            </div>
+            <div v-else class="element-locator-container">
+              <div v-if="elementData.elements && elementData.elements.length > 0" class="elements-list">
+                <el-table :data="elementData.elements" stripe style="width: 100%" class="locator-table">
+                  <el-table-column type="index" :label="$t('uiAutomation.ai.elementLocator.step')" width="80" align="center" />
+                  <el-table-column prop="element_name" :label="$t('uiAutomation.ai.elementLocator.elementName')" min-width="125" show-overflow-tooltip header-align="center" />
+                  <el-table-column label="方式1" min-width="260" header-align="center">
+                    <template #default="{ row }">
+                      <div v-if="row.code_samples && row.code_samples.playwright && row.code_samples.playwright[0]" class="code-container">
+                        <div class="code-block">
+                          <pre><code>{{ row.code_samples.playwright[0].code }}</code></pre>
+                          <el-tooltip content="复制" placement="top">
+                            <el-button
+                              size="small"
+                              circle
+                              class="copy-icon-btn"
+                              @click="copyCode(row.code_samples.playwright[0].code)"
+                            >
+                              <el-icon><DocumentCopy /></el-icon>
+                            </el-button>
+                          </el-tooltip>
+                        </div>
+                      </div>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="方式2" min-width="260" header-align="center">
+                    <template #default="{ row }">
+                      <div v-if="row.code_samples && row.code_samples.playwright && row.code_samples.playwright[1]" class="code-container">
+                        <div class="code-block">
+                          <pre><code>{{ row.code_samples.playwright[1].code }}</code></pre>
+                          <el-tooltip content="复制" placement="top">
+                            <el-button
+                              size="small"
+                              circle
+                              class="copy-icon-btn"
+                              @click="copyCode(row.code_samples.playwright[1].code)"
+                            >
+                              <el-icon><DocumentCopy /></el-icon>
+                            </el-button>
+                          </el-tooltip>
+                        </div>
+                      </div>
+                      <span v-else>-</span>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+
+              <div v-else class="no-elements">
+                <el-empty :description="$t('uiAutomation.ai.elementLocator.noElements')" />
+              </div>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
       </div>
 
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button type="success" @click="openReportFromDetail">{{ $t('uiAutomation.ai.executionRecords.viewReport') }}</el-button>
-          <el-button @click="showDetailDialog = false">{{ $t('uiAutomation.common.close') }}</el-button>
-        </div>
-      </template>
+
     </el-drawer>
 
     <!-- 报告对话框 -->
     <AIExecutionReport
       v-model="showReportDialog"
       :record-id="reportRecordId"
-    />
-    
-    <!-- 元素定位提取对话框 -->
-    <AIElementLocator
-      v-model="showElementLocatorDialog"
-      :record-id="elementLocatorRecordId"
     />
   </div>
 </template>
@@ -155,10 +204,9 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete, View, Document, Location, Search } from '@element-plus/icons-vue'
-import { getAIExecutionRecords, batchDeleteAIExecutionRecords } from '@/api/ui_automation'
+import { Delete, View, Document, Search, DocumentCopy } from '@element-plus/icons-vue'
+import { getAIExecutionRecords, batchDeleteAIExecutionRecords, extractElementsFromAIExecution } from '@/api/ui_automation'
 import AIExecutionReport from './AIExecutionReport.vue'
-import AIElementLocator from './AIElementLocator.vue'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -183,9 +231,13 @@ const tableRef = ref(null)
 const showReportDialog = ref(false)
 const reportRecordId = ref(null)
 
-// 元素定位相关状态
-const showElementLocatorDialog = ref(false)
-const elementLocatorRecordId = ref(null)
+// 详情抽屉标签页
+const detailActiveTab = ref('logs')
+
+// 元素提取相关状态
+const elementLoading = ref(false)
+const elementError = ref(null)
+const elementData = ref(null)
 
 // 加载记录列表
 const loadRecords = async () => {
@@ -241,16 +293,46 @@ const viewReport = (row) => {
   router.push(`/ai-intelligent-mode/execution-report/${row.id}`)
 }
 
-// 查看元素定位
-const viewElementLocator = (row) => {
-  elementLocatorRecordId.value = row.id
-  showElementLocatorDialog.value = true
-}
-
 // 从详情页打开报告
 const openReportFromDetail = () => {
   if (currentRecord.value) {
     router.push(`/ai-intelligent-mode/execution-report/${currentRecord.value.id}`)
+  }
+}
+
+// 加载元素提取数据
+const loadElementData = async () => {
+  if (!currentRecord.value?.id) return
+
+  elementLoading.value = true
+  elementError.value = null
+
+  try {
+    const response = await extractElementsFromAIExecution(currentRecord.value.id)
+    elementData.value = response.data
+  } catch (err) {
+    console.error('Failed to load element data:', err)
+    elementError.value = err.response?.data?.error || err.message || t('uiAutomation.ai.elementLocator.loadError')
+  } finally {
+    elementLoading.value = false
+  }
+}
+
+// 详情抽屉标签页切换
+const handleDetailTabChange = (tabName) => {
+  if (tabName === 'elements' && !elementData.value && currentRecord.value?.id) {
+    loadElementData()
+  }
+}
+
+// 复制代码
+const copyCode = async (code) => {
+  try {
+    await navigator.clipboard.writeText(code)
+    ElMessage.success(t('uiAutomation.ai.elementLocator.copySuccess'))
+  } catch (err) {
+    console.error('Failed to copy code:', err)
+    ElMessage.error(t('uiAutomation.ai.elementLocator.copyFailed'))
   }
 }
 
@@ -276,53 +358,44 @@ const getStatusText = (status) => {
   return map[status] || status
 }
 
-const getFormattedLines = (text) => {
-  if (!text) return []
-
-  const result = []
-  let currentLine = ''
-  // 只匹配行首的数字序号（前面是字符串开始或换行符）
-  const parts = text.split(/(^\d+\.|\n\d+\.)/)
-
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i]
-    // 匹配行首的数字序号（如 "1." 或 "\n1."）
-    if (/^\n?\d+\.$/.test(part)) {
-      if (currentLine.trim()) {
-        result.push(currentLine.trim())
-      }
-      // 去掉开头的换行符
-      currentLine = part.replace(/^\n/, '')
-    } else {
-      currentLine += part
-    }
-  }
-
-  if (currentLine.trim()) {
-    result.push(currentLine.trim())
-  }
-
-  return result.length > 0 ? result : [text.trim()]
-}
-
-// 将文本中的URL转换为可点击的链接
-const formatLineWithLinks = (text) => {
-  if (!text) return ''
-
-  // 匹配URL的正则表达式
-  const urlRegex = /(https?:\/\/[^\s]+)/g
-
-  // 将URL替换为带样式的链接
-  return text.replace(urlRegex, (url) => {
-    // 截断过长的URL用于显示
-    const displayUrl = url.length > 50 ? url.substring(0, 50) + '...' : url
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="description-link" title="${url}">${displayUrl}</a>`
-  })
-}
-
 const formatDate = (row, column, cellValue) => {
   if (!cellValue) return ''
   return new Date(cellValue).toLocaleString()
+}
+
+// 将日志文本拆分为行数组
+const formatLogLines = (logs) => {
+  if (!logs) return []
+  return logs.split('\n')
+}
+
+// 根据日志行内容判断样式类型
+const getLogLineClass = (line) => {
+  if (!line) return ''
+  const trimmed = line.trim()
+
+  // 分隔线：===== ... =====
+  if (/^={3,}/.test(trimmed)) return 'log-separator'
+
+  // 步骤标识：[Step X]
+  if (/^\[Step\s+\d+\]/i.test(trimmed)) return 'log-step'
+
+  // 错误/失败
+  if (/错误|失败|exception|error|failed/i.test(trimmed)) return 'log-error'
+
+  // 完成/成功
+  if (/执行完成|完成|成功|success|done/i.test(trimmed)) return 'log-success'
+
+  // 开始/启动
+  if (/开始执行|启动|开始|starting/i.test(trimmed)) return 'log-start'
+
+  // 执行动作
+  if (/执行[：:]/.test(trimmed)) return 'log-action'
+
+  // 提示信息
+  if (/任务分析|等待|正在|加载/i.test(trimmed)) return 'log-info'
+
+  return ''
 }
 
 // 获取序号
@@ -1125,55 +1198,79 @@ onUnmounted(() => {
   .log-container {
     flex: 1;
     min-height: 0;
-    background-color: #1e1e1e;
-    color: #fff;
-    padding: 15px;
+    background-color: #fafbfc;
+    color: #2c3e50;
+    padding: 20px;
     border-radius: 8px;
     overflow-y: auto;
-    font-family: monospace;
+    font-family: 'SF Mono', 'Fira Code', 'Source Code Pro', 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    border: 1px solid #e9ecef;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
 
-    pre {
-      margin: 0;
+    .log-line {
       white-space: pre-wrap;
       word-wrap: break-word;
-    }
-  }
+      letter-spacing: 0.3px;
+      padding: 1px 0;
+      transition: background-color 0.15s ease;
+      border-radius: 3px;
+      padding-left: 6px;
+      margin-left: -6px;
 
-  .task-description-container {
-    background-color: #f8f7ff;
-    border: 1px solid rgba(147, 112, 219, 0.2);
-    border-radius: 8px;
-    padding: 12px 15px;
-    margin-top: 8px;
+      &:hover {
+        background-color: rgba(90, 50, 163, 0.06);
+      }
 
-    .task-description-content {
-      color: #5a32a3;
-      line-height: 1.6;
+      // 分隔线 =====
+      &.log-separator {
+        color: #7b42f6;
+        font-weight: 700;
+        margin: 8px 0;
+        letter-spacing: 1px;
+      }
 
-      .description-line {
-        margin-bottom: 8px;
-        word-break: break-all;
-        white-space: pre-wrap;
-        overflow-wrap: break-word;
+      // 步骤标识 [Step X]
+      &.log-step {
+        color: #7b42f6;
+        font-weight: 600;
+        margin-top: 6px;
+      }
 
-        &:last-child {
-          margin-bottom: 0;
-        }
+      // 执行动作
+      &.log-action {
+        color: #1890ff;
+        padding-left: 16px;
+      }
 
-        // 链接样式
-        :deep(.description-link) {
-          color: #7b42f6;
-          text-decoration: underline;
-          word-break: break-all;
-          cursor: pointer;
+      // 开始信息
+      &.log-start {
+        color: #52c41a;
+        font-weight: 600;
+      }
 
-          &:hover {
-            color: #5a32a3;
-          }
-        }
+      // 完成/成功
+      &.log-success {
+        color: #52c41a;
+        font-weight: 600;
+      }
+
+      // 错误/失败
+      &.log-error {
+        color: #f5222d;
+        font-weight: 600;
+        background-color: rgba(245, 34, 45, 0.06);
+      }
+
+      // 提示信息
+      &.log-info {
+        color: #8c8c8c;
+        font-style: italic;
       }
     }
   }
+
 }
 
 .mt-15 {
@@ -1195,5 +1292,131 @@ onUnmounted(() => {
   height: 22px;
   font-size: 12px;
   font-weight: 500;
+}
+
+// 元素提取相关样式
+.loading-container {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-container,
+.empty-container,
+.no-elements {
+  padding: 40px 0;
+}
+
+.element-locator-container {
+  .elements-list {
+    margin-top: 0;
+  }
+
+  .locator-table {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+
+    :deep(.el-table__header-wrapper) {
+      th {
+        background-color: #f8f7ff !important;
+        color: #5a32a3;
+        font-weight: 600;
+        font-size: 13px;
+        padding: 12px;
+        border-bottom: 1px solid #e9ecef;
+
+        .cell {
+          color: #5a32a3;
+          font-weight: 600;
+        }
+      }
+    }
+
+    :deep(.el-table__row) {
+      transition: background-color 0.2s ease;
+
+      td {
+        padding: 12px;
+        font-size: 13px;
+        color: #333;
+        border-bottom: 1px solid #f0f0f0;
+        vertical-align: top;
+      }
+
+      &:hover {
+        background-color: #f8f7ff !important;
+      }
+
+      &.el-table__row--striped {
+        background-color: #fafaff !important;
+      }
+    }
+
+    :deep(.el-tag) {
+      border-radius: 4px;
+      font-weight: 500;
+    }
+  }
+
+  .code-container {
+    .code-block {
+      position: relative;
+      background-color: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      padding: 10px 36px 10px 12px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #c2a9f3;
+        box-shadow: 0 2px 8px rgba(162, 128, 227, 0.08);
+      }
+
+      pre {
+        margin: 0;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: break-all;
+        color: #303133;
+      }
+
+      code {
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
+        color: inherit;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+    }
+
+    .copy-icon-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      background: #fff;
+      border: 1px solid #e9ecef;
+      color: #a78bfa;
+      opacity: 0;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #f8f7ff;
+        border-color: #a78bfa;
+        color: #5a32a3;
+      }
+    }
+
+    .code-block:hover .copy-icon-btn {
+      opacity: 1;
+    }
+  }
 }
 </style>
