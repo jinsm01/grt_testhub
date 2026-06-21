@@ -455,10 +455,8 @@ export default {
 1. 访问 https://passport.grtcloud.net
 
 2. 点击'密码登录'`,
-    gifRecording: 'GIF录制',
     on: '开启',
     off: '关闭',
-    gifTip: '开启后将录制执行过程并生成GIF文件，保存到路径/media/ai_recording/目录下',
     startExecution: '开始执行',
     stopExecution: '停止执行',
     saveAsCase: '保存为用例',
@@ -565,8 +563,6 @@ export default {
       noLogs: '暂无日志',
       errorInfo: '错误信息',
       noError: '无错误信息',
-      gifRecording: 'GIF 录屏',
-      noGif: 'GIF未生成',
       noReportData: '暂无报告数据',
       generatingReport: '正在生成报告...',
       // 报告类型
@@ -612,9 +608,6 @@ export default {
       slowerThanAvg: '慢于平均',
       // 优化建议
       recommendations: '优化建议',
-      // GIF
-      viewGif: '查看GIF回放',
-      gifPlayback: 'GIF回放',
       exportReport: '导出报告',
       // 操作类型
       actions: {

@@ -16,7 +16,7 @@
               :content="task.description"
               placement="bottom"
             >
-              <el-tag :type="getTaskStatusType(task.status)" size="small" class="plan-tag">
+              <el-tag :type="getTaskStatusType(task.status)" size="small" class="plan-tag clickable" @click="scrollToTaskStep(task.id)">
                 {{ $t('uiAutomation.ai.executionReport.task') }}{{ task.id }}
               </el-tag>
             </el-tooltip>
@@ -127,7 +127,7 @@
                   placement="top"
                   :type="getStepStatusType(step.status)"
                 >
-                  <div class="step-card">
+                  <div :id="'step-' + step.step_number" class="step-card">
                     <div class="step-header">
                       <div class="action-tags">
                         <el-tag
@@ -246,12 +246,6 @@
       <el-empty :description="$t('uiAutomation.ai.executionReport.noReportData')" />
     </div>
 
-    <!-- GIF回放对话框 -->
-    <el-dialog v-model="showGifDialog" :title="$t('uiAutomation.ai.executionReport.gifPlayback')" width="800px">
-      <div v-if="reportData && reportData.gif_path" class="gif-container">
-        <img :src="gifUrl" alt="Execution GIF" class="gif-image" />
-      </div>
-    </el-dialog>
   </div>
 </template>
 
@@ -272,26 +266,10 @@ const recordId = computed(() => route.params.id)
 
 const loading = ref(false)
 const reportData = ref(null)
-const showGifDialog = ref(false)
 const pieChartRef = ref(null)
 const barChartRef = ref(null)
 let pieChart = null
 let barChart = null
-
-// GIF URL（兼容旧数据）
-const gifUrl = computed(() => {
-  if (reportData.value && reportData.value.gif_path) {
-    // gif_path格式：media/ai_recording/xxx.gif
-    const path = reportData.value.gif_path
-    // 如果路径已经包含media/，直接使用；否则添加media/
-    if (path.startsWith('media/')) {
-      return `/${path}`
-    } else {
-      return `/media/${path}`
-    }
-  }
-  return ''
-})
 
 // 按 case_name 分组步骤（套件执行时每个步骤会带有 case_name）
 const groupedSteps = computed(() => {
@@ -598,6 +576,31 @@ const getActionTagType = (actionType) => {
     'other': ''
   }
   return typeMap[actionType] || ''
+}
+
+// 点击任务标签跳转到对应步骤截图
+const scrollToTaskStep = (taskId) => {
+  if (!reportData.value || !reportData.value.detailed_steps) return
+  console.log('DEBUG scrollToTaskStep: taskId=', taskId, 'detailed_steps task_ids=', reportData.value.detailed_steps.map(s => s.task_id))
+  console.log('DEBUG scrollToTaskStep: timeline ids=', reportData.value.timeline?.map(t => t.id))
+
+  // 先尝试找 task_id 匹配的步骤
+  let targetStep = reportData.value.detailed_steps.find(s => String(s.task_id) === String(taskId))
+
+  // 找不到则按 step_number 等于 taskId 兜底
+  if (!targetStep) {
+    targetStep = reportData.value.detailed_steps.find(s => s.step_number === taskId)
+  }
+
+  console.log('DEBUG scrollToTaskStep: targetStep=', targetStep)
+
+  if (targetStep) {
+    const el = document.getElementById('step-' + targetStep.step_number)
+    console.log('DEBUG scrollToTaskStep: scroll to element id=', 'step-' + targetStep.step_number, 'found=', !!el)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
 }
 
 // 返回上一页
@@ -962,16 +965,6 @@ onMounted(() => {
   font-size: 24px;
   font-weight: 700;
   color: #7b42f6;
-}
-
-.gif-container {
-  text-align: center;
-}
-
-.gif-image {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
 }
 
 .report-error {

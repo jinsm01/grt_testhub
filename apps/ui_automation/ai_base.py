@@ -849,7 +849,7 @@ class BaseBrowserAgent:
         _apply_browser_use_patches()
 
         self.execution_mode = 'text'
-        self.enable_gif = enable_gif  # GIF录制开关
+        self.enable_gif = enable_gif  # 步骤截图开关
         self.case_name = case_name or "Adhoc Task"  # 用例名称
         self.screenshots_sequence = []  # 每步截图路径列表
 
@@ -1186,7 +1186,7 @@ class BaseBrowserAgent:
             max_failures=2,  # 减少最大失败次数，避免过长等待 (从默认3改为2)
             llm_timeout=60,  # 设置LLM调用超时为60秒（支持硅基流动等大模型API）
             step_timeout=90,  # 设置每步超时为90秒
-            generate_gif=self.enable_gif,  # 根据开关决定是否生成GIF
+            generate_gif=False,  # 显式禁用 GIF 生成
         )
         agent._task_was_done = False
 
@@ -1640,11 +1640,11 @@ class PersistentBrowserSession:
             max_failures=2,
             llm_timeout=60,
             step_timeout=90,
-            generate_gif=self.enable_gif,
+            generate_gif=False,  # 显式禁用 GIF 生成
         )
         self.agent._task_was_done = False
     
-    async def run_single_case(self, task_description: str, analysis_callback=None, step_callback=None, should_stop=None, case_name=None):
+    async def run_single_case(self, task_description: str, analysis_callback=None, step_callback=None, should_stop=None, case_name=None, task_id_offset=0):
         """在持久浏览器会话中运行单个测试用例"""
         if not self.browser_session:
             logger.info(f"🔄 初始化浏览器会话 for case: {case_name}")
@@ -1805,7 +1805,7 @@ class PersistentBrowserSession:
                 max_failures=2,
                 llm_timeout=60,
                 step_timeout=90,
-                generate_gif=self.enable_gif,
+                generate_gif=False,  # 显式禁用 GIF 生成
             )
             agent._task_was_done = False
             logger.info(f"✅ Agent 创建完成 for case: {case_name}")
@@ -1816,9 +1816,10 @@ class PersistentBrowserSession:
         last_processed_step = 0
         last_marked_task_id = 0
         screenshot_tasks = []
+        step_task_ids = {}  # 记录每个步骤对应的全局唯一 task_id
         
         async def on_step_end(agent_instance):
-            nonlocal last_processed_step, last_marked_task_id
+            nonlocal last_processed_step, last_marked_task_id, step_task_ids
             
             if should_stop:
                 do_stop = await should_stop() if asyncio.iscoroutinefunction(should_stop) else should_stop()
@@ -1852,9 +1853,14 @@ class PersistentBrowserSession:
                                 step_has_task_complete = True
                                 step_marked_task_id = action_dict['mark_task_complete'].get('task_id')
                                 last_marked_task_id = step_marked_task_id
+                                # AI 已经在 final_task 中收到了偏移后的 task_id（on_analysis_complete 修改了 planned_tasks 的 id）
+                                # 所以 AI 调用 mark_task_complete 时使用的已经是全局唯一ID，不需要再加偏移
+                                global_task_id = int(step_marked_task_id)
+                                # 记录步骤索引对应的全局唯一task_id，供run_suite后续使用
+                                step_task_ids[i] = global_task_id
                                 # 调用回调更新任务状态，与单场景执行保持一致
                                 if step_callback:
-                                    data = {'task_id': int(step_marked_task_id), 'status': 'completed'}
+                                    data = {'task_id': global_task_id, 'status': 'completed'}
                                     if asyncio.iscoroutinefunction(step_callback):
                                         await step_callback(data)
                                     else:
@@ -2060,7 +2066,7 @@ class PersistentBrowserSession:
             logger.warning(f"⚠️ Error waiting for screenshot tasks: {e}")
 
         logger.info(f"🏁 run_single_case returning for case: {case_name}, screenshots: {len(self.screenshots_sequence)}, history steps: {len(history) if history else 0}")
-        return {'history': history, 'screenshots_sequence': self.screenshots_sequence, 'success': ai_success}
+        return {'history': history, 'screenshots_sequence': self.screenshots_sequence, 'success': ai_success, 'step_task_ids': step_task_ids}
     
     def _format_action_persistent(self, action):
         try:

@@ -257,12 +257,6 @@
       </span>
     </template>
 
-    <!-- GIF回放对话框 -->
-    <el-dialog v-model="showGifDialog" :title="$t('uiAutomation.ai.executionReport.gifPlayback')" width="800px" append-to-body>
-      <div v-if="reportData && reportData.gif_path" class="gif-container">
-        <img :src="gifUrl" alt="Execution GIF" class="gif-image" />
-      </div>
-    </el-dialog>
   </el-drawer>
 </template>
 
@@ -292,7 +286,6 @@ const emit = defineEmits(['update:modelValue'])
 const visible = ref(false)
 const loading = ref(false)
 const reportData = ref(null)
-const showGifDialog = ref(false)
 const pieChartRef = ref(null)
 const barChartRef = ref(null)
 let pieChart = null
@@ -301,21 +294,6 @@ let barChart = null
 // 报告标题显示名称（单页展示固定为完整报告）
 const reportTypeDisplay = computed(() => {
   return t('uiAutomation.ai.executionReport.fullReport') || '完整报告'
-})
-
-// GIF URL（兼容旧数据）
-const gifUrl = computed(() => {
-  if (reportData.value && reportData.value.gif_path) {
-    // gif_path格式：media/ai_recording/xxx.gif
-    const path = reportData.value.gif_path
-    // 如果路径已经包含media/，直接使用；否则添加media/
-    if (path.startsWith('media/')) {
-      return `/${path}`
-    } else {
-      return `/media/${path}`
-    }
-  }
-  return ''
 })
 
 // 按 case_name 分组步骤（套件执行时每个步骤会带有 case_name）
@@ -872,16 +850,6 @@ const handleClose = () => {
   font-size: 24px;
   font-weight: 600;
   color: #8B5CF6;
-}
-
-.gif-container {
-  text-align: center;
-}
-
-.gif-image {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
 }
 
 .report-error {

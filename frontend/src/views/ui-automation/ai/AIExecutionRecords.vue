@@ -1181,7 +1181,19 @@ onUnmounted(() => {
 }
 
 .case-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 4px 8px;
   line-height: 1.6;
+}
+
+.suite-tag {
+  flex-shrink: 0;
+  border-radius: 4px;
+  padding: 0 6px;
+  height: 22px;
+  font-size: 12px;
+  font-weight: 500;
 }
 </style>

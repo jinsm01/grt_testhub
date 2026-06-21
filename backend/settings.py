@@ -375,6 +375,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'apps.ui_automation.views': {
+            'handlers': ['file', 'error_file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
     },
 }
 

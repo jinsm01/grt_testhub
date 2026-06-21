@@ -49,7 +49,7 @@ from .serializers import (
 )
 from .operation_logger import log_operation
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('django')
 User = get_user_model()
 
 
@@ -157,6 +157,12 @@ def extract_step_info(s, step_index):
                                 step_info['status'] = 'failed'
                             elif success is True:
                                 step_info['status'] = 'completed'
+                        if action_name == 'mark_task_complete':
+                            task_id = params.get('task_id') if isinstance(params, dict) else None
+                            if task_id is not None:
+                                step_info['task_id'] = task_id
+                                logger.info(f"DEBUG extract_step_info: step={step_index} extracted raw task_id={task_id}")
+                        logger.info(f"DEBUG extract_step_info: step={step_index} action_name={action_name} params={params}")
                 except Exception:
                     action_strs.append(str(action))
             step_info['action'] = ' | '.join(action_strs) if action_strs else str(actions)
@@ -181,6 +187,12 @@ def extract_step_info(s, step_index):
             step_info['action'] = f"<Action: {getattr(s, '__name__', 'unknown action')}>"
         else:
             step_info['action'] = str(s)
+
+    # 优先从 step metadata 获取全局唯一 task_id（套件执行时由 run_single_case 写入）
+    if hasattr(s, 'state') and s.state and hasattr(s.state, 'metadata') and s.state.metadata:
+        meta_task_id = s.state.metadata.get('task_id')
+        if meta_task_id is not None:
+            step_info['task_id'] = meta_task_id
 
     return step_info
 
@@ -3182,9 +3194,6 @@ class AICaseViewSet(viewsets.ModelViewSet):
                 if execution_record.planned_tasks:
                     self._auto_mark_completed_tasks(execution_record)
 
-                # 处理GIF录制文件（已改为每步截图，不再合成GIF）
-                # self._process_gif_recording(execution_record, history)
-
                 safe_save(execution_record)
 
             except Exception as e:
@@ -3212,48 +3221,6 @@ class AICaseViewSet(viewsets.ModelViewSet):
             'message': 'AI 用例开始执行',
             'execution_id': execution_record.id
         })
-
-    def _process_gif_recording(self, execution_record, history):
-        """
-        处理GIF录制文件
-        在执行完成后查找生成的GIF文件并保存路径到数据库
-        """
-        try:
-            import os
-            from django.conf import settings
-            from datetime import datetime
-
-            # browser-use 默认生成的GIF文件名（固定为agent_history.gif）
-            default_gif_path = os.path.join(os.getcwd(), 'agent_history.gif')
-
-            # 如果找到GIF文件，移动到media/ai_recording目录并重命名
-            if os.path.exists(default_gif_path):
-                import shutil
-
-                # 创建录制文件目录
-                gif_dir = os.path.join(settings.MEDIA_ROOT, 'ai_recording')
-                os.makedirs(gif_dir, exist_ok=True)
-
-                # 生成新的文件名：用例名称+年月日时分秒
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                # 清理用例名称中的非法字符
-                safe_case_name = "".join(
-                    [c if c.isalnum() or c in (' ', '_', '-') else '_' for c in execution_record.case_name])
-                new_gif_filename = f"{safe_case_name}_{timestamp}.gif"
-                new_gif_path = os.path.join(gif_dir, new_gif_filename)
-
-                # 移动并重命名文件
-                shutil.move(default_gif_path, new_gif_path)
-
-                # 保存相对路径到数据库（使用正斜杠，确保跨平台兼容）
-                relative_path = f'media/ai_recording/{new_gif_filename}'
-                execution_record.gif_path = relative_path
-
-                logger.info(f"✅ GIF recording saved to: {relative_path}")
-            else:
-                logger.warning(f"⚠️ GIF file not found at: {default_gif_path}")
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to process GIF recording: {e}")
 
     def _auto_mark_completed_tasks(self, execution_record):
         """
@@ -3743,7 +3710,7 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
         project_id = request.data.get('project_id')
         task_description = request.data.get('task_description')
         execution_mode = request.data.get('execution_mode', 'text')  # 默认文本模式
-        enable_gif = request.data.get('enable_gif', True)  # GIF录制开关，默认开启
+        enable_gif = request.data.get('enable_gif', True)  # 步骤截图开关，默认开启
 
         if not task_description:
             return Response({'error': '缺少任务描述参数'}, status=status.HTTP_400_BAD_REQUEST)
@@ -3948,9 +3915,6 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                 if execution_record.planned_tasks:
                     self._auto_mark_completed_tasks(execution_record)
 
-                # 处理GIF录制文件（已改为每步截图，不再合成GIF）
-                # self._process_gif_recording(execution_record, history)
-
                 safe_save(execution_record)
 
             except Exception as e:
@@ -4001,48 +3965,6 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
             return Response({'message': '任务不在运行中'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    def _process_gif_recording(self, execution_record, history):
-        """
-        处理GIF录制文件
-        在执行完成后查找生成的GIF文件并保存路径到数据库
-        """
-        try:
-            import os
-            from django.conf import settings
-            from datetime import datetime
-
-            # browser-use 默认生成的GIF文件名（固定为agent_history.gif）
-            default_gif_path = os.path.join(os.getcwd(), 'agent_history.gif')
-
-            # 如果找到GIF文件，移动到media/ai_recording目录并重命名
-            if os.path.exists(default_gif_path):
-                import shutil
-
-                # 创建录制文件目录
-                gif_dir = os.path.join(settings.MEDIA_ROOT, 'ai_recording')
-                os.makedirs(gif_dir, exist_ok=True)
-
-                # 生成新的文件名：用例名称+年月日时分秒
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                # 清理用例名称中的非法字符
-                safe_case_name = "".join(
-                    [c if c.isalnum() or c in (' ', '_', '-') else '_' for c in execution_record.case_name])
-                new_gif_filename = f"{safe_case_name}_{timestamp}.gif"
-                new_gif_path = os.path.join(gif_dir, new_gif_filename)
-
-                # 移动并重命名文件
-                shutil.move(default_gif_path, new_gif_path)
-
-                # 保存相对路径到数据库（使用正斜杠，确保跨平台兼容）
-                relative_path = f'media/ai_recording/{new_gif_filename}'
-                execution_record.gif_path = relative_path
-
-                logger.info(f"✅ GIF recording saved to: {relative_path}")
-            else:
-                logger.warning(f"⚠️ GIF file not found at: {default_gif_path}")
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to process GIF recording: {e}")
 
     def _auto_mark_completed_tasks(self, execution_record):
         """
@@ -4307,47 +4229,6 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
         serializer = AITestSuiteAICaseSerializer(suite_ai_cases, many=True)
         return Response(serializer.data)
 
-    def _process_gif_recording(self, execution_record, history):
-        """
-        处理GIF录制文件
-        在执行完成后查找生成的GIF文件并保存路径到数据库
-        """
-        try:
-            import os
-            import shutil
-            from django.conf import settings
-            from datetime import datetime
-
-            # browser-use 默认生成的GIF文件名（固定为agent_history.gif）
-            default_gif_path = os.path.join(os.getcwd(), 'agent_history.gif')
-
-            # 如果找到GIF文件，移动到media/ai_recording目录并重命名
-            if os.path.exists(default_gif_path):
-                # 创建录制文件目录
-                gif_dir = os.path.join(settings.MEDIA_ROOT, 'ai_recording')
-                os.makedirs(gif_dir, exist_ok=True)
-
-                # 生成新的文件名：用例名称+年月日时分秒
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                # 清理用例名称中的非法字符
-                safe_case_name = "".join(
-                    [c if c.isalnum() or c in (' ', '_', '-') else '_' for c in execution_record.case_name])
-                new_gif_filename = f"{safe_case_name}_{timestamp}.gif"
-                new_gif_path = os.path.join(gif_dir, new_gif_filename)
-
-                # 移动并重命名文件
-                shutil.move(default_gif_path, new_gif_path)
-
-                # 保存相对路径到数据库（使用正斜杠，确保跨平台兼容）
-                relative_path = f'media/ai_recording/{new_gif_filename}'
-                execution_record.gif_path = relative_path
-
-                logger.info(f"✅ GIF recording saved to: {relative_path}")
-            else:
-                logger.warning(f"⚠️ GIF file not found at: {default_gif_path}")
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to process GIF recording: {e}")
-
     @action(detail=True, methods=['post'])
     def run_suite(self, request, pk=None):
         """运行AI测试套件（支持浏览器会话复用）"""
@@ -4438,6 +4319,8 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
             all_screenshots = []
             all_planned_tasks = []
             all_logs = suite_execution_record.logs
+            task_id_offset = 0
+            global_step_offset = 0  # 全局步骤编号偏移，保证 step_number 全局唯一
 
             try:
                 loop = asyncio.new_event_loop()
@@ -4458,14 +4341,19 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                                 return STOP_SIGNALS.get(suite_execution_record.id, False)
 
                             async def on_analysis_complete(planned_tasks):
-                                nonlocal all_planned_tasks, all_logs
-                                # 为每个任务增加所属用例标识
+                                nonlocal all_planned_tasks, all_logs, task_id_offset
+                                logger.info(f"DEBUG on_analysis_complete BEFORE: case={ai_case.name}, task_id_offset={task_id_offset}, planned_tasks_count={len(planned_tasks)}, planned_ids={[t.get('id') for t in planned_tasks]}")
+                                # 为每个任务分配全局唯一ID，避免套件中不同用例的任务ID重复
                                 for task in planned_tasks:
                                     task['case_name'] = ai_case.name
+                                    task['original_id'] = task.get('id')
+                                    task['id'] = task_id_offset + task.get('id', 0)
+                                task_id_offset += len(planned_tasks)
                                 all_planned_tasks.extend(planned_tasks)
                                 suite_execution_record.planned_tasks = all_planned_tasks
                                 all_logs += "任务分析完成，开始执行...\n"
                                 suite_execution_record.logs = all_logs
+                                logger.info(f"DEBUG on_analysis_complete AFTER: case={ai_case.name}, task_id_offset={task_id_offset}, all_planned_ids={[t.get('id') for t in all_planned_tasks]}")
                                 try:
                                     await asyncio.to_thread(safe_save, suite_execution_record, update_fields=['planned_tasks', 'logs'])
                                 except Exception as e:
@@ -4517,13 +4405,17 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                                 except Exception as e:
                                     logger.error(f"更新步骤状态失败: {e}", exc_info=True)
 
+                            # 保存当前偏移量，避免 on_analysis_complete 修改后影响本用例步骤的偏移
+                            current_task_id_offset = task_id_offset
+                            logger.info(f"DEBUG run_suite: case={ai_case.name}, current_task_id_offset={current_task_id_offset}")
                             result = loop.run_until_complete(
                                 browser_session.run_single_case(
                                     ai_case.task_description,
                                     analysis_callback=on_analysis_complete,
                                     step_callback=on_step_update,
                                     should_stop=should_stop,
-                                    case_name=ai_case.name
+                                    case_name=ai_case.name,
+                                    task_id_offset=current_task_id_offset
                                 )
                             )
                             history = result.get('history') if isinstance(result, dict) else result
@@ -4547,16 +4439,30 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                                 history_items = getattr(history, 'history', []) or getattr(history, 'steps', [])
                                 steps = [extract_step_info(s, i) for i, s in enumerate(history_items)]
 
-                            # 关联截图到步骤，并标记所属用例
+                            # 获取 step_task_ids（由 on_step_end 在 Agent 执行过程中记录，比 extract_step_info 更可靠）
+                            step_task_ids = result.get('step_task_ids', {}) if isinstance(result, dict) else {}
+                            logger.info(f"DEBUG run_suite: case={ai_case.name}, step_task_ids={step_task_ids}")
+
+                            # 关联截图到步骤，标记所属用例，并设置全局唯一的 step_number
                             for idx, step in enumerate(steps):
                                 if idx < len(screenshots):
                                     step['screenshot'] = screenshots[idx]
-                                step['step_number'] = step.get('step_number', idx + 1)
+                                # 使用全局步骤编号，保证 suite 中所有用例的步骤编号连续唯一
+                                step['step_number'] = global_step_offset + idx + 1
                                 step['case_name'] = ai_case.name
+                                # 优先使用 step_task_ids（Agent 执行过程中记录的准确映射）
+                                if idx in step_task_ids:
+                                    step['task_id'] = step_task_ids[idx]
+                                    logger.info(f"DEBUG run_suite: case={ai_case.name}, step_idx={idx}, used step_task_ids, final_task_id={step['task_id']}")
+                                elif 'task_id' in step:
+                                    # extract_step_info 解析出的 task_id 已经是 AI 使用的全局ID（因为 final_task 中 planned_tasks 的 id 已被 on_analysis_complete 偏移）
+                                    # 不需要再加偏移
+                                    logger.info(f"DEBUG run_suite: case={ai_case.name}, step_idx={idx}, extract_step_info task_id={step['task_id']}, no offset needed")
 
                             # 累加到总列表
                             all_steps.extend(steps)
                             all_screenshots.extend(screenshots)
+                            global_step_offset += len(steps)
 
                             # 用例级别状态统计
                             case_status = 'failed' if ai_success is False else 'passed'
@@ -4565,16 +4471,6 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                             else:
                                 failed_count += 1
 
-                            # 处理GIF录制文件（放到后台线程，避免阻塞下一个用例衔接）
-                            import threading
-                            def _process_gif_background():
-                                try:
-                                    self._process_gif_recording(suite_execution_record, history)
-                                    safe_save(suite_execution_record)
-                                except Exception as e:
-                                    logger.warning(f"后台处理GIF录制文件失败: {e}")
-                            gif_thread = threading.Thread(target=_process_gif_background, daemon=True)
-                            gif_thread.start()
                         except BaseException as e:
                             all_logs += f"\n执行出错: {str(e)}"
                             failed_count += 1
