@@ -119,48 +119,56 @@
         <div class="report-section">
           <h3 class="section-title">{{ $t('uiAutomation.ai.executionReport.stepDetails') }}</h3>
           <div class="steps-list">
-            <el-card v-for="step in reportData.detailed_steps" :key="step.step_number" class="step-card">
-              <div class="step-header">
-                <span class="step-number">{{ $t('uiAutomation.ai.executionReport.step') }} {{ step.step_number }}</span>
-                <el-tag :type="getStepStatusType(step.status)" size="small">
-                  {{ step.status_display || getStepStatusText(step.status) }}
-                </el-tag>
+            <template v-for="(group, groupIndex) in groupedSteps" :key="groupIndex">
+              <!-- 用例分组标题 -->
+              <div v-if="group.caseName" class="case-group-header">
+                <el-divider content-position="left">
+                  <el-tag type="primary" size="large" effect="dark">{{ group.caseName }}</el-tag>
+                </el-divider>
               </div>
-              <div class="step-content">
-                <div class="step-action">
-                  <div class="action-tags">
-                    <el-tag
-                      v-for="(action, idx) in parseActions(step.action)"
-                      :key="idx"
-                      :type="getActionTagType(action.type)"
-                      size="small"
-                      class="action-tag"
+              <el-card v-for="step in group.steps" :key="step.step_number" class="step-card">
+                <div class="step-header">
+                  <span class="step-number">{{ $t('uiAutomation.ai.executionReport.step') }} {{ step.step_number }}</span>
+                  <el-tag :type="getStepStatusType(step.status)" size="small">
+                    {{ step.status_display || getStepStatusText(step.status) }}
+                  </el-tag>
+                </div>
+                <div class="step-content">
+                  <div class="step-action">
+                    <div class="action-tags">
+                      <el-tag
+                        v-for="(action, idx) in parseActions(step.action)"
+                        :key="idx"
+                        :type="getActionTagType(action.type)"
+                        size="small"
+                        class="action-tag"
+                      >
+                        {{ action.text }}
+                      </el-tag>
+                      <span v-if="!parseActions(step.action).length" class="no-action">-</span>
+                    </div>
+                  </div>
+                  <div v-if="step.element" class="step-element">
+                    <strong>{{ $t('uiAutomation.ai.executionReport.element') }}:</strong> {{ step.element }}
+                  </div>
+                  <div v-if="step.thinking" class="step-thinking">
+                    <strong>{{ $t('uiAutomation.ai.executionReport.thinking') }}:</strong> {{ step.thinking }}
+                  </div>
+                  <div v-if="step.screenshot" class="step-screenshot">
+                    <el-image
+                      :src="'/' + step.screenshot"
+                      :preview-src-list="reportData.detailed_steps.filter(s => s.screenshot).map(s => '/' + s.screenshot)"
+                      fit="contain"
+                      style="width: 100%; max-height: 200px; border-radius: 4px; margin-top: 8px;"
                     >
-                      {{ action.text }}
-                    </el-tag>
-                    <span v-if="!parseActions(step.action).length" class="no-action">-</span>
+                      <template #error>
+                        <div class="image-slot">截图加载失败</div>
+                      </template>
+                    </el-image>
                   </div>
                 </div>
-                <div v-if="step.element" class="step-element">
-                  <strong>{{ $t('uiAutomation.ai.executionReport.element') }}:</strong> {{ step.element }}
-                </div>
-                <div v-if="step.thinking" class="step-thinking">
-                  <strong>{{ $t('uiAutomation.ai.executionReport.thinking') }}:</strong> {{ step.thinking }}
-                </div>
-                <div v-if="step.screenshot" class="step-screenshot">
-                  <el-image
-                    :src="'/' + step.screenshot"
-                    :preview-src-list="reportData.detailed_steps.filter(s => s.screenshot).map(s => '/' + s.screenshot)"
-                    fit="contain"
-                    style="width: 100%; max-height: 200px; border-radius: 4px; margin-top: 8px;"
-                  >
-                    <template #error>
-                      <div class="image-slot">截图加载失败</div>
-                    </template>
-                  </el-image>
-                </div>
-              </div>
-            </el-card>
+              </el-card>
+            </template>
           </div>
         </div>
 
@@ -308,6 +316,26 @@ const gifUrl = computed(() => {
     }
   }
   return ''
+})
+
+// 按 case_name 分组步骤（套件执行时每个步骤会带有 case_name）
+const groupedSteps = computed(() => {
+  if (!reportData.value || !reportData.value.detailed_steps) return []
+
+  const steps = reportData.value.detailed_steps
+  const groups = []
+  let currentGroup = null
+
+  for (const step of steps) {
+    const caseName = step.case_name || ''
+    if (!currentGroup || currentGroup.caseName !== caseName) {
+      currentGroup = { caseName, steps: [] }
+      groups.push(currentGroup)
+    }
+    currentGroup.steps.push(step)
+  }
+
+  return groups
 })
 
 // 监听 modelValue 变化

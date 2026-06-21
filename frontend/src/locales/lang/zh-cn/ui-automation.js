@@ -577,6 +577,7 @@ export default {
       overview: '执行概览',
       executionStatus: '执行状态',
       executionDuration: '执行时长',
+      reportTime: '报告生成时间',
       completionRate: '任务完成率',
       executionSteps: '执行步骤',
       steps: '步',

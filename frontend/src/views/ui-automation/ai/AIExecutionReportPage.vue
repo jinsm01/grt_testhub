@@ -2,23 +2,37 @@
   <div class="page-container">
     <!-- 页面头部 -->
     <div class="page-header">
-      <span class="page-title">
-        {{ reportData?.execution_details?.case_name || reportData?.case_name || $t('uiAutomation.ai.executionReport.title') }}{{ $t('uiAutomation.ai.executionReport.reportSuffix') }}
-      </span>
-      <!-- 任务规划概览 -->
-      <div v-if="reportData?.timeline && reportData.timeline.length > 0" class="task-plan-bar">
-        <span class="plan-label">{{ $t('uiAutomation.ai.executionReport.taskPlan') }}：</span>
-        <div class="plan-tags">
-          <el-tooltip
-            v-for="task in reportData.timeline"
-            :key="task.id"
-            :content="task.description"
-            placement="bottom"
-          >
-            <el-tag :type="getTaskStatusType(task.status)" size="small" class="plan-tag">
-              {{ $t('uiAutomation.ai.executionReport.task') }}{{ task.id }}
-            </el-tag>
-          </el-tooltip>
+      <div class="page-header-main">
+        <span class="page-title">
+          {{ reportData?.execution_details?.case_name || reportData?.case_name || $t('uiAutomation.ai.executionReport.title') }}{{ $t('uiAutomation.ai.executionReport.reportSuffix') }}
+        </span>
+        <!-- 任务规划概览 -->
+        <div v-if="reportData?.timeline && reportData.timeline.length > 0" class="task-plan-bar">
+          <span class="plan-label">{{ $t('uiAutomation.ai.executionReport.taskPlan') }}：</span>
+          <div class="plan-tags">
+            <el-tooltip
+              v-for="task in reportData.timeline"
+              :key="task.id"
+              :content="task.description"
+              placement="bottom"
+            >
+              <el-tag :type="getTaskStatusType(task.status)" size="small" class="plan-tag">
+                {{ $t('uiAutomation.ai.executionReport.task') }}{{ task.id }}
+              </el-tag>
+            </el-tooltip>
+          </div>
+        </div>
+      </div>
+      <div v-if="reportData?.overview" class="header-meta">
+        <div class="meta-item">
+          <el-icon><Timer /></el-icon>
+          <span class="meta-label">{{ $t('uiAutomation.ai.executionReport.executionDuration') }}：</span>
+          <span class="meta-value">{{ reportData.overview.duration_formatted }}</span>
+        </div>
+        <div class="meta-item">
+          <el-icon><Clock /></el-icon>
+          <span class="meta-label">{{ $t('uiAutomation.ai.executionReport.reportTime') }}：</span>
+          <span class="meta-value">{{ formatTime(reportData.execution_details?.end_time || reportData.execution_details?.start_time) }}</span>
         </div>
       </div>
     </div>
@@ -98,53 +112,61 @@
         <div class="report-section">
           <h3 class="section-title">{{ $t('uiAutomation.ai.executionReport.stepDetails') }}</h3>
           <div class="timeline-container">
-            <el-timeline>
-              <el-timeline-item
-                v-for="step in reportData.detailed_steps"
-                :key="step.step_number"
-                :timestamp="`${$t('uiAutomation.ai.executionReport.step')} ${step.step_number}`"
-                placement="top"
-                :type="getStepStatusType(step.status)"
-              >
-                <div class="step-card">
-                  <div class="step-header">
-                    <div class="action-tags">
-                      <el-tag
-                        v-for="(action, idx) in parseActions(step.action)"
-                        :key="idx"
-                        :type="getActionTagType(action.type)"
-                        size="small"
-                        class="action-tag"
-                      >
-                        {{ action.text }}
+            <template v-for="(group, groupIndex) in groupedSteps" :key="groupIndex">
+              <!-- 用例分组标题 -->
+              <div v-if="group.caseName" class="case-group-header">
+                <el-divider content-position="left">
+                  <el-tag type="primary" size="large" effect="dark">{{ group.caseName }}</el-tag>
+                </el-divider>
+              </div>
+              <el-timeline>
+                <el-timeline-item
+                  v-for="step in group.steps"
+                  :key="step.step_number"
+                  :timestamp="`${$t('uiAutomation.ai.executionReport.step')} ${step.step_number}`"
+                  placement="top"
+                  :type="getStepStatusType(step.status)"
+                >
+                  <div class="step-card">
+                    <div class="step-header">
+                      <div class="action-tags">
+                        <el-tag
+                          v-for="(action, idx) in parseActions(step.action)"
+                          :key="idx"
+                          :type="getActionTagType(action.type)"
+                          size="small"
+                          class="action-tag"
+                        >
+                          {{ action.text }}
+                        </el-tag>
+                        <span v-if="!parseActions(step.action).length" class="no-action">-</span>
+                      </div>
+                      <el-tag :type="getStepStatusType(step.status)" size="small">
+                        {{ step.status_display || getStepStatusText(step.status) }}
                       </el-tag>
-                      <span v-if="!parseActions(step.action).length" class="no-action">-</span>
                     </div>
-                    <el-tag :type="getStepStatusType(step.status)" size="small">
-                      {{ step.status_display || getStepStatusText(step.status) }}
-                    </el-tag>
+                    <div v-if="step.element" class="step-element">
+                      <strong>{{ $t('uiAutomation.ai.executionReport.element') }}:</strong> {{ step.element }}
+                    </div>
+                    <div v-if="step.thinking" class="step-thinking">
+                      <strong>{{ $t('uiAutomation.ai.executionReport.thinking') }}:</strong> {{ step.thinking }}
+                    </div>
+                    <div v-if="step.screenshot" class="step-screenshot">
+                      <el-image
+                        :src="'/' + step.screenshot"
+                        :preview-src-list="['/' + step.screenshot]"
+                        fit="contain"
+                        style="width: 100%; max-height: 200px; border-radius: 4px; margin-top: 8px;"
+                      >
+                        <template #error>
+                          <div class="image-slot">截图加载失败</div>
+                        </template>
+                      </el-image>
+                    </div>
                   </div>
-                  <div v-if="step.element" class="step-element">
-                    <strong>{{ $t('uiAutomation.ai.executionReport.element') }}:</strong> {{ step.element }}
-                  </div>
-                  <div v-if="step.thinking" class="step-thinking">
-                    <strong>{{ $t('uiAutomation.ai.executionReport.thinking') }}:</strong> {{ step.thinking }}
-                  </div>
-                  <div v-if="step.screenshot" class="step-screenshot">
-                    <el-image
-                      :src="'/' + step.screenshot"
-                      :preview-src-list="reportData.detailed_steps.filter(s => s.screenshot).map(s => '/' + s.screenshot)"
-                      fit="contain"
-                      style="width: 100%; max-height: 200px; border-radius: 4px; margin-top: 8px;"
-                    >
-                      <template #error>
-                        <div class="image-slot">截图加载失败</div>
-                      </template>
-                    </el-image>
-                  </div>
-                </div>
-              </el-timeline-item>
-            </el-timeline>
+                </el-timeline-item>
+              </el-timeline>
+            </template>
           </div>
         </div>
 
@@ -237,7 +259,7 @@
 import { ref, nextTick, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Loading, Download, ArrowLeft } from '@element-plus/icons-vue'
+import { Loading, Download, ArrowLeft, Timer, Clock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getAIExecutionReport, exportAIExecutionReportPDF } from '@/api/ui_automation'
@@ -269,6 +291,26 @@ const gifUrl = computed(() => {
     }
   }
   return ''
+})
+
+// 按 case_name 分组步骤（套件执行时每个步骤会带有 case_name）
+const groupedSteps = computed(() => {
+  if (!reportData.value || !reportData.value.detailed_steps) return []
+
+  const steps = reportData.value.detailed_steps
+  const groups = []
+  let currentGroup = null
+
+  for (const step of steps) {
+    const caseName = step.case_name || ''
+    if (!currentGroup || currentGroup.caseName !== caseName) {
+      currentGroup = { caseName, steps: [] }
+      groups.push(currentGroup)
+    }
+    currentGroup.steps.push(step)
+  }
+
+  return groups
 })
 
 // 加载报告数据
@@ -512,6 +554,12 @@ const exportReport = async () => {
   }
 }
 
+// 格式化时间
+const formatTime = (timeStr) => {
+  if (!timeStr) return ''
+  return new Date(timeStr).toLocaleString()
+}
+
 // 解析 action 字符串为标签列表
 const parseActions = (actionStr) => {
   if (!actionStr || actionStr === '-') return []
@@ -583,9 +631,10 @@ onMounted(() => {
 
 .page-header {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
   padding: 24px 28px;
   background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%);
   border-radius: 12px;
@@ -593,10 +642,48 @@ onMounted(() => {
   border: 1px solid rgba(147, 112, 219, 0.1);
 }
 
+.page-header-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
 .page-header-left {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.header-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #7b6ca0;
+}
+
+.meta-item .el-icon {
+  font-size: 14px;
+  color: #7b42f6;
+}
+
+.meta-label {
+  color: #9a8db8;
+}
+
+.meta-value {
+  color: #5a32a3;
+  font-weight: 600;
 }
 
 .page-title {

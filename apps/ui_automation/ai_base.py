@@ -1376,6 +1376,21 @@ class BaseBrowserAgent:
         except Exception as e:
             logger.error(f"Agent execution error: {e}")
             raise
+        finally:
+            # 单条用例执行完毕后关闭浏览器，避免进程残留
+            try:
+                browser_session = getattr(agent, 'browser_session', None)
+                if browser_session:
+                    await browser_session.kill()
+                    logger.info("✓ browser_session 已关闭")
+            except Exception as e:
+                logger.warning(f"关闭 browser_session 时出错: {e}")
+            try:
+                if hasattr(controller, 'close'):
+                    await controller.close()
+                    logger.info("✓ controller 已关闭")
+            except Exception as e:
+                logger.warning(f"关闭 controller 时出错: {e}")
 
         # 在任务结束时检查不一致的任务状态
         history = getattr(agent, 'history', [])
@@ -1389,7 +1404,46 @@ class BaseBrowserAgent:
                 logger.warning(f"⚠️ Unmarked actions: {executed_tasks_info['unmarked_actions']}")
                 logger.warning("⚠️ This indicates the AI agent did not follow the 'mark_task_complete' rule properly.")
 
-        return {'history': history, 'screenshots_sequence': self.screenshots_sequence}
+        # 解析最终 AI 判定的 success 状态
+        ai_success = None
+        if history:
+            history_items = getattr(history, 'history', []) or getattr(history, 'steps', [])
+            for step in reversed(history_items):
+                # browser-use AgentOutput: step.model_output.action 是 action 列表
+                model_output = getattr(step, 'model_output', None)
+                if model_output:
+                    actions = getattr(model_output, 'action', None)
+                    if actions:
+                        for action in actions:
+                            try:
+                                if hasattr(action, 'model_dump'):
+                                    action_dict = action.model_dump(exclude_none=True, mode='json')
+                                elif hasattr(action, '__dict__'):
+                                    action_dict = dict(action.__dict__)
+                                else:
+                                    action_dict = {}
+                                for action_name, params in action_dict.items():
+                                    if action_name == 'done':
+                                        if isinstance(params, dict):
+                                            ai_success = params.get('success')
+                                        break
+                                if ai_success is not None:
+                                    break
+                            except Exception:
+                                pass
+                    if ai_success is not None:
+                        break
+                # 兜底：尝试直接从 step 获取 action（兼容其他格式）
+                action_model = getattr(step, 'action', None) or getattr(step, 'action_model', None)
+                if action_model:
+                    action_name = getattr(action_model, 'action', None) or getattr(action_model, 'action_name', None)
+                    if action_name == 'done':
+                        params = getattr(action_model, 'params', None) or getattr(action_model, 'parameters', None) or {}
+                        if isinstance(params, dict):
+                            ai_success = params.get('success')
+                        break
+
+        return {'history': history, 'screenshots_sequence': self.screenshots_sequence, 'success': ai_success}
 
     def _find_executed_tasks(self, history):
         """
@@ -1599,6 +1653,7 @@ class PersistentBrowserSession:
             logger.info(f"🔄 复用已有浏览器会话 for case: {case_name}")
         
         self._task_was_done = False
+        self.screenshots_sequence = []  # 每次运行前清空截图列表，避免套件执行时累积
         
         # 每次运行用例时重新创建 Agent，但复用同一个 BrowserSession（浏览器会话）
         from apps.requirement_analysis.models import AIModelConfig
@@ -1684,11 +1739,18 @@ class PersistentBrowserSession:
             planned_tasks = [{'id': 1, 'description': task_description, 'status': 'pending'}]
         
         if analysis_callback:
-            if asyncio.iscoroutinefunction(analysis_callback):
-                await analysis_callback(planned_tasks)
-            else:
-                analysis_callback(planned_tasks)
+            try:
+                logger.info(f"📞 Calling analysis_callback for case: {case_name}")
+                if asyncio.iscoroutinefunction(analysis_callback):
+                    await analysis_callback(planned_tasks)
+                else:
+                    analysis_callback(planned_tasks)
+                logger.info(f"✅ analysis_callback completed for case: {case_name}")
+            except Exception as e:
+                logger.error(f"❌ analysis_callback failed for case {case_name}: {e}", exc_info=True)
+                raise
         
+        logger.info(f"📝 Building final_task for case: {case_name}")
         final_task = task_description
         if planned_tasks:
             final_task += "\n\nIMPORTANT INSTRUCTION:\n"
@@ -1731,24 +1793,29 @@ class PersistentBrowserSession:
         # 创建新的 Agent，但复用同一个 BrowserSession（浏览器会话）
         # 这样多个用例可以在同一个浏览器实例中运行，保持登录状态
         logger.info(f"🤖 创建 Agent for case: {case_name}, browser_session: {self.browser_session}")
-        agent = Agent(
-            task=final_task,
-            llm=self.llm,
-            controller=self.controller,
-            browser_session=self.browser_session,  # 复用同一个浏览器会话
-            use_vision=False,
-            max_actions_per_step=10,
-            max_retries=1,
-            max_failures=2,
-            llm_timeout=60,
-            step_timeout=90,
-            generate_gif=self.enable_gif,
-        )
-        agent._task_was_done = False
-        logger.info(f"✅ Agent 创建完成 for case: {case_name}")
+        try:
+            agent = Agent(
+                task=final_task,
+                llm=self.llm,
+                controller=self.controller,
+                browser_session=self.browser_session,  # 复用同一个浏览器会话
+                use_vision=False,
+                max_actions_per_step=10,
+                max_retries=1,
+                max_failures=2,
+                llm_timeout=60,
+                step_timeout=90,
+                generate_gif=self.enable_gif,
+            )
+            agent._task_was_done = False
+            logger.info(f"✅ Agent 创建完成 for case: {case_name}")
+        except Exception as e:
+            logger.error(f"❌ Agent 创建失败 for case {case_name}: {e}", exc_info=True)
+            raise
         
         last_processed_step = 0
         last_marked_task_id = 0
+        screenshot_tasks = []
         
         async def on_step_end(agent_instance):
             nonlocal last_processed_step, last_marked_task_id
@@ -1814,7 +1881,48 @@ class PersistentBrowserSession:
                                 await step_callback({'type': 'log', 'content': log_content})
                             else:
                                 step_callback({'type': 'log', 'content': log_content})
-                        
+
+                        # 每步截图：在步骤执行完成后保存当前页面截图
+                        if self.enable_gif and has_real_action:
+                            try:
+                                from django.conf import settings
+                                browser_session = getattr(agent_instance, 'browser_session', None)
+                                if browser_session:
+                                    page = None
+                                    # 优先使用 get_current_page() 方法获取页面 (async 方法需要 await)
+                                    if hasattr(browser_session, 'get_current_page'):
+                                        try:
+                                            page = await browser_session.get_current_page()
+                                        except Exception:
+                                            page = None
+                                    if not page and hasattr(browser_session, 'page'):
+                                        page = browser_session.page
+                                    if not page and hasattr(browser_session, 'browser'):
+                                        b = browser_session.browser
+                                        if hasattr(b, 'page'):
+                                            page = b.page
+                                        elif hasattr(b, 'pages') and b.pages:
+                                            page = b.pages[0]
+                                    if page:
+                                        async def _capture_and_save(_page, _step_idx):
+                                            try:
+                                                b64 = await _page.screenshot(format='jpeg', quality=50)
+                                                ts = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]
+                                                safe_case = "".join(c for c in case_name if c.isalnum() or c in ('_', '-')).rstrip()
+                                                rel_path = f"media/ai_screenshots/{safe_case}_{ts}_step_{_step_idx:03d}.jpg"
+                                                abs_path = os.path.join(settings.BASE_DIR, rel_path)
+                                                os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+                                                with open(abs_path, 'wb') as f:
+                                                    f.write(base64.b64decode(b64))
+                                                self.screenshots_sequence.append(rel_path)
+                                                logger.info(f"📸 Screenshot saved for step {_step_idx}: {rel_path}")
+                                            except Exception as inner_err:
+                                                logger.warning(f"⚠️ Screenshot bg failed for step {_step_idx}: {inner_err}")
+                                        task = asyncio.create_task(_capture_and_save(page, i + 1))
+                                        screenshot_tasks.append(task)
+                            except Exception as screenshot_err:
+                                logger.warning(f"⚠️ Screenshot init failed for step {i+1}: {screenshot_err}")
+
                         if has_real_action and not step_has_task_complete and planned_tasks:
                             # 找出第一个尚未完成的任务（不依赖连续ID假设）
                             next_pending_task = None
@@ -1901,7 +2009,58 @@ class PersistentBrowserSession:
             logger.error(f"❌ Agent execution error for case {case_name}: {e}")
             raise
         
-        return history
+        # 解析最终 AI 判定的 success 状态
+        ai_success = None
+        if history:
+            history_items = getattr(history, 'history', []) or getattr(history, 'steps', [])
+            for step in reversed(history_items):
+                model_output = getattr(step, 'model_output', None)
+                if model_output:
+                    actions = getattr(model_output, 'action', None)
+                    if actions:
+                        for action in actions:
+                            try:
+                                if hasattr(action, 'model_dump'):
+                                    action_dict = action.model_dump(exclude_none=True, mode='json')
+                                elif hasattr(action, '__dict__'):
+                                    action_dict = dict(action.__dict__)
+                                else:
+                                    action_dict = {}
+                                for action_name, params in action_dict.items():
+                                    if action_name == 'done':
+                                        if isinstance(params, dict):
+                                            ai_success = params.get('success')
+                                        break
+                                if ai_success is not None:
+                                    break
+                            except Exception:
+                                pass
+                    if ai_success is not None:
+                        break
+                action_model = getattr(step, 'action', None) or getattr(step, 'action_model', None)
+                if action_model:
+                    action_name = getattr(action_model, 'action', None) or getattr(action_model, 'action_name', None)
+                    if action_name == 'done':
+                        params = getattr(action_model, 'params', None) or getattr(action_model, 'parameters', None) or {}
+                        if isinstance(params, dict):
+                            ai_success = params.get('success')
+                        break
+
+        # 等待后台截图任务完成（带超时，避免被其他长时间任务阻塞）
+        try:
+            if screenshot_tasks:
+                pending = [t for t in screenshot_tasks if not t.done()]
+                if pending:
+                    logger.info(f"⏳ Waiting for {len(pending)} screenshot tasks to complete")
+                    await asyncio.wait_for(asyncio.gather(*pending, return_exceptions=True), timeout=5.0)
+                    logger.info(f"✅ Screenshot tasks completed, count: {len(self.screenshots_sequence)}")
+        except asyncio.TimeoutError:
+            logger.warning(f"⚠️ Screenshot tasks timed out, collected {len(self.screenshots_sequence)} screenshots")
+        except Exception as e:
+            logger.warning(f"⚠️ Error waiting for screenshot tasks: {e}")
+
+        logger.info(f"🏁 run_single_case returning for case: {case_name}, screenshots: {len(self.screenshots_sequence)}, history steps: {len(history) if history else 0}")
+        return {'history': history, 'screenshots_sequence': self.screenshots_sequence, 'success': ai_success}
     
     def _format_action_persistent(self, action):
         try:

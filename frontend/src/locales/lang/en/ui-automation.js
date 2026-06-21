@@ -572,6 +572,7 @@ export default {
       overview: 'Execution Overview',
       executionStatus: 'Execution Status',
       executionDuration: 'Duration',
+      reportTime: 'Report Time',
       completionRate: 'Completion Rate',
       executionSteps: 'Execution Steps',
       steps: 'steps',

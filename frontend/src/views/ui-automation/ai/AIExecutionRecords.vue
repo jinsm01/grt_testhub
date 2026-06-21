@@ -47,7 +47,10 @@
         </el-table-column>
         <el-table-column prop="case_name" :label="$t('uiAutomation.ai.executionRecords.caseName')" min-width="200" show-overflow-tooltip header-align="center" align="left">
           <template #default="{ row }">
-            <div class="case-name-cell">{{ row.case_name }}</div>
+            <div class="case-name-cell">
+              <el-tag v-if="row.ai_test_suite" type="warning" size="small" class="suite-tag">套件</el-tag>
+              {{ row.case_name }}
+            </div>
           </template>
         </el-table-column>
 

@@ -360,6 +360,7 @@ class AIExecutionReportGenerator:
                 'timestamp': step.get('timestamp', ''),
                 'thinking': step.get('thinking', ''),
                 'screenshot': step.get('screenshot', ''),
+                'case_name': step.get('case_name', ''),
             })
 
         # 如果没有 steps_completed，从日志中解析

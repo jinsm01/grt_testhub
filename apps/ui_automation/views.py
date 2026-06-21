@@ -151,6 +151,12 @@ def extract_step_info(s, step_index):
                     # action_dict 形如 {"click_element": {"index": 14}}
                     for action_name, params in action_dict.items():
                         action_strs.append(format_action(action_name, params))
+                        if action_name == 'done':
+                            success = params.get('success') if isinstance(params, dict) else None
+                            if success is False:
+                                step_info['status'] = 'failed'
+                            elif success is True:
+                                step_info['status'] = 'completed'
                 except Exception:
                     action_strs.append(str(action))
             step_info['action'] = ' | '.join(action_strs) if action_strs else str(actions)
@@ -3134,9 +3140,14 @@ class AICaseViewSet(viewsets.ModelViewSet):
                     execution_record.status = 'stopped'
                     execution_record.logs += "\n[System] 任务已由用户停止。"
                 else:
-                    # 更新成功状态
-                    execution_record.status = 'passed'
-                    execution_record.logs += "\n执行完成。"
+                    # 根据 AI 返回的 done success 参数判定状态
+                    ai_success = result.get('success') if isinstance(result, dict) else None
+                    if ai_success is False:
+                        execution_record.status = 'failed'
+                        execution_record.logs += "\n[System] AI 判定任务失败（未找到目标内容或任务无法完成）。"
+                    else:
+                        execution_record.status = 'passed'
+                        execution_record.logs += "\n执行完成。"
 
                     # 记录任务完成统计信息
                     if execution_record.planned_tasks:
@@ -3895,9 +3906,14 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                     execution_record.status = 'stopped'
                     execution_record.logs += "\n[System] 任务已由用户停止。"
                 else:
-                    # 更新成功状态
-                    execution_record.status = 'passed'
-                    execution_record.logs += "\n执行完成。"
+                    # 根据 AI 返回的 done success 参数判定状态
+                    ai_success = result.get('success') if isinstance(result, dict) else None
+                    if ai_success is False:
+                        execution_record.status = 'failed'
+                        execution_record.logs += "\n[System] AI 判定任务失败（未找到目标内容或任务无法完成）。"
+                    else:
+                        execution_record.status = 'passed'
+                        execution_record.logs += "\n执行完成。"
 
                     # 记录任务完成统计信息
                     if execution_record.planned_tasks:
@@ -4396,6 +4412,33 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
             failed_count = 0
             browser_session = None
 
+            # 在子线程中重新获取用户对象，避免 ORM 对象跨线程共享
+            executed_by_user = None
+            if executed_by_user_id:
+                try:
+                    executed_by_user = User.objects.filter(id=executed_by_user_id).first()
+                except Exception:
+                    executed_by_user = None
+
+            # 创建套件级别的执行记录（只用一条记录存储整个套件的执行结果）
+            suite_execution_record = AIExecutionRecord.objects.create(
+                project=ai_test_suite.project,
+                ai_test_suite=ai_test_suite,
+                case_name=ai_test_suite.name,
+                task_description=f"测试套件执行，共 {len(suite_ai_cases_list)} 个用例",
+                status='running',
+                executed_by=executed_by_user,
+                logs=f"开始执行测试套件: {ai_test_suite.name}\n"
+            )
+            with _STOP_SIGNALS_LOCK:
+                STOP_SIGNALS[suite_execution_record.id] = False
+
+            # 用于合并所有用例的步骤、截图、任务等
+            all_steps = []
+            all_screenshots = []
+            all_planned_tasks = []
+            all_logs = suite_execution_record.logs
+
             try:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
@@ -4406,48 +4449,43 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                 try:
                     for suite_ai_case in suite_ai_cases_list:
                         ai_case = suite_ai_case.ai_case
-
-                        # 在子线程中重新获取用户对象，避免 ORM 对象跨线程共享
-                        executed_by_user = None
-                        if executed_by_user_id:
-                            try:
-                                executed_by_user = User.objects.filter(id=executed_by_user_id).first()
-                            except Exception:
-                                executed_by_user = None
-
-                        execution_record = AIExecutionRecord.objects.create(
-                            project=ai_test_suite.project,
-                            ai_case=ai_case,
-                            case_name=ai_case.name,
-                            task_description=ai_case.task_description,
-                            status='running',
-                            executed_by=executed_by_user,
-                            logs="正在分析任务...\n"
-                        )
-                        with _STOP_SIGNALS_LOCK:
-                            STOP_SIGNALS[execution_record.id] = False
+                        all_logs += f"\n===== 用例: {ai_case.name} =====\n"
+                        suite_execution_record.logs = all_logs
+                        safe_save(suite_execution_record, update_fields=['logs'])
 
                         try:
                             async def should_stop():
-                                return STOP_SIGNALS.get(execution_record.id, False)
+                                return STOP_SIGNALS.get(suite_execution_record.id, False)
 
                             async def on_analysis_complete(planned_tasks):
-                                execution_record.planned_tasks = planned_tasks
-                                execution_record.logs += "任务分析完成，开始执行...\n"
-                                await sync_to_async(safe_save)(execution_record, update_fields=['planned_tasks', 'logs'])
+                                nonlocal all_planned_tasks, all_logs
+                                # 为每个任务增加所属用例标识
+                                for task in planned_tasks:
+                                    task['case_name'] = ai_case.name
+                                all_planned_tasks.extend(planned_tasks)
+                                suite_execution_record.planned_tasks = all_planned_tasks
+                                all_logs += "任务分析完成，开始执行...\n"
+                                suite_execution_record.logs = all_logs
+                                try:
+                                    await asyncio.to_thread(safe_save, suite_execution_record, update_fields=['planned_tasks', 'logs'])
+                                except Exception as e:
+                                    logger.error(f"safe_save failed in on_analysis_complete: {e}", exc_info=True)
+                                    raise
 
                             async def on_step_update(step_info):
+                                nonlocal all_logs
                                 try:
                                     if step_info.get('type') == 'log':
                                         content = step_info.get('content')
                                         if content:
-                                            execution_record.logs += content
-                                            await sync_to_async(safe_save)(execution_record, update_fields=['logs'])
+                                            all_logs += content
+                                            suite_execution_record.logs = all_logs
+                                            await asyncio.to_thread(safe_save, suite_execution_record, update_fields=['logs'])
                                         return
 
                                     # 处理页面快照
                                     if step_info.get('type') == 'snapshot':
-                                        execution_record.snapshot_data = {
+                                        suite_execution_record.snapshot_data = {
                                             'url': step_info.get('url', ''),
                                             'title': step_info.get('title', ''),
                                             'element_count': step_info.get('element_count', 0),
@@ -4456,30 +4494,30 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                                             'auto': step_info.get('auto', False),
                                             'timestamp': timezone.now().isoformat()
                                         }
-                                        await sync_to_async(safe_save)(execution_record, update_fields=['snapshot_data'])
+                                        await asyncio.to_thread(safe_save, suite_execution_record, update_fields=['snapshot_data'])
                                         return
 
                                     task_id = step_info.get('task_id')
-                                    status = step_info.get('status')
-                                    if task_id and status:
+                                    status_val = step_info.get('status')
+                                    if task_id and status_val:
                                         updated = False
-                                        if execution_record.planned_tasks:
-                                            for task in execution_record.planned_tasks:
-                                                # 确保类型一致进行比较
+                                        if all_planned_tasks:
+                                            for task in all_planned_tasks:
                                                 if str(task['id']) == str(task_id):
                                                     old_status = task.get('status', 'pending')
-                                                    task['status'] = status
+                                                    task['status'] = status_val
                                                     updated = True
-                                                    logger.info(f"DEBUG: Updated task {task_id} from {old_status} to {status}")
+                                                    logger.info(f"DEBUG: Updated task {task_id} from {old_status} to {status_val}")
                                                     break
                                         if updated:
-                                            await sync_to_async(safe_save)(execution_record, update_fields=['planned_tasks'])
+                                            suite_execution_record.planned_tasks = all_planned_tasks
+                                            await asyncio.to_thread(safe_save, suite_execution_record, update_fields=['planned_tasks'])
                                         else:
                                             logger.warning(f"DEBUG: Task ID {task_id} not found in planned_tasks")
                                 except Exception as e:
                                     logger.error(f"更新步骤状态失败: {e}", exc_info=True)
 
-                            history = loop.run_until_complete(
+                            result = loop.run_until_complete(
                                 browser_session.run_single_case(
                                     ai_case.task_description,
                                     analysis_callback=on_analysis_complete,
@@ -4488,52 +4526,84 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                                     case_name=ai_case.name
                                 )
                             )
+                            history = result.get('history') if isinstance(result, dict) else result
 
-                            if STOP_SIGNALS.get(execution_record.id, False):
-                                execution_record.status = 'stopped'
-                                execution_record.logs += "\n[System] 任务已由用户停止。"
+                            if STOP_SIGNALS.get(suite_execution_record.id, False):
+                                all_logs += "\n[System] 任务已由用户停止。"
                             else:
-                                execution_record.status = 'passed'
-                                execution_record.logs += "\n执行完成。"
+                                # 根据 AI 返回的 done success 参数判定状态
+                                ai_success = result.get('success') if isinstance(result, dict) else None
+                                if ai_success is False:
+                                    all_logs += "\n[System] AI 判定任务失败（未找到目标内容或任务无法完成）。"
+                                else:
+                                    all_logs += "\n执行完成。"
 
-                            execution_record.end_time = timezone.now()
-                            execution_record.duration = (execution_record.end_time - execution_record.start_time).total_seconds()
+                            # 提取截图序列并关联到步骤
+                            screenshots = result.get('screenshots_sequence', []) if isinstance(result, dict) else []
 
-                            # 自动标记已完成的任务
-                            if execution_record.planned_tasks:
-                                self._auto_mark_completed_tasks(execution_record)
+                            # 格式化 history 为步骤列表
+                            steps = []
+                            if history:
+                                history_items = getattr(history, 'history', []) or getattr(history, 'steps', [])
+                                steps = [extract_step_info(s, i) for i, s in enumerate(history_items)]
+
+                            # 关联截图到步骤，并标记所属用例
+                            for idx, step in enumerate(steps):
+                                if idx < len(screenshots):
+                                    step['screenshot'] = screenshots[idx]
+                                step['step_number'] = step.get('step_number', idx + 1)
+                                step['case_name'] = ai_case.name
+
+                            # 累加到总列表
+                            all_steps.extend(steps)
+                            all_screenshots.extend(screenshots)
+
+                            # 用例级别状态统计
+                            case_status = 'failed' if ai_success is False else 'passed'
+                            if case_status == 'passed':
+                                passed_count += 1
+                            else:
+                                failed_count += 1
 
                             # 处理GIF录制文件（放到后台线程，避免阻塞下一个用例衔接）
                             import threading
                             def _process_gif_background():
                                 try:
-                                    self._process_gif_recording(execution_record, history)
-                                    safe_save(execution_record)
+                                    self._process_gif_recording(suite_execution_record, history)
+                                    safe_save(suite_execution_record)
                                 except Exception as e:
                                     logger.warning(f"后台处理GIF录制文件失败: {e}")
                             gif_thread = threading.Thread(target=_process_gif_background, daemon=True)
                             gif_thread.start()
-                        except Exception as e:
-                            execution_record.status = 'failed'
-                            execution_record.end_time = timezone.now()
-                            execution_record.duration = (execution_record.end_time - execution_record.start_time).total_seconds()
-                            execution_record.logs += f"\n执行出错: {str(e)}"
+                        except BaseException as e:
+                            all_logs += f"\n执行出错: {str(e)}"
+                            failed_count += 1
                             try:
-                                safe_save(execution_record)
+                                suite_execution_record.logs = all_logs
+                                safe_save(suite_execution_record, update_fields=['logs'])
                             except:
                                 logger.error(f"保存失败状态时出错: {e}")
-                        finally:
-                            with _STOP_SIGNALS_LOCK:
-                                if execution_record.id in STOP_SIGNALS:
-                                    del STOP_SIGNALS[execution_record.id]
+                            logger.error(f"❌ run_single_case 抛出 BaseException: {type(e).__name__}: {e}", exc_info=True)
 
-                        if execution_record.status == 'passed':
-                            passed_count += 1
-                        else:
-                            failed_count += 1
+                    # 所有用例执行完毕，保存合并后的数据到套件执行记录
+                    suite_execution_record.status = 'passed' if failed_count == 0 else 'failed'
+                    suite_execution_record.end_time = timezone.now()
+                    suite_execution_record.duration = (suite_execution_record.end_time - suite_execution_record.start_time).total_seconds()
+                    suite_execution_record.logs = all_logs
+                    suite_execution_record.steps_completed = all_steps
+                    suite_execution_record.screenshots_sequence = all_screenshots
+                    suite_execution_record.planned_tasks = all_planned_tasks
 
+                    # 自动标记已完成的任务
+                    if all_planned_tasks:
+                        self._auto_mark_completed_tasks(suite_execution_record)
+
+                    safe_save(suite_execution_record)
                     ai_test_suite.execution_status = 'passed' if failed_count == 0 else 'failed'
                 finally:
+                    with _STOP_SIGNALS_LOCK:
+                        if suite_execution_record.id in STOP_SIGNALS:
+                            del STOP_SIGNALS[suite_execution_record.id]
                     # 确保浏览器会话被正确关闭
                     if browser_session:
                         try:
@@ -4552,6 +4622,14 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 ai_test_suite.execution_status = 'failed'
                 logger.error(f"运行AI测试套件失败: {e}")
+                if suite_execution_record:
+                    suite_execution_record.status = 'failed'
+                    suite_execution_record.logs = all_logs + f"\n套件执行异常: {str(e)}"
+                    suite_execution_record.end_time = timezone.now()
+                    try:
+                        safe_save(suite_execution_record)
+                    except Exception as save_err:
+                        logger.error(f"保存套件失败状态时出错: {save_err}")
                 if browser_session:
                     try:
                         logger.info("异常处理中：正在关闭浏览器会话...")

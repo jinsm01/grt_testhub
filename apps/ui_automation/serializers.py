@@ -921,17 +921,26 @@ class AICaseSerializer(serializers.ModelSerializer):
 class AIExecutionRecordSerializer(serializers.ModelSerializer):
     project = UiProjectSerializer(read_only=True)
     ai_case = AICaseSerializer(read_only=True)
+    ai_test_suite = serializers.SerializerMethodField()
+
+    def get_ai_test_suite(self, obj):
+        if obj.ai_test_suite:
+            return {'id': obj.ai_test_suite.id, 'name': obj.ai_test_suite.name}
+        return None
     executed_by = UserSerializer(read_only=True)
     project_id = serializers.IntegerField(write_only=True)
     ai_case_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    ai_test_suite_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     project_name = serializers.CharField(source='project.name', read_only=True)
     ai_case_name = serializers.CharField(source='ai_case.name', read_only=True)
+    ai_test_suite_name = serializers.CharField(source='ai_test_suite.name', read_only=True)
     executed_by_name = serializers.CharField(source='executed_by.username', read_only=True)
 
     class Meta:
         model = AIExecutionRecord
         fields = [
-            'id', 'project', 'project_id', 'project_name', 'ai_case', 'ai_case_id', 'ai_case_name', 'case_name',
+            'id', 'project', 'project_id', 'project_name', 'ai_case', 'ai_case_id', 'ai_case_name',
+            'ai_test_suite', 'ai_test_suite_id', 'ai_test_suite_name', 'case_name',
             'task_description',
             'execution_mode', 'status', 'start_time', 'end_time', 'duration',
             'logs', 'steps_completed', 'planned_tasks', 'snapshot_data', 'executed_by', 'executed_by_name',
