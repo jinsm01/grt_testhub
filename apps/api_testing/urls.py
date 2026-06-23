@@ -11,10 +11,6 @@ from .views import (
     ApiDashboardViewSet, AIServiceConfigViewSet, import_interfaces,
     apifox_import_validate, apifox_import_execute, apifox_function_list
 )
-from .views_scenario import (
-    AutomationScenarioViewSet, ScenarioStepViewSet, ScenarioExecutionViewSet,
-    apifox_import_v2_validate, apifox_import_v2_execute
-)
 from .apifox_check_views import (
     apifox_check_config, apifox_check_rules, apifox_check_generate,
     apifox_check_task_status, apifox_check_reports,
@@ -39,10 +35,6 @@ router.register(r'notification-logs', NotificationLogViewSet)
 router.register(r'task-notification-settings', TaskNotificationSettingViewSet)
 router.register(r'operation-logs', OperationLogViewSet)
 router.register(r'ai-service-configs', AIServiceConfigViewSet, basename='aiserviceconfig')
-# 自动化场景路由
-router.register(r'automation-scenarios', AutomationScenarioViewSet, basename='automation-scenario')
-router.register(r'scenario-steps', ScenarioStepViewSet, basename='scenario-step')
-router.register(r'scenario-executions', ScenarioExecutionViewSet, basename='scenario-execution')
 
 urlpatterns = [
     path('api-testing/', include(router.urls)),
@@ -51,11 +43,6 @@ urlpatterns = [
     path('api-testing/apifox/validate/', apifox_import_validate, name='apifox-import-validate'),
     path('api-testing/apifox/import/', apifox_import_execute, name='apifox-import-execute'),
     path('api-testing/apifox/functions/', apifox_function_list, name='apifox-function-list'),
-    # API Fox CLI 导入（新版 - AutomationScenario）
-    path('api-testing/apifox/v2/validate/', apifox_import_v2_validate, name='apifox-import-v2-validate'),
-    path('api-testing/apifox/v2/import/', apifox_import_v2_execute, name='apifox-import-v2-execute'),
-    # 兼容前端调用的 URL
-    path('api-testing/apifox/import-v2/', apifox_import_v2_execute, name='apifox-import-v2-execute-alt'),
     # Apifox 场景检查 - 配置管理
     path('api-testing/apifox-check/config/', apifox_check_config, name='apifox-check-config'),
     # Apifox 场景检查 - 检查规则管理（启停用）

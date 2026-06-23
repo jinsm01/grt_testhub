@@ -1,8 +1,9 @@
 <template>
-  <el-dialog
+  <el-drawer
     v-model="visible"
     :title="$t('uiAutomation.ai.elementLocator.title')"
-    width="1200px"
+    size="900px"
+    direction="rtl"
     destroy-on-close
   >
     <div v-if="loading" class="loading-container">
@@ -101,53 +102,19 @@
               
               <div v-if="element.code_samples" class="code-samples-section">
                 <label>代码示例:</label>
-                <el-tabs v-model="element.activeCodeTab" type="card" class="code-tabs">
-                  <el-tab-pane label="Playwright" name="playwright">
-                    <div class="code-container">
-                      <pre><code>{{ element.code_samples.playwright }}</code></pre>
-                      <el-button
-                        size="small"
-                        type="primary"
-                        link
-                        class="copy-code-btn"
-                        @click="copyCode(element.code_samples.playwright)"
-                      >
-                        <el-icon><DocumentCopy /></el-icon>
-                        {{ $t('uiAutomation.common.copy') }}
-                      </el-button>
-                    </div>
-                  </el-tab-pane>
-                  <el-tab-pane label="Selenium" name="selenium">
-                    <div class="code-container">
-                      <pre><code>{{ element.code_samples.selenium }}</code></pre>
-                      <el-button
-                        size="small"
-                        type="primary"
-                        link
-                        class="copy-code-btn"
-                        @click="copyCode(element.code_samples.selenium)"
-                      >
-                        <el-icon><DocumentCopy /></el-icon>
-                        {{ $t('uiAutomation.common.copy') }}
-                      </el-button>
-                    </div>
-                  </el-tab-pane>
-                  <el-tab-pane label="Puppeteer" name="puppeteer">
-                    <div class="code-container">
-                      <pre><code>{{ element.code_samples.puppeteer }}</code></pre>
-                      <el-button
-                        size="small"
-                        type="primary"
-                        link
-                        class="copy-code-btn"
-                        @click="copyCode(element.code_samples.puppeteer)"
-                      >
-                        <el-icon><DocumentCopy /></el-icon>
-                        {{ $t('uiAutomation.common.copy') }}
-                      </el-button>
-                    </div>
-                  </el-tab-pane>
-                </el-tabs>
+                <div class="code-container">
+                  <pre><code>{{ element.code_samples.playwright }}</code></pre>
+                  <el-button
+                    size="small"
+                    type="primary"
+                    link
+                    class="copy-code-btn"
+                    @click="copyCode(element.code_samples.playwright)"
+                  >
+                    <el-icon><DocumentCopy /></el-icon>
+                    {{ $t('uiAutomation.common.copy') }}
+                  </el-button>
+                </div>
               </div>
             </div>
           </el-collapse-item>
@@ -164,7 +131,7 @@
         <el-button @click="handleClose">{{ $t('uiAutomation.common.close') }}</el-button>
       </div>
     </template>
-  </el-dialog>
+  </el-drawer>
 </template>
 
 <script setup>
@@ -219,11 +186,7 @@ const loadElementData = async () => {
     const response = await extractElementsFromAIExecution(props.recordId)
     elementData.value = response.data
     
-    if (elementData.value.elements) {
-      elementData.value.elements.forEach(element => {
-        element.activeCodeTab = 'playwright'
-      })
-    }
+
   } catch (err) {
     console.error('Failed to load element data:', err)
     error.value = err.response?.data?.error || err.message || t('uiAutomation.ai.elementLocator.loadError')
@@ -376,10 +339,6 @@ const resetData = () => {
   flex-shrink: 0;
   margin-bottom: 12px;
   display: block;
-}
-
-.code-tabs {
-  margin-top: 12px;
 }
 
 .code-container {

@@ -450,10 +450,8 @@ export default {
     taskInput: 'Task Input',
     taskDescription: 'Task Description',
     taskPlaceholder: 'Describe the task in natural language, e.g.:\n1. Visit https://www.baidu.com\n2. Search \'TestHub\'\n3. Click the first search result',
-    gifRecording: 'GIF Recording',
     on: 'On',
     off: 'Off',
-    gifTip: 'When enabled, the execution process will be recorded as a GIF file and saved to ai_agent_history directory',
     startExecution: 'Start Execution',
     stopExecution: 'Stop Execution',
     saveAsCase: 'Save as Case',
@@ -544,6 +542,7 @@ export default {
     // AI Execution Report
     executionReport: {
       title: 'AI Test Execution Report',
+      reportSuffix: ' Report',
       backToList: 'Back to List',
       basicInfo: 'Basic Info',
       caseName: 'Case Name',
@@ -559,8 +558,6 @@ export default {
       noLogs: 'No logs',
       errorInfo: 'Error Info',
       noError: 'No error info',
-      gifRecording: 'GIF Recording',
-      noGif: 'GIF Not Generated',
       noReportData: 'No report data',
       generatingReport: 'Generating report...',
       // Report types
@@ -571,6 +568,7 @@ export default {
       overview: 'Execution Overview',
       executionStatus: 'Execution Status',
       executionDuration: 'Duration',
+      reportTime: 'Report Time',
       completionRate: 'Completion Rate',
       executionSteps: 'Execution Steps',
       steps: 'steps',
@@ -583,6 +581,7 @@ export default {
       skipped: 'Skipped',
       // Timeline
       taskTimeline: 'Task Execution Timeline',
+      taskPlan: 'Task Plan',
       task: 'Task',
       // Detailed steps
       stepDetails: 'Execution Step Details',
@@ -604,9 +603,6 @@ export default {
       slowerThanAvg: 'Slower Than Avg',
       // Recommendations
       recommendations: 'Optimization Recommendations',
-      // GIF
-      viewGif: 'View GIF Playback',
-      gifPlayback: 'GIF Playback',
       exportReport: 'Export Report',
       // Action types
       actions: {

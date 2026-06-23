@@ -39,6 +39,7 @@ import UiAITesting from '@/views/ui-automation/ai/AITesting.vue'
 import UiAICaseList from '@/views/ui-automation/ai/AICaseList.vue'
 import UiAIExecutionRecords from '@/views/ui-automation/ai/AIExecutionRecords.vue'
 import UiAISuiteList from '@/views/ui-automation/ai/AISuiteList.vue'
+import UiAIExecutionReport from '@/views/ui-automation/ai/AIExecutionReportPage.vue'
 import UiXMindConverter from '@/views/ui-automation/ai/XMindConverter.vue'
 import TestCaseStatistics from '@/views/testcases/TestCaseStatistics.vue'
 import AuthorTestCaseDetail from '@/views/testcases/AuthorTestCaseDetail.vue'
@@ -447,6 +448,11 @@ const routes = [
         path: 'execution-records',
         name: 'AIExecutionRecords',
         component: UiAIExecutionRecords
+      },
+      {
+        path: 'execution-report/:id',
+        name: 'AIExecutionReport',
+        component: UiAIExecutionReport
       },
       {
         path: 'suites',

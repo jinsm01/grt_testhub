@@ -69,7 +69,6 @@ class AIExecutionReportGenerator:
                 'duration': self.record.duration,
                 'total_tasks': len(planned_tasks),
             },
-            'gif_path': self.record.gif_path  # 添加GIF路径
         }
 
         return report
@@ -188,11 +187,12 @@ class AIExecutionReportGenerator:
         for task in planned_tasks:
             timeline.append({
                 'id': task.get('id'),
+                'original_id': task.get('original_id'),
                 'description': task.get('description', ''),
                 'status': task.get('status', 'pending'),
                 'status_display': self._get_task_status_display(task.get('status', 'pending'))
             })
-
+        logger.info(f"DEBUG _generate_timeline: timeline_ids={[t['id'] for t in timeline]}")
         return timeline
 
     def _get_status_color(self, status: str) -> str:
@@ -276,7 +276,6 @@ class AIExecutionReportGenerator:
                 'end_time': self.record.end_time.isoformat() if self.record.end_time else None,
                 'duration': self.record.duration,
             },
-            'gif_path': self.record.gif_path  # 添加GIF路径
         }
 
     def generate_performance_report(self) -> Dict[str, Any]:
@@ -312,7 +311,34 @@ class AIExecutionReportGenerator:
                 'duration': self.record.duration,
                 'total_steps': len(steps_completed),
             },
-            'gif_path': self.record.gif_path  # 添加GIF路径
+        }
+
+    def generate_full_report(self) -> Dict[str, Any]:
+        """
+        生成完整报告（合并摘要、详细步骤、性能分析）
+
+        Returns:
+            包含所有报告数据的字典
+        """
+        summary = self.generate_summary_report()
+        detailed = self.generate_detailed_report()
+        performance = self.generate_performance_report()
+
+        return {
+            'overview': summary.get('overview') or detailed.get('overview'),
+            'statistics': summary.get('statistics') or detailed.get('statistics'),
+            'timeline': summary.get('timeline'),
+            'steps': summary.get('steps'),
+            'detailed_steps': detailed.get('detailed_steps'),
+            'errors': detailed.get('errors'),
+            'screenshots': detailed.get('screenshots'),
+            'task_progression': detailed.get('task_progression'),
+            'metrics': performance.get('metrics') or summary.get('metrics'),
+            'step_performance': performance.get('step_performance'),
+            'bottlenecks': performance.get('bottlenecks'),
+            'action_distribution': performance.get('action_distribution') or summary.get('action_distribution'),
+            'recommendations': performance.get('recommendations'),
+            'execution_details': summary.get('execution_details') or detailed.get('execution_details') or performance.get('execution_details'),
         }
 
     def _parse_detailed_steps(self, logs: str, steps_completed: List) -> List[Dict[str, Any]]:
@@ -331,7 +357,10 @@ class AIExecutionReportGenerator:
                 'timestamp': step.get('timestamp', ''),
                 'thinking': step.get('thinking', ''),
                 'screenshot': step.get('screenshot', ''),
+                'case_name': step.get('case_name', ''),
+                'task_id': step.get('task_id', ''),
             })
+        logger.info(f"DEBUG _parse_detailed_steps: steps_count={len(detailed_steps)}, task_ids={[s.get('task_id') for s in detailed_steps]}")
 
         # 如果没有 steps_completed，从日志中解析
         if not detailed_steps:
@@ -452,6 +481,8 @@ class AIExecutionReportGenerator:
         # 基于操作复杂度分配权重
         def get_step_complexity(action_str):
             """根据操作类型返回复杂度权重"""
+            if isinstance(action_str, dict):
+                action_str = str(action_str)
             if not action_str:
                 return 1.0
 

@@ -16,6 +16,7 @@ import re
 import random
 import time
 import os
+import threading
 
 from .models import (
     UiProject, LocatorStrategy, Element, TestScript, TestSuite,
@@ -48,13 +49,67 @@ from .serializers import (
 )
 from .operation_logger import log_operation
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('django')
 User = get_user_model()
 
 
 def extract_step_info(s, step_index):
     """提取步骤信息的辅助函数，确保返回可读的步骤描述"""
     step_info = {'step': step_index}
+
+    # Action 名称中文映射
+    ACTION_NAME_MAP = {
+        'click_element': '点击',
+        'input_text': '输入',
+        'go_to_url': '访问',
+        'navigate': '访问',
+        'open_tab': '打开标签页',
+        'mark_task_complete': '标记任务完成',
+        'done': '完成',
+        'snapshot_page': '截图',
+        'scroll': '滚动',
+        'wait': '等待',
+        'extract_content': '提取内容',
+        'switch_tab': '切换标签页',
+        'close_tab': '关闭标签页',
+    }
+
+    def format_action(action_name, params):
+        """格式化单个 action 为中文可读字符串"""
+        cn_name = ACTION_NAME_MAP.get(action_name, action_name)
+        if action_name == 'done':
+            # done 操作只显示成功/失败，不显示长文本
+            success = params.get('success') if isinstance(params, dict) else None
+            return f'{cn_name}(成功={success})' if success is not None else cn_name
+        if action_name == 'mark_task_complete':
+            task_id = params.get('task_id') if isinstance(params, dict) else None
+            return f'{cn_name}(任务ID={task_id})' if task_id is not None else cn_name
+        if action_name in ('click_element', 'navigate'):
+            if isinstance(params, dict):
+                idx = params.get('index')
+                url = params.get('url')
+                if idx is not None:
+                    return f'{cn_name}[{idx}]'
+                if url is not None:
+                    return f'{cn_name}({url})'
+        if action_name == 'input_text':
+            if isinstance(params, dict):
+                idx = params.get('index')
+                text = params.get('text', '')
+                # 隐藏密码类输入
+                display_text = text if len(text) <= 20 else text[:20] + '...'
+                if idx is not None:
+                    return f"{cn_name}[{idx}]: '{display_text}'"
+                return f"{cn_name}: '{display_text}'"
+        if action_name == 'go_to_url':
+            if isinstance(params, dict):
+                url = params.get('url', '')
+                return f'{cn_name}({url})'
+        # 通用格式化
+        if isinstance(params, dict):
+            param_str = ', '.join(f'{k}={v}' for k, v in params.items())
+            return f'{cn_name}({param_str})'
+        return f'{cn_name}({params})'
 
     # 尝试多种方式提取可读信息
     if hasattr(s, 'action'):
@@ -78,19 +133,39 @@ def extract_step_info(s, step_index):
                 step_info['action'] = attrs
         else:
             step_info['action'] = str(action_data)
-    elif hasattr(s, 'model_output'):
-        # 如果有model_output属性
+    elif hasattr(s, 'model_output') and s.model_output:
+        # browser-use AgentOutput: 提取 action 列表为可读字符串
         output_data = s.model_output
-        if isinstance(output_data, str):
-            step_info['action'] = output_data
-        elif hasattr(output_data, '__dict__'):
-            # 提取model_output的关键信息
-            attrs = {'type': 'model_output'}
-            for key in ['action', 'description', 'goal', 'coordinate', 'text']:
-                if hasattr(output_data, key):
-                    value = getattr(output_data, key)
-                    attrs[key] = str(value) if value else None
-            step_info['action'] = attrs
+        actions = getattr(output_data, 'action', None)
+        if actions:
+            action_strs = []
+            for action in actions:
+                try:
+                    # Pydantic model -> dict
+                    if hasattr(action, 'model_dump'):
+                        action_dict = action.model_dump(exclude_none=True, mode='json')
+                    elif hasattr(action, '__dict__'):
+                        action_dict = dict(action.__dict__)
+                    else:
+                        action_dict = {}
+                    # action_dict 形如 {"click_element": {"index": 14}}
+                    for action_name, params in action_dict.items():
+                        action_strs.append(format_action(action_name, params))
+                        if action_name == 'done':
+                            success = params.get('success') if isinstance(params, dict) else None
+                            if success is False:
+                                step_info['status'] = 'failed'
+                            elif success is True:
+                                step_info['status'] = 'completed'
+                        if action_name == 'mark_task_complete':
+                            task_id = params.get('task_id') if isinstance(params, dict) else None
+                            if task_id is not None:
+                                step_info['task_id'] = task_id
+                                logger.info(f"DEBUG extract_step_info: step={step_index} extracted raw task_id={task_id}")
+                        logger.info(f"DEBUG extract_step_info: step={step_index} action_name={action_name} params={params}")
+                except Exception:
+                    action_strs.append(str(action))
+            step_info['action'] = ' | '.join(action_strs) if action_strs else str(actions)
         else:
             step_info['action'] = str(output_data)
     elif hasattr(s, '__dict__'):
@@ -112,6 +187,12 @@ def extract_step_info(s, step_index):
             step_info['action'] = f"<Action: {getattr(s, '__name__', 'unknown action')}>"
         else:
             step_info['action'] = str(s)
+
+    # 优先从 step metadata 获取全局唯一 task_id（套件执行时由 run_single_case 写入）
+    if hasattr(s, 'state') and s.state and hasattr(s.state, 'metadata') and s.state.metadata:
+        meta_task_id = s.state.metadata.get('task_id')
+        if meta_task_id is not None:
+            step_info['task_id'] = meta_task_id
 
     return step_info
 
@@ -2963,7 +3044,8 @@ class AICaseViewSet(viewsets.ModelViewSet):
 
         def run_task():
             # 注册停止信号
-            STOP_SIGNALS[execution_record.id] = False
+            with _STOP_SIGNALS_LOCK:
+                STOP_SIGNALS[execution_record.id] = False
 
             # 关键修复：关闭旧连接，避免子线程共享主线程的连接
             try:
@@ -3022,6 +3104,20 @@ class AICaseViewSet(viewsets.ModelViewSet):
                                 await sync_to_async(safe_save)(execution_record, update_fields=['logs'])
                             return
 
+                        # 处理页面快照
+                        if step_info.get('type') == 'snapshot':
+                            execution_record.snapshot_data = {
+                                'url': step_info.get('url', ''),
+                                'title': step_info.get('title', ''),
+                                'element_count': step_info.get('element_count', 0),
+                                'elements': step_info.get('elements', []),
+                                'snapshot_text': step_info.get('content', ''),
+                                'auto': step_info.get('auto', False),
+                                'timestamp': timezone.now().isoformat()
+                            }
+                            await sync_to_async(safe_save)(execution_record, update_fields=['snapshot_data'])
+                            return
+
                         # 处理任务状态
                         task_id = step_info.get('task_id')
                         status = step_info.get('status')
@@ -3042,21 +3138,28 @@ class AICaseViewSet(viewsets.ModelViewSet):
                     except Exception as e:
                         logger.error(f"更新步骤状态失败: {e}", exc_info=True)
 
-                history = run_full_process_sync(
+                result = run_full_process_sync(
                     ai_case.task_description,
                     analysis_callback=on_analysis_complete,
                     step_callback=on_step_update,
                     should_stop=should_stop
                 )
+                history = result.get('history') if isinstance(result, dict) else result
+                screenshots = result.get('screenshots_sequence', []) if isinstance(result, dict) else []
 
                 # 检查是否是手动停止
                 if should_stop():
                     execution_record.status = 'stopped'
                     execution_record.logs += "\n[System] 任务已由用户停止。"
                 else:
-                    # 更新成功状态
-                    execution_record.status = 'passed'
-                    execution_record.logs += "\n执行完成。"
+                    # 根据 AI 返回的 done success 参数判定状态
+                    ai_success = result.get('success') if isinstance(result, dict) else None
+                    if ai_success is False:
+                        execution_record.status = 'failed'
+                        execution_record.logs += "\n[System] AI 判定任务失败（未找到目标内容或任务无法完成）。"
+                    else:
+                        execution_record.status = 'passed'
+                        execution_record.logs += "\n执行完成。"
 
                     # 记录任务完成统计信息
                     if execution_record.planned_tasks:
@@ -3073,17 +3176,23 @@ class AICaseViewSet(viewsets.ModelViewSet):
                 # 格式化 history 为日志 (如果不是停止状态)
                 steps = []
                 if history:
-                    if hasattr(history, 'steps'):
-                        steps = [extract_step_info(s, i) for i, s in enumerate(history.steps)]
+                    # browser-use AgentHistoryList 使用 history 属性存储步骤
+                    history_items = getattr(history, 'history', []) or getattr(history, 'steps', [])
+                    steps = [extract_step_info(s, i) for i, s in enumerate(history_items)]
+
+                # 关联截图到步骤
+                for idx, step in enumerate(steps):
+                    if idx < len(screenshots):
+                        step['screenshot'] = screenshots[idx]
+                    # 确保 step_number 存在，reports.py 依赖此字段
+                    step['step_number'] = step.get('step_number', idx + 1)
 
                 execution_record.steps_completed = steps
+                execution_record.screenshots_sequence = screenshots
 
                 # 自动标记已完成的任务
                 if execution_record.planned_tasks:
                     self._auto_mark_completed_tasks(execution_record)
-
-                # 处理GIF录制文件
-                self._process_gif_recording(execution_record, history)
 
                 safe_save(execution_record)
 
@@ -3100,59 +3209,18 @@ class AICaseViewSet(viewsets.ModelViewSet):
                     pass
             finally:
                 # 清理停止信号
-                if execution_record.id in STOP_SIGNALS:
-                    del STOP_SIGNALS[execution_record.id]
+                with _STOP_SIGNALS_LOCK:
+                    if execution_record.id in STOP_SIGNALS:
+                        del STOP_SIGNALS[execution_record.id]
 
         thread = threading.Thread(target=run_task)
-        thread.daemon = True
+        thread.daemon = False
         thread.start()
 
         return Response({
             'message': 'AI 用例开始执行',
             'execution_id': execution_record.id
         })
-
-    def _process_gif_recording(self, execution_record, history):
-        """
-        处理GIF录制文件
-        在执行完成后查找生成的GIF文件并保存路径到数据库
-        """
-        try:
-            import os
-            from django.conf import settings
-            from datetime import datetime
-
-            # browser-use 默认生成的GIF文件名（固定为agent_history.gif）
-            default_gif_path = os.path.join(os.getcwd(), 'agent_history.gif')
-
-            # 如果找到GIF文件，移动到media/ai_recording目录并重命名
-            if os.path.exists(default_gif_path):
-                import shutil
-
-                # 创建录制文件目录
-                gif_dir = os.path.join(settings.MEDIA_ROOT, 'ai_recording')
-                os.makedirs(gif_dir, exist_ok=True)
-
-                # 生成新的文件名：用例名称+年月日时分秒
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                # 清理用例名称中的非法字符
-                safe_case_name = "".join(
-                    [c if c.isalnum() or c in (' ', '_', '-') else '_' for c in execution_record.case_name])
-                new_gif_filename = f"{safe_case_name}_{timestamp}.gif"
-                new_gif_path = os.path.join(gif_dir, new_gif_filename)
-
-                # 移动并重命名文件
-                shutil.move(default_gif_path, new_gif_path)
-
-                # 保存相对路径到数据库（使用正斜杠，确保跨平台兼容）
-                relative_path = f'media/ai_recording/{new_gif_filename}'
-                execution_record.gif_path = relative_path
-
-                logger.info(f"✅ GIF recording saved to: {relative_path}")
-            else:
-                logger.warning(f"⚠️ GIF file not found at: {default_gif_path}")
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to process GIF recording: {e}")
 
     def _auto_mark_completed_tasks(self, execution_record):
         """
@@ -3191,6 +3259,7 @@ class AICaseViewSet(viewsets.ModelViewSet):
 
 # 全局停止信号字典 {execution_id: bool}
 STOP_SIGNALS = {}
+_STOP_SIGNALS_LOCK = threading.Lock()
 
 
 class AIExecutionRecordViewSet(viewsets.ModelViewSet):
@@ -3342,7 +3411,7 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                         element_info['locator_strategy'] = locator.get('strategy')
                         element_info['locator_value'] = locator.get('value')
             
-            if element_info['element_name'] or element_info['locator_value']:
+            if element_info['element_name']:
                 return element_info
             
             return None
@@ -3450,7 +3519,8 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
     
     def _generate_playwright_code(self, strategy, value, element_name, action_type):
         """生成Playwright代码"""
-        code = f'# {element_name}\n'
+        code = ''
+        label = strategy or 'locator'
         
         if strategy == 'xpath':
             code += f'element = page.locator("xpath={value}")\n'
@@ -3472,11 +3542,12 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
         elif action_type == 'select':
             code += 'await element.select_option("option_value")\n'
         
-        return code
+        return [{'label': label, 'code': code.strip()}]
     
     def _generate_selenium_code(self, strategy, value, element_name, action_type):
         """生成Selenium代码"""
-        code = f'# {element_name}\n'
+        code = ''
+        label = strategy or 'xpath'
         
         if strategy == 'xpath':
             code += f'element = driver.find_element(By.XPATH, "{value}")\n'
@@ -3496,11 +3567,12 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
         elif action_type == 'select':
             code += 'Select(element).select_by_value("option_value")\n'
         
-        return code
+        return [{'label': label, 'code': code.strip()}]
     
     def _generate_puppeteer_code(self, strategy, value, element_name, action_type):
         """生成Puppeteer代码"""
-        code = f'// {element_name}\n'
+        code = ''
+        label = strategy or 'css'
         
         if strategy == 'xpath':
             code += f'const element = await page.$x("{value}");\n'
@@ -3527,66 +3599,44 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                 code += '  await element.type("your_value");\n'
         
         code += '}\n'
-        return code
+        return [{'label': label, 'code': code.strip()}]
     
     def _generate_playwright_text_code(self, element_name, description, action_type):
         """基于文本描述生成Playwright代码"""
-        code = f'# {element_name}\n'
-        code += f'# 描述: {description}\n\n'
+        samples = []
         
         if action_type == 'click':
-            code += f'# 方式1: 通过文本查找\n'
-            code += f'await page.get_by_text("{element_name}").click()\n\n'
-            code += f'# 方式2: 通过角色查找\n'
-            code += f'await page.get_by_role("button", name="{element_name}").click()\n'
+            samples.append({'label': '通过文本查找', 'code': f'await page.get_by_text("{element_name}").click()'})
+            samples.append({'label': '通过角色查找', 'code': f'await page.get_by_role("button", name="{element_name}").click()'})
         elif action_type == 'fill':
-            code += f'# 方式1: 通过标签查找\n'
-            code += f'await page.get_by_label("{element_name}").fill("your_value")\n\n'
-            code += f'# 方式2: 通过占位符查找\n'
-            code += f'await page.get_by_placeholder("{element_name}").fill("your_value")\n'
+            samples.append({'label': '通过标签查找', 'code': f'await page.get_by_label("{element_name}").fill("your_value")'})
+            samples.append({'label': '通过占位符查找', 'code': f'await page.get_by_placeholder("{element_name}").fill("your_value")'})
         
-        return code
+        return samples
     
     def _generate_selenium_text_code(self, element_name, description, action_type):
         """基于文本描述生成Selenium代码"""
-        code = f'# {element_name}\n'
-        code += f'# 描述: {description}\n\n'
+        samples = []
         
         if action_type == 'click':
-            code += f'# 方式1: 通过链接文本\n'
-            code += f'driver.find_element(By.LINK_TEXT, "{element_name}").click()\n\n'
-            code += f'# 方式2: 通过部分链接文本\n'
-            code += f'driver.find_element(By.PARTIAL_LINK_TEXT, "{element_name}").click()\n\n'
-            code += f'# 方式3: 通过XPath包含文本\n'
-            code += f'driver.find_element(By.XPATH, f"//*[contains(text(), \'{element_name}\')]").click()\n'
+            samples.append({'label': '通过链接文本', 'code': f'driver.find_element(By.LINK_TEXT, "{element_name}").click()'})
+            samples.append({'label': '通过部分链接文本', 'code': f'driver.find_element(By.PARTIAL_LINK_TEXT, "{element_name}").click()'})
         elif action_type == 'fill':
-            code += f'# 通过XPath查找输入框\n'
-            code += f'input_element = driver.find_element(By.XPATH, f"//input[contains(@placeholder, \'{element_name}\') or contains(@name, \'{element_name}\')]")\n'
-            code += 'input_element.send_keys("your_value")\n'
+            samples.append({'label': '通过XPath查找输入框', 'code': f'input_element = driver.find_element(By.XPATH, f"//input[contains(@placeholder, \'{element_name}\') or contains(@name, \'{element_name}\')]")\ninput_element.send_keys("your_value")'})
         
-        return code
+        return samples
     
     def _generate_puppeteer_text_code(self, element_name, description, action_type):
         """基于文本描述生成Puppeteer代码"""
-        code = f'// {element_name}\n'
-        code += f'// 描述: {description}\n\n'
+        samples = []
         
         if action_type == 'click':
-            code += f'// 方式1: 通过文本选择器\n'
-            code += f'await page.click(`::-p-text("{element_name}")`);\n\n'
-            code += f'// 方式2: 通过XPath\n'
-            code += f'const elements = await page.$x(`//*[contains(text(), "{element_name}")]`);\n'
-            code += 'if (elements.length > 0) {\n'
-            code += '  await elements[0].click();\n'
-            code += '}\n'
+            samples.append({'label': '通过文本选择器', 'code': f'await page.click(`::-p-text("{element_name}")`);'})
+            samples.append({'label': '通过XPath', 'code': f'const elements = await page.$x(`//*[contains(text(), "{element_name}")]`);\nif (elements.length > 0) {{\n  await elements[0].click();\n}}'})
         elif action_type == 'fill':
-            code += f'// 通过XPath查找输入框\n'
-            code += f'const inputs = await page.$x(`//input[contains(@placeholder, "{element_name}")]`);\n'
-            code += 'if (inputs.length > 0) {\n'
-            code += '  await inputs[0].type("your_value");\n'
-            code += '}\n'
+            samples.append({'label': '通过XPath查找输入框', 'code': f'const inputs = await page.$x(`//input[contains(@placeholder, "{element_name}")]`);\nif (inputs.length > 0) {{\n  await inputs[0].type("your_value");\n}}'})
         
-        return code
+        return samples
     
     def _extract_locator_from_action(self, action):
         """从action对象中提取定位器"""
@@ -3641,7 +3691,7 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
         project_id = request.data.get('project_id')
         task_description = request.data.get('task_description')
         execution_mode = request.data.get('execution_mode', 'text')  # 默认文本模式
-        enable_gif = request.data.get('enable_gif', True)  # GIF录制开关，默认开启
+        enable_gif = request.data.get('enable_gif', True)  # 步骤截图开关，默认开启
 
         if not task_description:
             return Response({'error': '缺少任务描述参数'}, status=status.HTTP_400_BAD_REQUEST)
@@ -3674,7 +3724,8 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
 
         def run_task():
             # 注册停止信号
-            STOP_SIGNALS[execution_record.id] = False
+            with _STOP_SIGNALS_LOCK:
+                STOP_SIGNALS[execution_record.id] = False
 
             # 关键修复：关闭旧连接，避免子线程共享主线程的连接
             try:
@@ -3747,6 +3798,20 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                                 await sync_to_async(safe_save)(execution_record, update_fields=['logs'])
                             return
 
+                        # 处理页面快照
+                        if step_info.get('type') == 'snapshot':
+                            execution_record.snapshot_data = {
+                                'url': step_info.get('url', ''),
+                                'title': step_info.get('title', ''),
+                                'element_count': step_info.get('element_count', 0),
+                                'elements': step_info.get('elements', []),
+                                'snapshot_text': step_info.get('content', ''),
+                                'auto': step_info.get('auto', False),
+                                'timestamp': timezone.now().isoformat()
+                            }
+                            await sync_to_async(safe_save)(execution_record, update_fields=['snapshot_data'])
+                            return
+
                         # 处理任务状态
                         task_id = step_info.get('task_id')
                         status = step_info.get('status')
@@ -3772,24 +3837,31 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                     except Exception as e:
                         logger.error(f"更新步骤状态失败: {e}", exc_info=True)
 
-                history = run_full_process_sync(
+                result = run_full_process_sync(
                     task_description,
                     analysis_callback=on_analysis_complete,
                     step_callback=on_step_update,
                     should_stop=should_stop_async,  # 传递异步版本
                     execution_mode=execution_mode,
-                    enable_gif=enable_gif,  # 传递GIF录制开关
-                    case_name=task_description[:50] if task_description else "Adhoc Task"  # 传递用例名称用于GIF文件命名
+                    enable_gif=enable_gif,  # 传递步骤截图开关
+                    case_name=task_description[:50] if task_description else "Adhoc Task"  # 传递用例名称用于截图文件命名
                 )
+                history = result.get('history') if isinstance(result, dict) else result
+                screenshots = result.get('screenshots_sequence', []) if isinstance(result, dict) else []
 
                 # 检查是否是手动停止 (使用同步版本)
                 if should_stop_sync():
                     execution_record.status = 'stopped'
                     execution_record.logs += "\n[System] 任务已由用户停止。"
                 else:
-                    # 更新成功状态
-                    execution_record.status = 'passed'
-                    execution_record.logs += "\n执行完成。"
+                    # 根据 AI 返回的 done success 参数判定状态
+                    ai_success = result.get('success') if isinstance(result, dict) else None
+                    if ai_success is False:
+                        execution_record.status = 'failed'
+                        execution_record.logs += "\n[System] AI 判定任务失败（未找到目标内容或任务无法完成）。"
+                    else:
+                        execution_record.status = 'passed'
+                        execution_record.logs += "\n执行完成。"
 
                     # 记录任务完成统计信息
                     if execution_record.planned_tasks:
@@ -3806,17 +3878,23 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                 # 格式化 history 为日志 (如果不是停止状态)
                 steps = []
                 if history:
-                    if hasattr(history, 'steps'):
-                        steps = [extract_step_info(s, i) for i, s in enumerate(history.steps)]
+                    # browser-use AgentHistoryList 使用 history 属性存储步骤
+                    history_items = getattr(history, 'history', []) or getattr(history, 'steps', [])
+                    steps = [extract_step_info(s, i) for i, s in enumerate(history_items)]
+
+                # 关联截图到步骤
+                for idx, step in enumerate(steps):
+                    if idx < len(screenshots):
+                        step['screenshot'] = screenshots[idx]
+                    # 确保 step_number 存在，reports.py 依赖此字段
+                    step['step_number'] = step.get('step_number', idx + 1)
 
                 execution_record.steps_completed = steps
+                execution_record.screenshots_sequence = screenshots
 
                 # 自动标记已完成的任务
                 if execution_record.planned_tasks:
                     self._auto_mark_completed_tasks(execution_record)
-
-                # 处理GIF录制文件
-                self._process_gif_recording(execution_record, history)
 
                 safe_save(execution_record)
 
@@ -3833,11 +3911,12 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                     pass
             finally:
                 # 清理停止信号
-                if execution_record.id in STOP_SIGNALS:
-                    del STOP_SIGNALS[execution_record.id]
+                with _STOP_SIGNALS_LOCK:
+                    if execution_record.id in STOP_SIGNALS:
+                        del STOP_SIGNALS[execution_record.id]
 
         thread = threading.Thread(target=run_task)
-        thread.daemon = True
+        thread.daemon = False
         thread.start()
 
         return Response({
@@ -3850,64 +3929,23 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
         """停止正在执行的任务"""
         try:
             execution_id = int(pk)
-            if execution_id in STOP_SIGNALS:
-                STOP_SIGNALS[execution_id] = True
-                return Response({'message': '已发送停止信号'})
-            else:
-                # 如果不在内存中，可能已经结束，或者重启过服务
-                # 尝试直接更新数据库状态
-                record = self.get_object()
-                if record.status == 'running':
-                    record.status = 'stopped'
-                    record.end_time = timezone.now()
-                    record.logs += "\n[System] 任务被强制标记为停止（未在运行队列中找到）。"
-                    record.save()
-                    return Response({'message': '任务已标记为停止'})
-                return Response({'message': '任务不在运行中'}, status=status.HTTP_400_BAD_REQUEST)
+            with _STOP_SIGNALS_LOCK:
+                if execution_id in STOP_SIGNALS:
+                    STOP_SIGNALS[execution_id] = True
+                    return Response({'message': '已发送停止信号'})
+
+            # 如果不在内存中，可能已经结束，或者重启过服务
+            # 尝试直接更新数据库状态
+            record = self.get_object()
+            if record.status == 'running':
+                record.status = 'stopped'
+                record.end_time = timezone.now()
+                record.logs += "\n[System] 任务被强制标记为停止（未在运行队列中找到）。"
+                record.save()
+                return Response({'message': '任务已标记为停止'})
+            return Response({'message': '任务不在运行中'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    def _process_gif_recording(self, execution_record, history):
-        """
-        处理GIF录制文件
-        在执行完成后查找生成的GIF文件并保存路径到数据库
-        """
-        try:
-            import os
-            from django.conf import settings
-            from datetime import datetime
-
-            # browser-use 默认生成的GIF文件名（固定为agent_history.gif）
-            default_gif_path = os.path.join(os.getcwd(), 'agent_history.gif')
-
-            # 如果找到GIF文件，移动到media/ai_recording目录并重命名
-            if os.path.exists(default_gif_path):
-                import shutil
-
-                # 创建录制文件目录
-                gif_dir = os.path.join(settings.MEDIA_ROOT, 'ai_recording')
-                os.makedirs(gif_dir, exist_ok=True)
-
-                # 生成新的文件名：用例名称+年月日时分秒
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                # 清理用例名称中的非法字符
-                safe_case_name = "".join(
-                    [c if c.isalnum() or c in (' ', '_', '-') else '_' for c in execution_record.case_name])
-                new_gif_filename = f"{safe_case_name}_{timestamp}.gif"
-                new_gif_path = os.path.join(gif_dir, new_gif_filename)
-
-                # 移动并重命名文件
-                shutil.move(default_gif_path, new_gif_path)
-
-                # 保存相对路径到数据库（使用正斜杠，确保跨平台兼容）
-                relative_path = f'media/ai_recording/{new_gif_filename}'
-                execution_record.gif_path = relative_path
-
-                logger.info(f"✅ GIF recording saved to: {relative_path}")
-            else:
-                logger.warning(f"⚠️ GIF file not found at: {default_gif_path}")
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to process GIF recording: {e}")
 
     def _auto_mark_completed_tasks(self, execution_record):
         """
@@ -3968,6 +4006,8 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                 report = generator.generate_detailed_report()
             elif report_type == 'performance':
                 report = generator.generate_performance_report()
+            elif report_type == 'full':
+                report = generator.generate_full_report()
             else:  # summary
                 report = generator.generate_summary_report()
 
@@ -4010,11 +4050,14 @@ class AIExecutionRecordViewSet(viewsets.ModelViewSet):
                 report_data = generator.generate_detailed_report()
             elif report_type == 'performance':
                 report_data = generator.generate_performance_report()
+            elif report_type == 'full':
+                report_data = generator.generate_full_report()
             else:  # summary
                 report_data = generator.generate_summary_report()
 
-            # 生成PDF
-            pdf_generator = AIReportPDFGenerator(report_data, report_type)
+            # 生成PDF（full 类型按 detailed 模板生成）
+            pdf_report_type = report_type if report_type != 'full' else 'detailed'
+            pdf_generator = AIReportPDFGenerator(report_data, pdf_report_type)
             pdf_buffer = pdf_generator.generate()
 
             # 生成文件名
@@ -4167,47 +4210,6 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
         serializer = AITestSuiteAICaseSerializer(suite_ai_cases, many=True)
         return Response(serializer.data)
 
-    def _process_gif_recording(self, execution_record, history):
-        """
-        处理GIF录制文件
-        在执行完成后查找生成的GIF文件并保存路径到数据库
-        """
-        try:
-            import os
-            import shutil
-            from django.conf import settings
-            from datetime import datetime
-
-            # browser-use 默认生成的GIF文件名（固定为agent_history.gif）
-            default_gif_path = os.path.join(os.getcwd(), 'agent_history.gif')
-
-            # 如果找到GIF文件，移动到media/ai_recording目录并重命名
-            if os.path.exists(default_gif_path):
-                # 创建录制文件目录
-                gif_dir = os.path.join(settings.MEDIA_ROOT, 'ai_recording')
-                os.makedirs(gif_dir, exist_ok=True)
-
-                # 生成新的文件名：用例名称+年月日时分秒
-                timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-                # 清理用例名称中的非法字符
-                safe_case_name = "".join(
-                    [c if c.isalnum() or c in (' ', '_', '-') else '_' for c in execution_record.case_name])
-                new_gif_filename = f"{safe_case_name}_{timestamp}.gif"
-                new_gif_path = os.path.join(gif_dir, new_gif_filename)
-
-                # 移动并重命名文件
-                shutil.move(default_gif_path, new_gif_path)
-
-                # 保存相对路径到数据库（使用正斜杠，确保跨平台兼容）
-                relative_path = f'media/ai_recording/{new_gif_filename}'
-                execution_record.gif_path = relative_path
-
-                logger.info(f"✅ GIF recording saved to: {relative_path}")
-            else:
-                logger.warning(f"⚠️ GIF file not found at: {default_gif_path}")
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to process GIF recording: {e}")
-
     @action(detail=True, methods=['post'])
     def run_suite(self, request, pk=None):
         """运行AI测试套件（支持浏览器会话复用）"""
@@ -4228,6 +4230,11 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
 
         ai_test_suite.execution_status = 'running'
         ai_test_suite.save()
+
+        # 在主线程中提取用户ID，避免子线程中使用 request.user 触发 ORM 惰性查询
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        executed_by_user_id = request.user.id if request.user and request.user.is_authenticated else None
 
         def run_suite_task():
             STOP_SIGNALS = {}
@@ -4267,6 +4274,35 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
             failed_count = 0
             browser_session = None
 
+            # 在子线程中重新获取用户对象，避免 ORM 对象跨线程共享
+            executed_by_user = None
+            if executed_by_user_id:
+                try:
+                    executed_by_user = User.objects.filter(id=executed_by_user_id).first()
+                except Exception:
+                    executed_by_user = None
+
+            # 创建套件级别的执行记录（只用一条记录存储整个套件的执行结果）
+            suite_execution_record = AIExecutionRecord.objects.create(
+                project=ai_test_suite.project,
+                ai_test_suite=ai_test_suite,
+                case_name=ai_test_suite.name,
+                task_description=f"测试套件执行，共 {len(suite_ai_cases_list)} 个用例",
+                status='running',
+                executed_by=executed_by_user,
+                logs=f"开始执行测试套件: {ai_test_suite.name}\n"
+            )
+            with _STOP_SIGNALS_LOCK:
+                STOP_SIGNALS[suite_execution_record.id] = False
+
+            # 用于合并所有用例的步骤、截图、任务等
+            all_steps = []
+            all_screenshots = []
+            all_planned_tasks = []
+            all_logs = suite_execution_record.logs
+            task_id_offset = 0
+            global_step_offset = 0  # 全局步骤编号偏移，保证 step_number 全局唯一
+
             try:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
@@ -4277,100 +4313,174 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                 try:
                     for suite_ai_case in suite_ai_cases_list:
                         ai_case = suite_ai_case.ai_case
-
-                        execution_record = AIExecutionRecord.objects.create(
-                            project=ai_test_suite.project,
-                            ai_case=ai_case,
-                            case_name=ai_case.name,
-                            task_description=ai_case.task_description,
-                            status='running',
-                            executed_by=request.user,
-                            logs="正在分析任务...\n"
-                        )
-                        STOP_SIGNALS[execution_record.id] = False
+                        all_logs += f"\n===== 用例: {ai_case.name} =====\n"
+                        suite_execution_record.logs = all_logs
+                        safe_save(suite_execution_record, update_fields=['logs'])
 
                         try:
                             async def should_stop():
-                                return STOP_SIGNALS.get(execution_record.id, False)
+                                return STOP_SIGNALS.get(suite_execution_record.id, False)
 
                             async def on_analysis_complete(planned_tasks):
-                                execution_record.planned_tasks = planned_tasks
-                                execution_record.logs += "任务分析完成，开始执行...\n"
-                                await sync_to_async(safe_save)(execution_record, update_fields=['planned_tasks', 'logs'])
+                                nonlocal all_planned_tasks, all_logs, task_id_offset
+                                logger.info(f"DEBUG on_analysis_complete BEFORE: case={ai_case.name}, task_id_offset={task_id_offset}, planned_tasks_count={len(planned_tasks)}, planned_ids={[t.get('id') for t in planned_tasks]}")
+                                # 为每个任务分配全局唯一ID，避免套件中不同用例的任务ID重复
+                                for task in planned_tasks:
+                                    task['case_name'] = ai_case.name
+                                    task['original_id'] = task.get('id')
+                                    task['id'] = task_id_offset + task.get('id', 0)
+                                task_id_offset += len(planned_tasks)
+                                all_planned_tasks.extend(planned_tasks)
+                                suite_execution_record.planned_tasks = all_planned_tasks
+                                all_logs += "任务分析完成，开始执行...\n"
+                                suite_execution_record.logs = all_logs
+                                logger.info(f"DEBUG on_analysis_complete AFTER: case={ai_case.name}, task_id_offset={task_id_offset}, all_planned_ids={[t.get('id') for t in all_planned_tasks]}")
+                                try:
+                                    await asyncio.to_thread(safe_save, suite_execution_record, update_fields=['planned_tasks', 'logs'])
+                                except Exception as e:
+                                    logger.error(f"safe_save failed in on_analysis_complete: {e}", exc_info=True)
+                                    raise
 
                             async def on_step_update(step_info):
+                                nonlocal all_logs
                                 try:
                                     if step_info.get('type') == 'log':
                                         content = step_info.get('content')
                                         if content:
-                                            execution_record.logs += content
-                                            await sync_to_async(safe_save)(execution_record, update_fields=['logs'])
+                                            all_logs += content
+                                            suite_execution_record.logs = all_logs
+                                            await asyncio.to_thread(safe_save, suite_execution_record, update_fields=['logs'])
+                                        return
+
+                                    # 处理页面快照
+                                    if step_info.get('type') == 'snapshot':
+                                        suite_execution_record.snapshot_data = {
+                                            'url': step_info.get('url', ''),
+                                            'title': step_info.get('title', ''),
+                                            'element_count': step_info.get('element_count', 0),
+                                            'elements': step_info.get('elements', []),
+                                            'snapshot_text': step_info.get('content', ''),
+                                            'auto': step_info.get('auto', False),
+                                            'timestamp': timezone.now().isoformat()
+                                        }
+                                        await asyncio.to_thread(safe_save, suite_execution_record, update_fields=['snapshot_data'])
                                         return
 
                                     task_id = step_info.get('task_id')
-                                    status = step_info.get('status')
-                                    if task_id and status:
+                                    status_val = step_info.get('status')
+                                    if task_id and status_val:
                                         updated = False
-                                        if execution_record.planned_tasks:
-                                            for task in execution_record.planned_tasks:
-                                                # 确保类型一致进行比较
+                                        if all_planned_tasks:
+                                            for task in all_planned_tasks:
                                                 if str(task['id']) == str(task_id):
                                                     old_status = task.get('status', 'pending')
-                                                    task['status'] = status
+                                                    task['status'] = status_val
                                                     updated = True
-                                                    logger.info(f"DEBUG: Updated task {task_id} from {old_status} to {status}")
+                                                    logger.info(f"DEBUG: Updated task {task_id} from {old_status} to {status_val}")
                                                     break
                                         if updated:
-                                            await sync_to_async(safe_save)(execution_record, update_fields=['planned_tasks'])
+                                            suite_execution_record.planned_tasks = all_planned_tasks
+                                            await asyncio.to_thread(safe_save, suite_execution_record, update_fields=['planned_tasks'])
                                         else:
                                             logger.warning(f"DEBUG: Task ID {task_id} not found in planned_tasks")
                                 except Exception as e:
                                     logger.error(f"更新步骤状态失败: {e}", exc_info=True)
 
-                            history = loop.run_until_complete(
+                            # 保存当前偏移量，避免 on_analysis_complete 修改后影响本用例步骤的偏移
+                            current_task_id_offset = task_id_offset
+                            logger.info(f"DEBUG run_suite: case={ai_case.name}, current_task_id_offset={current_task_id_offset}")
+                            result = loop.run_until_complete(
                                 browser_session.run_single_case(
                                     ai_case.task_description,
                                     analysis_callback=on_analysis_complete,
                                     step_callback=on_step_update,
                                     should_stop=should_stop,
-                                    case_name=ai_case.name
+                                    case_name=ai_case.name,
+                                    task_id_offset=current_task_id_offset
                                 )
                             )
+                            history = result.get('history') if isinstance(result, dict) else result
 
-                            if STOP_SIGNALS.get(execution_record.id, False):
-                                execution_record.status = 'stopped'
-                                execution_record.logs += "\n[System] 任务已由用户停止。"
+                            if STOP_SIGNALS.get(suite_execution_record.id, False):
+                                all_logs += "\n[System] 任务已由用户停止。"
                             else:
-                                execution_record.status = 'passed'
-                                execution_record.logs += "\n执行完成。"
+                                # 根据 AI 返回的 done success 参数判定状态
+                                ai_success = result.get('success') if isinstance(result, dict) else None
+                                if ai_success is False:
+                                    all_logs += "\n[System] AI 判定任务失败（未找到目标内容或任务无法完成）。"
+                                else:
+                                    all_logs += "\n执行完成。"
 
-                            execution_record.end_time = timezone.now()
-                            execution_record.duration = (execution_record.end_time - execution_record.start_time).total_seconds()
+                            # 提取截图序列并关联到步骤
+                            screenshots = result.get('screenshots_sequence', []) if isinstance(result, dict) else []
 
-                            # 处理GIF录制文件
-                            self._process_gif_recording(execution_record, history)
+                            # 格式化 history 为步骤列表
+                            steps = []
+                            if history:
+                                history_items = getattr(history, 'history', []) or getattr(history, 'steps', [])
+                                steps = [extract_step_info(s, i) for i, s in enumerate(history_items)]
 
-                            safe_save(execution_record)
-                        except Exception as e:
-                            execution_record.status = 'failed'
-                            execution_record.end_time = timezone.now()
-                            execution_record.duration = (execution_record.end_time - execution_record.start_time).total_seconds()
-                            execution_record.logs += f"\n执行出错: {str(e)}"
+                            # 获取 step_task_ids（由 on_step_end 在 Agent 执行过程中记录，比 extract_step_info 更可靠）
+                            step_task_ids = result.get('step_task_ids', {}) if isinstance(result, dict) else {}
+                            logger.info(f"DEBUG run_suite: case={ai_case.name}, step_task_ids={step_task_ids}")
+
+                            # 关联截图到步骤，标记所属用例，并设置全局唯一的 step_number
+                            for idx, step in enumerate(steps):
+                                if idx < len(screenshots):
+                                    step['screenshot'] = screenshots[idx]
+                                # 使用全局步骤编号，保证 suite 中所有用例的步骤编号连续唯一
+                                step['step_number'] = global_step_offset + idx + 1
+                                step['case_name'] = ai_case.name
+                                # 优先使用 step_task_ids（Agent 执行过程中记录的准确映射）
+                                if idx in step_task_ids:
+                                    step['task_id'] = step_task_ids[idx]
+                                    logger.info(f"DEBUG run_suite: case={ai_case.name}, step_idx={idx}, used step_task_ids, final_task_id={step['task_id']}")
+                                elif 'task_id' in step:
+                                    # extract_step_info 解析出的 task_id 已经是 AI 使用的全局ID（因为 final_task 中 planned_tasks 的 id 已被 on_analysis_complete 偏移）
+                                    # 不需要再加偏移
+                                    logger.info(f"DEBUG run_suite: case={ai_case.name}, step_idx={idx}, extract_step_info task_id={step['task_id']}, no offset needed")
+
+                            # 累加到总列表
+                            all_steps.extend(steps)
+                            all_screenshots.extend(screenshots)
+                            global_step_offset += len(steps)
+
+                            # 用例级别状态统计
+                            case_status = 'failed' if ai_success is False else 'passed'
+                            if case_status == 'passed':
+                                passed_count += 1
+                            else:
+                                failed_count += 1
+
+                        except BaseException as e:
+                            all_logs += f"\n执行出错: {str(e)}"
+                            failed_count += 1
                             try:
-                                safe_save(execution_record)
+                                suite_execution_record.logs = all_logs
+                                safe_save(suite_execution_record, update_fields=['logs'])
                             except:
                                 logger.error(f"保存失败状态时出错: {e}")
-                        finally:
-                            if execution_record.id in STOP_SIGNALS:
-                                del STOP_SIGNALS[execution_record.id]
+                            logger.error(f"❌ run_single_case 抛出 BaseException: {type(e).__name__}: {e}", exc_info=True)
 
-                        if execution_record.status == 'passed':
-                            passed_count += 1
-                        else:
-                            failed_count += 1
+                    # 所有用例执行完毕，保存合并后的数据到套件执行记录
+                    suite_execution_record.status = 'passed' if failed_count == 0 else 'failed'
+                    suite_execution_record.end_time = timezone.now()
+                    suite_execution_record.duration = (suite_execution_record.end_time - suite_execution_record.start_time).total_seconds()
+                    suite_execution_record.logs = all_logs
+                    suite_execution_record.steps_completed = all_steps
+                    suite_execution_record.screenshots_sequence = all_screenshots
+                    suite_execution_record.planned_tasks = all_planned_tasks
 
+                    # 自动标记已完成的任务
+                    if all_planned_tasks:
+                        self._auto_mark_completed_tasks(suite_execution_record)
+
+                    safe_save(suite_execution_record)
                     ai_test_suite.execution_status = 'passed' if failed_count == 0 else 'failed'
                 finally:
+                    with _STOP_SIGNALS_LOCK:
+                        if suite_execution_record.id in STOP_SIGNALS:
+                            del STOP_SIGNALS[suite_execution_record.id]
                     # 确保浏览器会话被正确关闭
                     if browser_session:
                         try:
@@ -4389,6 +4499,14 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 ai_test_suite.execution_status = 'failed'
                 logger.error(f"运行AI测试套件失败: {e}")
+                if suite_execution_record:
+                    suite_execution_record.status = 'failed'
+                    suite_execution_record.logs = all_logs + f"\n套件执行异常: {str(e)}"
+                    suite_execution_record.end_time = timezone.now()
+                    try:
+                        safe_save(suite_execution_record)
+                    except Exception as save_err:
+                        logger.error(f"保存套件失败状态时出错: {save_err}")
                 if browser_session:
                     try:
                         logger.info("异常处理中：正在关闭浏览器会话...")
@@ -4402,7 +4520,7 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
                 safe_save(ai_test_suite)
 
         thread = threading.Thread(target=run_suite_task)
-        thread.daemon = True
+        thread.daemon = False
         thread.start()
 
         return Response({
@@ -4410,6 +4528,35 @@ class AITestSuiteViewSet(viewsets.ModelViewSet):
             'suite_id': ai_test_suite.id,
             'case_count': len(suite_ai_cases_list)
         }, status=status.HTTP_200_OK)
+
+    def _auto_mark_completed_tasks(self, execution_record):
+        """
+        自动标记已完成的任务
+        通过分析执行历史和当前任务状态，自动标记那些已经执行但未被标记完成的任务
+        """
+        try:
+            # 记录初始状态
+            initial_completed = 0
+            initial_pending = 0
+            if execution_record.planned_tasks:
+                initial_completed = len([t for t in execution_record.planned_tasks if t.get('status') == 'completed'])
+                initial_pending = len([t for t in execution_record.planned_tasks if t.get('status') == 'pending'])
+                logger.info(f"📊 Before auto-mark: {initial_completed} completed, {initial_pending} pending tasks")
+
+            # 如果执行成功，标记所有任务为完成
+            if execution_record.status == 'passed' and execution_record.planned_tasks:
+                auto_marked_count = 0
+                for task in execution_record.planned_tasks:
+                    # 只对标记为pending的任务进行处理
+                    if task.get('status') == 'pending':
+                        task['status'] = 'completed'
+                        auto_marked_count += 1
+                        logger.info(f"🔒 Auto-marked task {task['id']} as completed")
+
+                if auto_marked_count > 0:
+                    logger.info(f"✨ Auto-marked {auto_marked_count} tasks as completed")
+        except Exception as e:
+            logger.error(f"自动标记完成任务时出错: {e}", exc_info=True)
 
 
 @api_view(['POST'])

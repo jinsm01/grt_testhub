@@ -1,21 +1,32 @@
 {
-  "project_id": " 7366718",
+  "project_id": "7366718",
   "environment_id": "39566850",
-  "access_token": "afxp_e41f67BsWIwtx0q4PD1S9mQ6fOYCznzUtq8C",
+  "access_token": "afxp_aa7bb2R3NrXkSN4BKMLgb6PRGj9GqtGljoqh",
   "id_field_exemptions": [
     {
-      "field": "wpy_id",
-      "reason": "测试",
-      "added_by": "王盼阳",
-      "added_at": "2026-06-02T11:29:20.654480",
+      "field": "54",
+      "reason": "热",
+      "added_by": "金绍敏",
+      "added_at": "2026-06-09T16:32:38.569571",
+      "enabled": false
+    },
+    {
+      "field": "呜呜呜大的",
+      "reason": "得到的",
+      "added_by": "金绍敏",
+      "added_at": "2026-06-09T16:53:49.984959",
+      "enabled": false
+    },
+    {
+      "field": "13",
+      "reason": "1",
+      "added_by": "金绍敏",
+      "added_at": "2026-06-09T17:45:33.791935",
       "enabled": true
     }
   ],
   "rule_statuses": {
-    "scenario-run-passed": true,
-    "crud-query-assert": false,
-    "no-hardcoded-id": false,
-    "scenario-step-count": false,
-    "param-from-prev-step": true
+    "fixture-dir-skip": true,
+    "scenario-run-passed": true
   }
 }

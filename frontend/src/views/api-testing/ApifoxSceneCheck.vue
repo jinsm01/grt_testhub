@@ -73,39 +73,65 @@
       v-model="rulesDrawerVisible"
       title="检查规则总览"
       direction="rtl"
-      size="950px"
+      size="1200px"
       :close-on-press-escape="true"
       :destroy-on-close="false"
       @opened="loadRules"
+      class="modern-drawer rules-drawer"
     >
-      <div class="rules-drawer-content">
-        <el-table
-          class="check-rules-table"
-          :data="checkRules"
-          :header-cell-style="{ background: '#ffffff', color: '#5a32a3', fontWeight: 600, fontSize: '14px' }"
-          v-loading="rulesLoading"
-        >
-          <el-table-column prop="index" label="序号" width="70" align="center" />
-          <el-table-column prop="name" label="规则名称" min-width="180" />
-          <el-table-column prop="severity" label="严重程度" width="100" align="center">
-            <template #default="{ row }">
-              <el-tag :type="row.severityType" size="small" effect="dark" round>{{ row.severity }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="desc" label="规则说明" min-width="260" show-overflow-tooltip />
-          <el-table-column prop="enabled" label="状态" width="120" align="center">
-            <template #default="{ row }">
-              <el-switch
-                v-model="row.enabled"
-                active-text="启用"
-                inactive-text="停用"
-                inline-prompt
-                :loading="row._toggling"
-                @change="(val) => toggleRule(row, val)"
-              />
-            </template>
-          </el-table-column>
-        </el-table>
+      <div class="drawer-body">
+        <!-- 详细结果表格 -->
+        <div class="result-table-section">
+          <div class="section-header">
+            <h4 class="section-title">
+              <el-icon><List /></el-icon>
+              规则列表
+            </h4>
+            <div class="toolbar-info">
+              <span>共 {{ checkRules.length }} 条检查规则，可根据需要启用或停用</span>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <el-table
+              class="custom-table"
+              :data="checkRules"
+              v-loading="rulesLoading"
+              empty-text="暂无检查规则"
+            >
+              <el-table-column type="index" label="序号" width="60" header-align="center" align="center" />
+              <el-table-column prop="name" label="规则名称" min-width="130" align="center">
+                <template #default="{ row }">
+                  <span class="rule-name">{{ row.name }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="severity" label="严重程度" width="80" align="center">
+                <template #default="{ row }">
+                  <span class="status-badge" :class="`severity-${row.severityType}`">
+                    {{ row.severity }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="desc" label="规则说明" min-width="340" show-overflow-tooltip align="center" />
+              <el-table-column prop="enabled" label="状态" width="90" align="center">
+                <template #default="{ row }">
+                  <span class="status-badge" :class="row.enabled ? 'enabled' : 'disabled'">
+                    {{ row.enabled ? '启用' : '停用' }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="80" align="center" fixed="right">
+                <template #default="{ row }">
+                  <el-switch
+                    v-model="row.enabled"
+                    :loading="row._toggling"
+                    @change="(val) => toggleRule(row, val)"
+                    class="modern-switch"
+                  />
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </div>
       </div>
     </el-drawer>
 
@@ -114,123 +140,181 @@
       v-model="exemptionsDrawerVisible"
       title="ID字段豁免列表"
       direction="rtl"
-      size="950px"
+      size="1200px"
       :close-on-press-escape="true"
       :destroy-on-close="true"
+      class="modern-drawer exemptions-drawer"
     >
-      <div class="exemptions-drawer-content">
-        <div class="exemptions-drawer-header">
-          <el-button type="primary" size="small" @click="openAddExemptionDialog">
-            <el-icon><Plus /></el-icon>
-            添加豁免
-          </el-button>
+      <div class="drawer-body">
+        <!-- 统计卡片区域 -->
+        <div class="stats-cards">
+          <el-row :gutter="16">
+            <el-col :xs="12" :sm="12" :md="6" :lg="6">
+              <div class="stat-card total">
+                <div class="stat-icon">
+                  <el-icon><Document /></el-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-label">总字段数</div>
+                  <div class="stat-value">{{ exemptionStats.total }}</div>
+                </div>
+              </div>
+            </el-col>
+            <el-col :xs="12" :sm="12" :md="6" :lg="6">
+              <div class="stat-card builtin">
+                <div class="stat-icon">
+                  <el-icon><Lock /></el-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-label">内置字段</div>
+                  <div class="stat-value">{{ exemptionStats.builtin }}</div>
+                </div>
+              </div>
+            </el-col>
+            <el-col :xs="12" :sm="12" :md="6" :lg="6">
+              <div class="stat-card custom">
+                <div class="stat-icon">
+                  <el-icon><User /></el-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-label">自定义字段</div>
+                  <div class="stat-value">{{ exemptionStats.custom }}</div>
+                </div>
+              </div>
+            </el-col>
+            <el-col :xs="12" :sm="12" :md="6" :lg="6">
+              <div class="stat-card enabled">
+                <div class="stat-icon">
+                  <el-icon><Check /></el-icon>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-label">已启用</div>
+                  <div class="stat-value">{{ exemptionStats.enabled }}</div>
+                </div>
+              </div>
+            </el-col>
+          </el-row>
         </div>
-        <el-table
-          :data="exemptionTableData"
-          v-loading="exemptionLoading"
-          empty-text="暂无豁免字段，点击「添加豁免」创建"
-          :header-cell-style="{ background: '#ffffff', color: '#5a32a3', fontWeight: 600, fontSize: '14px' }"
-        >
-          <el-table-column label="豁免ID字段" min-width="180">
-            <template #default="{ row }">
-              <span class="exemption-field-cell">
-                <el-tag
-                  :type="row._builtin ? 'info' : ''"
-                  size="small"
-                  :class="row._builtin ? 'builtin-tag' : 'user-tag'"
-                  disable-transitions
-                >{{ row.field }}</el-tag>
-                <el-tag v-if="row._builtin" type="info" size="small" effect="plain" class="ml-2">内置</el-tag>
-              </span>
-            </template>
-          </el-table-column>
-          <el-table-column label="豁免理由" min-width="200" show-overflow-tooltip>
-            <template #default="{ row }">
-              <span v-if="row.reason" class="reason-text">{{ row.reason }}</span>
-              <span v-else class="reason-placeholder">-</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="添加人" width="110" align="center">
-            <template #default="{ row }">
-              {{ row.added_by || '-' }}
-            </template>
-          </el-table-column>
-          <el-table-column label="添加时间" width="170" align="center">
-            <template #default="{ row }">
-              {{ row._builtin ? '-' : (formatTime(row.added_at) || '-') }}
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" width="100" align="center">
-            <template #default="{ row }">
-              <el-switch
-                v-if="!row._builtin"
-                v-model="row.enabled"
-                size="small"
-                @change="toggleExemption(row)"
-                :loading="row._toggling"
-              />
-              <el-tag v-else type="success" size="small" effect="dark">启用</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="180" align="center" fixed="right">
-            <template #default="{ row }">
-              <template v-if="!row._builtin">
-                <el-button class="action-btn edit-btn" size="small" @click="openEditReasonDialog(row)">
-                  <el-icon><Edit /></el-icon>
-                  <span>编辑</span>
-                </el-button>
-                <el-button class="action-btn delete-btn" size="small" @click="deleteExemption(row)">
-                  <el-icon><Delete /></el-icon>
-                  <span>删除</span>
-                </el-button>
-              </template>
-              <span v-else class="builtin-hint">系统管理</span>
-            </template>
-          </el-table-column>
-        </el-table>
+
+        <!-- 详细结果表格 -->
+        <div class="result-table-section">
+          <div class="section-header">
+            <h4 class="section-title">
+              <el-icon><List /></el-icon>
+              详细列表
+            </h4>
+            <el-button type="primary" class="modern-btn primary" @click="openAddExemptionDialog">
+              <el-icon><Plus /></el-icon>
+              添加豁免
+            </el-button>
+          </div>
+          <div class="table-wrapper">
+            <el-table
+              class="custom-table"
+              :data="exemptionTableData"
+              v-loading="exemptionLoading"
+              empty-text="暂无豁免字段，点击「添加豁免」创建"
+            >
+              <el-table-column type="index" label="序号" width="70" header-align="center" align="center" />
+              <el-table-column label="豁免ID字段" min-width="250" align="center">
+                <template #default="{ row }">
+                  <span>{{ row.field }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="豁免理由" min-width="240" show-overflow-tooltip>
+                <template #default="{ row }">
+                  <span v-if="row.reason" class="reason-text">{{ row.reason }}</span>
+                  <span v-else class="reason-placeholder">未填写理由</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="添加人" width="100" align="center">
+                <template #default="{ row }">
+                  <span>{{ row.added_by || '-' }}</span>
+                </template>
+              </el-table-column>
+            
+              <el-table-column label="状态" width="120" align="center">
+                <template #default="{ row }">
+                  <span class="status-badge" :class="row._builtin ? 'enabled' : (row.enabled ? 'enabled' : 'disabled')">
+                    {{ row._builtin ? '启用' : (row.enabled ? '启用' : '停用') }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="250" align="center" fixed="right">
+                <template #default="{ row }">
+                  <template v-if="!row._builtin">
+                    <div class="action-buttons">
+                      <el-button size="small" class="action-btn toggle-btn" @click="toggleExemption(row)">
+                        <el-icon><Switch /></el-icon>
+                        <span>{{ row.enabled ? '停用' : '启用' }}</span>
+                      </el-button>
+                      <el-button size="small" class="action-btn edit-btn" @click="openEditReasonDialog(row)">
+                        <el-icon><Edit /></el-icon>
+                        <span>编辑</span>
+                      </el-button>
+                      <el-button size="small" class="action-btn delete-btn" @click="deleteExemption(row)">
+                        <el-icon><Delete /></el-icon>
+                        <span>删除</span>
+                      </el-button>
+                    </div>
+                  </template>
+                  <span v-else class="text-gray">-</span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </div>
       </div>
     </el-drawer>
 
-    <!-- 添加/编辑豁免弹窗 -->
-    <el-dialog
+    <!-- 添加/编辑豁免抽屉 -->
+    <el-drawer
       v-model="exemptionDialogVisible"
       :title="editingExemption ? '编辑豁免理由' : '添加豁免字段'"
-      width="480px"
+      direction="rtl"
+      size="480px"
       :close-on-click-modal="false"
-      destroy-on-close
+      :destroy-on-close="true"
+      class="exemption-drawer"
     >
-      <el-form :model="exemptionForm" label-width="90px" label-position="left">
-        <el-form-item label="豁免字段名" required>
-          <el-input
-            v-model="exemptionForm.field"
-            placeholder="输入ID字段名，如 order_id"
-            :disabled="!!editingExemption"
-            clearable
-            @keyup.enter="submitExemptionForm"
-          />
-          <div class="form-tip">匹配以 _id 或 Id 结尾的字段名（不区分大小写）</div>
-        </el-form-item>
-        <el-form-item label="豁免理由">
-          <el-input
-            v-model="exemptionForm.reason"
-            type="textarea"
-            :rows="3"
-            placeholder="请说明为什么该字段不需要检查，如：该ID由系统自动生成，非外部传入"
-          />
-        </el-form-item>
-      </el-form>
+      <div class="drawer-form-content">
+        <el-form :model="exemptionForm" label-width="90px" label-position="left">
+          <el-form-item label="豁免字段" required>
+            <div class="form-input-wrap">
+              <el-input
+                v-model="exemptionForm.field"
+                placeholder="输入ID字段名，如 order_id"
+                :disabled="!!editingExemption"
+                clearable
+                @keyup.enter="submitExemptionForm"
+              />
+              <div class="form-tip">匹配以 _id 或 Id 结尾的字段名（不区分大小写）</div>
+            </div>
+          </el-form-item>
+          <el-form-item label="豁免理由" class="reason-form-item" required>
+            <el-input
+              v-model="exemptionForm.reason"
+              type="textarea"
+              :rows="3"
+              placeholder="请说明为什么该字段不需要检查，如：该ID由系统自动生成，非外部传入"
+            />
+          </el-form-item>
+        </el-form>
+      </div>
       <template #footer>
-        <el-button @click="exemptionDialogVisible = false">取消</el-button>
-        <el-button
-          type="primary"
-          @click="submitExemptionForm"
-          :loading="exemptionSubmitting"
-          :disabled="!exemptionForm.field.trim()"
-        >
-          {{ editingExemption ? '保存' : '添加' }}
-        </el-button>
+        <div class="drawer-footer">
+          <el-button @click="exemptionDialogVisible = false">取消</el-button>
+          <el-button
+            type="primary"
+            @click="submitExemptionForm"
+            :loading="exemptionSubmitting"
+            :disabled="!exemptionForm.field.trim() || !exemptionForm.reason.trim()"
+          >
+            {{ editingExemption ? '保存' : '添加' }}
+          </el-button>
+        </div>
       </template>
-    </el-dialog>
+    </el-drawer>
 
     <!-- 报告详情 - 使用 Vue 组件渲染 -->
     <ReportDetail
@@ -278,12 +362,12 @@
               <span>{{ row.total_scenarios !== null && row.total_scenarios !== undefined ? row.total_scenarios : '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="执行人" width="200" header-align="center" align="center">
+          <el-table-column label="执行人" width="120" header-align="center" align="center">
             <template #default="{ row }">
               <span>{{ row.executed_by || '-' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="文件大小" width="200" header-align="center" align="center">
+          <el-table-column label="文件大小" width="120" header-align="center" align="center">
             <template #default="{ row }">
               <span>{{ formatSize(row.size) }}</span>
             </template>
@@ -329,7 +413,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { DataAnalysis, Setting, Check, VideoPlay, Refresh, FolderOpened, View, Delete, Loading, List, CircleCheck, Plus, Edit, ArrowLeft } from '@element-plus/icons-vue'
+import { DataAnalysis, Setting, Check, VideoPlay, Refresh, FolderOpened, View, Delete, Loading, List, CircleCheck, Plus, Edit, ArrowLeft, InfoFilled, Lock, User, Document } from '@element-plus/icons-vue'
 import api from '@/utils/api'
 import ReportDetail from './components/ReportDetail.vue'
 
@@ -435,6 +519,22 @@ const exemptionTableData = computed(() => {
   return [...builtin, ...user]
 })
 
+// 豁免列表统计
+const exemptionStats = computed(() => {
+  const data = exemptionTableData.value
+  const builtinCount = data.filter(item => item._builtin).length
+  const customCount = data.filter(item => !item._builtin).length
+  const enabledCount = data.filter(item => item.enabled).length
+  const disabledCount = data.filter(item => !item.enabled).length
+  return {
+    total: data.length,
+    builtin: builtinCount,
+    custom: customCount,
+    enabled: enabledCount,
+    disabled: disabledCount,
+  }
+})
+
 // 添加/编辑弹窗
 const exemptionDialogVisible = ref(false)
 const editingExemption = ref(null)
@@ -474,7 +574,12 @@ const openEditReasonDialog = (row) => {
 // 提交弹窗表单
 const submitExemptionForm = async () => {
   const field = exemptionForm.field.trim().toLowerCase()
+  const reason = exemptionForm.reason.trim()
   if (!field) return
+  if (!reason) {
+    ElMessage.warning('请输入豁免理由')
+    return
+  }
   exemptionSubmitting.value = true
   try {
     if (editingExemption.value) {
@@ -1115,6 +1220,15 @@ onMounted(() => {
   font-size: 13px;
 }
 
+// 修复抽屉内表单项对齐
+:deep(.el-form-item) {
+  align-items: flex-start;
+}
+
+:deep(.el-form-item__content) {
+  align-items: flex-start;
+}
+
 :deep(.el-input__wrapper) {
   border-radius: 8px;
   box-shadow: 0 0 0 1px rgba(147, 112, 219, 0.15) inset;
@@ -1166,16 +1280,440 @@ onMounted(() => {
   border-radius: 0 0 8px 8px;
 }
 
-// ========== 规则抽屉内容 ==========
-.rules-drawer-content {
-  padding: 20px;
-  overflow-x: hidden;
+// ========== 现代化抽屉样式 ==========
+.modern-drawer {
+  :deep(.el-drawer__header) {
+    background: linear-gradient(135deg, #f8f7ff 0%, #f0edff 100%);
+    border-bottom: 1px solid rgba(147, 112, 219, 0.15);
+    margin-bottom: 0;
+    padding: 20px 24px;
 
-  :deep(.el-table) {
-    overflow-x: hidden;
+    .el-drawer__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #5a32a3;
+      display: flex;
+      align-items: center;
+      gap: 10px;
 
-    .el-table__body-wrapper {
-      overflow-x: hidden !important;
+      &::before {
+        content: '';
+        width: 4px;
+        height: 20px;
+        background: linear-gradient(180deg, #7b42f6 0%, #5a32a3 100%);
+        border-radius: 2px;
+      }
+    }
+
+    .el-drawer__close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: rgba(123, 66, 246, 0.1);
+        color: #7b42f6;
+      }
+    }
+  }
+
+  :deep(.el-drawer__body) {
+    padding: 0;
+    background: #fafbfc;
+  }
+}
+
+.drawer-body {
+  padding: 24px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.drawer-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(147, 112, 219, 0.08);
+
+  .toolbar-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+    border: 1px solid rgba(123, 66, 246, 0.15);
+    border-radius: 20px;
+    color: #333;
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(123, 66, 246, 0.06);
+
+    .el-icon {
+      color: #7b42f6;
+      font-size: 15px;
+    }
+  }
+}
+
+// ========== 现代化表格样式 ==========
+.modern-table {
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(147, 112, 219, 0.08);
+
+  :deep(.el-table__header) {
+    th {
+      background: linear-gradient(180deg, #fafbfc 0%, #f5f3ff 100%) !important;
+      color: #5a32a3;
+      font-weight: 600;
+      font-size: 13px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(147, 112, 219, 0.1);
+
+      .cell {
+        font-weight: 600;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  :deep(.el-table__body) {
+    tr {
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: #f8f7ff !important;
+      }
+
+      td {
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(147, 112, 219, 0.06);
+        color: #374151;
+        font-size: 13px;
+      }
+    }
+  }
+
+  // 斑马纹样式
+  :deep(.el-table__row--striped) {
+    background-color: #fafbfc !important;
+
+    &:hover {
+      background-color: #f5f3ff !important;
+    }
+  }
+
+  :deep(.el-table__empty-block) {
+    padding: 60px 0;
+
+    .el-table__empty-text {
+      color: #9ca3af;
+      font-size: 14px;
+    }
+  }
+}
+
+// ========== 严重程度标签 ==========
+.severity-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 48px;
+
+  &.severity-danger {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    color: #dc2626;
+    border: 1px solid rgba(220, 38, 38, 0.15);
+  }
+
+  &.severity-warning {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    color: #d97706;
+    border: 1px solid rgba(217, 119, 6, 0.15);
+  }
+
+  &.severity-info {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    color: #6b7280;
+    border: 1px solid rgba(107, 114, 128, 0.15);
+  }
+}
+
+// ========== 规则名称单元格 ==========
+.rule-name-cell {
+  .rule-name {
+    font-weight: 500;
+    color: #1f2937;
+    font-size: 13px;
+  }
+}
+
+// ========== 字段徽章样式 ==========
+.field-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .field-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: 13px;
+    font-weight: 500;
+
+    &.builtin {
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      color: #6b7280;
+      border: 1px solid rgba(107, 114, 128, 0.15);
+
+      .el-icon {
+        font-size: 12px;
+      }
+    }
+
+    &.custom {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      color: #2563eb;
+      border: 1px solid rgba(37, 99, 235, 0.15);
+
+      .el-icon {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .builtin-label {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
+    color: #9ca3af;
+    font-weight: 500;
+  }
+}
+
+// ========== 理由文本样式 ==========
+.reason-text {
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.reason-placeholder {
+  color: #9ca3af;
+  font-size: 13px;
+  font-style: italic;
+}
+
+// ========== 用户单元格样式 ==========
+.user-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  .user-avatar {
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  span {
+    color: #6b7280;
+    font-size: 13px;
+  }
+}
+
+// ========== 时间文本样式 ==========
+.time-text {
+  color: #6b7280;
+  font-size: 13px;
+  font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+}
+
+// ========== 状态徽章样式（参考 XMindConverter.vue） ==========
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+
+  // 启用 - 绿色
+  &.enabled {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  // 停用 - 灰色
+  &.disabled {
+    background: #f5f5f5;
+    color: #8c8c8c;
+  }
+
+  // 严重 - 红色
+  &.severity-danger {
+    background: #fff2f0;
+    color: #ff4d4f;
+  }
+
+  // 中等 - 橙色
+  &.severity-warning {
+    background: #fff7e6;
+    color: #fa8c16;
+  }
+
+  // 跳过/低 - 蓝色
+  &.severity-info {
+    background: #e6f7ff;
+    color: #1890ff;
+  }
+}
+
+// ========== 操作按钮样式（参考 XMindConverter.vue） ==========
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px !important;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+
+  .el-icon {
+    font-size: 14px;
+    color: #ffffff !important;
+  }
+
+  span {
+    font-size: 12px;
+    color: #ffffff !important;
+  }
+
+  &.toggle-btn {
+    background: linear-gradient(135deg, #fa8c16 0%, #d46b08 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #ffc53d 0%, #fa8c16 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(250, 140, 22, 0.4);
+    }
+  }
+
+  &.edit-btn {
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
+    }
+  }
+
+  &.delete-btn {
+    background: linear-gradient(135deg, #ff4d4f 0%, #f5222d 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(245, 34, 45, 0.4);
+    }
+  }
+}
+
+.text-gray {
+  color: #999;
+}
+
+// ========== 系统徽章 ==========
+.system-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+
+  .el-icon {
+    font-size: 12px;
+  }
+}
+
+// ========== 现代化按钮 ==========
+.modern-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13px;
+  transition: all 0.25s ease;
+  border: none;
+
+  &.primary {
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(123, 66, 246, 0.25);
+
+    &:hover {
+      background: linear-gradient(135deg, #6b32e6 0%, #4a2393 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(123, 66, 246, 0.35);
+    }
+
+    .el-icon {
+      font-size: 14px;
+    }
+  }
+}
+
+// ========== 现代化开关 ==========
+.modern-switch {
+  :deep(.el-switch__core) {
+    border-radius: 10px;
+
+    .el-switch__action {
+      border-radius: 50%;
     }
   }
 }
@@ -1478,5 +2016,267 @@ onMounted(() => {
   color: #9a8bbd;
   margin-top: 4px;
   line-height: 1.4;
+}
+
+// ========== 统计概览卡片（参考 AutomationSuiteDetail.vue 执行结果抽屉） ==========
+.stats-cards {
+  margin-bottom: 20px;
+
+  .stat-card {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    background: #ffffff;
+    border: 1px solid rgba(147, 112, 219, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(147, 112, 219, 0.12);
+    }
+
+    .stat-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      margin-right: 16px;
+      background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+
+      .el-icon {
+        font-size: 24px;
+        color: #7b42f6;
+      }
+    }
+
+    .stat-info {
+      flex: 1;
+
+      .stat-label {
+        color: #8c8c8c;
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
+
+      .stat-value {
+        color: #1f2937;
+        font-size: 24px;
+        font-weight: 600;
+      }
+    }
+
+    &.total {
+      .stat-icon {
+        background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+        .el-icon { color: #7b42f6; }
+      }
+    }
+
+    &.builtin {
+      .stat-icon {
+        background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
+        .el-icon { color: #52c41a; }
+      }
+      .stat-value { color: #52c41a; }
+    }
+
+    &.custom {
+      .stat-icon {
+        background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+        .el-icon { color: #1890ff; }
+      }
+      .stat-value { color: #1890ff; }
+    }
+
+    &.enabled {
+      .stat-icon {
+        background: linear-gradient(135deg, #fff7e6 0%, #ffe7ba 100%);
+        .el-icon { color: #fa8c16; }
+      }
+      .stat-value { color: #fa8c16; }
+    }
+  }
+}
+
+// ========== 结果表格区域（参考 AutomationSuiteDetail.vue 执行结果抽屉） ==========
+.result-table-section {
+  background: #ffffff;
+  border: 1px solid rgba(147, 112, 219, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
+  overflow: hidden;
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #f8f7ff 0%, #ffffff 100%);
+    border-bottom: 1px solid rgba(147, 112, 219, 0.12);
+    margin-bottom: 0;
+    border-left: none;
+    border-radius: 0;
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: #5a32a3;
+      font-size: 15px;
+      font-weight: 600;
+
+      .el-icon {
+        font-size: 18px;
+        color: #7b42f6;
+      }
+    }
+  }
+
+  .table-wrapper {
+    padding: 16px;
+  }
+}
+
+// ========== 自定义表格样式（参考 AutomationSuiteDetail.vue） ==========
+.custom-table {
+  border: none;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: transparent !important;
+
+  --el-color-primary: #7b42f6;
+  --el-border-color: #e9ecef;
+  --el-border-color-light: #e9ecef;
+  --el-fill-color-light: #f8f7ff;
+  --el-table-header-bg-color: #ffffff;
+  --el-table-row-hover-bg-color: #f8f7ff;
+
+  &::before {
+    display: none;
+  }
+
+  :deep(th) {
+    background-color: #ffffff !important;
+    color: #5a32a3 !important;
+    font-weight: 600;
+    font-size: 13px;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0 !important;
+    height: 48px !important;
+    text-align: center;
+    vertical-align: middle !important;
+
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      line-height: 1.4;
+      white-space: normal;
+      word-break: break-word;
+    }
+  }
+
+  :deep(.el-table__row) {
+    transition: all 0.3s ease;
+    background-color: #ffffff !important;
+
+    &:hover {
+      background-color: #f8f7ff !important;
+    }
+  }
+
+  :deep(td) {
+    padding: 0 12px !important;
+    border-bottom: 1px solid #e9ecef;
+    color: #333;
+    font-size: 13px;
+    vertical-align: middle !important;
+    height: 48px;
+
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+  }
+
+  // 序号列样式修复
+  :deep(.el-table__column--index) {
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #333;
+      font-size: 13px;
+    }
+  }
+
+  :deep(.el-table__empty-block) {
+    padding: 40px 0;
+  }
+}
+
+// ========== 豁免抽屉表单样式 ==========
+.exemption-drawer {
+  :deep(.el-drawer__body) {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .drawer-form-content {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+
+    :deep(.el-form-item) {
+      margin-bottom: 20px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    :deep(.el-form-item__label) {
+      color: #5a32a3;
+      font-weight: 500;
+      font-size: 13px;
+      padding-right: 12px;
+      line-height: 32px;
+      height: 32px;
+      align-self: flex-start;
+    }
+
+    :deep(.el-form-item__content) {
+      line-height: 1.5;
+    }
+
+    :deep(.el-textarea__inner) {
+      border-radius: 8px;
+      padding: 8px 12px;
+      line-height: 1.5;
+    }
+  }
+
+  .drawer-footer {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(147, 112, 219, 0.12);
+    background: #ffffff;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .form-input-wrap {
+    width: 100%;
+  }
 }
 </style>

@@ -21,7 +21,7 @@
 
         <div class="form-actions">
           <div class="form-options">
-            <el-form-item :label="$t('uiAutomation.ai.gifRecording')" class="gif-option">
+            <el-form-item label="步骤截图" class="gif-option">
               <div class="gif-switch-wrapper">
                 <el-switch
                   v-model="taskForm.enableGif"
@@ -29,7 +29,7 @@
                   :inactive-text="$t('uiAutomation.ai.off')"
                 />
                 <span class="gif-tip">
-                  {{ $t('uiAutomation.ai.gifTip') }}
+                  开启后每执行一步自动截图，可在报告详细步骤中查看
                 </span>
               </div>
             </el-form-item>
@@ -104,7 +104,39 @@
 
         <el-col :span="12">
           <div class="card-container log-card">
-            <div class="section-title">{{ $t('uiAutomation.ai.executionLogs') }}</div>
+            <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>{{ $t('uiAutomation.ai.executionLogs') }}</span>
+              <el-button
+                v-if="snapshotData.element_count > 0"
+                type="primary"
+                size="small"
+                text
+                @click="showSnapshot = !showSnapshot"
+              >
+                <el-icon><View /></el-icon>
+                {{ showSnapshot ? '隐藏' : '查看' }}页面元素 ({{ snapshotData.element_count }})
+              </el-button>
+            </div>
+
+            <!-- Snapshot 展示区域 -->
+            <div v-if="showSnapshot && snapshotData.element_count > 0" class="snapshot-container">
+              <div class="snapshot-header">
+                <el-tag size="small" type="info" class="snapshot-url">{{ snapshotData.url }}</el-tag>
+                <el-tag size="small" type="success">{{ snapshotData.element_count }} 个元素</el-tag>
+              </div>
+              <div class="snapshot-list">
+                <div v-for="el in snapshotData.elements" :key="el.index" class="snapshot-item">
+                  <span class="snapshot-index">[{{ el.index }}]</span>
+                  <span class="snapshot-tag">&lt;{{ el.tag }}</span>
+                  <span v-if="el.type" class="snapshot-attr">type='{{ el.type }}'</span>
+                  <span v-if="el.text" class="snapshot-attr">text='{{ el.text }}'</span>
+                  <span v-if="el.placeholder" class="snapshot-attr">placeholder='{{ el.placeholder }}'</span>
+                  <span v-if="el.ariaLabel" class="snapshot-attr">aria-label='{{ el.ariaLabel }}'</span>
+                  <span class="snapshot-tag">&gt;</span>
+                </div>
+              </div>
+            </div>
+
             <div class="log-container" ref="logContainer">
               <div v-if="!logs && !running" class="empty-logs">
                 {{ $t('uiAutomation.ai.noLogs') }}
@@ -139,7 +171,7 @@
 <script setup>
 import { ref, reactive, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { VideoPlay, DocumentAdd, CircleCheckFilled, CircleCheck, Loading, SwitchButton } from '@element-plus/icons-vue'
+import { VideoPlay, DocumentAdd, CircleCheckFilled, CircleCheck, Loading, SwitchButton, View } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import {
   runAdhocAITask,
@@ -157,6 +189,15 @@ const logs = ref('')
 const plannedTasks = ref([])
 const currentExecutionId = ref(null)
 const logContainer = ref(null)
+const snapshotData = ref({
+  url: '',
+  title: '',
+  element_count: 0,
+  elements: [],
+  snapshot_text: '',
+  timestamp: ''
+})
+const showSnapshot = ref(false)
 
 const taskForm = reactive({
   description: '',
@@ -232,6 +273,11 @@ const pollLogs = () => {
       
       logs.value = record.logs || ''
       plannedTasks.value = record.planned_tasks || []
+      
+      // 更新页面快照数据
+      if (record.snapshot_data && record.snapshot_data.element_count > 0) {
+        snapshotData.value = record.snapshot_data
+      }
       
       // 如果获取到了任务列表，则取消“分析中”状态
       if (plannedTasks.value.length > 0) {
@@ -539,6 +585,71 @@ const confirmSaveCase = async () => {
     word-wrap: break-word;
     font-size: 14px;
     line-height: 1.5;
+  }
+}
+
+// Snapshot 样式
+.snapshot-container {
+  background-color: #f8f7ff;
+  border: 1px solid rgba(147, 112, 219, 0.2);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  max-height: 250px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+
+  .snapshot-header {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(147, 112, 219, 0.1);
+    background-color: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+
+    .snapshot-url {
+      max-width: 70%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .snapshot-list {
+    padding: 8px 12px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .snapshot-item {
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(147, 112, 219, 0.05);
+    color: #333;
+    word-break: break-all;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .snapshot-index {
+      color: #7b42f6;
+      font-weight: bold;
+      margin-right: 6px;
+      min-width: 32px;
+      display: inline-block;
+    }
+
+    .snapshot-tag {
+      color: #e83e8c;
+    }
+
+    .snapshot-attr {
+      color: #0066cc;
+      margin-left: 4px;
+    }
   }
 }
 

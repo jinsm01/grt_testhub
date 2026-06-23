@@ -1,8 +1,9 @@
 <template>
-  <el-dialog
+  <el-drawer
     v-model="visible"
     :title="`${$t('uiAutomation.ai.executionReport.title')} - ${reportTypeDisplay}`"
-    width="1000px"
+    size="1000px"
+    direction="rtl"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
     :modal="true"
@@ -15,21 +16,8 @@
     </div>
 
     <div v-else-if="reportData" class="report-container">
-      <!-- 报告类型切换 -->
-      <div class="report-type-tabs">
-        <el-radio-group v-model="currentReportType" @change="onReportTypeChange">
-          <el-radio-button value="summary">{{ $t('uiAutomation.ai.executionReport.summary') }}</el-radio-button>
-          <el-radio-button value="detailed">{{ $t('uiAutomation.ai.executionReport.detailed') }}</el-radio-button>
-          <el-radio-button value="performance">{{ $t('uiAutomation.ai.executionReport.performance') }}</el-radio-button>
-        </el-radio-group>
-        <el-button v-if="reportData.gif_path" type="primary" size="small" @click="showGifDialog = true">
-          <el-icon><VideoPlay /></el-icon>
-          {{ $t('uiAutomation.ai.executionReport.viewGif') }}
-        </el-button>
-        <el-button v-else type="info" size="small" disabled>
-          <el-icon><VideoPlay /></el-icon>
-          {{ $t('uiAutomation.ai.executionReport.noGif') }}
-        </el-button>
+      <!-- 顶部操作栏 -->
+      <div class="report-top-bar">
         <el-button type="success" size="small" @click="exportReport">
           <el-icon><Download /></el-icon>
           {{ $t('uiAutomation.ai.executionReport.exportReport') }}
@@ -37,7 +25,7 @@
       </div>
 
       <!-- 摘要报告 -->
-      <div v-if="currentReportType === 'summary'" class="report-content">
+      <div v-if="reportData.overview || reportData.statistics" class="report-content">
         <!-- 概览卡片 -->
         <div class="report-section">
           <h3 class="section-title">{{ $t('uiAutomation.ai.executionReport.overview') }}</h3>
@@ -126,30 +114,61 @@
       </div>
 
       <!-- 详细步骤报告 -->
-      <div v-else-if="currentReportType === 'detailed'" class="report-content">
+      <div v-if="reportData.detailed_steps && reportData.detailed_steps.length > 0" class="report-content">
         <!-- 步骤列表 -->
         <div class="report-section">
           <h3 class="section-title">{{ $t('uiAutomation.ai.executionReport.stepDetails') }}</h3>
           <div class="steps-list">
-            <el-card v-for="step in reportData.detailed_steps" :key="step.step_number" class="step-card">
-              <div class="step-header">
-                <span class="step-number">{{ $t('uiAutomation.ai.executionReport.step') }} {{ step.step_number }}</span>
-                <el-tag :type="getStepStatusType(step.status)" size="small">
-                  {{ step.status_display || getStepStatusText(step.status) }}
-                </el-tag>
+            <template v-for="(group, groupIndex) in groupedSteps" :key="groupIndex">
+              <!-- 用例分组标题 -->
+              <div v-if="group.caseName" class="case-group-header">
+                <el-divider content-position="left">
+                  <el-tag type="primary" size="large" effect="dark">{{ group.caseName }}</el-tag>
+                </el-divider>
               </div>
-              <div class="step-content">
-                <div class="step-action">
-                  <strong>{{ $t('uiAutomation.ai.executionReport.action') }}:</strong> {{ step.action || '-' }}
+              <el-card v-for="step in group.steps" :key="step.step_number" class="step-card">
+                <div class="step-header">
+                  <span class="step-number">{{ $t('uiAutomation.ai.executionReport.step') }} {{ step.step_number }}</span>
+                  <el-tag :type="getStepStatusType(step.status)" size="small">
+                    {{ step.status_display || getStepStatusText(step.status) }}
+                  </el-tag>
                 </div>
-                <div v-if="step.element" class="step-element">
-                  <strong>{{ $t('uiAutomation.ai.executionReport.element') }}:</strong> {{ step.element }}
+                <div class="step-content">
+                  <div class="step-action">
+                    <div class="action-tags">
+                      <el-tag
+                        v-for="(action, idx) in parseActions(step.action)"
+                        :key="idx"
+                        :type="getActionTagType(action.type)"
+                        size="small"
+                        class="action-tag"
+                      >
+                        {{ action.text }}
+                      </el-tag>
+                      <span v-if="!parseActions(step.action).length" class="no-action">-</span>
+                    </div>
+                  </div>
+                  <div v-if="step.element" class="step-element">
+                    <strong>{{ $t('uiAutomation.ai.executionReport.element') }}:</strong> {{ step.element }}
+                  </div>
+                  <div v-if="step.thinking" class="step-thinking">
+                    <strong>{{ $t('uiAutomation.ai.executionReport.thinking') }}:</strong> {{ step.thinking }}
+                  </div>
+                  <div v-if="step.screenshot" class="step-screenshot">
+                    <el-image
+                      :src="'/' + step.screenshot"
+                      :preview-src-list="reportData.detailed_steps.filter(s => s.screenshot).map(s => '/' + s.screenshot)"
+                      fit="contain"
+                      style="width: 100%; max-height: 200px; border-radius: 4px; margin-top: 8px;"
+                    >
+                      <template #error>
+                        <div class="image-slot">截图加载失败</div>
+                      </template>
+                    </el-image>
+                  </div>
                 </div>
-                <div v-if="step.thinking" class="step-thinking">
-                  <strong>{{ $t('uiAutomation.ai.executionReport.thinking') }}:</strong> {{ step.thinking }}
-                </div>
-              </div>
-            </el-card>
+              </el-card>
+            </template>
           </div>
         </div>
 
@@ -170,7 +189,7 @@
       </div>
 
       <!-- 性能分析报告 -->
-      <div v-else-if="currentReportType === 'performance'" class="report-content">
+      <div v-if="reportData.metrics || reportData.action_distribution" class="report-content">
         <!-- 性能指标 -->
         <div class="report-section" v-if="reportData.metrics">
           <h3 class="section-title">{{ $t('uiAutomation.ai.executionReport.performanceMetrics') }}</h3>
@@ -238,19 +257,13 @@
       </span>
     </template>
 
-    <!-- GIF回放对话框 -->
-    <el-dialog v-model="showGifDialog" :title="$t('uiAutomation.ai.executionReport.gifPlayback')" width="800px" append-to-body>
-      <div v-if="reportData && reportData.gif_path" class="gif-container">
-        <img :src="gifUrl" alt="Execution GIF" class="gif-image" />
-      </div>
-    </el-dialog>
-  </el-dialog>
+  </el-drawer>
 </template>
 
 <script setup>
 import { ref, watch, nextTick, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Loading, VideoPlay, Download } from '@element-plus/icons-vue'
+import { Loading, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import { getAIExecutionReport, exportAIExecutionReportPDF } from '@/api/ui_automation'
@@ -273,44 +286,41 @@ const emit = defineEmits(['update:modelValue'])
 const visible = ref(false)
 const loading = ref(false)
 const reportData = ref(null)
-const currentReportType = ref('summary')
-const showGifDialog = ref(false)
 const pieChartRef = ref(null)
 const barChartRef = ref(null)
 let pieChart = null
 let barChart = null
 
-// 报告类型显示名称
+// 报告标题显示名称（单页展示固定为完整报告）
 const reportTypeDisplay = computed(() => {
-  const map = {
-    'summary': t('uiAutomation.ai.executionReport.summary'),
-    'detailed': t('uiAutomation.ai.executionReport.detailed'),
-    'performance': t('uiAutomation.ai.executionReport.performance')
-  }
-  return map[currentReportType.value] || t('uiAutomation.ai.executionReport.summary')
+  return t('uiAutomation.ai.executionReport.fullReport') || '完整报告'
 })
 
-// GIF URL
-const gifUrl = computed(() => {
-  if (reportData.value && reportData.value.gif_path) {
-    // gif_path格式：media/ai_recording/xxx.gif
-    const path = reportData.value.gif_path
-    // 如果路径已经包含media/，直接使用；否则添加media/
-    if (path.startsWith('media/')) {
-      return `/${path}`
-    } else {
-      return `/media/${path}`
+// 按 case_name 分组步骤（套件执行时每个步骤会带有 case_name）
+const groupedSteps = computed(() => {
+  if (!reportData.value || !reportData.value.detailed_steps) return []
+
+  const steps = reportData.value.detailed_steps
+  const groups = []
+  let currentGroup = null
+
+  for (const step of steps) {
+    const caseName = step.case_name || ''
+    if (!currentGroup || currentGroup.caseName !== caseName) {
+      currentGroup = { caseName, steps: [] }
+      groups.push(currentGroup)
     }
+    currentGroup.steps.push(step)
   }
-  return ''
+
+  return groups
 })
 
 // 监听 modelValue 变化
 watch(() => props.modelValue, (newVal) => {
   visible.value = newVal
   if (newVal && props.recordId) {
-    currentReportType.value = 'summary'  // 确保设置为summary
-    loadReport('summary')
+    loadReport('full')
   }
 })
 
@@ -331,7 +341,7 @@ watch(visible, (newVal) => {
 })
 
 // 加载报告数据
-const loadReport = async (reportType = 'summary') => {
+const loadReport = async (reportType = 'full') => {
   if (!props.recordId) return
 
   loading.value = true
@@ -342,13 +352,10 @@ const loadReport = async (reportType = 'summary') => {
       reportData.value = response.data.data
       console.log('Report Data:', reportData.value)
       await nextTick()
-      // 等待DOM更新后再初始化图表
+      // 等待DOM更新后再初始化图表（单页展示同时初始化所有图表）
       setTimeout(() => {
-        if (reportType === 'summary') {
-          initPieChart()
-        } else if (reportType === 'performance') {
-          initBarChart()
-        }
+        initPieChart()
+        initBarChart()
       }, 100)
     } else {
       ElMessage.error(response.data.error || t('uiAutomation.ai.executionReport.messages.loadFailed'))
@@ -359,12 +366,6 @@ const loadReport = async (reportType = 'summary') => {
   } finally {
     loading.value = false
   }
-}
-
-// 报告类型切换
-const onReportTypeChange = (value) => {
-  currentReportType.value = value
-  loadReport(value)
 }
 
 // 初始化饼图
@@ -542,7 +543,7 @@ const exportReport = async () => {
     ElMessage.info(t('uiAutomation.ai.executionReport.messages.generatingPdf'))
 
     const response = await exportAIExecutionReportPDF(props.recordId, {
-      report_type: currentReportType.value
+      report_type: 'full'
     })
 
     // 创建下载链接
@@ -575,6 +576,46 @@ const exportReport = async () => {
   }
 }
 
+// 解析 action 字符串为标签列表
+const parseActions = (actionStr) => {
+  if (!actionStr || actionStr === '-') return []
+  return actionStr.split('|').map(s => {
+    const text = s.trim()
+    return { text, type: getActionType(text) }
+  })
+}
+
+// 根据 action 文本判断类型
+const getActionType = (text) => {
+  if (text.startsWith('输入')) return 'input'
+  if (text.startsWith('点击')) return 'click'
+  if (text.startsWith('访问') || text.startsWith('打开标签页') || text.startsWith('切换标签页')) return 'navigate'
+  if (text.startsWith('标记任务完成') || text.startsWith('完成')) return 'system'
+  if (text.startsWith('滚动')) return 'scroll'
+  if (text.startsWith('等待')) return 'wait'
+  if (text.startsWith('截图')) return 'snapshot'
+  if (text.startsWith('提取内容')) return 'extract'
+  if (text.startsWith('关闭标签页')) return 'close_tab'
+  return 'other'
+}
+
+// 获取 action 标签的 el-tag type
+const getActionTagType = (actionType) => {
+  const typeMap = {
+    'input': 'primary',
+    'click': 'success',
+    'navigate': 'warning',
+    'system': 'info',
+    'scroll': '',
+    'wait': 'info',
+    'snapshot': '',
+    'extract': '',
+    'close_tab': '',
+    'other': ''
+  }
+  return typeMap[actionType] || ''
+}
+
 // 关闭对话框
 const handleClose = () => {
   visible.value = false
@@ -598,14 +639,14 @@ const handleClose = () => {
 }
 
 .report-container {
-  max-height: 600px;
+  height: 100%;
   overflow-y: auto;
   padding-right: 10px;
 }
 
-.report-type-tabs {
+.report-top-bar {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 10px;
@@ -754,6 +795,33 @@ const handleClose = () => {
   font-size: 14px;
 }
 
+.action-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.action-tag {
+  font-size: 13px;
+}
+
+.no-action {
+  color: #909399;
+  font-size: 13px;
+}
+
+.step-screenshot {
+  width: 100%;
+  overflow: hidden;
+}
+
+.step-screenshot :deep(.el-image__inner) {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+}
+
 .step-thinking {
   color: #909399;
   font-style: italic;
@@ -782,16 +850,6 @@ const handleClose = () => {
   font-size: 24px;
   font-weight: 600;
   color: #8B5CF6;
-}
-
-.gif-container {
-  text-align: center;
-}
-
-.gif-image {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
 }
 
 .report-error {
