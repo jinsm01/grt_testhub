@@ -7,6 +7,15 @@
 
     <!-- 报告内容 -->
     <div v-else-if="reportData" class="report-content">
+      <!-- 返回按钮 -->
+      <div class="report-back-bar">
+        <el-button class="back-btn" @click="$emit('back')">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <span class="report-filename">{{ filename }}</span>
+      </div>
+
       <!-- 一、检查结果总览 -->
       <section class="report-section">
         <h2 class="section-title">一、检查结果总览</h2>
@@ -21,7 +30,7 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="严重程度" width="100" align="center">
+          <el-table-column label="严重程度" width="110" align="center">
             <template #default="{ row }">
               <span class="status-badge" :class="row.rule.severity">
                 {{ getSeverityLabel(row.rule.severity) }}
@@ -81,9 +90,18 @@
             <div class="stat-label">总场景数</div>
             <div class="stat-value">{{ filteredStats.total }}</div>
           </div>
-          <div class="stat-card compliant">
-            <div class="stat-label">合规场景</div>
-            <div class="stat-value">{{ filteredStats.compliant }}</div>
+          <div
+            class="stat-card compliant clickable"
+            :class="{ 'has-data': filteredStats.compliant > 0 }"
+            @click="filteredStats.compliant > 0 && openCompliantDrawer()"
+          >
+            <div class="stat-card-body">
+              <div class="stat-label">合规场景</div>
+              <div class="stat-value">{{ filteredStats.compliant }}</div>
+            </div>
+            <div v-if="filteredStats.compliant > 0" class="stat-card-arrow">
+              <el-icon><ArrowRight /></el-icon>
+            </div>
           </div>
           <div class="stat-card violation">
             <div class="stat-label">违规场景</div>
@@ -106,7 +124,7 @@
             </el-table-column>
             <el-table-column prop="ruleName" label="规则名称" min-width="80" show-overflow-tooltip />
             <el-table-column prop="count" label="违规数" width="120" align="center" />
-            <el-table-column label="严重程度" width="120" align="center">
+            <el-table-column label="严重程度" width="130" align="center">
               <template #default="{ row }">
                 <span class="status-badge" :class="row.severity">
                   {{ getSeverityLabel(row.severity) }}
@@ -141,17 +159,54 @@
               stripe
               border
             >
-              <el-table-column prop="id" label="场景ID" width="100" sortable />
+              <el-table-column prop="id" label="场景ID" min-width="150" show-overflow-tooltip sortable />
               <el-table-column prop="name" label="场景名称" min-width="180" show-overflow-tooltip sortable />
               <el-table-column prop="folder" label="归属目录" min-width="150" show-overflow-tooltip />
               <el-table-column label="问题描述" min-width="200">
                 <template #default="{ row }">
-                  <el-tooltip :content="row.message" placement="top" :show-after="300">
-                    <span class="message-ellipsis">{{ row.message }}</span>
+                  <el-tooltip :content="getViolationInfo(row).message" placement="top" :show-after="300">
+                    <span class="message-ellipsis">{{ getViolationInfo(row).message }}</span>
                   </el-tooltip>
                 </template>
               </el-table-column>
-              <el-table-column prop="created_at" label="创建时间" width="150" sortable />
+              <el-table-column prop="created_at" label="创建时间" min-width="170" show-overflow-tooltip sortable />
+              <el-table-column label="运行结果" width="100" align="center">
+                <template #default="{ row }">
+                  <span v-html="formatRunStatus(row.run_status)" />
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </el-drawer>
+
+        <!-- 合规场景明细抽屉 -->
+        <el-drawer
+          v-model="compliantDrawerVisible"
+          title="合规场景列表"
+          size="80%"
+          :close-on-click-modal="true"
+          class="compliant-drawer"
+        >
+          <div class="drawer-content">
+            <div class="drawer-header-bar">
+              <p class="drawer-count">
+                创建人 <b>{{ activeCreator?.name }}</b>，
+                <span v-if="filters.month !== 'all'">月份 <b>{{ filters.month }}</b>，</span>
+                <span v-if="filters.status !== 'all'">运行结果 <b>{{ getRunStatusLabel(filters.status) }}</b>，</span>
+                合规场景共 <b>{{ filteredCompliantScenarios.length }}</b> 条
+              </p>
+            </div>
+            <el-table
+              :data="filteredCompliantScenarios"
+              class="detail-table"
+              @sort-change="handleSort"
+              stripe
+              border
+            >
+              <el-table-column prop="id" label="场景ID" min-width="150" show-overflow-tooltip sortable />
+              <el-table-column prop="name" label="场景名称" min-width="200" show-overflow-tooltip sortable />
+              <el-table-column prop="folder" label="归属目录" min-width="180" show-overflow-tooltip />
+              <el-table-column prop="created_at" label="创建时间" min-width="170" show-overflow-tooltip sortable />
               <el-table-column label="运行结果" width="100" align="center">
                 <template #default="{ row }">
                   <span v-html="formatRunStatus(row.run_status)" />
@@ -172,7 +227,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { ArrowLeft, View } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight, View } from '@element-plus/icons-vue'
 import api from '@/utils/api'
 
 const props = defineProps({
@@ -202,6 +257,8 @@ const sortConfig = ref({
 const violationDrawerVisible = ref(false)
 const currentRuleName = ref('')
 const currentRuleScenarios = ref([])
+
+const compliantDrawerVisible = ref(false)
 
 // 严重程度映射
 const SEVERITY_MAP = {
@@ -349,6 +406,16 @@ const getSeverityLabel = (severity) => {
   return SEVERITY_MAP[severity]?.label || severity
 }
 
+// 根据当前查看的规则名，从场景的 violations 中取出匹配的违规信息
+const getViolationInfo = (row) => {
+  if (!row.violations || !Array.isArray(row.violations)) {
+    // fallback to top-level fields
+    return { ruleName: row.ruleName, message: row.message }
+  }
+  const match = row.violations.find(v => v.ruleName === currentRuleName.value)
+  return match || { ruleName: row.ruleName, message: row.message }
+}
+
 // 获取严重程度类型
 const getSeverityType = (severity) => {
   return SEVERITY_MAP[severity]?.type || 'info'
@@ -429,6 +496,28 @@ const filteredRuleScenarios = computed(() => {
   return result
 })
 
+// 合规场景列表（筛选后的非违规场景）
+const filteredCompliantScenarios = computed(() => {
+  return filteredScenarios.value.filter(s => !s.is_violation)
+})
+
+// 打开合规场景抽屉
+const openCompliantDrawer = () => {
+  compliantDrawerVisible.value = true
+}
+
+// 获取运行结果中文标签
+const getRunStatusLabel = (status) => {
+  const map = {
+    passed: '通过',
+    failed: '失败',
+    not_run: '未运行',
+    running: '运行中',
+    unknown: '未知'
+  }
+  return map[status] || status
+}
+
 // 格式化运行状态
 const formatRunStatus = (status) => {
   const map = {
@@ -464,6 +553,36 @@ onMounted(() => {
   font-size: 20px;
   color: #1a1a2e;
   margin: 0;
+}
+
+.report-back-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+
+  .back-btn {
+    border-color: rgba(123, 66, 246, 0.25);
+    color: #7b42f6;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.95));
+    border-radius: 8px;
+    font-weight: 500;
+
+    &:hover {
+      border-color: #7b42f6;
+      color: #6b35e0;
+      background: #fff;
+    }
+  }
+
+  .report-filename {
+    font-size: 14px;
+    color: #666;
+    margin-left: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .report-meta {
@@ -838,11 +957,6 @@ onMounted(() => {
     line-height: 24px;
     transition: all 0.3s ease;
     vertical-align: middle;
-
-    .cell {
-      overflow: visible;
-      white-space: nowrap;
-    }
   }
 
   // 空状态
@@ -876,6 +990,17 @@ onMounted(() => {
   }
 }
 
+// 明细表格单元格文本截断（仅违规/合规抽屉中的 detail-table）
+.detail-table {
+  :deep(td) {
+    .cell {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
 .rate-low { color: #e94560; font-weight: bold; }
 .rate-mid { color: #f5a623; font-weight: bold; }
 .rate-high { color: #28a745; font-weight: bold; }
@@ -891,7 +1016,8 @@ onMounted(() => {
 }
 
 // 违规明细抽屉样式
-.violation-drawer {
+.violation-drawer,
+.compliant-drawer {
   :deep(.el-drawer__header) {
     margin-bottom: 0;
     padding: 20px;
@@ -913,6 +1039,7 @@ onMounted(() => {
     padding: 20px;
     height: 100%;
     overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .drawer-count {
@@ -920,6 +1047,53 @@ onMounted(() => {
     font-size: 13px;
     color: #666;
   }
+
+  .drawer-header-bar {
+    margin-bottom: 12px;
+
+    .drawer-count {
+      margin: 0;
+    }
+  }
+}
+
+// 可点击的统计卡片
+.stat-card.clickable {
+  cursor: default;
+
+  &.has-data {
+    cursor: pointer;
+    position: relative;
+    padding-right: 40px;
+
+    &:hover {
+      box-shadow: 0 4px 20px rgba(82, 196, 26, 0.2);
+      border-color: rgba(82, 196, 26, 0.3);
+      transform: translateY(-2px);
+
+      .stat-card-arrow {
+        opacity: 1;
+        transform: translateY(-50%) translateX(4px);
+      }
+    }
+  }
+}
+
+.stat-card-body {
+  flex: 1;
+}
+
+.stat-card-arrow {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.4;
+  transition: all 0.25s ease;
+  color: #52c41a;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
 }
 
 // 违规规则统计表格样式 - 参考规则总览
@@ -927,7 +1101,7 @@ onMounted(() => {
   margin-top: 0;
   border: none;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   background-color: #ffffff !important;
 
   :deep(.el-table__header-wrapper) {
@@ -980,7 +1154,8 @@ onMounted(() => {
     vertical-align: middle;
 
     .cell {
-      overflow: visible;
+      overflow: visible !important;
+      text-overflow: clip;
       white-space: nowrap;
     }
   }

@@ -9,14 +9,18 @@ from .models import CheckConfig, ReportData, RuleResult, Scenario
 
 
 def _is_fixture_dir(scenario: Scenario) -> bool:
-    """Check if a scenario is under a 前置/后置 (pre/post) directory."""
+    """Check if a scenario is under a 前置/后置 (pre/post) directory or has 前置/后置 in its name."""
+    # Check folder path
     path = scenario.folder_path
-    if not path:
-        return False
-    parts = path.split("/")
-    for p in parts:
-        if p in ("前置", "后置"):
-            return True
+    if path:
+        parts = path.split("/")
+        for p in parts:
+            if p in ("前置", "后置"):
+                return True
+    # Check scenario name
+    name = scenario.name or ""
+    if "前置" in name or "后置" in name:
+        return True
     return False
 
 CSS = """

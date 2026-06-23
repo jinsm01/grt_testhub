@@ -17,7 +17,7 @@ apifox_check:
       name: "单场景步骤数不超过10步"
       severity: mid
       enabled: true
-      description: "检查单个测试场景步骤数是否超过10步（不包含引用其他场景或分组的步骤）"
+      description: "含group/引用步骤的场景不限制步骤数；纯场景排除wait后步骤数不超过阈值"
       check: check_scenario_step_count
       params:
         max_steps: 10
@@ -47,7 +47,7 @@ apifox_check:
       name: "名称参数自动化标识"
       severity: high
       enabled: true
-      description: "检查POST/PUT步骤中name/title等字段是否含'自动化'标识且为动态值（提取token步骤除外）"
+      description: "检查POST/PUT步骤中name/title等字段是否含'自动化'标识且为动态值（提取token步骤及从前置步骤引用{{$.N.xxx}}的字段除外）"
       check: check_auto_name_tag
       params:
         required_tag: "自动化"
@@ -56,5 +56,5 @@ apifox_check:
       name: "前置后置目录跳过统计"
       severity: skip
       enabled: true
-      description: "前置/后置目录下的场景不参与校验统计"
+      description: "前置/后置目录下或名称含前置/后置的场景不参与校验统计"
       check: check_fixture_dir_skip

@@ -818,6 +818,7 @@ const breadcrumbTitle = computed(() => {
     '/api-testing/history': t('menu.requestHistory'),
     '/api-testing/environments': t('menu.environmentManagement'),
     '/api-testing/reports': t('menu.testReport'),
+    '/api-testing/apifox-scene-check': 'Apifox场景检查',
     '/api-testing/scheduled-tasks': t('menu.scheduledTasks'),
     '/api-testing/notification-logs': t('menu.notificationList'),
 

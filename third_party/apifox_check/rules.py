@@ -14,13 +14,18 @@ from .models import CheckResult, Scenario, Step
 # ---------------------------------------------------------------------------
 
 def _is_fixture_dir(scenario: Scenario) -> bool:
-    """Check if a scenario is under a 前置/后置 directory (for other rules)."""
+    """Check if a scenario is under a 前置/后置 (pre/post) directory or has 前置/后置 in its name."""
+    # Check folder path
     path = scenario.folder_path
     if path:
         parts = path.split("/")
         for p in parts:
             if p in ("前置", "后置"):
                 return True
+    # Check scenario name
+    name = scenario.name or ""
+    if "前置" in name or "后置" in name:
+        return True
     return False
 
 
@@ -186,41 +191,36 @@ def check_scenario_run_passed(scenarios: list[Scenario], params: dict) -> list[C
 
 
 # ---------------------------------------------------------------------------
-# Rule 2: 单场景步骤数不超过10步（不包含引用其他场景或分组的测试步骤）
+# Rule 2: 单场景步骤数不超过10步
+#   - 含有 group/引用步骤的场景：不限制步骤数（始终通过）
+#   - 不含 group/引用步骤的场景：排除wait步骤后，不超过阈值
 # ---------------------------------------------------------------------------
 
 def check_scenario_step_count(scenarios: list[Scenario], params: dict) -> list[CheckResult]:
-    """Check that single scenario has at most N actual API test steps.
+    """Check scenario step count with multiple exemption rules.
 
-    Only exempts when the scenario has BOTH pre-script AND post-script
-    configured at the scenario level (item[0].event or options).
+    Exemptions:
+      - Scenarios in 前置/后置 directories or with 前置/后置 in name: skipped entirely
+      - Scenarios with BOTH pre-script AND post-script at scenario level: exempt
+      - Scenarios with group/ref steps: exempt
 
-    Counts only 'http' type steps that are NOT part of a referenced scenario.
-    Excludes:
-      - group steps (pre/post hooks markers and scenario reference markers)
-      - wait steps (delay/pause steps)
-      - http steps inside a referenced scenario scope (is_group_ref=True)
+    Non-exempt scenarios: exclude wait steps, then check against max_steps.
     """
     results = []
     max_steps = params.get("max_steps", 10)
 
     for s in scenarios:
-        # 判断场景是否同时有前置脚本和后置脚本（场景级别，同时存在才豁免步骤数限制）
+        if _is_fixture_dir(s):
+            continue
+
+        total = len(s.steps or [])
+
+        # Check if scenario has both pre-script and post-script (scenario-level)
         has_both = s.has_pre_script and s.has_post_script
 
-        # 防御：确保 steps 不为 None（兼容旧数据）
-        steps = s.steps or []
+        # Count ref/group steps
+        ref_count = sum(1 for st in (s.steps or []) if st.is_group_ref)
 
-        # Count http steps that are NOT part of a referenced scenario
-        actual_steps = [st for st in steps if st.type == "http" and not st.is_group_ref]
-        # Count all referenced steps (both group markers and http steps inside ref scope)
-        ref_steps = [st for st in steps if st.is_group_ref]
-
-        count = len(actual_steps)
-        total = len(steps)
-        ref_count = len(ref_steps)
-
-        # 同时有前置和后置步骤的场景：豁免步骤数限制
         if has_both:
             results.append(CheckResult(
                 rule_id="scenario-step-count",
@@ -228,32 +228,46 @@ def check_scenario_step_count(scenarios: list[Scenario], params: dict) -> list[C
                 scenario_name=s.name,
                 severity="mid",
                 passed=True,
-                message=f"场景同时有前置和后置步骤，豁免步骤数限制(当前{count}个实际步骤，含{ref_count}个引用场景步骤)",
-                details={"total_steps": total, "actual_steps": count, "ref_steps": ref_count, "has_pre_post": True},
+                message=f"场景同时有前置和后置脚本，豁免步骤数限制（总计{total}步，含{ref_count}个引用步骤）",
+                details={"total_steps": total, "ref_steps": ref_count, "has_pre_post": True},
             ))
-
-        elif count > max_steps:
-            # 不同时具备前置和后置步骤，且步骤超限 → 违规
-            results.append(CheckResult(
-                rule_id="scenario-step-count",
-                scenario_id=s.id,
-                scenario_name=s.name,
-                severity="mid",
-                passed=False,
-                message=f"场景不同时具备前置和后置步骤，且步骤超限({count}个实际步骤>阈值{max_steps})，含{ref_count}个引用场景步骤 (total_steps={total}; actual_steps={count}; ref_steps={ref_count})",
-                details={"total_steps": total, "actual_steps": count, "ref_steps": ref_count, "has_pre_post": False},
-            ))
-        else:
-            # 不同时具备前置和后置步骤，但步骤未超限 → 合规
+        elif ref_count > 0:
             results.append(CheckResult(
                 rule_id="scenario-step-count",
                 scenario_id=s.id,
                 scenario_name=s.name,
                 severity="mid",
                 passed=True,
-                message=f"场景不同时具备前置和后置步骤，有{count}个实际步骤(符合阈值≤{max_steps})，含{ref_count}个引用场景步骤",
-                details={"total_steps": total, "actual_steps": count, "ref_steps": ref_count, "has_pre_post": False},
+                message=f"场景含{ref_count}个group/引用步骤，免检步骤数（总计{total}步）",
+                details={"total_steps": total, "has_ref": True, "ref_count": ref_count},
             ))
+        else:
+            # Pure scenario: exclude wait steps, count remaining
+            steps = s.steps or []
+            non_wait_steps = [st for st in steps if st.type != "wait"]
+            count = len(non_wait_steps)
+            wait_count = total - count
+
+            if count > max_steps:
+                results.append(CheckResult(
+                    rule_id="scenario-step-count",
+                    scenario_id=s.id,
+                    scenario_name=s.name,
+                    severity="mid",
+                    passed=False,
+                    message=f"场景无引用步骤，排除{wait_count}个wait后{count}步（超过阈值{max_steps}）",
+                    details={"total_steps": total, "non_wait_steps": count, "wait_steps": wait_count, "has_ref": False},
+                ))
+            else:
+                results.append(CheckResult(
+                    rule_id="scenario-step-count",
+                    scenario_id=s.id,
+                    scenario_name=s.name,
+                    severity="mid",
+                    passed=True,
+                    message=f"场景无引用步骤，排除{wait_count}个wait后{count}步，符合阈值",
+                    details={"total_steps": total, "non_wait_steps": count, "wait_steps": wait_count, "has_ref": False},
+                ))
     return results
 
 
@@ -528,6 +542,11 @@ def check_auto_name_tag(scenarios: list[Scenario], params: dict) -> list[CheckRe
             has_name_violation = False
             for field_name, field_val in fields.items():
                 if field_name.lower() in NAME_FIELDS or field_name in NAME_FIELDS:
+                    # If the value references a previous step ({{$.N.xxx}}),
+                    # skip the check entirely – the source is already verified upstream.
+                    if re.search(r"\{\{\$\.\d+\.", field_val):
+                        break
+
                     # Check 1: contains required_tag
                     if required_tag not in field_val:
                         has_name_violation = True
@@ -570,7 +589,7 @@ def check_auto_name_tag(scenarios: list[Scenario], params: dict) -> list[CheckRe
 
 
 # ---------------------------------------------------------------------------
-# Rule 7: 前置/后置目录下场景，不校验统计 (placeholder, handled by other rules skipping)
+# Rule 7: 前置/后置目录下或名称含前置/后置的场景，不校验统计 (handled by other rules skipping via _is_fixture_dir)
 # ---------------------------------------------------------------------------
 
 def check_fixture_dir_skip(scenarios: list[Scenario], params: dict) -> list[CheckResult]:
@@ -582,7 +601,7 @@ def check_fixture_dir_skip(scenarios: list[Scenario], params: dict) -> list[Chec
         rule_id="fixture-dir-skip",
         severity="skip",
         passed=True,
-        message=f"前置/后置目录下{fixture_count}个场景已跳过校验，实际校验{checked}个场景",
+        message=f"前置/后置目录及名称含前置/后置共{fixture_count}个场景已跳过校验，实际校验{checked}个场景",
         details={"fixture_skipped": fixture_count, "checked_count": checked, "total": total},
     )]
 
