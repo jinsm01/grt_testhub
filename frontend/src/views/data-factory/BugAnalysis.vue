@@ -37,6 +37,16 @@
             <el-icon><FolderOpened /></el-icon>
             选择文件
           </el-button>
+          <el-button
+            type="success"
+            class="yunxiao-sync-btn"
+            @click="showYunxiaoDialog = true"
+            :disabled="analyzing"
+            style="margin-left: 12px;"
+          >
+            <el-icon><Refresh /></el-icon>
+            从云效同步
+          </el-button>
         </template>
         <!-- 选择文件后显示文件信息和操作 -->
         <div v-else class="selected-file-info">
@@ -440,6 +450,15 @@
               </el-col>
             </el-row>
 
+            <!-- 参与者分布 -->
+            <el-row :gutter="16" class="chart-row" v-if="Object.keys(participantData).length > 0">
+              <el-col :span="24">
+                <el-card class="chart-card"><template #header><span class="chart-title">参与者分布（自定义字段）</span></template>
+                  <div ref="participantChartRef" class="chart-container" style="height: 350px;"></div>
+                </el-card>
+              </el-col>
+            </el-row>
+
             <!-- 时间趋势 -->
             <el-row :gutter="16" class="chart-row">
               <el-col :span="24">
@@ -795,6 +814,107 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- ==================== 云效同步对话框 ==================== -->
+    <el-dialog
+      v-model="showYunxiaoDialog"
+      title="从云效同步 Bug 数据"
+      width="560px"
+      :close-on-click-modal="false"
+    >
+      <el-form
+        ref="yunxiaoFormRef"
+        :model="yunxiaoForm"
+        label-width="110px"
+        :rules="yunxiaoRules"
+      >
+        <el-form-item label="访问令牌" prop="token">
+          <el-input
+            v-model="yunxiaoForm.token"
+            type="password"
+            show-password
+            placeholder="云效个人访问令牌 (PAT)"
+            clearable
+          />
+          <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+            前往云效 → 个人设置 → 个人访问令牌 获取
+          </div>
+        </el-form-item>
+
+        <el-form-item label="组织 ID" prop="organization_id">
+          <el-input
+            v-model="yunxiaoForm.organization_id"
+            placeholder="中心版必填，可在组织管理后台获取"
+            clearable
+          />
+        </el-form-item>
+
+        <el-form-item label="项目" prop="space_id">
+          <el-select
+            v-model="yunxiaoForm.space_id"
+            placeholder="选择项目"
+            filterable
+            clearable
+            remote
+            :remote-method="searchYunxiaoProjects"
+            :loading="yunxiaoProjectLoading"
+            style="width: 100%;"
+            @change="onYunxiaoProjectChange"
+          >
+            <el-option
+              v-for="proj in yunxiaoProjects"
+              :key="proj.id"
+              :label="proj.name"
+              :value="proj.id"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="迭代" prop="sprint_id">
+          <el-select
+            v-model="yunxiaoForm.sprint_id"
+            placeholder="选择迭代 (可选，不选则拉取全部)"
+            filterable
+            clearable
+            :loading="yunxiaoSprintLoading"
+            style="width: 100%;"
+            :disabled="!yunxiaoForm.space_id"
+          >
+            <el-option
+              v-for="sp in yunxiaoSprints"
+              :key="sp.id"
+              :label="sp.name"
+              :value="sp.id"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="版本标签" prop="version_tag">
+          <el-input
+            v-model="yunxiaoForm.version_tag"
+            placeholder="用于标识本次同步，如 v6.0.0-sprint5"
+            clearable
+          />
+        </el-form-item>
+
+        <el-form-item label="最大数量" prop="max_bugs">
+          <el-input-number v-model="yunxiaoForm.max_bugs" :min="1" :max="2000" :step="100" />
+          <span style="font-size: 12px; color: #94a3b8; margin-left: 8px;">最多拉取条数</span>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="showYunxiaoDialog = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="startYunxiaoSync"
+          :loading="analyzing"
+          :disabled="!yunxiaoForm.token || !yunxiaoForm.space_id"
+        >
+          开始同步
+        </el-button>
+      </template>
+    </el-dialog>
   </div><!-- end bug-analysis-container -->
 </template>
 
@@ -806,7 +926,7 @@ import * as echarts from 'echarts'
 import { DataAnalysis, UploadFilled, Loading, RefreshLeft, Document, Grid, TrendCharts, User,
   InfoFilled, Warning, List, Clock, Close, Download, MagicStick, Search, Check, View, Delete, ArrowLeft, Upload, CircleCheck, FolderOpened,
   CircleClose, Refresh, Flag, Lightning, AlarmClock, ArrowDown, Histogram } from '@element-plus/icons-vue'
-import { analyzeBugExcel, enhanceWithAI, getBugAnalysisRecords, getBugAnalysisRecordDetail, getModuleDetail, deleteBugAnalysisRecord, analyzeModuleFocusIntelligent } from '@/api/data-factory'
+import { analyzeBugExcel, enhanceWithAI, getBugAnalysisRecords, getBugAnalysisRecordDetail, getModuleDetail, deleteBugAnalysisRecord, analyzeModuleFocusIntelligent, getYunxiaoProjects, getYunxiaoSprints, syncFromYunxiao } from '@/api/data-factory'
 
 const route = useRoute()
 const router = useRouter()
@@ -860,19 +980,39 @@ const exportScope = ref('top5')
 const exportCustomModules = ref([])
 const exporting = ref(false)
 
+// 云效同步
+const showYunxiaoDialog = ref(false)
+const yunxiaoFormRef = ref(null)
+const yunxiaoForm = ref({
+  token: '',
+  organization_id: '',
+  space_id: '',
+  sprint_id: '',
+  version_tag: '',
+  max_bugs: 1000,
+})
+const yunxiaoRules = {
+  token: [{ required: true, message: '请输入云效访问令牌', trigger: 'blur' }],
+  space_id: [{ required: true, message: '请选择项目', trigger: 'change' }],
+}
+const yunxiaoProjects = ref([])
+const yunxiaoSprints = ref([])
+const yunxiaoProjectLoading = ref(false)
+const yunxiaoSprintLoading = ref(false)
+
 // 控制详情页头部显示（临时隐藏，后续可能重新启用）
 const showDetailHeader = ref(false)
 
 // 图表引用
 const moduleChartRef = ref(null), severityCrossChartRef = ref(null), severityPieChartRef = ref(null)
 const statusChartRef = ref(null), priorityChartRef = ref(null), keywordChartRef = ref(null)
-const creatorChartRef = ref(null), timelineChartRef = ref(null)
+const creatorChartRef = ref(null), timelineChartRef = ref(null), participantChartRef = ref(null)
 
 // 数据
 const modulesData = ref({}), featureDetailData = ref([]), severityCrossData = ref({})
 const sevInfData = ref({}), sevData = ref({}), statusData = ref({}), priorityData = ref({})
 const kwData = ref([]), timelineCleanData = ref({}), timelineData = ref({})
-const creatorModuleData = ref([]), riskData = ref({ P0:{total:0,detail:{}}, P1:{total:0,detail:{}}, P2:{total:0,detail:{}} })
+const creatorModuleData = ref([]), participantData = ref({}), riskData = ref({ P0:{total:0,detail:{}}, P1:{total:0,detail:{}}, P2:{total:0,detail:{}} })
 const clusterData = ref([]), rootCauseData = ref([]), testFocusData = ref({}), metaData = ref({})
 const aiSummary = ref(''), aiTestFocus = ref({}), aiRootCause = ref([]), aiRisks = ref({}), aiKeywords = ref([])
 const summaryLines = ref([]), actionLines = ref([])
@@ -1470,7 +1610,8 @@ function applyAnalysisResult(result){
   modulesData.value=result.modulesData||{}; featureDetailData.value=result.featureDetailData||[]; severityCrossData.value=result.severityCrossData||{}
   sevInfData.value=result.sevInfData||{}; sevData.value=result.sevData||{}; statusData.value=result.statusData||{}; priorityData.value=result.priorityData||{}
   kwData.value=result.kwData||[]; timelineCleanData.value=result.timelineCleanData||{}; timelineData.value=result.timelineData||{}
-  creatorModuleData.value=result.creatorModuleData||[]; riskData.value=result.riskData||{P0:{total:0,detail:{}},P1:{total:0,detail:{}},P2:{total:0,detail:{}}}
+  creatorModuleData.value=result.creatorModuleData||[]; participantData.value=result.participantData||{}
+  riskData.value=result.riskData||{P0:{total:0,detail:{}},P1:{total:0,detail:{}},P2:{total:0,detail:{}}}
   clusterData.value=result.clusterData||[]; rootCauseData.value=result.rootCauseData||[]; testFocusData.value=result.testFocusData||{}; metaData.value=result.metaData||{}
   aiSummary.value=result.aiSummary||''; aiTestFocus.value=result.aiTestFocus||{}; aiRootCause.value=result.aiRootCause||[]; aiRisks.value=result.aiRisks||{}; aiKeywords.value=result.aiKeywords||[]
   // 恢复AI模块分析缓存
@@ -1869,7 +2010,7 @@ const generateSummary=()=>{
 }
 
 // ==================== 图表渲染 ====================
-const renderCharts=()=>{renderModuleChart();renderSeverityCrossChart();renderSeverityPieChart();renderStatusChart();renderPriorityChart();renderKeywordChart();renderCreatorChart();renderTimelineChart()}
+const renderCharts=()=>{renderModuleChart();renderSeverityCrossChart();renderSeverityPieChart();renderStatusChart();renderPriorityChart();renderKeywordChart();renderCreatorChart();renderParticipantChart();renderTimelineChart()}
 
 const renderModuleChart=()=>{
   if(!moduleChartRef.value)return
@@ -1954,6 +2095,16 @@ const renderCreatorChart=()=>{
   series.push({name:'其他(低频/无标签)',type:'bar',stack:'module',data:data.map(d=>(d.modules&&d.modules['其他'])||0),itemStyle:{color:'#d5d8dc',borderColor:'#fff',borderWidth:1}})
   chart.setOption({backgroundColor:'#fff',title:{text:'创建者×模块分布(堆叠)',textStyle:{color:'#e94560',fontSize:14},left:'center'},tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:params=>{const d=data[params[0].dataIndex];let l=`${d.creator}(总${d.total}条,线上${d.online}条/${d.online_pct}%)<br/>`;params.forEach(p=>{if(p.value>0)l+=`${p.seriesName}:${p.value}条<br/>`});return l}},legend:{data:[...modules,'其他(低频/无标签)'],textStyle:{color:'#333'},top:30,type:'scroll'},xAxis:{type:'value',axisLabel:{color:'#333'},axisLine:{lineStyle:{color:'#ccc'}},splitLine:{lineStyle:{color:'#e0e0e0'}}},yAxis:{type:'category',data:data.map(d=>`${d.creator}(${d.total}条,线上${d.online_pct}%)`),inverse:true,axisLabel:{color:'#333',fontSize:11},axisLine:{lineStyle:{color:'#ccc'}}},series,grid:{left:'25%',right:'5%',top:80}})
 }
+const renderParticipantChart=()=>{
+  if(!participantChartRef.value)return
+  let existingChart = echarts.getInstanceByDom(participantChartRef.value)
+  if(existingChart){existingChart.dispose()}
+  const chart=echarts.init(participantChartRef.value)
+  const data=Object.entries(participantData.value).sort((a,b)=>b[1]-a[1]).slice(0,20)
+  const names=data.map(e=>e[0]), values=data.map(e=>e[1])
+  chart.setOption({backgroundColor:'#fff',title:{text:'参与者Bug分布 Top 20（自定义字段）',textStyle:{color:'#e94560',fontSize:14}},tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>`${p.name}: ${p.value}条`},xAxis:{type:'category',data:names,axisLabel:{color:'#333',rotate:30,fontSize:11},axisLine:{lineStyle:{color:'#ccc'}}},yAxis:{type:'value',axisLabel:{color:'#333'},axisLine:{lineStyle:{color:'#ccc'}},splitLine:{lineStyle:{color:'#e0e0e0'}}},series:[{type:'bar',data:values,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#3498db'},{offset:1,color:'#e0e0e0'}])},label:{show:true,position:'top',color:'#333',fontSize:11}}],grid:{left:'5%',right:'5%',bottom:'18%',top:50}})
+}
+
 const renderTimelineChart=()=>{
   if(!timelineChartRef.value)return
   let existingChart = echarts.getInstanceByDom(timelineChartRef.value)
@@ -1975,7 +2126,7 @@ const resetAnalysisData = () => {
   aiModuleFocus.value = {}  // 重置AI模块分析缓存
   moduleCardRefs.value = {}  // 重置模块卡片引用
   _rawAnalysisResult = null
-  ;[moduleChartRef.value, severityCrossChartRef.value, severityPieChartRef.value, statusChartRef.value, priorityChartRef.value, keywordChartRef.value, creatorChartRef.value, timelineChartRef.value].forEach(ref => { if (ref) { const c = echarts.getInstanceByDom(ref); if (c) c.dispose() } })
+  ;[moduleChartRef.value, severityCrossChartRef.value, severityPieChartRef.value, statusChartRef.value, priorityChartRef.value, keywordChartRef.value, creatorChartRef.value, participantChartRef.value, timelineChartRef.value].forEach(ref => { if (ref) { const c = echarts.getInstanceByDom(ref); if (c) c.dispose() } })
 }
 
 // 重置分析（返回列表并清空所有数据）
@@ -2156,6 +2307,131 @@ onUnmounted(() => {
     }
   })
 })
+
+// ==================== 云效同步方法 ====================
+
+// 搜索云效项目
+async function searchYunxiaoProjects(keyword) {
+  if (!yunxiaoForm.value.token) return
+  yunxiaoProjectLoading.value = true
+  try {
+    const res = await getYunxiaoProjects({
+      token: yunxiaoForm.value.token,
+      organization_id: yunxiaoForm.value.organization_id,
+      keyword: keyword || '',
+      page: 1,
+      per_page: 50,
+    })
+    if (res.data && res.data.success) {
+      yunxiaoProjects.value = res.data.items || []
+    } else {
+      ElMessage.error((res.data && res.data.message) || '获取项目列表失败')
+    }
+  } catch (e) {
+    ElMessage.error('获取项目列表失败: ' + (e.message || e))
+  } finally {
+    yunxiaoProjectLoading.value = false
+  }
+}
+
+// 项目切换后加载迭代
+async function onYunxiaoProjectChange() {
+  yunxiaoForm.value.sprint_id = ''
+  yunxiaoSprints.value = []
+  if (!yunxiaoForm.value.space_id || !yunxiaoForm.value.token) return
+  yunxiaoSprintLoading.value = true
+  try {
+    const res = await getYunxiaoSprints({
+      token: yunxiaoForm.value.token,
+      organization_id: yunxiaoForm.value.organization_id,
+      space_id: yunxiaoForm.value.space_id,
+      page: 1,
+      per_page: 100,
+    })
+    if (res.data && res.data.success) {
+      yunxiaoSprints.value = res.data.items || []
+    } else {
+      ElMessage.error((res.data && res.data.message) || '获取迭代列表失败')
+    }
+  } catch (e) {
+    ElMessage.error('获取迭代列表失败: ' + (e.message || e))
+  } finally {
+    yunxiaoSprintLoading.value = false
+  }
+}
+
+// 开始云效同步
+async function startYunxiaoSync() {
+  if (!yunxiaoForm.value.token || !yunxiaoForm.value.space_id) {
+    ElMessage.warning('请填写访问令牌并选择项目')
+    return
+  }
+
+  // 表单校验
+  try {
+    await yunxiaoFormRef.value.validate()
+  } catch {
+    return
+  }
+
+  analyzing.value = true
+  ElMessage.info('正在从云效拉取 Bug 数据，请稍候...')
+
+  try {
+    const res = await syncFromYunxiao({
+      token: yunxiaoForm.value.token,
+      organization_id: yunxiaoForm.value.organization_id,
+      space_id: yunxiaoForm.value.space_id,
+      sprint_id: yunxiaoForm.value.sprint_id || undefined,
+      version_tag: yunxiaoForm.value.version_tag,
+      max_bugs: yunxiaoForm.value.max_bugs,
+      ai_provider: aiProvider.value,
+      skip_ai: false,
+    })
+
+    if (!res.data || !res.data.success) {
+      ElMessage.error((res.data && res.data.message) || '同步失败')
+      return
+    }
+
+    ElMessage.success((res.data && res.data.message) || '同步成功')
+    showYunxiaoDialog.value = false
+
+    // 清空表单
+    yunxiaoForm.value = {
+      token: yunxiaoForm.value.token,
+      organization_id: yunxiaoForm.value.organization_id,
+      space_id: '',
+      sprint_id: '',
+      version_tag: '',
+      max_bugs: 1000,
+    }
+    yunxiaoProjects.value = []
+    yunxiaoSprints.value = []
+
+    // 跳转到详情视图展示结果
+    analysisResult.value = res.data
+    viewMode.value = 'detail'
+    fileName.value = res.data.file_name || ''
+    currentRecordId.value = res.data.record_id || null
+
+    // 清空选中文件状态
+    selectedFile.value = null
+    fileName.value = ''
+
+    // 渲染图表
+    nextTick(() => {
+      renderCharts()
+    })
+
+    // 刷新历史记录
+    loadHistoryRecords()
+  } catch (e) {
+    ElMessage.error('同步失败: ' + (e.message || e))
+  } finally {
+    analyzing.value = false
+  }
+}
 </script>
 
 <style scoped>

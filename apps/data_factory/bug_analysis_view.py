@@ -1835,3 +1835,252 @@ def bug_analysis_summary_delete(request, summary_id):
         logger.error(f'[API:bug_analysis_summary_delete] 错误: {e}', exc_info=True)
         return _build_error_response(f'删除失败: {str(e)}',
                                      code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+# ============================================================
+# API 端点：云效同步 (新增)
+# ============================================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def yunxiao_projects(request):
+    """
+    获取云效项目列表 (代理接口)
+
+    POST参数:
+        - token: 云效个人访问令牌 (必填)
+        - organization_id: 组织 ID (中心版必填)
+        - domain: API 域名 (可选)
+        - keyword: 搜索关键词 (可选)
+        - page: 页码 (默认1)
+        - per_page: 每页数量 (默认50)
+    """
+    try:
+        token = request.data.get('token', '').strip()
+        organization_id = request.data.get('organization_id', '').strip()
+        domain = request.data.get('domain', '').strip()
+        keyword = request.data.get('keyword', '').strip()
+        page = int(request.data.get('page', 1))
+        per_page = min(int(request.data.get('per_page', 50)), 200)
+
+        if not token:
+            return _build_error_response('请提供云效访问令牌 (token)')
+
+        from .yunxiao_client import YunxiaoClient, YunxiaoAPIError
+        client_kwargs = {"token": token, "organization_id": organization_id}
+        if domain:
+            client_kwargs["domain"] = domain
+        client = YunxiaoClient(**client_kwargs)
+
+        projects = client.search_projects(keyword=keyword, page=page, per_page=per_page)
+
+        # 统一返回格式
+        items = []
+        for p in projects:
+            items.append({
+                'id': p.get('identifier') or p.get('id') or p.get('spaceIdentifier'),
+                'name': p.get('name') or p.get('spaceName') or '未命名',
+                'description': p.get('description', ''),
+            })
+
+        return _build_api_response({
+            'items': items,
+            'total': len(items),
+        }, f'获取 {len(items)} 个项目')
+
+    except YunxiaoAPIError as e:
+        return _build_error_response(f'云效 API 错误: {e}')
+    except Exception as e:
+        logger.error(f'[API:yunxiao_projects] 错误: {e}', exc_info=True)
+        return _build_error_response(f'获取项目列表失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def yunxiao_sprints(request):
+    """
+    获取云效迭代列表 (代理接口)
+
+    POST参数:
+        - token: 云效个人访问令牌 (必填)
+        - organization_id: 组织 ID (中心版必填)
+        - domain: API 域名 (可选)
+        - space_id: 项目 ID (必填)
+        - page: 页码 (默认1)
+        - per_page: 每页数量 (默认50)
+    """
+    try:
+        token = request.data.get('token', '').strip()
+        organization_id = request.data.get('organization_id', '').strip()
+        domain = request.data.get('domain', '').strip()
+        space_id = request.data.get('space_id', '').strip()
+        page = int(request.data.get('page', 1))
+        per_page = min(int(request.data.get('per_page', 50)), 200)
+
+        if not token:
+            return _build_error_response('请提供云效访问令牌 (token)')
+        if not space_id:
+            return _build_error_response('请提供项目 ID (space_id)')
+
+        from .yunxiao_client import YunxiaoClient, YunxiaoAPIError
+        client_kwargs = {"token": token, "organization_id": organization_id}
+        if domain:
+            client_kwargs["domain"] = domain
+        client = YunxiaoClient(**client_kwargs)
+
+        sprints = client.list_sprints(space_id=space_id, page=page, per_page=per_page)
+
+        items = []
+        for s in sprints:
+            items.append({
+                'id': s.get('identifier') or s.get('id') or s.get('sprintIdentifier'),
+                'name': s.get('name') or s.get('sprintName') or '未命名',
+                'start_date': s.get('startDate') or s.get('plannedStartDate', ''),
+                'end_date': s.get('endDate') or s.get('plannedEndDate', ''),
+                'status': s.get('status') or s.get('sprintStatus', ''),
+            })
+
+        return _build_api_response({
+            'items': items,
+            'total': len(items),
+        }, f'获取 {len(items)} 个迭代')
+
+    except YunxiaoAPIError as e:
+        return _build_error_response(f'云效 API 错误: {e}')
+    except Exception as e:
+        logger.error(f'[API:yunxiao_sprints] 错误: {e}', exc_info=True)
+        return _build_error_response(f'获取迭代列表失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def sync_from_yunxiao(request):
+    """
+    从云效同步 Bug 数据并进行分析
+
+    POST参数:
+        - token: 云效个人访问令牌 (必填)
+        - organization_id: 组织 ID (中心版必填)
+        - domain: API 域名 (可选)
+        - space_id: 项目 ID (必填)
+        - sprint_id: 迭代 ID (可选)
+        - version_tag: 版本标签 (可选)
+        - ai_provider: AI提供者 ('mock'|'qwen'|'none', 默认 'qwen')
+        - ai_config_id: AI模型配置ID (可选)
+        - skip_ai: 是否跳过AI分析 (默认 false)
+        - max_bugs: 最大拉取数量 (默认 1000)
+
+    返回:
+        - 同 analyze_bug_excel 接口的分析结果
+    """
+    start_time = time.time()
+
+    try:
+        # 参数提取
+        token = request.data.get('token', '').strip()
+        organization_id = request.data.get('organization_id', '').strip()
+        domain = request.data.get('domain', '').strip()
+        space_id = request.data.get('space_id', '').strip()
+        sprint_id = request.data.get('sprint_id', '').strip() or None
+        version_tag = request.data.get('version_tag', '').strip()
+        ai_provider = request.data.get('ai_provider', 'qwen').lower()
+        ai_config_id_str = request.data.get('ai_config_id') or ''
+        ai_config_id = int(ai_config_id_str) if ai_config_id_str and ai_config_id_str.isdigit() else None
+        skip_ai_raw = request.data.get('skip_ai', 'false')
+        skip_ai = str(skip_ai_raw).lower() in ('true', '1', 'yes')
+        max_bugs = int(request.data.get('max_bugs', 1000))
+
+        if not token:
+            return _build_error_response('请提供云效访问令牌 (token)')
+        if not space_id:
+            return _build_error_response('请提供项目 ID (space_id)')
+
+        logger.info(f"[API:sync_from_yunxiao] 项目={space_id}, 迭代={sprint_id}, AI={ai_provider}")
+
+        # 从云效拉取 Bug 数据
+        try:
+            bugs = BugSourceAdapter.from_yunxiao({
+                "token": token,
+                "organization_id": organization_id,
+                "domain": domain,
+                "space_id": space_id,
+                "sprint_id": sprint_id,
+                "max_bugs": max_bugs,
+            })
+        except Exception as e:
+            logger.error(f"[API:sync_from_yunxiao] 拉取云效数据失败: {e}", exc_info=True)
+            return _build_error_response(f'从云效拉取数据失败: {e}')
+
+        # 数据校验
+        is_valid, err_msg = _validate_bug_data(bugs)
+        if not is_valid:
+            return _build_error_response(err_msg)
+
+        logger.info(f"[API:sync_from_yunxiao] 拉取完成: {len(bugs)} 条有效Bug")
+
+        # 构建文件名标识
+        file_name = f"云效_{space_id}"
+        if sprint_id:
+            file_name += f"_{sprint_id}"
+        file_name += f"_{len(bugs)}条"
+
+        # 执行基础分析
+        analysis_result = analyze_bugs(bugs, file_name)
+
+        # 保存记录
+        record_id = None
+        save_record = True  # 云效同步默认保存
+        if save_record and _DB_RECORDS_AVAILABLE:
+            try:
+                serialized_bugs = [_serialize_for_json(dict(b)) for b in bugs]
+                record = BugAnalysisRecord.objects.create(
+                    version_tag=version_tag,
+                    source_type='yunxiao_api',
+                    file_name=file_name,
+                    total_bugs=len(bugs),
+                    raw_bugs=serialized_bugs,
+                    analysis_result=analysis_result,
+                    created_by=request.user.username if request.user.is_authenticated else 'system'
+                )
+                record_id = record.id
+                analysis_result['record_id'] = record.id
+                logger.info(f"[API:sync_from_yunxiao] 记录已保存: id={record_id}")
+            except Exception as e:
+                logger.error(f"保存分析记录失败: {e}")
+                if not skip_ai and ai_provider != 'none':
+                    analysis_result['ai_pending'] = False
+                    analysis_result['ai_error'] = '保存记录失败,无法启用AI分析'
+        elif save_record and not _DB_RECORDS_AVAILABLE:
+            logger.warning("[API:sync_from_yunxiao] 数据库模型不可用")
+            if not skip_ai and ai_provider != 'none':
+                analysis_result['ai_pending'] = False
+                analysis_result['ai_error'] = '数据库模型不可用,请执行迁移'
+
+        # 标记AI分析状态
+        if 'ai_pending' not in analysis_result:
+            analysis_result['ai_pending'] = not skip_ai and ai_provider != 'none'
+        if 'ai_provider' not in analysis_result:
+            analysis_result['ai_provider'] = ai_provider if not skip_ai else None
+        if 'ai_config_id' not in analysis_result:
+            analysis_result['ai_config_id'] = ai_config_id
+
+        # 响应
+        elapsed = round((time.time() - start_time) * 1000)
+        analysis_result['success'] = True
+        analysis_result['message'] = f'云效同步成功: {len(bugs)} 条Bug (耗时{elapsed}ms)'
+        if 'record_id' not in analysis_result:
+            analysis_result['record_id'] = record_id
+
+        return _build_api_response(analysis_result, analysis_result['message'])
+
+    except YunxiaoAPIError as e:
+        return _build_error_response(f'云效 API 错误: {e}')
+    except ValueError as ve:
+        logger.warning(f'[API:sync_from_yunxiao] 数据验证错误: {ve}')
+        return _build_error_response(str(ve))
+    except Exception as e:
+        logger.error(f'[API:sync_from_yunxiao] 未预期错误: {e}', exc_info=True)
+        return _build_error_response(f'同步失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')

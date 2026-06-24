@@ -21,6 +21,9 @@ from .bug_analysis_view import (
     bug_analysis_summaries,
     bug_analysis_summary_detail,
     bug_analysis_summary_delete,
+    yunxiao_projects,
+    yunxiao_sprints,
+    sync_from_yunxiao,
 )
 # AI 评分量表生成视图
 from .rubric_view import (
@@ -67,6 +70,11 @@ urlpatterns = [
     path('bug-analysis/summaries/', bug_analysis_summaries, name='bug-analysis-summaries'),  # GET 汇总分析列表
     path('bug-analysis/summaries/<int:summary_id>/', bug_analysis_summary_detail, name='bug-analysis-summary-detail'),  # GET 汇总分析详情
     path('bug-analysis/summaries/<int:summary_id>/delete/', bug_analysis_summary_delete, name='bug-analysis-summary-delete'),  # DELETE
+
+    # === 云效同步 (新增) ===
+    path('bug-analysis/yunxiao/projects/', yunxiao_projects, name='yunxiao-projects'),
+    path('bug-analysis/yunxiao/sprints/', yunxiao_sprints, name='yunxiao-sprints'),
+    path('bug-analysis/yunxiao/sync/', sync_from_yunxiao, name='yunxiao-sync'),
 
     # === AI 评分量表生成管理 ===
     path('rubric/records/', rubric_records, name='rubric-records'),

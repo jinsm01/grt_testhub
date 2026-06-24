@@ -531,6 +531,35 @@ def _compute_creator_data(bugs):
     return result
 
 
+def _compute_participant_data(bugs):
+    """计算参与者分布数据（从自定义字段中提取）"""
+    PARTICIPANT_KEYS = ['参与者', '参与人', '相关人员', '协同人', '参与人员']
+    participant_counter = Counter()
+
+    for b in bugs:
+        cf = b.get('custom_fields', {})
+        participants = None
+        for key in PARTICIPANT_KEYS:
+            if key in cf and cf[key]:
+                participants = cf[key]
+                break
+        if participants:
+            # 支持字符串或列表
+            if isinstance(participants, str):
+                # 逗号/分号分隔的多人
+                for p in re.split(r'[,，;；、]', participants):
+                    p = p.strip()
+                    if p:
+                        participant_counter[p] += 1
+            elif isinstance(participants, list):
+                for p in participants:
+                    p = str(p).strip()
+                    if p:
+                        participant_counter[p] += 1
+
+    return dict(participant_counter.most_common())
+
+
 def _compute_timeline_data(bugs):
     """
     计算时间线数据 (合并原来两次遍历为一次)
@@ -681,6 +710,7 @@ _EMPTY_RESULT_TEMPLATE = {
     'severityCrossData': {},
     'testFocusData': {},
     'creatorModuleData': [],
+    'participantData': {},
     'timelineCleanData': {},
     'timelineData': {},
     'importLabels': [],
@@ -752,6 +782,7 @@ def analyze_bugs(bugs, xlsx_filename=''):
 
     tf_data = _compute_test_focus(all_modules, module_index)
     creator_module_data = _compute_creator_data(bugs)
+    participant_data = _compute_participant_data(bugs)
     timeline_clean_data, timeline_data, import_labels, import_count, real_count = _compute_timeline_data(bugs)
     # kw_data 不再在基础分析中计算，由 AI 增强阶段生成
     risk_data = _compute_risk_data(bugs, p_counts)
@@ -765,6 +796,7 @@ def analyze_bugs(bugs, xlsx_filename=''):
         'severityCrossData': severity_cross_data,
         'testFocusData': tf_data,
         'creatorModuleData': creator_module_data,
+        'participantData': participant_data,
         'timelineCleanData': timeline_clean_data,
         'timelineData': timeline_data,
         'importLabels': import_labels,

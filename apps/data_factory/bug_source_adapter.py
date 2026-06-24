@@ -419,22 +419,72 @@ class BugSourceAdapter:
     @staticmethod
     def from_yunxiao(params: Dict) -> List[NormalizedBug]:
         """
-        [预留接口] 从云效 API 拉取 Bug 数据
-
-        云效 (阿里云 DevOps) Open API 接口对接。
+        从云效 API 拉取 Bug 数据并标准化
 
         Args:
-            params: 包含项目Key、空间Key、查询条件等参数
+            params: {
+                "token": str,          # 云效个人访问令牌 (必填)
+                "organization_id": str,# 组织 ID (中心版必填)
+                "space_id": str,       # 项目 ID (必填)
+                "sprint_id": str,      # 迭代 ID (可选)
+                "domain": str,         # API 域名 (可选，默认 https://devops.aliyun.com)
+                "max_bugs": int,       # 最大拉取数量 (可选，默认 1000)
+            }
+
+        Returns:
+            list[NormalizedBug]: 标准化后的 Bug 列表
 
         Raises:
-            NotImplementedError: 当前未实现
+            ValueError: 参数缺失
+            YunxiaoAPIError: 云效 API 调用失败
         """
-        # TODO: 对接云效 Open API
-        # 参考文档: https://help.aliyun.com/document_detail/440848.html
-        # 关键接口:
-        #   - GET /api/issues/search (搜索缺陷/任务)
-        #   - 需要配置 SpaceKey / ProjectKey / AccessToken
-        raise NotImplementedError("云效 API 对接功能开发中，敬请期待")
+        from .yunxiao_client import YunxiaoClient, convert_yunxiao_bugs, YunxiaoAPIError
+
+        token = params.get("token", "").strip()
+        organization_id = params.get("organization_id", "").strip()
+        space_id = params.get("space_id", "").strip()
+        sprint_id = params.get("sprint_id", "").strip() or None
+        domain = params.get("domain", "")
+        max_bugs = int(params.get("max_bugs", 1000))
+
+        if not token:
+            raise ValueError("缺少云效访问令牌 (token)")
+        if not space_id:
+            raise ValueError("缺少项目 ID (space_id)")
+
+        client_kwargs = {"token": token, "organization_id": organization_id}
+        if domain:
+            client_kwargs["domain"] = domain
+
+        client = YunxiaoClient(**client_kwargs)
+
+        # 拉取全部 Bug (自动分页)
+        raw_workitems = client.fetch_all_bugs(
+            space_id=space_id,
+            sprint_id=sprint_id,
+            max_bugs=max_bugs,
+        )
+
+        if not raw_workitems:
+            logger.warning(f"云效未返回任何 Bug 数据: project={space_id}, sprint={sprint_id}")
+            return []
+
+        # 转换为标准化格式
+        bug_dicts = convert_yunxiao_bugs(raw_workitems)
+
+        # 再经过 normalize_bug 统一处理
+        bugs = []
+        for d in bug_dicts:
+            bug = BugSourceAdapter.normalize_bug(d)
+            # 将云效原始数据保留在额外字段中，供后续分析使用
+            bug["_raw_yunxiao"] = d.get("_raw_yunxiao", {})
+            # 如果 normalize_bug 没有 module，使用转换时提取的 module
+            if not bug.get("module") and d.get("module"):
+                bug["module"] = d["module"]
+            bugs.append(bug)
+
+        logger.info(f"云效数据转换完成: 原始{len(raw_workitems)}条 → 有效{len(bugs)}条")
+        return bugs
 
     @staticmethod
     def from_tapd(params: Dict) -> List[NormalizedBug]:

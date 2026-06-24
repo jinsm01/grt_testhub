@@ -384,6 +384,16 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'apps.data_factory.yunxiao_client': {
+            'handlers': ['file', 'error_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps.data_factory.bug_analysis_view': {
+            'handlers': ['file', 'error_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
 

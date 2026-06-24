@@ -292,6 +292,45 @@ export function analyzeModuleFocusIntelligent(recordId, module, options = {}) {
   })
 }
 
+// ========== 云效同步 (新增) ==========
+
+/**
+ * 获取云效项目列表
+ * @param {Object} data - { token, organization_id, domain, keyword, page, per_page }
+ */
+export function getYunxiaoProjects(data) {
+  return request({
+    url: '/data-factory/bug-analysis/yunxiao/projects/',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 获取云效迭代列表
+ * @param {Object} data - { token, organization_id, domain, space_id, page, per_page }
+ */
+export function getYunxiaoSprints(data) {
+  return request({
+    url: '/data-factory/bug-analysis/yunxiao/sprints/',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 从云效同步 Bug 数据并分析
+ * @param {Object} data - { token, organization_id, domain, space_id, sprint_id, version_tag, ai_provider, skip_ai, max_bugs }
+ */
+export function syncFromYunxiao(data) {
+  return request({
+    url: '/data-factory/bug-analysis/yunxiao/sync/',
+    method: 'post',
+    data,
+    timeout: 120000  // 云效拉取+分析可能需要较长时间
+  })
+}
+
 // ========== AI 评分量表生成管理 ==========
 
 /**
