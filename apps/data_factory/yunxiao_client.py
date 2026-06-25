@@ -68,7 +68,7 @@ class YunxiaoClient:
         url = self._get_base_url(api_path)
         logger.info(f"[YunxiaoClient] {method} {url} | payload={kwargs.get('json')} | params={kwargs.get('params')}")
         try:
-            resp = self.session.request(method, url, timeout=30, **kwargs)
+            resp = self.session.request(method, url, timeout=60, **kwargs)
             logger.info(f"[YunxiaoClient] response status={resp.status_code} | body={resp.text[:800]}")
             resp.raise_for_status()
             text = resp.text.strip()
@@ -298,12 +298,25 @@ def _extract_custom_field_values(custom_field_values: List[Dict]) -> Dict[str, A
             result[field_name] = display_values[0] if field_format == "list" and len(display_values) == 1 else display_values
         elif field_format in ("date", "datetime") and values:
             result[field_name] = values[0] if isinstance(values, list) else values
-        elif field_format == "user" and values:
-            result[field_name] = _extract_name(values)
-        else:
-            # 其他类型直接取值
+        elif field_format in ("user", "multiUser") and values:
+            # 统一处理单用户和多选用户
             if isinstance(values, list):
-                result[field_name] = values[0] if len(values) == 1 else values
+                names = [_extract_name(v) for v in values]
+                result[field_name] = names[0] if field_format == "user" and len(names) == 1 else names
+            else:
+                result[field_name] = _extract_name(values)
+        else:
+            # 其他类型：尝试从字典中提取显示值
+            if isinstance(values, list):
+                parsed = []
+                for v in values:
+                    if isinstance(v, dict):
+                        parsed.append(v.get("displayValue") or v.get("displayName") or v.get("value") or v.get("name") or str(v))
+                    else:
+                        parsed.append(str(v))
+                result[field_name] = parsed[0] if len(parsed) == 1 else parsed
+            elif isinstance(values, dict):
+                result[field_name] = values.get("displayValue") or values.get("displayName") or values.get("value") or values.get("name") or str(values)
             else:
                 result[field_name] = values
     return result
@@ -319,21 +332,72 @@ def convert_yunxiao_bugs(raw_workitems: List[Dict]) -> List[Dict]:
     Returns:
         list[dict]: 转换后的 Bug 字典列表
     """
-    bugs = []
-    for item in raw_workitems:
-        # 解析 customFieldValues 数组（云效新版格式）
-        custom_field_values = item.get("customFieldValues", [])
-        cf_map = _extract_custom_field_values(custom_field_values)
+    logger.info(f"[convert_yunxiao_bugs] 开始转换 {len(raw_workitems)} 条原始工作项")
 
-        # 兼容旧版格式
-        custom_fields_legacy = item.get("customFields") or item.get("fieldValueMap") or item.get("extraFields", {})
+    # 打印第一条原始数据的所有字段名和值（用于诊断字段名匹配问题）
+    if raw_workitems:
+        first_item = raw_workitems[0]
+        all_keys = list(first_item.keys())
+        logger.info(f"[convert_yunxiao_bugs] 第一条原始数据所有字段名: {all_keys}")
+        # 打印与时间相关的字段
+        time_keys = [k for k in all_keys if 'create' in k.lower() or 'modify' in k.lower() or 'update' in k.lower() or 'close' in k.lower() or 'gmt' in k.lower() or 'time' in k.lower()]
+        logger.info(f"[convert_yunxiao_bugs] 可能的时间相关字段: {time_keys}")
+        for tk in time_keys[:5]:
+            logger.info(f"[convert_yunxiao_bugs] 时间字段 {tk} = {first_item.get(tk)}")
+        # 打印与自定义字段相关的字段
+        cf_keys = [k for k in all_keys if 'custom' in k.lower() or 'field' in k.lower() or 'extra' in k.lower()]
+        logger.info(f"[convert_yunxiao_bugs] 可能的自定义字段相关字段: {cf_keys}")
+        for ck in cf_keys[:5]:
+            val = first_item.get(ck)
+            logger.info(f"[convert_yunxiao_bugs] 自定义字段 {ck} = {str(val)[:200]}")
+
+    bugs = []
+    for idx, item in enumerate(raw_workitems):
+        # 解析自定义字段：尝试多种可能的字段名
+        cf_map = {}
+        # 云效新版格式
+        custom_field_values = item.get("customFieldValues") or item.get("customFieldValueList") or []
+        if custom_field_values:
+            cf_map = _extract_custom_field_values(custom_field_values)
+        # 兼容其他格式
+        custom_fields_legacy = item.get("customFields") or item.get("fieldValueMap") or item.get("extraFields") or item.get("custom_field_values") or {}
         if isinstance(custom_fields_legacy, dict):
             cf_map.update(custom_fields_legacy)
+        if isinstance(custom_fields_legacy, list) and custom_fields_legacy:
+            cf_map.update(_extract_custom_field_values(custom_fields_legacy))
+
+        # 提取标准字段中的参与者（participants 是云效标准字段，不是自定义字段）
+        participants_raw = item.get("participants") or item.get("participant") or []
+        if participants_raw:
+            if isinstance(participants_raw, list):
+                participant_names = [_extract_name(p) for p in participants_raw if p]
+                participant_names = [n for n in participant_names if n]
+                if participant_names:
+                    cf_map["参与者"] = participant_names if len(participant_names) > 1 else participant_names[0]
+            else:
+                participant_name = _extract_name(participants_raw)
+                if participant_name:
+                    cf_map["参与者"] = participant_name
+
+        # 提取时间字段：尝试多种可能的字段名（camelCase / snake_case / 其他变体）
+        created_raw = (item.get("gmtCreate") or item.get("gmt_create") or
+                       item.get("createdAt") or item.get("created_at") or
+                       item.get("createTime") or item.get("create_time") or
+                       item.get("createdTime") or item.get("created_time") or
+                       item.get("gmtCreateTime") or item.get("gmt_create_time") or "")
+        updated_raw = (item.get("gmtModified") or item.get("gmt_modified") or
+                       item.get("modifiedAt") or item.get("modified_at") or
+                       item.get("updateTime") or item.get("update_time") or
+                       item.get("updatedTime") or item.get("updated_time") or
+                       item.get("gmtModifyTime") or item.get("gmt_modify_time") or
+                       item.get("gmtClosed") or item.get("gmt_closed") or
+                       item.get("closedAt") or item.get("closed_at") or
+                       item.get("closeTime") or item.get("close_time") or "")
 
         bug = {
             "id": item.get("id") or item.get("serialNumber") or item.get("identifier"),
             "title": item.get("subject") or item.get("title") or item.get("name", ""),
-            "description": item.get("description") or item.get("content", ""),
+            "desc": item.get("description") or item.get("content", ""),
             "status": _extract_name(item.get("status")),
             "severity": cf_map.get("严重程度") or cf_map.get("seriousLevel") or item.get("severity") or item.get("severityName", ""),
             "priority": cf_map.get("优先级") or cf_map.get("priority") or item.get("priority") or item.get("priorityName", ""),
@@ -342,14 +406,28 @@ def convert_yunxiao_bugs(raw_workitems: List[Dict]) -> List[Dict]:
             "reporter": _extract_name(item.get("creator")),
             "assignee": _extract_name(item.get("assignedTo")),
             "type": _extract_name(item.get("workitemType")) or item.get("category") or item.get("type", CATEGORY_BUG),
-            "created_at": item.get("gmtCreate") or item.get("createdAt") or item.get("createTime", ""),
-            "closed_at": item.get("gmtClosed") or item.get("closedAt") or item.get("closeTime", ""),
+            "created": created_raw,
+            "updated": updated_raw,
+            "solution": "",
+            "remark": "",
             "custom_fields": cf_map,
         }
 
         # 额外保留原始数据（用于前端展示所有字段）
         bug["_raw"] = item
 
+        # 每10条打印一次详细日志（避免日志过多）
+        if idx < 5 or (idx + 1) % 10 == 0:
+            logger.info(f"[convert_yunxiao_bugs] Bug#{idx+1}: id={bug['id']}, title={bug['title'][:30]}..., "
+                        f"created={created_raw}, updated={updated_raw}, "
+                        f"creator={bug['creator']}, custom_fields keys={list(cf_map.keys())}")
+            # 如果有参与者类字段，单独打印
+            participant_keys = ['参与者', '参与人', '相关人员', '协同人', '参与人员', 'participant', 'participants']
+            for pk in participant_keys:
+                if pk in cf_map and cf_map[pk]:
+                    logger.info(f"[convert_yunxiao_bugs] Bug#{idx+1} 发现参与者字段 '{pk}': {cf_map[pk]}")
+
         bugs.append(bug)
 
+    logger.info(f"[convert_yunxiao_bugs] 转换完成: {len(bugs)} 条")
     return bugs

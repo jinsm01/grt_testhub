@@ -86,6 +86,18 @@ class BugAnalysisRecord(models.Model):
     # 分析结果: analyze_bugs() 返回的完整字典 (含 modulesData/severityCrossData/riskData 等全部维度)
     analysis_result = models.JSONField(default=dict, verbose_name='分析结果')
 
+    # AI 分析状态 (异步模式)
+    AI_STATUS_CHOICES = (
+        ('none', '无'),
+        ('pending', '待分析'),
+        ('running', '分析中'),
+        ('completed', '已完成'),
+        ('failed', '失败'),
+    )
+    ai_status = models.CharField(max_length=20, choices=AI_STATUS_CHOICES, default='none',
+                                  verbose_name='AI分析状态')
+    ai_progress = models.IntegerField(default=0, verbose_name='AI分析进度', help_text='0-100')
+
     # 元信息
     created_by = models.CharField(max_length=50, default='system', verbose_name='创建者')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')

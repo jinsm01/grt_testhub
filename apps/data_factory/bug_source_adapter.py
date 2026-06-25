@@ -138,7 +138,8 @@ def _parse_date_value(value: Any) -> Optional[datetime]:
     支持格式:
     - datetime 对象 (openpyxl 直接解析)
     - float (Excel 序列号日期)
-    - str 常见日期格式字符串
+    - int (Unix 时间戳，毫秒或秒)
+    - str 常见日期格式字符串 / ISO 8601
 
     Returns:
         datetime 或 None
@@ -152,17 +153,42 @@ def _parse_date_value(value: Any) -> Optional[datetime]:
 
     # Excel 序列号日期 (float)
     if isinstance(value, (int, float)):
+        # 先尝试 Excel 序列号（通常小于 50000）
         try:
-            from openpyxl.utils.datetime import from_excel
-            return from_excel(float(value), epoch_mode='1900')
+            if float(value) < 50000:
+                from openpyxl.utils.datetime import from_excel
+                return from_excel(float(value), epoch_mode='1900')
         except (ValueError, TypeError, OverflowError):
-            return None
+            pass
+        # 再尝试 Unix 时间戳（毫秒 > 1000000000000，秒 > 1000000000）
+        try:
+            ts = int(value)
+            if ts > 1000000000000:  # 毫秒时间戳
+                return datetime.fromtimestamp(ts / 1000)
+            elif ts > 1000000000:   # 秒时间戳
+                return datetime.fromtimestamp(ts)
+        except (ValueError, TypeError, OverflowError, OSError):
+            pass
+        return None
 
     # 字符串日期
     if isinstance(value, str):
         value = value.strip()
         if not value:
             return None
+
+        # ISO 8601 格式（云效常用）
+        if 'T' in value:
+            try:
+                # 处理带时区的 ISO 格式，如 2024-01-15T10:30:00+08:00
+                from datetime import timezone
+                # 去掉时区冒号（Python 3.6+ 的 fromisoformat 不支持 +08:00 中的冒号）
+                iso_val = value
+                if iso_val[-3] == ':' and (iso_val[-6] == '+' or iso_val[-6] == '-'):
+                    iso_val = iso_val[:-3] + iso_val[-2:]
+                return datetime.fromisoformat(iso_val)
+            except (ValueError, TypeError):
+                pass
 
         date_formats = [
             '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d',
@@ -222,6 +248,11 @@ class BugSourceAdapter:
         Returns:
             NormalizedBug: 标准化后的 Bug 对象
         """
+        # 提取原始值用于日志
+        created_raw = raw_row.get('created')
+        updated_raw = raw_row.get('updated')
+        custom_fields_raw = raw_row.get('custom_fields')
+
         bug = NormalizedBug({
             'title': str(raw_row.get('title', '') or ''),
             'desc': str(raw_row.get('desc', '') or ''),
@@ -231,11 +262,32 @@ class BugSourceAdapter:
             'type': raw_row.get('type') or '',
             'creator': str(raw_row.get('creator', '') or ''),
             'assignee': str(raw_row.get('assignee', '') or ''),
-            'created': _parse_date_value(raw_row.get('created')),
-            'updated': _parse_date_value(raw_row.get('updated')),
+            'created': _parse_date_value(created_raw),
+            'updated': _parse_date_value(updated_raw),
             'solution': str(raw_row.get('solution', '') or ''),
             'remark': str(raw_row.get('remark', '') or ''),
+            'custom_fields': custom_fields_raw or {},
         })
+
+        # 详细日志：打印关键字段的转换情况
+        logger.debug(f"[normalize_bug] 输入字段名: {list(raw_row.keys())}, "
+                     f"title={raw_row.get('title', '')[:20]}..., "
+                     f"created_raw={created_raw} -> created_parsed={bug['created']}, "
+                     f"updated_raw={updated_raw} -> updated_parsed={bug['updated']}, "
+                     f"custom_fields={list(custom_fields_raw.keys()) if custom_fields_raw else 'None'}")
+
+        # 如果 created 或 updated 为空，打印警告
+        if not bug['created']:
+            logger.warning(f"[normalize_bug] created 字段为空! raw_row keys={list(raw_row.keys())}, "
+                           f"created_raw={created_raw}, title={bug['title'][:30]}")
+        if not bug['updated']:
+            logger.warning(f"[normalize_bug] updated 字段为空! raw_row keys={list(raw_row.keys())}, "
+                           f"updated_raw={updated_raw}, title={bug['title'][:30]}")
+
+        # 如果 custom_fields 有数据，打印详细内容
+        if custom_fields_raw and isinstance(custom_fields_raw, dict) and len(custom_fields_raw) > 0:
+            logger.debug(f"[normalize_bug] custom_fields 内容: {custom_fields_raw}")
+
         return bug
 
     @staticmethod
@@ -466,24 +518,53 @@ class BugSourceAdapter:
         )
 
         if not raw_workitems:
-            logger.warning(f"云效未返回任何 Bug 数据: project={space_id}, sprint={sprint_id}")
+            logger.warning(f"[from_yunxiao] 云效未返回任何 Bug 数据: project={space_id}, sprint={sprint_id}")
             return []
+
+        logger.info(f"[from_yunxiao] 云效返回 {len(raw_workitems)} 条原始工作项，开始转换为标准化格式")
 
         # 转换为标准化格式
         bug_dicts = convert_yunxiao_bugs(raw_workitems)
 
+        # 打印第一条转换后的数据结构（用于诊断）
+        if bug_dicts:
+            first_bug_dict = bug_dicts[0]
+            logger.info(f"[from_yunxiao] 第一条转换后数据: keys={list(first_bug_dict.keys())}, "
+                        f"title={first_bug_dict.get('title', '')[:30]}..., "
+                        f"created={first_bug_dict.get('created')}, updated={first_bug_dict.get('updated')}, "
+                        f"creator={first_bug_dict.get('creator')}, "
+                        f"custom_fields keys={list(first_bug_dict.get('custom_fields', {}).keys())}")
+
         # 再经过 normalize_bug 统一处理
         bugs = []
-        for d in bug_dicts:
+        for idx, d in enumerate(bug_dicts):
             bug = BugSourceAdapter.normalize_bug(d)
             # 将云效原始数据保留在额外字段中，供后续分析使用
-            bug["_raw_yunxiao"] = d.get("_raw_yunxiao", {})
+            bug["_raw_yunxiao"] = d.get("_raw", {})
+
             # 如果 normalize_bug 没有 module，使用转换时提取的 module
             if not bug.get("module") and d.get("module"):
                 bug["module"] = d["module"]
+
+            # 每10条打印一次详细日志
+            if idx < 3 or (idx + 1) % 10 == 0:
+                logger.info(f"[from_yunxiao] Bug#{idx+1} 标准化后: "
+                            f"title={bug['title'][:30]}..., created={bug['created']}, "
+                            f"updated={bug['updated']}, module={bug.get('module')}, "
+                            f"custom_fields={list(bug.get('custom_fields', {}).keys())}")
+
             bugs.append(bug)
 
-        logger.info(f"云效数据转换完成: 原始{len(raw_workitems)}条 → 有效{len(bugs)}条")
+        logger.info(f"[from_yunxiao] 云效数据转换完成: 原始{len(raw_workitems)}条 → "
+                    f"convert后{len(bug_dicts)}条 → 标准化{len(bugs)}条")
+
+        # 统计关键字段的填充情况
+        created_count = sum(1 for b in bugs if b.get('created'))
+        updated_count = sum(1 for b in bugs if b.get('updated'))
+        custom_field_count = sum(1 for b in bugs if b.get('custom_fields') and len(b.get('custom_fields', {})) > 0)
+        logger.info(f"[from_yunxiao] 字段填充统计: created={created_count}/{len(bugs)}, "
+                    f"updated={updated_count}/{len(bugs)}, custom_fields有数据={custom_field_count}/{len(bugs)}")
+
         return bugs
 
     @staticmethod

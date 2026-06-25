@@ -532,32 +532,125 @@ def _compute_creator_data(bugs):
 
 
 def _compute_participant_data(bugs):
-    """计算参与者分布数据（从自定义字段中提取）"""
-    PARTICIPANT_KEYS = ['参与者', '参与人', '相关人员', '协同人', '参与人员']
-    participant_counter = Counter()
+    """
+    计算参与者分布数据（从自定义字段中提取）
+    返回结构类似 creatorModuleData，支持模块堆叠展示
+    """
+    # 支持多种可能的字段名（中文 + 英文变体）
+    PARTICIPANT_KEYS = ['参与者', '参与人', '相关人员', '协同人', '参与人员', 'participant', 'participants', '多人处理', '协同处理', '跟进人', '关注人']
 
+    # 参与者 -> 模块分布
+    participant_mod = defaultdict(lambda: defaultdict(int))
+    # 参与者 -> 线上Bug数
+    participant_online = defaultdict(int)
+
+    logger.info(f"[participant] 开始计算参与者分布，Bug总数={len(bugs)}")
+
+    # 统计有 custom_fields 的 Bug 数量
+    bugs_with_cf = sum(1 for b in bugs if b.get('custom_fields') and len(b.get('custom_fields', {})) > 0)
+    logger.info(f"[participant] 有 custom_fields 的 Bug 数量: {bugs_with_cf}/{len(bugs)}")
+
+    matched_count = 0
     for b in bugs:
         cf = b.get('custom_fields', {})
         participants = None
         for key in PARTICIPANT_KEYS:
             if key in cf and cf[key]:
                 participants = cf[key]
+                matched_count += 1
                 break
+
         if participants:
+            # 获取 Bug 的模块
+            bug_module = b.get('module', '') or '其他'
+            # 判断是否为线上 Bug
+            is_online = _is_online_bug(b)
+
             # 支持字符串或列表
+            participant_list = []
             if isinstance(participants, str):
                 # 逗号/分号分隔的多人
                 for p in re.split(r'[,，;；、]', participants):
                     p = p.strip()
                     if p:
-                        participant_counter[p] += 1
+                        participant_list.append(p)
             elif isinstance(participants, list):
                 for p in participants:
                     p = str(p).strip()
                     if p:
-                        participant_counter[p] += 1
+                        participant_list.append(p)
 
-    return dict(participant_counter.most_common())
+            # 更新每个参与者的模块分布和线上Bug计数
+            for p in participant_list:
+                participant_mod[p][bug_module] += 1
+                if is_online:
+                    participant_online[p] += 1
+
+    logger.info(f"[participant] 匹配到参与者字段的 Bug 数量: {matched_count}/{len(bugs)}")
+
+    # 构建结果列表（按总Bug数排序，取Top 20）
+    result = []
+    for participant in sorted(participant_mod.keys(), key=lambda p: sum(participant_mod[p].values()), reverse=True)[:20]:
+        total_p = sum(participant_mod[participant].values())
+        online_p = participant_online.get(participant, 0)
+        result.append({
+            'participant': participant,
+            'total': total_p,
+            'online': online_p,
+            'online_pct': round(online_p / total_p * 100, 1) if total_p > 0 else 0,
+            'modules': dict(participant_mod[participant]),
+        })
+
+    logger.info(f"[participant] 参与者分布结果: 共 {len(participant_mod)} 人, 返回Top {len(result)}, Top5={[r['participant'] for r in result[:5]]}")
+
+    return result
+
+
+def _compute_custom_field_charts(bugs):
+    """
+    计算所有适合做图表的自定义字段分布
+
+    自动识别 custom_fields 中适合做图表分析的字段：
+    - 排除已单独处理的参与者类字段
+    - 排除超长文本、日期对象等不适合图表的字段
+    - 只保留有分布意义的字段（至少2个不同值，或有重复值）
+    """
+    field_counters = defaultdict(Counter)
+    # 支持多种可能的字段名（中文 + 英文变体）
+    PARTICIPANT_KEYS = {'参与者', '参与人', '相关人员', '协同人', '参与人员', 'participant', 'participants', '多人处理', '协同处理', '跟进人', '关注人'}
+    # 已有单独图表展示的字段，不需要重复展示
+    EXCLUDED_FIELDS = {'优先级', 'priority', '严重程度', 'severity'}
+
+    logger.info(f"[custom_field_charts] 开始计算自定义字段图表分布，Bug总数={len(bugs)}")
+
+    for b in bugs:
+        cf = b.get('custom_fields', {})
+        for field_name, value in cf.items():
+            if not value or field_name in PARTICIPANT_KEYS or field_name in EXCLUDED_FIELDS:
+                continue
+            # 只处理列表和短字符串（排除大文本、日期对象等）
+            if isinstance(value, list):
+                for v in value:
+                    v_str = str(v).strip()
+                    if v_str and len(v_str) < 50:
+                        field_counters[field_name][v_str] += 1
+            elif isinstance(value, str):
+                v_str = value.strip()
+                if v_str and len(v_str) < 50:
+                    field_counters[field_name][v_str] += 1
+
+    logger.info(f"[custom_field_charts] 收集到的字段数: {len(field_counters)}, 字段名: {list(field_counters.keys())}")
+
+    # 只保留有分布意义的字段（至少2个不同值，或出现次数>1的值至少1个）
+    result = {}
+    for field_name, counter in field_counters.items():
+        if len(counter) >= 2 or sum(1 for c in counter.values() if c > 1) >= 1:
+            result[field_name] = dict(counter.most_common(20))
+            logger.info(f"[custom_field_charts] 字段 '{field_name}' 分布: {len(counter)} 个值, Top5={dict(counter.most_common(5))}")
+
+    logger.info(f"[custom_field_charts] 最终保留的字段数: {len(result)}, 字段名: {list(result.keys())}")
+
+    return result
 
 
 def _compute_timeline_data(bugs):
@@ -710,7 +803,8 @@ _EMPTY_RESULT_TEMPLATE = {
     'severityCrossData': {},
     'testFocusData': {},
     'creatorModuleData': [],
-    'participantData': {},
+    'participantData': [],
+    'customFieldCharts': {},
     'timelineCleanData': {},
     'timelineData': {},
     'importLabels': [],
@@ -783,6 +877,7 @@ def analyze_bugs(bugs, xlsx_filename=''):
     tf_data = _compute_test_focus(all_modules, module_index)
     creator_module_data = _compute_creator_data(bugs)
     participant_data = _compute_participant_data(bugs)
+    custom_field_charts = _compute_custom_field_charts(bugs)
     timeline_clean_data, timeline_data, import_labels, import_count, real_count = _compute_timeline_data(bugs)
     # kw_data 不再在基础分析中计算，由 AI 增强阶段生成
     risk_data = _compute_risk_data(bugs, p_counts)
@@ -797,6 +892,7 @@ def analyze_bugs(bugs, xlsx_filename=''):
         'testFocusData': tf_data,
         'creatorModuleData': creator_module_data,
         'participantData': participant_data,
+        'customFieldCharts': custom_field_charts,
         'timelineCleanData': timeline_clean_data,
         'timelineData': timeline_data,
         'importLabels': import_labels,

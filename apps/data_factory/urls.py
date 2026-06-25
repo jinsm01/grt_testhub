@@ -24,6 +24,8 @@ from .bug_analysis_view import (
     yunxiao_projects,
     yunxiao_sprints,
     sync_from_yunxiao,
+    yunxiao_sync_log,
+    bug_analysis_ai_status,
 )
 # AI 评分量表生成视图
 from .rubric_view import (
@@ -58,6 +60,7 @@ urlpatterns = [
     path('bug-analysis/records/', bug_analysis_records, name='bug-analysis-records'),  # GET 列表
     path('bug-analysis/records/<int:record_id>/', bug_analysis_record_detail, name='bug-analysis-record-detail'),  # GET 详情
     path('bug-analysis/records/<int:record_id>/delete/', bug_analysis_record_delete, name='bug-analysis-record-delete'),  # DELETE
+    path('bug-analysis/records/<int:record_id>/ai-status/', bug_analysis_ai_status, name='bug-analysis-ai-status'),  # GET AI分析状态
 
     # === Bug 分析增强功能 (新增 V2) ===
     path('bug-analysis/compare/', bug_analysis_compare, name='bug-analysis-compare'),  # 跨版本对比
@@ -75,6 +78,7 @@ urlpatterns = [
     path('bug-analysis/yunxiao/projects/', yunxiao_projects, name='yunxiao-projects'),
     path('bug-analysis/yunxiao/sprints/', yunxiao_sprints, name='yunxiao-sprints'),
     path('bug-analysis/yunxiao/sync/', sync_from_yunxiao, name='yunxiao-sync'),
+    path('bug-analysis/yunxiao/log/<int:record_id>/', yunxiao_sync_log, name='yunxiao-sync-log'),
 
     # === AI 评分量表生成管理 ===
     path('rubric/records/', rubric_records, name='rubric-records'),

@@ -683,60 +683,88 @@ Bug标题: {title}
             })
 
         prompt = f"""你是资深质量工程师。请基于以下 {total} 条 Bug 数据（展示前{len(bug_samples)}条样本），
-分析并提炼出 P0/P1/P2 三个级别的风险类型分类。
+用纯中文分析回归风险，输出可直接阅读的报告段落。
 
 ## Bug 样本数据
-```json
+```
 {json.dumps(bug_samples, ensure_ascii=False, indent=2)}
 ```
 
 ## 分析要求
-1. **P0 级别**（服务中断/应用崩溃）：识别最严重的问题类型
-2. **P1 级别**（功能阻塞/修复质量存疑）：识别需要重点回归的问题
-3. **P2 级别**（影响较轻/边界场景）：识别低优先级但需要关注的风险
+请用流畅的中文段落，分别描述三个风险级别：
+
+1. **P0 高风险**（服务中断/应用崩溃）：列出具体的风险场景，每个场景说明影响和回归建议
+2. **P1 中风险**（功能阻塞/修复质量存疑）：列出需要重点回归的问题类型
+3. **P2 低风险**（影响较轻/边界场景）：列出低优先级但需要关注的风险
 
 ## 输出格式
-必须是合法的 JSON 格式：
-{{
-  "P0": [
-    {{"type": "风险类型名称", "count": 预估数量, "rule": "识别规则简述", "desc": "风险说明", "tagType": "danger"}}
-  ],
-  "P1": [...],
-  "P2": [...]
-}}
+请按以下格式输出（纯文本，不要JSON）：
+
+【P0 高风险】
+- 白屏问题：共约15条，多涉及首页加载，需优先验证各入口跳转流程
+- 504超时：共约8条，集中在接口调用场景，需重点回归高频接口
+（继续列举其他高风险...）
+
+【P1 中风险】
+- 二次回归Bug：共约12条，历史修复后重现的问题，需对照历史验证
+- 线上故障：共约5条，线上已发生的问题必须回归
+（继续列举其他中风险...）
+
+【P2 低风险】
+- 边界场景：如异常输入、极端值处理等，按需回归
+- 偶现问题：复现难度高，可酌情回归
+（继续列举其他低风险...）
 
 要求：
-- 每个级别至少提供1-3个风险类型
-- 风险类型名称要具体，不要泛泛而谈
-- count 是预估数量，根据样本推断
-- 只输出 JSON，不要任何其他文字"""
+- 每个风险类型要具体，避免泛泛而谈
+- 说明预估数量和回归建议
+- 只输出纯文本报告，不要任何JSON或其他格式"""
 
         messages = [
-            {"role": "system", "content": "你是资深质量工程师，擅长从Bug数据中提炼风险模式。只输出JSON格式结果。"},
+            {"role": "system", "content": "你是资深质量工程师，擅长从Bug数据中提炼风险模式。用流畅的中文输出分析报告。"},
             {"role": "user", "content": prompt},
         ]
 
         try:
-            result = await self._call_llm(messages, temperature=0.2)
-
-            # 解析 JSON
+            result = await self._call_llm(messages, temperature=0.3)
+            logger.info(f"[Qwen AI] 风险分析完成(纯文本): 长度={len(result)}")
+            
+            # 解析文本段落，转换为前端可用格式
+            risks = {'P0': [], 'P1': [], 'P2': []}
+            
+            # 按段落标记提取内容
             import re
-            json_match = re.search(r'\{.*\}', result, re.DOTALL)
-            if json_match:
-                risks = json.loads(json_match.group())
-                # 确保格式正确
-                for level in ['P0', 'P1', 'P2']:
-                    if level not in risks or not isinstance(risks[level], list):
-                        risks[level] = []
-                    # 添加默认tagType
-                    for item in risks[level]:
-                        if 'tagType' not in item:
-                            item['tagType'] = {'P0': 'danger', 'P1': 'warning', 'P2': 'info'}.get(level, 'info')
-                        # 计算百分比
-                        if 'count' in item and total > 0:
-                            item['percentage'] = f"{(item['count']/total*100):.1f}%"
-            else:
-                raise ValueError("未找到JSON格式的风险分析结果")
+            p0_match = re.search(r'【P0 高风险】\s*(.+?)(?=【P1|$)', result, re.DOTALL)
+            p1_match = re.search(r'【P1 中风险】\s*(.+?)(?=【P2|$)', result, re.DOTALL)
+            p2_match = re.search(r'【P2 低风险】\s*(.+?)$', result, re.DOTALL)
+            
+            if p0_match:
+                p0_text = p0_match.group(1).strip()
+                # 按行拆分，每行作为一条风险项
+                for line in p0_text.split('\n'):
+                    line = line.strip()
+                    if line and line.startswith('-'):
+                        risks['P0'].append({'description': line[1:].strip(), 'type': '高风险'})
+            if p1_match:
+                p1_text = p1_match.group(1).strip()
+                for line in p1_text.split('\n'):
+                    line = line.strip()
+                    if line and line.startswith('-'):
+                        risks['P1'].append({'description': line[1:].strip(), 'type': '中风险'})
+            if p2_match:
+                p2_text = p2_match.group(1).strip()
+                for line in p2_text.split('\n'):
+                    line = line.strip()
+                    if line and line.startswith('-'):
+                        risks['P2'].append({'description': line[1:].strip(), 'type': '低风险'})
+            
+            # 如果解析失败，将整段文本作为一条
+            if not risks['P0'] and p0_match:
+                risks['P0'].append({'description': p0_text, 'type': '高风险'})
+            if not risks['P1'] and p1_match:
+                risks['P1'].append({'description': p1_text, 'type': '中风险'})
+            if not risks['P2'] and p2_match:
+                risks['P2'].append({'description': p2_text, 'type': '低风险'})
 
             logger.info(f"[Qwen AI] 风险分析完成: P0={len(risks['P0'])}类, P1={len(risks['P1'])}类, P2={len(risks['P2'])}类")
             return risks

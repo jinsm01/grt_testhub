@@ -327,7 +327,29 @@ export function syncFromYunxiao(data) {
     url: '/data-factory/bug-analysis/yunxiao/sync/',
     method: 'post',
     data,
-    timeout: 120000  // 云效拉取+分析可能需要较长时间
+    timeout: 120000  // 只拉取数据+基础分析，AI在后台异步执行
+  })
+}
+
+/**
+ * 获取云效同步数据的详细字段信息（用于诊断）
+ * @param {number} recordId - 分析记录ID
+ */
+export function getYunxiaoSyncLog(recordId) {
+  return request({
+    url: `/data-factory/bug-analysis/yunxiao/log/${recordId}/`,
+    method: 'get'
+  })
+}
+
+/**
+ * 查询 AI 分析状态（异步轮询）
+ * @param {number} recordId - 分析记录ID
+ */
+export function getBugAnalysisAiStatus(recordId) {
+  return request({
+    url: `/data-factory/bug-analysis/records/${recordId}/ai-status/`,
+    method: 'get'
   })
 }
 

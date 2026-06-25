@@ -183,7 +183,8 @@ def _build_error_response(message, code=status.HTTP_400_BAD_REQUEST, log_level='
 
 async def _run_enhanced_analysis(bugs, filename='', save_record=True,
                                   ai_provider_name='qwen', ai_config_id=None,
-                                  version_tag=''):
+                                  version_tag='', source_type='excel',
+                                  skip_ai=False, ai_status='none'):
     """
     运行增强版 Bug 分析流程
 
@@ -199,23 +200,27 @@ async def _run_enhanced_analysis(bugs, filename='', save_record=True,
         ai_provider_name: AI 提供者名称 ('mock' 或 'qwen')
         ai_config_id: AIModelConfig ID (qwen模式需要)
         version_tag: 版本标签 (用于历史管理)
+        source_type: 数据来源类型 (默认 'excel')
+        skip_ai: 是否跳过AI分析（用于异步模式，先保存基础分析，后台再执行AI）
+        ai_status: 保存记录时的AI状态
 
     Returns:
         dict: 完整的分析结果
     """
     start_time = time.time()
 
-    # 如果未指定 config_id 且使用 qwen，自动获取 Bug 分析配置
+    # 如果未指定 config_id 且使用 qwen，自动获取 Bug 分析配置 (使用 sync_to_async 包装 Django ORM)
     if ai_provider_name == 'qwen' and ai_config_id is None:
-        ai_config_id = _get_bug_analyzer_config_id()
+        from asgiref.sync import sync_to_async
+        ai_config_id = await sync_to_async(_get_bug_analyzer_config_id)()
 
     # Step 1: 规则引擎核心分析
-    logger.info(f"[BugAnalysis] 开始分析: 文件={filename}, Bug数={len(bugs)}, AI={ai_provider_name}, config_id={ai_config_id}")
+    logger.info(f"[BugAnalysis] 开始分析: 文件={filename}, Bug数={len(bugs)}, AI={ai_provider_name}, config_id={ai_config_id}, skip_ai={skip_ai}")
     analysis_result = analyze_bugs(list(bugs), filename)  # copy 避免副作用
 
     # Step 2: AI 增强 (异步调用 - 并发优化)
     ai_stats = {'calls': 0, 'errors': 0}
-    if ai_provider_name and ai_provider_name != 'none':
+    if not skip_ai and ai_provider_name and ai_provider_name != 'none':
         try:
             from .bug_analysis_ai import get_ai_provider
             ai = get_ai_provider(provider_name=ai_provider_name, config_id=ai_config_id)
@@ -278,6 +283,26 @@ async def _run_enhanced_analysis(bugs, filename='', save_record=True,
                 logger.warning(f"AI总结生成失败: {e}")
                 ai_stats['errors'] += 1
 
+            # AI 关键词提取
+            try:
+                ai_keywords = await ai.extract_keywords(bugs)
+                analysis_result['aiKeywords'] = ai_keywords
+                ai_stats['calls'] += 1
+                logger.info(f"AI关键词提取完成: {len(ai_keywords)}个关键词")
+            except Exception as e:
+                logger.warning(f"AI关键词提取失败: {e}")
+                ai_stats['errors'] += 1
+
+            # AI 风险分析
+            try:
+                ai_risks = await ai.analyze_risks(bugs, analysis_result)
+                analysis_result['aiRisks'] = ai_risks
+                ai_stats['calls'] += 1
+                logger.info(f"AI风险分析完成: P0={len(ai_risks.get('P0', []))}类, P1={len(ai_risks.get('P1', []))}类, P2={len(ai_risks.get('P2', []))}类")
+            except Exception as e:
+                logger.warning(f"AI风险分析失败: {e}")
+                ai_stats['errors'] += 1
+
             if enhanced_focus:
                 analysis_result['aiTestFocus'] = enhanced_focus
             if root_cause_list:
@@ -292,28 +317,173 @@ async def _run_enhanced_analysis(bugs, filename='', save_record=True,
     logger.info(f"[BugAnalysis] 分析完成: {len(bugs)}条Bug, 耗时{elapsed}ms, "
                 f"AI调用={ai_stats['calls']}次, 失败={ai_stats['errors']}次")
 
-    # Step 3: 保存记录
+    # 如果 AI 分析成功完成，更新状态为 completed
+    final_ai_status = ai_status
+    if not skip_ai and ai_provider_name and ai_provider_name != 'none':
+        if ai_stats['calls'] > 0 and ai_stats['errors'] == 0:
+            final_ai_status = 'completed'
+        elif ai_stats['calls'] > 0:
+            final_ai_status = 'completed'  # 部分成功也算完成
+
+    # Step 3: 保存记录 (使用 sync_to_async 包装 Django ORM 操作)
     record = None
     if save_record and _DB_RECORDS_AVAILABLE:
         try:
             # 序列化 raw_bugs 以处理 datetime 等特殊类型
             serialized_bugs = [_serialize_for_json(dict(b)) for b in bugs]
-            record = BugAnalysisRecord.objects.create(
-                version_tag=version_tag,
-                source_type='excel',
-                file_name=_sanitize_filename(filename),
-                total_bugs=len(bugs),
-                raw_bugs=serialized_bugs,
-                analysis_result=analysis_result,
-                created_by=getattr(getattr(request, 'user', None), 'username', 'system')
-                if hasattr(request, 'user') and request.user.is_authenticated else 'system'
-            )
+            
+            # 定义同步保存函数
+            def _save_record_sync():
+                return BugAnalysisRecord.objects.create(
+                    version_tag=version_tag,
+                    source_type=source_type,
+                    file_name=_sanitize_filename(filename),
+                    total_bugs=len(bugs),
+                    raw_bugs=serialized_bugs,
+                    analysis_result=analysis_result,
+                    ai_status=final_ai_status,
+                    ai_progress=100 if final_ai_status == 'completed' else 0,
+                    created_by=getattr(getattr(request, 'user', None), 'username', 'system')
+                    if hasattr(request, 'user') and request.user.is_authenticated else 'system'
+                )
+            
+            # 在异步上下文中调用同步函数
+            from asgiref.sync import sync_to_async
+            record = await sync_to_async(_save_record_sync)()
             analysis_result['record_id'] = record.id
-            logger.info(f"[BugAnalysis] 记录已保存: id={record.id}")
+            logger.info(f"[BugAnalysis] 记录已保存: id={record.id}, ai_status={ai_status}")
         except Exception as e:
             logger.error(f"[BugAnalysis] 保存分析记录失败: {e}", exc_info=True)
 
     return analysis_result
+
+
+def _run_ai_analysis_background(record_id, bugs, analysis_result, ai_provider_name, ai_config_id):
+    """
+    后台执行 AI 分析（在线程中运行）
+
+    注意：Django ORM 操作在线程中可直接使用（同步环境），
+    AI 方法为 async，使用 asyncio.run() 在新事件循环中执行
+    """
+    import asyncio
+    logger.info(f"[AI Background] 启动后台AI分析: record_id={record_id}, provider={ai_provider_name}")
+
+    from asgiref.sync import sync_to_async
+
+    async def _update_status(status, progress=0):
+        try:
+            await sync_to_async(BugAnalysisRecord.objects.filter(id=record_id).update)(
+                ai_status=status, ai_progress=progress
+            )
+        except Exception as e:
+            logger.error(f"[AI Background] 更新状态失败: {e}")
+
+    async def _do_ai_analysis():
+        from .bug_analysis_ai import get_ai_provider
+        ai = get_ai_provider(provider_name=ai_provider_name, config_id=ai_config_id)
+
+        modules = analysis_result.get('modulesData', {})
+        test_focus = analysis_result.get('testFocusData', {})
+        top_modules = list(modules.keys())[:10]
+        top5_modules = top_modules[:5]
+
+        enhanced_focus = {}
+        root_cause_list = []
+        ai_stats = {'calls': 0, 'errors': 0}
+
+        # 测试建议（并发执行）
+        async def fetch_focus(mod):
+            try:
+                mod_stats = test_focus.get(mod, {})
+                return mod, await ai.generate_test_focus(mod, mod_stats), None
+            except Exception as e:
+                return mod, None, e
+
+        focus_tasks = [fetch_focus(mod) for mod in top_modules]
+        focus_results = await asyncio.gather(*focus_tasks)
+        for mod, text, err in focus_results:
+            if err:
+                logger.warning(f"[AI Background] 测试建议[{mod}]失败: {err}")
+                ai_stats['errors'] += 1
+            else:
+                enhanced_focus[mod] = text
+                ai_stats['calls'] += 1
+        await _update_status('running', 35)
+
+        # 根因分析（并发执行）
+        async def fetch_cause(mod):
+            try:
+                mod_bugs = [b for b in bugs if b.get('module') == mod]
+                return mod, await ai.generate_root_cause(mod, mod_bugs), None
+            except Exception as e:
+                return mod, None, e
+
+        cause_tasks = [fetch_cause(mod) for mod in top5_modules]
+        cause_results = await asyncio.gather(*cause_tasks)
+        for mod, text, err in cause_results:
+            if err:
+                logger.warning(f"[AI Background] 根因分析[{mod}]失败: {err}")
+                ai_stats['errors'] += 1
+            else:
+                root_cause_list.append({'module': mod, 'cause': text})
+                ai_stats['calls'] += 1
+        await _update_status('running', 55)
+
+        # 全局总结
+        try:
+            summary = await ai.generate_summary(analysis_result)
+            analysis_result['aiSummary'] = summary
+            ai_stats['calls'] += 1
+        except Exception as e:
+            logger.warning(f"[AI Background] 总结生成失败: {e}")
+            ai_stats['errors'] += 1
+        await _update_status('running', 70)
+
+        # 关键词提取
+        try:
+            ai_keywords = await ai.extract_keywords(bugs)
+            analysis_result['aiKeywords'] = ai_keywords
+            ai_stats['calls'] += 1
+            logger.info(f"[AI Background] 关键词提取完成: {len(ai_keywords)}个关键词")
+        except Exception as e:
+            logger.warning(f"[AI Background] 关键词提取失败: {e}")
+            ai_stats['errors'] += 1
+        await _update_status('running', 85)
+
+        # 风险分析
+        try:
+            ai_risks = await ai.analyze_risks(bugs, analysis_result)
+            analysis_result['aiRisks'] = ai_risks
+            ai_stats['calls'] += 1
+            logger.info(f"[AI Background] 风险分析完成")
+        except Exception as e:
+            logger.warning(f"[AI Background] 风险分析失败: {e}")
+            ai_stats['errors'] += 1
+        await _update_status('running', 95)
+
+        # 合并结果
+        if enhanced_focus:
+            analysis_result['aiTestFocus'] = enhanced_focus
+        if root_cause_list:
+            analysis_result['aiRootCause'] = root_cause_list
+
+        # 保存到数据库
+        await sync_to_async(BugAnalysisRecord.objects.filter(id=record_id).update)(
+            analysis_result=analysis_result,
+            ai_status='completed',
+            ai_progress=100
+        )
+        logger.info(f"[AI Background] AI分析完成: record_id={record_id}, AI调用={ai_stats['calls']}次")
+
+    try:
+        asyncio.run(_do_ai_analysis())
+    except Exception as e:
+        logger.error(f"[AI Background] AI分析异常: {e}", exc_info=True)
+        # 同步更新失败状态（异常处理不在 async 中）
+        try:
+            BugAnalysisRecord.objects.filter(id=record_id).update(ai_status='failed', ai_progress=0)
+        except Exception as e2:
+            logger.error(f"[AI Background] 更新失败状态也失败: {e2}")
 
 
 # 全局 request 引擎（用于 _run_enhanced_analysis 内部访问）
@@ -802,6 +972,8 @@ def bug_analysis_records(request):
                 'source_type': r.source_type,
                 'file_name': r.file_name,
                 'total_bugs': r.total_bugs,
+                'ai_status': r.ai_status,
+                'ai_progress': r.ai_progress,
                 'meta_data': {
                     'total_bugs': (r.analysis_result or {}).get('metaData', {}).get('total_bugs', 0),
                     'p0_count': (r.analysis_result or {}).get('sevInfData', {}).get('推断P0', 0),
@@ -857,6 +1029,8 @@ def bug_analysis_record_detail(request, record_id):
             'total_bugs': record.total_bugs,
             'raw_bugs': record.raw_bugs[:100] if record.raw_bugs else [],  # 最多返回前100条原始Bug
             'analysis_result': analysis_result,
+            'ai_status': record.ai_status,
+            'ai_progress': record.ai_progress,
             'created_at': localtime(record.created_at).strftime('%Y-%m-%d %H:%M:%S'),
             'created_by': record.created_by,
         })
@@ -1984,6 +2158,7 @@ def sync_from_yunxiao(request):
         domain = request.data.get('domain', '').strip()
         space_id = request.data.get('space_id', '').strip()
         sprint_id = request.data.get('sprint_id', '').strip() or None
+        sprint_name = request.data.get('sprint_name', '').strip() or None
         version_tag = request.data.get('version_tag', '').strip()
         ai_provider = request.data.get('ai_provider', 'qwen').lower()
         ai_config_id_str = request.data.get('ai_config_id') or ''
@@ -2020,58 +2195,46 @@ def sync_from_yunxiao(request):
 
         logger.info(f"[API:sync_from_yunxiao] 拉取完成: {len(bugs)} 条有效Bug")
 
-        # 构建文件名标识
-        file_name = f"云效_{space_id}"
-        if sprint_id:
-            file_name += f"_{sprint_id}"
-        file_name += f"_{len(bugs)}条"
+        # 构建文件名标识（优先使用迭代名称）
+        if sprint_name:
+            file_name = f"{sprint_name}_{len(bugs)}条"
+        elif sprint_id:
+            file_name = f"{sprint_id}_{len(bugs)}条"
+        else:
+            file_name = f"云效_{space_id}_{len(bugs)}条"
 
-        # 执行基础分析
-        analysis_result = analyze_bugs(bugs, file_name)
+        # Step 1: 执行基础分析（跳过AI，快速返回）
+        analysis_result = async_to_sync(_run_enhanced_analysis)(
+            bugs,
+            filename=file_name,
+            save_record=True,
+            ai_provider_name='none',  # 先跳过AI
+            version_tag=version_tag,
+            source_type='yunxiao_api',
+            skip_ai=True,
+            ai_status='pending' if not skip_ai else 'none',
+        )
 
-        # 保存记录
-        record_id = None
-        save_record = True  # 云效同步默认保存
-        if save_record and _DB_RECORDS_AVAILABLE:
-            try:
-                serialized_bugs = [_serialize_for_json(dict(b)) for b in bugs]
-                record = BugAnalysisRecord.objects.create(
-                    version_tag=version_tag,
-                    source_type='yunxiao_api',
-                    file_name=file_name,
-                    total_bugs=len(bugs),
-                    raw_bugs=serialized_bugs,
-                    analysis_result=analysis_result,
-                    created_by=request.user.username if request.user.is_authenticated else 'system'
-                )
-                record_id = record.id
-                analysis_result['record_id'] = record.id
-                logger.info(f"[API:sync_from_yunxiao] 记录已保存: id={record_id}")
-            except Exception as e:
-                logger.error(f"保存分析记录失败: {e}")
-                if not skip_ai and ai_provider != 'none':
-                    analysis_result['ai_pending'] = False
-                    analysis_result['ai_error'] = '保存记录失败,无法启用AI分析'
-        elif save_record and not _DB_RECORDS_AVAILABLE:
-            logger.warning("[API:sync_from_yunxiao] 数据库模型不可用")
-            if not skip_ai and ai_provider != 'none':
-                analysis_result['ai_pending'] = False
-                analysis_result['ai_error'] = '数据库模型不可用,请执行迁移'
+        record_id = analysis_result.get('record_id')
 
-        # 标记AI分析状态
-        if 'ai_pending' not in analysis_result:
-            analysis_result['ai_pending'] = not skip_ai and ai_provider != 'none'
-        if 'ai_provider' not in analysis_result:
-            analysis_result['ai_provider'] = ai_provider if not skip_ai else None
-        if 'ai_config_id' not in analysis_result:
-            analysis_result['ai_config_id'] = ai_config_id
+        # Step 2: 启动后台线程执行 AI 分析（不阻塞响应）
+        if not skip_ai and record_id:
+            import threading
+            thread = threading.Thread(
+                target=_run_ai_analysis_background,
+                args=(record_id, bugs, analysis_result, ai_provider, ai_config_id),
+                daemon=True,
+                name=f"ai-analysis-{record_id}"
+            )
+            thread.start()
+            logger.info(f"[API:sync_from_yunxiao] 后台AI分析已启动: record_id={record_id}")
 
-        # 响应
+        # 响应（立即返回，不等待AI）
         elapsed = round((time.time() - start_time) * 1000)
         analysis_result['success'] = True
-        analysis_result['message'] = f'云效同步成功: {len(bugs)} 条Bug (耗时{elapsed}ms)'
-        if 'record_id' not in analysis_result:
-            analysis_result['record_id'] = record_id
+        analysis_result['record_id'] = record_id
+        analysis_result['ai_status'] = 'pending' if not skip_ai else 'none'
+        analysis_result['message'] = f'云效同步成功: {len(bugs)} 条Bug (耗时{elapsed}ms)，AI分析后台进行中...'
 
         return _build_api_response(analysis_result, analysis_result['message'])
 
@@ -2083,4 +2246,154 @@ def sync_from_yunxiao(request):
     except Exception as e:
         logger.error(f'[API:sync_from_yunxiao] 未预期错误: {e}', exc_info=True)
         return _build_error_response(f'同步失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def yunxiao_sync_log(request, record_id):
+    """
+    获取云效同步数据的详细字段信息（用于诊断）
+
+    返回:
+        - first_bug_fields: 第一条Bug的所有字段名和值
+        - all_custom_field_keys: 所有Bug的custom_fields字段名合集
+        - sample_bugs: 前10条Bug的关键字段信息（id, title, created, custom_fields）
+        - field_stats: 各字段的填充率统计
+    """
+    try:
+        if not _DB_RECORDS_AVAILABLE:
+            return _build_error_response('历史记录功能暂不可用', code=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        # 支持所有记录类型，不再限制只查询云效同步记录
+        record = BugAnalysisRecord.objects.filter(id=record_id).first()
+        if not record:
+            return _build_error_response(f'分析记录不存在: id={record_id}', code=status.HTTP_404_NOT_FOUND)
+
+        raw_bugs = record.raw_bugs or []
+        if not raw_bugs:
+            return _build_api_response({
+                'message': '该记录无原始Bug数据',
+                'first_bug_fields': {},
+                'all_custom_field_keys': [],
+                'sample_bugs': [],
+                'field_stats': {},
+            })
+
+        # 第一条Bug的所有字段名和值
+        first_bug = raw_bugs[0] if raw_bugs else {}
+        # 复制并截断 _raw_yunxiao 避免过大
+        first_bug_fields = dict(first_bug)
+        if '_raw_yunxiao' in first_bug_fields:
+            raw_yunxiao = first_bug_fields['_raw_yunxiao']
+            if isinstance(raw_yunxiao, dict):
+                first_bug_fields['_raw_yunxiao'] = {k: str(v)[:500] for k, v in list(raw_yunxiao.items())[:30]}
+
+        # 提取第一条Bug原始数据中的所有字段名（用于诊断字段名匹配）
+        first_bug_raw_keys = []
+        raw_yunxiao_data = first_bug.get('_raw_yunxiao', {})
+        if isinstance(raw_yunxiao_data, dict):
+            first_bug_raw_keys = sorted(list(raw_yunxiao_data.keys()))
+
+        # 所有Bug的custom_fields字段名合集
+        all_custom_field_keys = set()
+        for bug in raw_bugs:
+            cf = bug.get('custom_fields', {})
+            if cf and isinstance(cf, dict):
+                all_custom_field_keys.update(cf.keys())
+        all_custom_field_keys = sorted(list(all_custom_field_keys))
+
+        # 前10条Bug的关键字段信息
+        sample_bugs = []
+        for i, bug in enumerate(raw_bugs[:10]):
+            sample_bugs.append({
+                'index': i + 1,
+                'id': bug.get('id'),
+                'title': bug.get('title', '')[:50],
+                'created': bug.get('created'),
+                'updated': bug.get('updated'),
+                'creator': bug.get('creator'),
+                'status': bug.get('status'),
+                'severity': bug.get('severity'),
+                'priority': bug.get('priority'),
+                'module': bug.get('module'),
+                'custom_fields': bug.get('custom_fields', {}),
+            })
+
+        # 各字段的填充率统计
+        field_names = ['title', 'created', 'updated', 'creator', 'status', 'severity', 'priority', 'module', 'custom_fields']
+        field_stats = {}
+        total = len(raw_bugs)
+        for field in field_names:
+            if field == 'custom_fields':
+                filled = sum(1 for b in raw_bugs if b.get('custom_fields') and len(b.get('custom_fields', {})) > 0)
+            else:
+                filled = sum(1 for b in raw_bugs if b.get(field))
+            field_stats[field] = {
+                'filled': filled,
+                'total': total,
+                'rate': round(filled / total * 100, 1) if total > 0 else 0,
+            }
+
+        logger.info(f"[API:yunxiao_sync_log] record_id={record_id}, bugs={len(raw_bugs)}, "
+                    f"custom_fields_keys={all_custom_field_keys}, first_bug_raw_keys={first_bug_raw_keys[:20]}")
+
+        return _build_api_response({
+            'record_id': record_id,
+            'file_name': record.file_name,
+            'total_bugs': len(raw_bugs),
+            'first_bug_fields': first_bug_fields,
+            'first_bug_raw_keys': first_bug_raw_keys,
+            'all_custom_field_keys': all_custom_field_keys,
+            'sample_bugs': sample_bugs,
+            'field_stats': field_stats,
+            'sync_time': localtime(record.created_at).strftime('%Y-%m-%d %H:%M:%S'),
+        })
+
+    except Exception as e:
+        logger.error(f'[API:yunxiao_sync_log] 错误: {e}', exc_info=True)
+        return _build_error_response(f'获取同步日志失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def bug_analysis_ai_status(request, record_id):
+    """
+    查询 Bug 分析记录的 AI 分析状态（用于异步轮询）
+
+    GET /data-factory/bug-analysis/records/<id>/ai-status/
+
+    返回:
+        - ai_status: none/pending/running/completed/failed
+        - ai_progress: 0-100
+        - has_ai_data: 是否有AI分析数据
+    """
+    try:
+        if not _DB_RECORDS_AVAILABLE:
+            return _build_error_response('历史记录功能暂不可用', code=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        record = BugAnalysisRecord.objects.filter(id=record_id).first()
+        if not record:
+            return _build_error_response(f'分析记录不存在: id={record_id}', code=status.HTTP_404_NOT_FOUND)
+
+        analysis_result = record.analysis_result or {}
+        has_ai_data = bool(
+            analysis_result.get('aiSummary') or
+            analysis_result.get('aiKeywords') or
+            analysis_result.get('aiRisks')
+        )
+
+        return _build_api_response({
+            'record_id': record_id,
+            'ai_status': record.ai_status,
+            'ai_progress': record.ai_progress,
+            'has_ai_data': has_ai_data,
+            'file_name': record.file_name,
+            'total_bugs': record.total_bugs,
+        })
+
+    except Exception as e:
+        logger.error(f'[API:bug_analysis_ai_status] 错误: {e}', exc_info=True)
+        return _build_error_response(f'查询AI状态失败: {str(e)}',
                                      code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
