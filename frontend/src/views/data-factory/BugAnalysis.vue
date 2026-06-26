@@ -932,106 +932,116 @@
       </template>
     </el-dialog>
 
-    <!-- ==================== 云效同步对话框 ==================== -->
-    <el-dialog
+    <!-- ==================== 云效同步抽屉 ==================== -->
+    <el-drawer
       v-model="showYunxiaoDialog"
       title="从云效同步 Bug 数据"
-      width="560px"
+      direction="rtl"
+      size="480px"
       :close-on-click-modal="false"
+      destroy-on-close
+      class="yunxiao-sync-drawer"
     >
-      <el-form
-        ref="yunxiaoFormRef"
-        :model="yunxiaoForm"
-        label-width="110px"
-        :rules="yunxiaoRules"
-      >
-        <el-form-item label="访问令牌" prop="token">
-          <el-input
-            v-model="yunxiaoForm.token"
-            type="password"
-            show-password
-            placeholder="云效个人访问令牌 (PAT)"
-            clearable
-          />
-          <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
-            前往云效 → 个人设置 → 个人访问令牌 获取
-          </div>
-        </el-form-item>
-
-        <el-form-item label="组织 ID" prop="organization_id">
-          <el-input
-            v-model="yunxiaoForm.organization_id"
-            placeholder="中心版必填，可在组织管理后台获取"
-            clearable
-          />
-        </el-form-item>
-
-        <el-form-item label="项目" prop="space_id">
-          <el-select
-            v-model="yunxiaoForm.space_id"
-            placeholder="选择项目"
-            filterable
-            clearable
-            remote
-            :remote-method="searchYunxiaoProjects"
-            :loading="yunxiaoProjectLoading"
-            style="width: 100%;"
-            @change="onYunxiaoProjectChange"
-          >
-            <el-option
-              v-for="proj in yunxiaoProjects"
-              :key="proj.id"
-              :label="proj.name"
-              :value="proj.id"
+      <div class="yunxiao-drawer-body">
+        <el-form
+          ref="yunxiaoFormRef"
+          :model="yunxiaoForm"
+          label-width="100px"
+          :rules="yunxiaoRules"
+          class="yunxiao-form"
+        >
+          <el-form-item label="访问令牌" prop="token">
+            <el-input
+              v-model="yunxiaoForm.token"
+              type="password"
+              show-password
+              placeholder="云效个人访问令牌 (PAT)"
+              clearable
             />
-          </el-select>
-        </el-form-item>
+            <div class="form-tip">
+              前往云效 → 个人设置 → 个人访问令牌 获取
+            </div>
+          </el-form-item>
 
-        <el-form-item label="迭代" prop="sprint_id">
-          <el-select
-            v-model="yunxiaoForm.sprint_id"
-            placeholder="选择迭代 (可选，不选则拉取全部)"
-            filterable
-            clearable
-            :loading="yunxiaoSprintLoading"
-            style="width: 100%;"
-            :disabled="!yunxiaoForm.space_id"
-          >
-            <el-option
-              v-for="sp in yunxiaoSprints"
-              :key="sp.id"
-              :label="sp.name"
-              :value="sp.id"
+          <el-form-item label="组织 ID" prop="organization_id">
+            <el-input
+              v-model="yunxiaoForm.organization_id"
+              placeholder="中心版必填，可在组织管理后台获取"
+              clearable
             />
-          </el-select>
-        </el-form-item>
+          </el-form-item>
 
-        <el-form-item label="版本标签" prop="version_tag">
-          <el-input
-            v-model="yunxiaoForm.version_tag"
-            placeholder="用于标识本次同步，如 v6.0.0-sprint5"
-            clearable
-          />
-        </el-form-item>
+          <el-form-item label="项目" prop="space_id">
+            <el-select
+              v-model="yunxiaoForm.space_id"
+              placeholder="选择项目"
+              filterable
+              clearable
+              remote
+              :remote-method="searchYunxiaoProjects"
+              :loading="yunxiaoProjectLoading"
+              style="width: 100%;"
+              @change="onYunxiaoProjectChange"
+            >
+              <el-option
+                v-for="proj in yunxiaoProjects"
+                :key="proj.id"
+                :label="proj.name"
+                :value="proj.id"
+              />
+            </el-select>
+          </el-form-item>
 
-        <el-form-item label="最大数量" prop="max_bugs">
-          <el-input-number v-model="yunxiaoForm.max_bugs" :min="1" :max="2000" :step="100" />
-          <span style="font-size: 12px; color: #94a3b8; margin-left: 8px;">最多拉取条数</span>
-        </el-form-item>
-      </el-form>
+          <el-form-item label="迭代" prop="sprint_id">
+            <el-select
+              v-model="yunxiaoForm.sprint_id"
+              placeholder="选择迭代 (可选，不选则拉取全部)"
+              filterable
+              clearable
+              :loading="yunxiaoSprintLoading"
+              style="width: 100%;"
+              :disabled="!yunxiaoForm.space_id"
+            >
+              <el-option
+                v-for="sp in yunxiaoSprints"
+                :key="sp.id"
+                :label="sp.name"
+                :value="sp.id"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="版本标签" prop="version_tag">
+            <el-input
+              v-model="yunxiaoForm.version_tag"
+              placeholder="用于标识本次同步，如 v6.0.0-sprint5"
+              clearable
+            />
+          </el-form-item>
+
+          <el-form-item label="最大数量" prop="max_bugs">
+            <div class="max-bugs-row">
+              <el-input-number v-model="yunxiaoForm.max_bugs" :min="1" :max="2000" :step="100" />
+              <span class="form-tip-inline">最多拉取条数</span>
+            </div>
+          </el-form-item>
+        </el-form>
+      </div>
 
       <template #footer>
-        <el-button @click="showYunxiaoDialog = false">取消</el-button>
-        <el-button
-          type="primary"
-          @click="startYunxiaoSync"
-          :loading="analyzing"
-          :disabled="!yunxiaoForm.token || !yunxiaoForm.space_id"
-        >
-          开始同步
-        </el-button>
+        <div class="yunxiao-drawer-footer">
+          <el-button @click="showYunxiaoDialog = false">取消</el-button>
+          <el-button
+            type="primary"
+            @click="startYunxiaoSync"
+            :loading="analyzing"
+            :disabled="!yunxiaoForm.token || !yunxiaoForm.space_id"
+          >
+            开始同步
+          </el-button>
+        </div>
       </template>
-    </el-dialog>
+    </el-drawer>
 
     <!-- 同步日志对话框 -->
     <el-dialog
@@ -4658,6 +4668,91 @@ function copyFirstBugFields() {
 .bug-item-header .bug-title{font-size:14px;font-weight:600;color:#333;line-height:1.5;word-break:break-all}
 .bug-item-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#999;margin-bottom:6px}
 .bug-item-desc{font-size:13px;color:#666;line-height:1.6;word-break:break-all}
+
+/* ==================== 云效同步抽屉样式 ==================== */
+.yunxiao-sync-drawer .el-drawer__header {
+  margin-bottom: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(147, 112, 219, 0.12);
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+.yunxiao-sync-drawer .el-drawer__header span {
+  border-left: 4px solid #7b42f6;
+  padding-left: 12px;
+}
+.yunxiao-drawer-body {
+  padding: 20px 20px 80px 20px;
+}
+.yunxiao-form .el-form-item {
+  margin-bottom: 20px;
+}
+.yunxiao-form .el-form-item__label {
+  color: #555;
+  font-weight: 500;
+}
+.yunxiao-form .el-input__wrapper,
+.yunxiao-form .el-select .el-input__wrapper {
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(147, 112, 219, 0.15) inset;
+  transition: all 0.2s;
+}
+.yunxiao-form .el-input__wrapper:hover,
+.yunxiao-form .el-select .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(147, 112, 219, 0.35) inset;
+}
+.yunxiao-form .el-input__wrapper.is-focus,
+.yunxiao-form .el-select .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px #7b42f6 inset;
+}
+.form-tip {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+.form-tip-inline {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-left: 8px;
+}
+.max-bugs-row {
+  display: flex;
+  align-items: center;
+}
+.yunxiao-drawer-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid rgba(147, 112, 219, 0.12);
+  background: #fff;
+}
+.yunxiao-drawer-footer .el-button--primary {
+  background: linear-gradient(135deg, #7b42f6 0%, #9b6bf5 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 24px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.yunxiao-drawer-footer .el-button--primary:hover {
+  background: linear-gradient(135deg, #6a35e0 0%, #8a5ae8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(123, 66, 246, 0.25);
+}
+.yunxiao-drawer-footer .el-button--primary:active {
+  transform: translateY(0);
+}
+.yunxiao-drawer-footer .el-button--primary.is-disabled {
+  background: #c9b8e8;
+  opacity: 0.7;
+}
+.yunxiao-drawer-footer .el-button:not(.el-button--primary) {
+  border-radius: 8px;
+  padding: 8px 24px;
+}
 
 /* ==================== 列表视图样式 - 紫色主题 ==================== */
 .filter-bar {
