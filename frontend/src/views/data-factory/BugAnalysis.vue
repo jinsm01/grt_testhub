@@ -1430,6 +1430,9 @@ function dtypeTagType(dt){return{'UI显示':'','功能逻辑':'warning','数据�
 // 显示状态对应的Bug列表
 function showStatusBugList(status) {
   selectedStatus.value = status
+  console.log('[showStatusBugList] rawBugs总数:', rawBugs.value.length)
+  console.log('[showStatusBugList] 前3条rawBugs的status:', rawBugs.value.slice(0, 3).map(b => b.status || b['解决状态'] || b['bug状态'] || '空'))
+  console.log('[showStatusBugList] statusData的keys:', Object.keys(statusData.value))
   // 从原始Bug数据中筛选对应状态的Bug
   statusBugList.value = rawBugs.value.filter(bug => {
     const bugStatus = bug.status || bug['解决状态'] || bug['bug状态'] || ''
@@ -2857,6 +2860,8 @@ async function startYunxiaoSync() {
 
     // 将后端返回的数据解析到各个 ref（关键！否则图表和AI数据都为空）
     _rawAnalysisResult = res.data
+    rawBugs.value = res.data.raw_bugs || []
+    console.log('[startYunxiaoSync] raw_bugs数量:', rawBugs.value.length)
     applyAnalysisResult(res.data)
 
     // 清空选中文件状态

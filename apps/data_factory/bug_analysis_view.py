@@ -355,6 +355,8 @@ async def _run_enhanced_analysis(bugs, filename='', save_record=True,
         except Exception as e:
             logger.error(f"[BugAnalysis] 保存分析记录失败: {e}", exc_info=True)
 
+    # 返回原始Bug数据(前100条)，用于前端状态筛选
+    analysis_result['raw_bugs'] = [_serialize_for_json(dict(b)) for b in bugs[:100]]
     return analysis_result
 
 
