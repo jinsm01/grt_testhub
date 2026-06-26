@@ -29,6 +29,7 @@
         <!-- 未选择文件时显示选择按钮 -->
         <template v-if="!selectedFile">
           <el-button
+            v-if="false"
             type="primary"
             class="select-file-btn"
             @click="triggerFileSelect"
@@ -49,7 +50,7 @@
           </el-button>
         </template>
         <!-- 选择文件后显示文件信息和操作 -->
-        <div v-else class="selected-file-info">
+        <div v-else v-if="false" class="selected-file-info">
           <span
             class="file-name-text clickable"
             :title="selectedFile.name"
@@ -86,7 +87,7 @@
 
           <el-table-column label="文件名" min-width="280" show-overflow-tooltip header-align="center" align="left">
             <template #default="{ row }">
-              <span class="file-name">{{ row.file_name || '未命名' }}</span>
+              <span class="file-name">{{ row.display_name || row.file_name || '未命名' }}</span>
             </template>
           </el-table-column>
 
@@ -96,7 +97,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="P0 风险" width="110" header-align="center" align="center">
+          <el-table-column v-if="false" label="P0 风险" width="110" header-align="center" align="center">
             <template #default="{ row }">
               <span
                 class="p0-badge"
@@ -109,7 +110,13 @@
 
 
 
-          <el-table-column label="上传时间" width="180" header-align="center" align="center">
+          <el-table-column label="同步人" width="120" header-align="center" align="center">
+            <template #default="{ row }">
+              <span class="creator-text">{{ row.created_by || '-' }}</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="同步时间" width="200" header-align="center" align="center">
             <template #default="{ row }">
               <span class="time-text">{{ formatDateTime(row.created_at) }}</span>
             </template>
@@ -129,7 +136,7 @@
                   @click="openSyncLog(row)"
                 >
                   <el-icon><Document /></el-icon>
-                  <span>{{ row.source_type === 'yunxiao_api' ? '同步日志' : '原始数据' }}</span>
+                  <span>{{ row.source_type === 'yunxiao_api' ? '日志' : '原始数据' }}</span>
                 </el-button>
                 <el-button size="small" type="danger" @click="handleDeleteRecord(row)">
                   <el-icon><Delete /></el-icon>
@@ -155,7 +162,7 @@
 
         <!-- 空状态 -->
         <el-empty v-if="!loadingHistory && historyRecords.length === 0" description="暂无分析记录">
-          <el-button type="primary" @click="showUploadDialog = true">
+          <el-button v-if="false" type="primary" @click="showUploadDialog = true">
             <el-icon><Upload /></el-icon>
             上传文件开始分析
           </el-button>
@@ -239,7 +246,7 @@
                 <span class="top-mod">{{ rec.meta_data?.top_module || '' }}</span>
               </div>
             </div>
-            <el-empty v-if="!loadingHistory && historyRecords.length === 0" description="暂无历史记录" :image-size="60" />
+            <el-empty v-if="!loadingHistory && historyRecords.length === 0" description="暂无迭代报告" :image-size="60" />
           </div>
         </div>
       </transition>
@@ -354,53 +361,43 @@
         <div class="tab-content">
           <!-- 概览 Tab -->
           <div v-show="activeTab === 'overview'" class="tab-panel">
-            <!-- AI 总结摘要 (V2新增) - 只在启用AI时显示 -->
-            <el-card class="section-card collapsible-card" v-if="aiSummary || aiLoading">
-          <template #header>
-            <div class="card-header collapsible-header" @click="toggleSection('aiSummary')">
-              <span class="header-title"><el-icon><MagicStick /></el-icon> AI 智能摘要</span>
-              <div class="header-right">
-                <el-tag v-if="!aiLoading" type="success" size="small" effect="dark" class="ai-status-tag success">
-                  AI 已生成
-                </el-tag>
-                <el-tag v-else size="small" effect="plain" class="ai-status-tag loading">
-                  AI 分析中...
-                </el-tag>
-                <el-icon class="collapse-icon" :class="{ 'is-collapsed': sectionCollapsed.aiSummary }">
-                  <ArrowDown />
-                </el-icon>
+            <!-- AI 加载骨架 - 无外层卡片，与回归风险保持一致 -->
+            <div v-if="aiLoading && !aiSummary" class="ai-loading-container">
+              <div class="ai-loading-header">
+                <div class="ai-loading-pulse">
+                  <el-icon class="is-loading"><Loading /></el-icon>
+                </div>
+                <div class="ai-loading-info">
+                  <div class="ai-loading-title">AI 正在分析数据...</div>
+                  <div class="ai-loading-desc">{{ aiLoadingText }}</div>
+                </div>
+              </div>
+              <div class="ai-skeleton">
+                <div class="ai-skeleton-line"></div>
+                <div class="ai-skeleton-line"></div>
+                <div class="ai-skeleton-line"></div>
               </div>
             </div>
-          </template>
-          <div v-show="!sectionCollapsed.aiSummary" class="collapsible-content">
-          <!-- AI 加载状态 - 现代骨架屏 -->
-          <div v-if="aiLoading && !aiSummary" class="ai-loading-container">
-            <div class="ai-loading-header">
-              <div class="ai-loading-pulse">
-                <el-icon class="is-loading"><Loading /></el-icon>
+
+            <!-- AI 总结摘要 (V2新增) - 只在有结果时显示 -->
+            <el-card class="section-card collapsible-card" v-else-if="aiSummary">
+              <template #header>
+                <div class="card-header collapsible-header" @click="toggleSection('aiSummary')">
+                  <span class="header-title"><el-icon><MagicStick /></el-icon> AI 智能摘要</span>
+                  <div class="header-right">
+                    <el-tag type="success" size="small" effect="dark" class="ai-status-tag success">
+                      AI 已生成
+                    </el-tag>
+                    <el-icon class="collapse-icon" :class="{ 'is-collapsed': sectionCollapsed.aiSummary }">
+                      <ArrowDown />
+                    </el-icon>
+                  </div>
+                </div>
+              </template>
+              <div v-show="!sectionCollapsed.aiSummary" class="collapsible-content">
+                <div class="ai-summary-content" v-html="formatAiSummary(aiSummary)"></div>
               </div>
-              <div class="ai-loading-info">
-                <div class="ai-loading-title">AI 正在分析数据...</div>
-                <div class="ai-loading-desc">{{ aiLoadingText }}</div>
-              </div>
-            </div>
-            <div class="ai-skeleton">
-              <div class="ai-skeleton-line"></div>
-              <div class="ai-skeleton-line"></div>
-              <div class="ai-skeleton-line"></div>
-              <div class="ai-skeleton-line"></div>
-            </div>
-            <div class="ai-loading-status">
-              <div class="ai-loading-dot"></div>
-              <div class="ai-loading-dot"></div>
-              <div class="ai-loading-dot"></div>
-              <span class="ai-loading-text-new">智能分析中</span>
-            </div>
-          </div>
-          <!-- AI 结果展示 -->
-          <div v-else class="ai-summary-content" v-html="formatAiSummary(aiSummary)"></div>
-          </div>
-        </el-card>
+            </el-card>
           </div>
 
           <!-- 图表 Tab -->
@@ -598,11 +595,6 @@
                 </div>
               </div>
               
-              <!-- AI 已生成标记 -->
-              <div class="ai-generated-mark">
-                <el-icon><MagicStick /></el-icon>
-                <span>AI 智能分析已完成</span>
-              </div>
             </div>
             
             <!-- 无AI结果时显示空状态 -->
@@ -834,6 +826,7 @@
           <div v-else class="bug-list-container">
             <div v-for="(bug, idx) in statusBugList" :key="idx" class="bug-list-item">
               <div class="bug-item-header">
+                <span class="bug-serial" v-if="bug.serialNumber">{{ bug.serialNumber }}</span>
                 <el-tag size="small" :type="sevTagType(bug.severity)" class="bug-sev-tag">{{ bug.severity || '未知' }}</el-tag>
                 <span class="bug-title">{{ bug.title || '无标题' }}</span>
               </div>
@@ -920,7 +913,7 @@
         </el-form>
         <div style="margin-top: 12px; font-size: 12px; color: #7b42f6; display: flex; align-items: center; gap: 6px;">
           <el-icon style="font-size: 14px; color: #7b42f6;"><Clock /></el-icon>
-          <span>分析记录将自动保存到历史记录，可通过版本标签快速检索</span>
+          <span>分析记录将自动保存到迭代报告，可通过版本标签快速检索</span>
         </div>
       </div>
 
@@ -935,9 +928,9 @@
     <!-- ==================== 云效同步抽屉 ==================== -->
     <el-drawer
       v-model="showYunxiaoDialog"
-      title="从云效同步 Bug 数据"
+      title="云效同步Bug"
       direction="rtl"
-      size="480px"
+      size="600px"
       :close-on-click-modal="false"
       destroy-on-close
       class="yunxiao-sync-drawer"
@@ -958,15 +951,12 @@
               placeholder="云效个人访问令牌 (PAT)"
               clearable
             />
-            <div class="form-tip">
-              前往云效 → 个人设置 → 个人访问令牌 获取
-            </div>
           </el-form-item>
 
           <el-form-item label="组织 ID" prop="organization_id">
             <el-input
               v-model="yunxiaoForm.organization_id"
-              placeholder="中心版必填，可在组织管理后台获取"
+              placeholder="组织管理后台获取"
               clearable
             />
           </el-form-item>
@@ -995,7 +985,7 @@
           <el-form-item label="迭代" prop="sprint_id">
             <el-select
               v-model="yunxiaoForm.sprint_id"
-              placeholder="选择迭代 (可选，不选则拉取全部)"
+              placeholder="选择迭代 (不选拉取全部)"
               filterable
               clearable
               :loading="yunxiaoSprintLoading"
@@ -1043,12 +1033,14 @@
       </template>
     </el-drawer>
 
-    <!-- 同步日志对话框 -->
-    <el-dialog
+    <!-- 同步日志抽屉 -->
+    <el-drawer
       v-model="showSyncLogDialog"
       title="云效同步日志详情"
-      width="80%"
+      size="80%"
+      direction="rtl"
       :close-on-click-modal="false"
+      class="sync-log-drawer"
     >
       <div v-if="syncLogLoading" class="sync-log-loading">
         <el-icon class="is-loading"><Loading /></el-icon>
@@ -1056,29 +1048,20 @@
       </div>
 
       <div v-else-if="syncLogData" class="sync-log-content">
-        <!-- 基本信息 -->
-        <el-card class="sync-log-card" shadow="never">
-          <template #header>
-            <span class="sync-log-title">基本信息</span>
-          </template>
-          <el-descriptions :column="3" border>
-            <el-descriptions-item label="记录ID">{{ syncLogData.record_id }}</el-descriptions-item>
-            <el-descriptions-item label="文件名">{{ syncLogData.file_name }}</el-descriptions-item>
-            <el-descriptions-item label="Bug总数">{{ syncLogData.total_bugs }}</el-descriptions-item>
-            <el-descriptions-item label="同步时间">{{ syncLogData.sync_time }}</el-descriptions-item>
-          </el-descriptions>
-        </el-card>
-
         <!-- 字段填充率统计 -->
-        <el-card class="sync-log-card" shadow="never" style="margin-top: 16px;">
+        <el-card class="sync-log-card" shadow="never" style="margin-top: 12px;">
           <template #header>
             <span class="sync-log-title">字段填充率统计</span>
           </template>
-          <el-table :data="Object.entries(syncLogData.field_stats || {}).map(([k, v]) => ({ field: k, ...v }))" stripe size="small">
-            <el-table-column prop="field" label="字段名" width="150" />
-            <el-table-column prop="filled" label="已填充" width="100" />
-            <el-table-column prop="total" label="总数" width="100" />
-            <el-table-column prop="rate" label="填充率" width="100">
+          <el-table :data="Object.entries(syncLogData.field_stats || {}).map(([k, v]) => ({ field: k, ...v }))" stripe size="small" style="width: 100%">
+            <el-table-column prop="field" label="字段名" min-width="200">
+              <template #default="{ row }">
+                {{ getFieldDisplayName(row.field) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="filled" label="已填充" min-width="120" />
+            <el-table-column prop="total" label="总数" min-width="120" />
+            <el-table-column prop="rate" label="填充率" min-width="120">
               <template #default="{ row }">
                 <el-tag :type="row.rate >= 90 ? 'success' : row.rate >= 50 ? 'warning' : 'danger'" size="small">
                   {{ row.rate }}%
@@ -1088,58 +1071,62 @@
           </el-table>
         </el-card>
 
-        <!-- 云效原始字段名（用于诊断字段名匹配问题） -->
-        <el-card class="sync-log-card" shadow="never" style="margin-top: 16px;">
-          <template #header>
-            <span class="sync-log-title">云效原始字段名 (_raw_yunxiao keys)</span>
-            <el-tag type="warning" size="small" style="margin-left: 8px;">
-              共 {{ (syncLogData.first_bug_raw_keys || []).length }} 个
-            </el-tag>
-          </template>
-          <div class="custom-field-keys">
-            <el-tag
-              v-for="key in syncLogData.first_bug_raw_keys || []"
-              :key="key"
-              size="small"
-              style="margin: 4px;"
-              type="info"
-            >
-              {{ key }}
-            </el-tag>
-            <el-empty v-if="!(syncLogData.first_bug_raw_keys || []).length" description="无原始字段数据" :image-size="60" />
-          </div>
-        </el-card>
+        <!-- 原始字段名 + 自定义字段名 并排 -->
+        <div class="sync-log-row" style="margin-top: 12px;">
+          <!-- 云效原始字段名（用于诊断字段名匹配问题） -->
+          <el-card class="sync-log-card" shadow="never">
+            <template #header>
+              <span class="sync-log-title">云效原始字段名 (_raw_yunxiao keys)</span>
+              <el-tag type="warning" size="small" style="margin-left: 8px;">
+                共 {{ (syncLogData.first_bug_raw_keys || []).length }} 个
+              </el-tag>
+            </template>
+            <div class="custom-field-keys">
+              <el-tag
+                v-for="key in syncLogData.first_bug_raw_keys || []"
+                :key="key"
+                size="small"
+                style="margin: 4px;"
+                type="info"
+                :title="key"
+              >
+                {{ getFieldDisplayName(key) }}
+              </el-tag>
+              <el-empty v-if="!(syncLogData.first_bug_raw_keys || []).length" description="无原始字段数据" :image-size="60" />
+            </div>
+          </el-card>
 
-        <!-- 所有自定义字段名 -->
-        <el-card class="sync-log-card" shadow="never" style="margin-top: 16px;">
-          <template #header>
-            <span class="sync-log-title">所有自定义字段名 (custom_fields)</span>
-            <el-tag type="info" size="small" style="margin-left: 8px;">
-              共 {{ (syncLogData.all_custom_field_keys || []).length }} 个字段
-            </el-tag>
-          </template>
-          <div class="custom-field-keys">
-            <el-tag
-              v-for="key in syncLogData.all_custom_field_keys || []"
-              :key="key"
-              size="small"
-              style="margin: 4px;"
-              :type="['参与者', '参与人', '相关人员', '协同人', '参与人员', 'participant', 'participants'].includes(key) ? 'success' : 'info'"
-            >
-              {{ key }}
-            </el-tag>
-            <el-empty v-if="!(syncLogData.all_custom_field_keys || []).length" description="无自定义字段" :image-size="60" />
-          </div>
-        </el-card>
+          <!-- 所有自定义字段名 -->
+          <el-card class="sync-log-card" shadow="never">
+            <template #header>
+              <span class="sync-log-title">所有自定义字段名 (custom_fields)</span>
+              <el-tag type="info" size="small" style="margin-left: 8px;">
+                共 {{ (syncLogData.all_custom_field_keys || []).length }} 个字段
+              </el-tag>
+            </template>
+            <div class="custom-field-keys">
+              <el-tag
+                v-for="key in syncLogData.all_custom_field_keys || []"
+                :key="key"
+                size="small"
+                style="margin: 4px;"
+                :type="['参与者', '参与人', '相关人员', '协同人', '参与人员', 'participant', 'participants'].includes(key) ? 'success' : 'info'"
+              >
+                {{ key }}
+              </el-tag>
+              <el-empty v-if="!(syncLogData.all_custom_field_keys || []).length" description="无自定义字段" :image-size="60" />
+            </div>
+          </el-card>
+        </div>
 
         <!-- 前10条Bug样本 -->
-        <el-card class="sync-log-card" shadow="never" style="margin-top: 16px;">
+        <el-card class="sync-log-card" shadow="never" style="margin-top: 12px;">
           <template #header>
             <span class="sync-log-title">前10条Bug样本</span>
           </template>
           <el-table :data="syncLogData.sample_bugs || []" stripe size="small" max-height="400">
             <el-table-column prop="index" label="#" width="50" />
-            <el-table-column prop="id" label="ID" width="100" />
+            <el-table-column prop="serialNumber" label="编号" width="120" />
             <el-table-column prop="title" label="标题" min-width="150" show-overflow-tooltip />
             <el-table-column prop="created" label="创建时间" width="150" />
             <el-table-column prop="updated" label="更新时间" width="150" />
@@ -1165,7 +1152,7 @@
         </el-card>
 
         <!-- 第一条Bug完整字段 -->
-        <el-card class="sync-log-card" shadow="never" style="margin-top: 16px;">
+        <el-card class="sync-log-card" shadow="never" style="margin-top: 12px;">
           <template #header>
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span class="sync-log-title">第一条Bug完整字段信息</span>
@@ -1182,7 +1169,7 @@
       <template #footer>
         <el-button @click="showSyncLogDialog = false">关闭</el-button>
       </template>
-    </el-dialog>
+    </el-drawer>
   </div><!-- end bug-analysis-container -->
 </template>
 
@@ -1280,6 +1267,95 @@ const yunxiaoSprintLoading = ref(false)
 const showSyncLogDialog = ref(false)
 const syncLogLoading = ref(false)
 const syncLogData = ref(null)
+
+// 字段名中文映射（标准化字段 + 云效原始字段）
+const FIELD_NAME_MAP = {
+  // 标准化字段
+  title: '标题',
+  created: '创建时间',
+  updated: '更新时间',
+  creator: '创建者',
+  status: '状态',
+  severity: '严重度',
+  priority: '优先级',
+  module: '模块',
+  custom_fields: '自定义字段',
+  // 云效原始字段
+  id: 'ID',
+  identifier: '标识',
+  serialNumber: '编号',
+  subject: '标题',
+  name: '名称',
+  description: '描述',
+  content: '内容',
+  severityName: '严重度名称',
+  priorityName: '优先级名称',
+  moduleName: '模块名称',
+  assignedTo: '指派给',
+  assignee: '处理人',
+  reporter: '报告人',
+  participants: '参与者',
+  participant: '参与者',
+  workitemType: '工作项类型',
+  category: '分类',
+  type: '类型',
+  gmtCreate: '创建时间',
+  gmt_create: '创建时间',
+  createdAt: '创建时间',
+  created_at: '创建时间',
+  createTime: '创建时间',
+  create_time: '创建时间',
+  createdTime: '创建时间',
+  created_time: '创建时间',
+  gmtCreateTime: '创建时间',
+  gmt_create_time: '创建时间',
+  gmtModified: '修改时间',
+  gmt_modified: '修改时间',
+  modifiedAt: '修改时间',
+  modified_at: '修改时间',
+  updateTime: '更新时间',
+  update_time: '更新时间',
+  updatedTime: '更新时间',
+  updated_time: '更新时间',
+  gmtModifyTime: '修改时间',
+  gmt_modify_time: '修改时间',
+  gmtClosed: '关闭时间',
+  gmt_closed: '关闭时间',
+  closedAt: '关闭时间',
+  closed_at: '关闭时间',
+  closeTime: '关闭时间',
+  close_time: '关闭时间',
+  customFieldValues: '自定义字段值',
+  customFieldValueList: '自定义字段值列表',
+  customFields: '自定义字段',
+  fieldValueMap: '字段值映射',
+  extraFields: '额外字段',
+  custom_field_values: '自定义字段值',
+  spaceId: '空间ID',
+  spaceType: '空间类型',
+  sprint: '迭代',
+  sprintId: '迭代ID',
+  tags: '标签',
+  tag: '标签',
+  parent: '父项',
+  parentId: '父项ID',
+  children: '子项',
+  attachments: '附件',
+  attachment: '附件',
+  comments: '评论',
+  comment: '评论',
+  watchers: '关注者',
+  watcher: '关注者',
+  followers: '关注者',
+  follower: '关注者',
+  solution: '解决方案',
+  remark: '备注',
+  desc: '描述',
+}
+
+function getFieldDisplayName(field) {
+  return FIELD_NAME_MAP[field] || field
+}
 
 // 控制详情页头部显示（临时隐藏，后续可能重新启用）
 const showDetailHeader = ref(false)
@@ -1886,7 +1962,8 @@ const formatDateTime = (datetime)=>{
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    second: '2-digit'
   })
 }
 
@@ -2012,6 +2089,9 @@ function startAiPolling(recordId) {
         const detailData = detailRes.data?.data || detailRes.data || {}
         if (detailData.analysis_result) {
           _rawAnalysisResult = detailData.analysis_result
+          // 恢复原始Bug数据（用于饼图点击筛选）
+          rawBugs.value = detailData.raw_bugs || detailData.analysis_result?.raw_bugs || []
+          console.log('[startAiPolling] AI完成，恢复rawBugs数量:', rawBugs.value.length)
           applyAnalysisResult(detailData.analysis_result)
           nextTick(() => {
             renderCharts()
@@ -2066,6 +2146,9 @@ async function loadHistoryRecord(rec){
       console.log('[加载历史记录] aiKeywords:', result.analysis_result?.aiKeywords)
       // 先设置 currentRecordId，再 applyAnalysisResult
       currentRecordId.value=rec.id
+      // 恢复原始Bug数据（用于饼图点击筛选）
+      rawBugs.value = result.raw_bugs || result.analysis_result?.raw_bugs || []
+      console.log('[加载历史记录] rawBugs数量:', rawBugs.value.length)
       applyAnalysisResult(result.analysis_result)
       generateSummary()
       analysisResult.value=true
@@ -2888,6 +2971,8 @@ async function startYunxiaoSync() {
 
     // 如果 AI 分析在后台进行中，启动轮询
     if (aiStatus.value === 'pending' || aiStatus.value === 'running') {
+      aiLoading.value = true
+      aiLoadingText.value = 'AI 正在分析中，请稍候...'
       startAiPolling(currentRecordId.value)
     }
   } catch (e) {
@@ -3997,56 +4082,33 @@ function copyFirstBugFields() {
 
 /* ==================== AI 加载状态 - 现代骨架屏风格 ==================== */
 .ai-loading-container {
-  padding: 32px 24px;
+  padding: 24px;
   background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
-  border-radius: 8px;
-  position: relative;
-  overflow: hidden;
-}
-
-.ai-loading-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, #2563eb, transparent);
-  animation: loading-bar 2s ease-in-out infinite;
-}
-
-@keyframes loading-bar {
-  0% { transform: translateX(-100%); }
-  50% { transform: translateX(0%); }
-  100% { transform: translateX(100%); }
+  border-radius: 12px;
+  border: 1px solid rgba(147, 112, 219, 0.15);
 }
 
 .ai-loading-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .ai-loading-pulse {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #dbeafe 0%, #2563eb 100%);
-  animation: pulse 2s ease-in-out infinite;
+  background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+  border: 1px solid rgba(147, 112, 219, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .ai-loading-pulse .el-icon {
-  color: #2563eb;
+  color: #7b42f6;
   font-size: 20px;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.8; }
 }
 
 .ai-loading-info {
@@ -4056,13 +4118,13 @@ function copyFirstBugFields() {
 .ai-loading-title {
   font-size: 15px;
   font-weight: 600;
-  color: #1e293b;
+  color: #333;
   margin-bottom: 4px;
 }
 
 .ai-loading-desc {
   font-size: 13px;
-  color: #64748b;
+  color: #666;
 }
 
 .ai-skeleton {
@@ -4082,47 +4144,15 @@ function copyFirstBugFields() {
 .ai-skeleton-line:nth-child(1) { width: 100%; }
 .ai-skeleton-line:nth-child(2) { width: 85%; }
 .ai-skeleton-line:nth-child(3) { width: 70%; }
-.ai-skeleton-line:nth-child(4) { width: 90%; }
 
 @keyframes shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
-.ai-loading-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #e2e8f0;
-}
-
-.ai-loading-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #2563eb;
-  animation: bounce 1.4s ease-in-out infinite both;
-}
-
-.ai-loading-dot:nth-child(1) { animation-delay: -0.32s; }
-.ai-loading-dot:nth-child(2) { animation-delay: -0.16s; }
-
-@keyframes bounce {
-  0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
-}
-
 @keyframes pulse-highlight {
   0%, 100% { box-shadow: 0 0 0 3px rgba(245,158,11,0.3), 0 8px 16px -4px rgba(245,158,11,0.2); }
   50% { box-shadow: 0 0 0 6px rgba(245,158,11,0.15), 0 12px 24px -4px rgba(245,158,11,0.3); }
-}
-
-/* AI卡片样式 */.ai-loading-text-new {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 500;
 }
 
 .summary-content{padding:4px 0}.summary-section{margin-bottom:16px}.summary-section:last-child{margin-bottom:0}
@@ -4664,6 +4694,7 @@ function copyFirstBugFields() {
 .bug-list-item{background:#fff;border:1px solid rgba(147,112,219,0.15);border-radius:8px;padding:12px 16px;transition:all 0.2s}
 .bug-list-item:hover{border-color:rgba(147,112,219,0.3);box-shadow:0 2px 8px rgba(147,112,219,0.08)}
 .bug-item-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bug-item-header .bug-serial{font-size:12px;font-weight:600;color:#7c3aed;background:rgba(124,58,237,0.1);padding:2px 8px;border-radius:4px;flex-shrink:0}
 .bug-item-header .bug-sev-tag{flex-shrink:0}
 .bug-item-header .bug-title{font-size:14px;font-weight:600;color:#333;line-height:1.5;word-break:break-all}
 .bug-item-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#999;margin-bottom:6px}
@@ -4673,48 +4704,15 @@ function copyFirstBugFields() {
 .yunxiao-sync-drawer .el-drawer__header {
   margin-bottom: 0;
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(147, 112, 219, 0.12);
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-.yunxiao-sync-drawer .el-drawer__header span {
-  border-left: 4px solid #7b42f6;
-  padding-left: 12px;
+  border-bottom: 1px solid #e8e8e8;
+  font-weight: 800;
 }
 .yunxiao-drawer-body {
-  padding: 20px 20px 80px 20px;
-}
-.yunxiao-form .el-form-item {
-  margin-bottom: 20px;
-}
-.yunxiao-form .el-form-item__label {
-  color: #555;
-  font-weight: 500;
-}
-.yunxiao-form .el-input__wrapper,
-.yunxiao-form .el-select .el-input__wrapper {
-  border-radius: 8px;
-  box-shadow: 0 0 0 1px rgba(147, 112, 219, 0.15) inset;
-  transition: all 0.2s;
-}
-.yunxiao-form .el-input__wrapper:hover,
-.yunxiao-form .el-select .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px rgba(147, 112, 219, 0.35) inset;
-}
-.yunxiao-form .el-input__wrapper.is-focus,
-.yunxiao-form .el-select .el-input__wrapper.is-focus {
-  box-shadow: 0 0 0 1px #7b42f6 inset;
-}
-.form-tip {
-  font-size: 12px;
-  color: #94a3b8;
-  margin-top: 6px;
-  line-height: 1.4;
+  padding: 20px;
 }
 .form-tip-inline {
   font-size: 12px;
-  color: #94a3b8;
+  color: #909399;
   margin-left: 8px;
 }
 .max-bugs-row {
@@ -4723,35 +4721,30 @@ function copyFirstBugFields() {
 }
 .yunxiao-drawer-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
   padding: 12px 20px;
-  border-top: 1px solid rgba(147, 112, 219, 0.12);
-  background: #fff;
+}
+.yunxiao-drawer-footer .el-button:not(.el-button--primary) {
+  background-color: #ffffff;
+  border-color: #dcdfe6;
+  color: #606266;
+}
+.yunxiao-drawer-footer .el-button:not(.el-button--primary):hover {
+  background-color: #f5f7fa;
+  border-color: #7b42f6;
+  color: #7b42f6;
 }
 .yunxiao-drawer-footer .el-button--primary {
   background: linear-gradient(135deg, #7b42f6 0%, #9b6bf5 100%);
   border: none;
-  border-radius: 8px;
-  padding: 8px 24px;
-  font-weight: 500;
-  transition: all 0.2s;
+  color: #fff;
 }
 .yunxiao-drawer-footer .el-button--primary:hover {
   background: linear-gradient(135deg, #6a35e0 0%, #8a5ae8 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(123, 66, 246, 0.25);
-}
-.yunxiao-drawer-footer .el-button--primary:active {
-  transform: translateY(0);
 }
 .yunxiao-drawer-footer .el-button--primary.is-disabled {
-  background: #c9b8e8;
-  opacity: 0.7;
-}
-.yunxiao-drawer-footer .el-button:not(.el-button--primary) {
-  border-radius: 8px;
-  padding: 8px 24px;
+  background: linear-gradient(135deg, #c4b5e0 0%, #d4c8ec 100%);
+  opacity: 0.8;
+  cursor: not-allowed;
 }
 
 /* ==================== 列表视图样式 - 紫色主题 ==================== */
@@ -4957,6 +4950,11 @@ function copyFirstBugFields() {
 }
 
 .time-text {
+  color: #333;
+  font-size: 13px;
+}
+
+.creator-text {
   color: #333;
   font-size: 13px;
 }
@@ -5342,7 +5340,17 @@ function copyFirstBugFields() {
   }
 }
 
-/* ==================== 同步日志对话框样式 ==================== */
+/* ==================== 同步日志抽屉样式 ==================== */
+.sync-log-drawer .el-drawer__footer .el-button:not(.el-button--primary) {
+  background-color: #ffffff;
+  border-color: #dcdfe6;
+  color: #606266;
+}
+.sync-log-drawer .el-drawer__footer .el-button:not(.el-button--primary):hover {
+  background-color: #f5f7fa;
+  border-color: #7b42f6;
+  color: #7b42f6;
+}
 .sync-log-loading {
   display: flex;
   align-items: center;
@@ -5353,8 +5361,17 @@ function copyFirstBugFields() {
 }
 
 .sync-log-content {
-  max-height: 70vh;
   overflow-y: auto;
+}
+
+.sync-log-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sync-log-row .sync-log-card {
+  margin-top: 0;
 }
 
 .sync-log-card {

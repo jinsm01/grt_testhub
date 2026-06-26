@@ -254,6 +254,8 @@ class BugSourceAdapter:
         custom_fields_raw = raw_row.get('custom_fields')
 
         bug = NormalizedBug({
+            'id': str(raw_row.get('id', '') or ''),
+            'serialNumber': str(raw_row.get('serialNumber', '') or ''),
             'title': str(raw_row.get('title', '') or ''),
             'desc': str(raw_row.get('desc', '') or ''),
             'severity': raw_row.get('severity') or '',

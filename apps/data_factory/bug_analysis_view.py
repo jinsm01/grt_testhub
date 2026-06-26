@@ -184,7 +184,7 @@ def _build_error_response(message, code=status.HTTP_400_BAD_REQUEST, log_level='
 async def _run_enhanced_analysis(bugs, filename='', save_record=True,
                                   ai_provider_name='qwen', ai_config_id=None,
                                   version_tag='', source_type='excel',
-                                  skip_ai=False, ai_status='none'):
+                                  skip_ai=False, ai_status='none', created_by='system'):
     """
     运行增强版 Bug 分析流程
 
@@ -203,6 +203,7 @@ async def _run_enhanced_analysis(bugs, filename='', save_record=True,
         source_type: 数据来源类型 (默认 'excel')
         skip_ai: 是否跳过AI分析（用于异步模式，先保存基础分析，后台再执行AI）
         ai_status: 保存记录时的AI状态
+        created_by: 创建者用户名 (默认 'system')
 
     Returns:
         dict: 完整的分析结果
@@ -343,8 +344,7 @@ async def _run_enhanced_analysis(bugs, filename='', save_record=True,
                     analysis_result=analysis_result,
                     ai_status=final_ai_status,
                     ai_progress=100 if final_ai_status == 'completed' else 0,
-                    created_by=getattr(getattr(request, 'user', None), 'username', 'system')
-                    if hasattr(request, 'user') and request.user.is_authenticated else 'system'
+                    created_by=created_by,
                 )
             
             # 在异步上下文中调用同步函数
@@ -368,9 +368,23 @@ def _run_ai_analysis_background(record_id, bugs, analysis_result, ai_provider_na
     AI 方法为 async，使用 asyncio.run() 在新事件循环中执行
     """
     import asyncio
+    import atexit
     logger.info(f"[AI Background] 启动后台AI分析: record_id={record_id}, provider={ai_provider_name}")
 
     from asgiref.sync import sync_to_async
+
+    # 注册进程退出清理：如果进程被重启/kill，自动标记为失败
+    _cleanup_registered = True
+    def _cleanup_on_exit():
+        if _cleanup_registered:
+            try:
+                BugAnalysisRecord.objects.filter(id=record_id, ai_status='running').update(
+                    ai_status='failed', ai_progress=0
+                )
+                logger.warning(f"[AI Background] 进程退出，AI分析标记为失败: record_id={record_id}")
+            except Exception:
+                pass
+    atexit.register(_cleanup_on_exit)
 
     async def _update_status(status, progress=0):
         try:
@@ -486,10 +500,45 @@ def _run_ai_analysis_background(record_id, bugs, analysis_result, ai_provider_na
             BugAnalysisRecord.objects.filter(id=record_id).update(ai_status='failed', ai_progress=0)
         except Exception as e2:
             logger.error(f"[AI Background] 更新失败状态也失败: {e2}")
+    finally:
+        # 正常完成或异常后，禁用清理函数，避免误标记
+        _cleanup_registered = False
 
 
 # 全局 request 引擎（用于 _run_enhanced_analysis 内部访问）
 request = None
+
+
+def _recover_ai_analysis(record_id):
+    """
+    恢复被中断的 AI 分析任务（进程启动时调用）
+    """
+    import threading
+    try:
+        record = BugAnalysisRecord.objects.filter(id=record_id).first()
+        if not record:
+            logger.warning(f"[AI Recovery] 记录不存在: record_id={record_id}")
+            return
+        if record.ai_status != 'running':
+            logger.info(f"[AI Recovery] 记录状态不是running，无需恢复: record_id={record_id}, status={record.ai_status}")
+            return
+
+        bugs = record.raw_bugs or []
+        analysis_result = record.analysis_result or {}
+        ai_provider = analysis_result.get('ai_provider', 'qwen')
+        ai_config_id = analysis_result.get('ai_config_id')
+
+        logger.info(f"[AI Recovery] 恢复AI分析任务: record_id={record_id}, bugs={len(bugs)}, provider={ai_provider}")
+
+        # 启动后台线程重新执行AI分析
+        t = threading.Thread(
+            target=_run_ai_analysis_background,
+            args=(record_id, bugs, analysis_result, ai_provider, ai_config_id),
+            daemon=True
+        )
+        t.start()
+    except Exception as e:
+        logger.error(f"[AI Recovery] 恢复AI分析失败: record_id={record_id}, error={e}")
 
 
 # ============================================================
@@ -702,7 +751,8 @@ def analyze_bug_data(request):
             save_record=save_record,
             ai_provider_name=ai_provider,
             ai_config_id=ai_config_id,
-            version_tag=version_tag
+            version_tag=version_tag,
+            created_by=request.user.username if request.user.is_authenticated else 'system',
         )
 
         # === 响应 ===
@@ -970,11 +1020,17 @@ def bug_analysis_records(request):
                 top_module = max(modules_data.items(), key=lambda x: x[1])[0]
             else:
                 top_module = ''
+            # 计算 display_name（去掉 _数字条 后缀）
+            display_name = r.file_name
+            if display_name:
+                import re
+                display_name = re.sub(r'_\d+条$', '', display_name)
             items.append({
                 'id': r.id,
                 'version_tag': r.version_tag,
                 'source_type': r.source_type,
                 'file_name': r.file_name,
+                'display_name': display_name or r.file_name,
                 'total_bugs': r.total_bugs,
                 'ai_status': r.ai_status,
                 'ai_progress': r.ai_progress,
@@ -2217,6 +2273,7 @@ def sync_from_yunxiao(request):
             source_type='yunxiao_api',
             skip_ai=True,
             ai_status='pending' if not skip_ai else 'none',
+            created_by=request.user.username if request.user.is_authenticated else 'system',
         )
 
         record_id = analysis_result.get('record_id')
@@ -2310,9 +2367,14 @@ def yunxiao_sync_log(request, record_id):
         # 前10条Bug的关键字段信息
         sample_bugs = []
         for i, bug in enumerate(raw_bugs[:10]):
+            # 优先使用 serialNumber（云效编号），兼容历史数据回退到 _raw_yunxiao
+            bug_sn = bug.get('serialNumber')
+            if not bug_sn:
+                raw = bug.get('_raw_yunxiao', {})
+                bug_sn = raw.get('serialNumber') or raw.get('identifier') or raw.get('id')
             sample_bugs.append({
                 'index': i + 1,
-                'id': bug.get('id'),
+                'serialNumber': bug_sn,
                 'title': bug.get('title', '')[:50],
                 'created': bug.get('created'),
                 'updated': bug.get('updated'),

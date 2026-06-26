@@ -46,7 +46,7 @@
               </template>
               <el-menu-item index="/ai-generation/bug-analysis/history">
                 <el-icon><Clock /></el-icon>
-                <span>历史记录</span>
+                <span>迭代报告</span>
               </el-menu-item>
               <el-menu-item index="/ai-generation/bug-analysis/summary">
                 <el-icon><TrendCharts /></el-icon>
@@ -795,7 +795,7 @@ const breadcrumbTitle = computed(() => {
     '/ai-generation/generated-testcases': t('menu.aiGeneratedTestcases'),
     '/ai-generation/xmind-converter': 'XMind 转 Excel',
     '/ai-generation/bug-analysis': 'Bug 分析',
-    '/ai-generation/bug-analysis/history': '历史记录',
+    '/ai-generation/bug-analysis/history': '迭代报告',
     '/ai-generation/bug-analysis/summary': '汇总分析',
     '/ai-generation/projects': t('menu.aiProjectManagement'),
     '/ai-generation/testcases': t('menu.testCases'),

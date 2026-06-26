@@ -396,6 +396,7 @@ def convert_yunxiao_bugs(raw_workitems: List[Dict]) -> List[Dict]:
 
         bug = {
             "id": item.get("id") or item.get("serialNumber") or item.get("identifier"),
+            "serialNumber": item.get("serialNumber") or "",
             "title": item.get("subject") or item.get("title") or item.get("name", ""),
             "desc": item.get("description") or item.get("content", ""),
             "status": _extract_name(item.get("status")),
