@@ -827,6 +827,27 @@
         </div>
       </el-drawer>
 
+      <!-- ===== 状态Bug列表抽屉 ===== -->
+      <el-drawer v-model="statusBugDrawerVisible" :title="`状态: ${selectedStatus} (${statusBugList.length}条)`" direction="rtl" size="50%" destroy-on-close>
+        <div class="status-bug-list">
+          <el-empty v-if="statusBugList.length === 0" description="暂无数据" />
+          <div v-else class="bug-list-container">
+            <div v-for="(bug, idx) in statusBugList" :key="idx" class="bug-list-item">
+              <div class="bug-item-header">
+                <el-tag size="small" :type="sevTagType(bug.severity)" class="bug-sev-tag">{{ bug.severity || '未知' }}</el-tag>
+                <span class="bug-title">{{ bug.title || '无标题' }}</span>
+              </div>
+              <div class="bug-item-meta">
+                <span class="bug-creator">创建者: {{ bug.creator || '-' }}</span>
+                <span class="bug-module">模块: {{ bug.module || '-' }}</span>
+                <span class="bug-date">{{ bug.created || '-' }}</span>
+              </div>
+              <div v-if="bug.desc" class="bug-item-desc">{{ bug.desc }}</div>
+            </div>
+          </div>
+        </div>
+      </el-drawer>
+
       <!-- ===== 回归导出对话框 (V2新增) ===== -->
       <el-dialog v-model="showExportDialog" title="导出回归清单" width="560px" destroy-on-close>
         <div class="export-options">
@@ -1217,6 +1238,11 @@ const bugPage = ref(1)
 const showExportDialog = ref(false)
 const exportFormat = ref('markdown')
 const exportScope = ref('top5')
+
+// 状态Bug列表抽屉
+const statusBugDrawerVisible = ref(false)
+const selectedStatus = ref('')
+const statusBugList = ref([])
 const exportCustomModules = ref([])
 const exporting = ref(false)
 
@@ -1261,6 +1287,7 @@ const creatorModuleData = ref([]), participantData = ref([]), customFieldCharts 
 const clusterData = ref([]), rootCauseData = ref([]), testFocusData = ref({}), metaData = ref({})
 const aiSummary = ref(''), aiTestFocus = ref({}), aiRootCause = ref([]), aiRisks = ref({}), aiKeywords = ref([])
 const summaryLines = ref([]), actionLines = ref([])
+const rawBugs = ref([])  // 原始Bug数据，用于状态筛选
 // 智能模块分析结果 (三层架构)
 const aiModuleFocus = ref({})
 const moduleFocusLoading = ref({})
@@ -1399,6 +1426,18 @@ function getRiskDesc(desc) {
 
 function sevTagType(sev){return{'P0':'danger','P1':'warning','P2':'info'}[sev]||''}
 function dtypeTagType(dt){return{'UI显示':'','功能逻辑':'warning','数据内容':'danger','交互操作':'','性能稳定':'danger','跨端兼容':'warning'}[dt]||'info'}
+
+// 显示状态对应的Bug列表
+function showStatusBugList(status) {
+  selectedStatus.value = status
+  // 从原始Bug数据中筛选对应状态的Bug
+  statusBugList.value = rawBugs.value.filter(bug => {
+    const bugStatus = bug.status || bug['解决状态'] || bug['bug状态'] || ''
+    return bugStatus === status
+  })
+  statusBugDrawerVisible.value = true
+  console.log(`[showStatusBugList] 状态"${status}"的Bug数量:`, statusBugList.value.length)
+}
 function formatAiSummary(t){
   if(!t)return''
   
@@ -1603,6 +1642,9 @@ const startAnalysis = async()=>{
 
     if(result?.success){
       _rawAnalysisResult=result
+      // 保存原始Bug数据
+      rawBugs.value = result.raw_bugs || []
+      console.log('[startAnalysis] raw_bugs数量:', rawBugs.value.length)
       try{
         applyAnalysisResult(result)
         console.log('applyAnalysisResult完成')
@@ -1713,6 +1755,9 @@ const viewAnalysisDetail = async(record)=>{
     if(result?.analysis_result){
       _rawAnalysisResult = result.analysis_result
       console.log('[viewAnalysisDetail] analysis_result keys:', Object.keys(result.analysis_result))
+      // 保存原始Bug数据
+      rawBugs.value = result.raw_bugs || []
+      console.log('[viewAnalysisDetail] raw_bugs数量:', rawBugs.value.length)
       try{
         applyAnalysisResult(result.analysis_result)
         console.log('applyAnalysisResult完成')
@@ -2397,7 +2442,18 @@ const renderStatusChart=()=>{
   if(existingChart){existingChart.dispose()}
   const chart=echarts.init(statusChartRef.value)
   const data=Object.entries(statusData.value).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({name:k,value:v}))
-  chart.setOption({backgroundColor:'#fff',tooltip:{trigger:'item',formatter:'{b}: {c}条 ({d}%)'},series:[{type:'pie',radius:['40%','60%'],center:['50%','50%'],avoidLabelOverlap:true,data,label:{show:true,position:'outside',color:'#333',fontSize:11,formatter:'{b}: {c}条 ({d}%)',minMargin:5,edgeDistance:10},labelLine:{show:true,length:15,length2:20,smooth:true},itemStyle:{borderColor:'#fff',borderWidth:2},color:['#22c55e','#95a5a6','#f59e0b','#3b82f6','#e53935','#7b42f6','#ef4444','#06b6d4','#64748b']}]})}
+  chart.setOption({backgroundColor:'#fff',tooltip:{trigger:'item',formatter:'{b}: {c}条 ({d}%)'},series:[{type:'pie',radius:['40%','60%'],center:['50%','50%'],avoidLabelOverlap:true,data,label:{show:true,position:'outside',color:'#333',fontSize:11,formatter:'{b}: {c}条 ({d}%)',minMargin:5,edgeDistance:10},labelLine:{show:true,length:15,length2:20,smooth:true},itemStyle:{borderColor:'#fff',borderWidth:2},color:['#22c55e','#95a5a6','#f59e0b','#3b82f6','#e53935','#7b42f6','#ef4444','#06b6d4','#64748b']}]})
+  // 绑定点击事件 - 点击"暂不修复"或"不予解决"显示具体Bug列表
+  chart.off('click')
+  chart.on('click', (params) => {
+    if(params && params.name){
+      const clickableStatuses = ['暂不修复', '不予解决', '不修复', '不予修复', '挂起']
+      if(clickableStatuses.includes(params.name)){
+        showStatusBugList(params.name)
+      }
+    }
+  })
+}
 const renderPriorityChart=()=>{
   if(!priorityChartRef.value)return
   let existingChart = echarts.getInstanceByDom(priorityChartRef.value)
@@ -2494,6 +2550,7 @@ const resetAnalysisData = () => {
   aiKeywords.value = []
   aiModuleFocus.value = {}  // 重置AI模块分析缓存
   moduleCardRefs.value = {}  // 重置模块卡片引用
+  rawBugs.value = []  // 重置原始Bug数据
   _rawAnalysisResult = null
   ;[moduleChartRef.value, severityCrossChartRef.value, severityPieChartRef.value, statusChartRef.value, priorityChartRef.value, keywordChartRef.value, creatorChartRef.value, participantChartRef.value, timelineChartRef.value].forEach(ref => { if (ref) { const c = echarts.getInstanceByDom(ref); if (c) c.dispose() } })
   // 清理自定义字段图表
@@ -4585,6 +4642,17 @@ function copyFirstBugFields() {
   border-color: #6d33e6 !important;
 }
 .drawer-header{display:flex;justify-content:space-between;align-items:center;width:100%}
+
+/* ==================== 状态Bug列表抽屉样式 ==================== */
+.status-bug-list{padding:0 8px}
+.bug-list-container{display:flex;flex-direction:column;gap:12px}
+.bug-list-item{background:#fff;border:1px solid rgba(147,112,219,0.15);border-radius:8px;padding:12px 16px;transition:all 0.2s}
+.bug-list-item:hover{border-color:rgba(147,112,219,0.3);box-shadow:0 2px 8px rgba(147,112,219,0.08)}
+.bug-item-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bug-item-header .bug-sev-tag{flex-shrink:0}
+.bug-item-header .bug-title{font-size:14px;font-weight:600;color:#333;line-height:1.5;word-break:break-all}
+.bug-item-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:#999;margin-bottom:6px}
+.bug-item-desc{font-size:13px;color:#666;line-height:1.6;word-break:break-all}
 
 /* ==================== 列表视图样式 - 紫色主题 ==================== */
 .filter-bar {

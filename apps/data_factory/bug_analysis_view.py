@@ -625,6 +625,8 @@ def analyze_bug_excel(request):
             # 确保record_id在响应中
             if 'record_id' not in analysis_result:
                 analysis_result['record_id'] = record_id
+            # 返回原始Bug数据(前100条)，用于前端状态筛选
+            analysis_result['raw_bugs'] = [_serialize_for_json(dict(b)) for b in bugs[:100]]
             logger.info(f"[API:analyze_bug_excel] 成功: {len(bugs)}条, {elapsed}ms, record_id={record_id}, ai_pending={analysis_result.get('ai_pending')}")
 
             return _build_api_response(analysis_result, analysis_result['message'])
