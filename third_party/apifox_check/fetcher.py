@@ -4,8 +4,19 @@ from __future__ import annotations
 
 import asyncio
 import json
-import tomllib
+import sys
 from pathlib import Path
+
+# 兼容 Python 3.9/3.10 (需要 tomli) 和 Python 3.11+ (内置 tomllib)
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    try:
+        import tomli as tomllib
+    except ImportError:
+        raise ImportError(
+            "Python < 3.11 需要安装 tomli 包，请执行: pip install tomli"
+        )
 
 import aiohttp
 

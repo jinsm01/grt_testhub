@@ -658,20 +658,20 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
             )
 
             return Response(RequestHistorySerializer(history).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
     def _replace_variables(self, text, variables, step_context=None):
-        """替换文本中的变量，支持跨步骤引用"""
+        """替换文本中的变量，支持跨步骤引用和 $.current 引用"""
         if not isinstance(text, str):
             return text
 
         result = text
 
-        # 首先处理跨步骤变量引用格式: {{$.N.request.body.xxx}} 或 {{$.N.response.body.xxx}}
+        # 处理跨步骤变量引用格式: {{$.N.xxx}} 和 {{$.current.xxx}}
         if step_context:
             import re
-            # 匹配跨步骤引用: {{$.数字.request.xxx}} 或 {{$.数字.response.xxx}}
-            # 注意: Apifox 格式是 {{$.11.response.body.data[0].id}}
-            cross_step_pattern = r'\{\{\$\.(\d+)\.(request|response)(?:\.(.+?))?\}\}'
+            # 匹配跨步骤引用: {{$.数字/当前步.request或response.路径}}
+            # 支持 Apifox 的 $.current 格式和 TestHub 的 $.N 格式
+            cross_step_pattern = r'\{\{\$\.(current|\d+)\.(request|response)(?:\.(.+?))?\}\}'
             
             # 调试: 检查是否匹配到跨步骤变量
             matches = list(re.finditer(cross_step_pattern, result))
@@ -681,29 +681,40 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
                 for m in matches:
                     logger.info(f"DEBUG - 匹配: step={m.group(1)}, type={m.group(2)}, path={m.group(3)}")
 
+
             def replace_cross_step_ref(match):
-                step_num = int(match.group(1))
+                step_key = match.group(1)  # 数字步骤号 或 "current"
                 data_type = match.group(2)  # request or response
                 json_path = match.group(3) or ''
 
-                if step_num not in step_context:
-                    logger.warning(f"步骤 {step_num} 不存在于上下文中")
-                    return match.group(0)  # 返回原始字符串
+                # 处理 $.current 格式：引用当前步骤的请求数据
+                if step_key == 'current':
+                    # $.current 只支持 request 类型（当前步骤还没有 response）
+                    if data_type != 'request':
+                        logger.warning(f"$.current 只支持 request 类型，不支持 {data_type}")
+                        return match.group(0)
+                    # 从 step_context 的特殊 'current' 键获取当前请求的原始数据
+                    data_source = step_context.get('current', {}).get('request')
+                    if not data_source:
+                        logger.warning("$.current 请求数据不可用")
+                        return match.group(0)
+                else:
+                    step_num = int(step_key)
+                    if step_num not in step_context:
+                        logger.warning(f"步骤 {step_num} 不存在于上下文中")
+                        return match.group(0)
 
-                data_source = step_context[step_num].get(data_type)
-                if not data_source:
-                    return match.group(0)
+                    data_source = step_context[step_num].get(data_type)
+                    if not data_source:
+                        return match.group(0)
 
                 # 如果没有进一步的路径，返回整个数据源
                 if not json_path:
-                    return json.dumps(data_source) if isinstance(data_source, dict) else str(data_source)
+                    return json.dumps(data_source, ensure_ascii=False) if isinstance(data_source, dict) else str(data_source)
 
                 # 解析具体路径
                 try:
-                    # 支持 body.data[0].id 或 headers.Authorization 格式
                     current = data_source
-                    parts = re.findall(r'([^\.\[\]]+)|\[(\d+)\]', json_path)
-                    # 解析路径部分
                     path_parts = []
                     for part in re.finditer(r'\[(\d+)\]|([^\.\[\]]+)', json_path):
                         if part.group(1):  # 数组索引 [0]
@@ -727,7 +738,7 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
 
                     # 返回提取的值
                     if isinstance(current, (dict, list)):
-                        return json.dumps(current)
+                        return json.dumps(current, ensure_ascii=False)
                     return str(current)
                 except Exception as e:
                     logger.warning(f"解析跨步骤引用失败: {match.group(0)}, 错误: {e}")
@@ -1141,89 +1152,79 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
         return queryset
 
     def _replace_variables(self, text, variables, step_context=None):
-        """替换文本中的变量，支持跨步骤引用"""
+        """替换文本中的变量，支持跨步骤引用和 $.current 引用"""
         if not isinstance(text, str):
             return text
 
         result = text
 
-        # 首先处理跨步骤变量引用格式: {{$.N.request.body.xxx}} 或 {{$.N.response.body.xxx}}
+        # 处理跨步骤变量引用格式: {{$.N.xxx}} 和 {{$.current.xxx}}
         if step_context:
             import re
-            # 匹配跨步骤引用: {{$.数字.request.xxx}} 或 {{$.数字.response.xxx}}
-            # 注意: Apifox 格式是 {{$.11.response.body.data[0].id}}
-            cross_step_pattern = r'\{\{\$\.(\d+)\.(request|response)(?:\.(.+?))?\}\}'
+            # 匹配跨步骤引用: {{$.数字/当前步.request或response.路径}}
+            # 支持 Apifox 的 $.current 格式和 TestHub 的 $.N 格式
+            cross_step_pattern = r'\{\{\$\.(current|\d+)\.(request|response)(?:\.(.+?))?\}\}'
 
             # 调试日志
             matches = list(re.finditer(cross_step_pattern, result))
             print(f"DEBUG - TestSuiteViewSet._replace_variables: text='{text}', step_context={list(step_context.keys()) if step_context else None}, matches={len(matches)}")
 
             def replace_cross_step_ref(match):
-                step_num = int(match.group(1))
+                step_key = match.group(1)  # 数字步骤号 或 "current"
                 data_type = match.group(2)  # request or response
                 json_path = match.group(3) or ''
 
-                print(f"DEBUG - replace_cross_step_ref: step_num={step_num}, data_type={data_type}, json_path={json_path}")
-                print(f"DEBUG - step_context keys: {list(step_context.keys())}")
+                # 处理 $.current 格式：引用当前步骤的请求数据
+                if step_key == 'current':
+                    if data_type != 'request':
+                        print(f"DEBUG - $.current 只支持 request 类型，不支持 {data_type}")
+                        return match.group(0)
+                    data_source = step_context.get('current', {}).get('request')
+                    if not data_source:
+                        print(f"DEBUG - $.current 请求数据不可用")
+                        return match.group(0)
+                else:
+                    step_num = int(step_key)
+                    if step_num not in step_context:
+                        print(f"DEBUG - step {step_num} not in step_context")
+                        return match.group(0)
 
-                if step_num not in step_context:
-                    print(f"DEBUG - step {step_num} not in step_context")
-                    return match.group(0)  # 返回原始字符串
+                    data_source = step_context[step_num].get(data_type)
+                    if not data_source:
+                        return match.group(0)
 
-                data_source = step_context[step_num].get(data_type)
-                print(f"DEBUG - data_source for {data_type}: {data_source is not None}")
-                if not data_source:
-                    return match.group(0)
-
-                # 如果没有进一步的路径，返回整个数据源
                 if not json_path:
-                    return json.dumps(data_source) if isinstance(data_source, dict) else str(data_source)
+                    return json.dumps(data_source, ensure_ascii=False) if isinstance(data_source, dict) else str(data_source)
 
-                # 解析具体路径
                 try:
-                    # 支持 body.data[0].id 或 headers.Authorization 格式
                     current = data_source
-                    print(f"DEBUG - current data_source type: {type(current)}")
-                    # 解析路径部分
                     path_parts = []
                     for part in re.finditer(r'\[(\d+)\]|([^\.\[\]]+)', json_path):
-                        if part.group(1):  # 数组索引 [0]
+                        if part.group(1):
                             path_parts.append(int(part.group(1)))
-                        else:  # 属性名
+                        else:
                             path_parts.append(part.group(2))
-                    print(f"DEBUG - path_parts: {path_parts}")
 
                     for i, part in enumerate(path_parts):
-                        print(f"DEBUG - processing part {i}: {part}, current type: {type(current)}")
-                        # 如果当前是字符串（通常是 body），尝试解析为 JSON
-                        if isinstance(current, str) and i > 0:  # i > 0 确保不是第一层
+                        if isinstance(current, str) and i > 0:
                             try:
                                 current = json.loads(current)
-                                print(f"DEBUG - parsed string to JSON")
                             except:
-                                pass  # 如果不是有效 JSON，保持原样
-
+                                pass
                         if isinstance(current, dict):
                             current = current.get(part)
-                            print(f"DEBUG - got from dict: {current}")
                         elif isinstance(current, list) and isinstance(part, int):
                             if 0 <= part < len(current):
                                 current = current[part]
                             else:
-                                print(f"DEBUG - index {part} out of range")
                                 return match.group(0)
                         else:
-                            print(f"DEBUG - cannot navigate: current is {type(current)}, part is {part}")
                             return match.group(0)
-
                         if current is None:
-                            print(f"DEBUG - current is None after part {part}")
                             return match.group(0)
 
-                    # 返回提取的值
-                    print(f"DEBUG - final value: {current}")
                     if isinstance(current, (dict, list)):
-                        return json.dumps(current)
+                        return json.dumps(current, ensure_ascii=False)
                     return str(current)
                 except Exception as e:
                     print(f"DEBUG - exception: {e}")
@@ -1384,6 +1385,17 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
                     effective_headers = suite_request.get_effective_headers()
                     effective_params = suite_request.get_effective_params()
                     effective_body = suite_request.get_effective_body()
+
+                    # 将当前步骤的原始请求数据存入 step_context，支持 $.current 引用
+                    step_context['current'] = {
+                        'request': {
+                            'method': effective_method,
+                            'url': effective_url,
+                            'headers': effective_headers,
+                            'params': effective_params,
+                            'body': effective_body
+                        }
+                    }
                     
                     logger.info(f"DEBUG - effective_method: {effective_method}")
                     logger.info(f"DEBUG - effective_url: {effective_url}")
@@ -5844,9 +5856,9 @@ def apifox_import_execute(request):
     """
     from .apifox_importer import import_apifox_cli
     
-    # 获取参数
+    # 获取参数（兼容前端 target_collection_id 和旧版 collection_id）
     project_id = request.data.get('project_id')
-    collection_id = request.data.get('collection_id')
+    collection_id = request.data.get('target_collection_id') or request.data.get('collection_id')
     import_env = request.data.get('import_env', False)
     
     if 'file' not in request.FILES:

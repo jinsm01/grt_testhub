@@ -358,6 +358,7 @@ def execute_assertions(response, assertions, resolver=None, step_context=None):
                     from jsonpath_ng import parse
                     matches = parse(json_path).find(response_json)
                     actual = matches[0].value if matches else None
+                    print(f"[断言调试] not_empty断言: json_path={json_path}, actual={actual}, type={type(actual)}")
                     # 检查是否不为空（None、空字符串、空列表、空字典都视为空）
                     if actual is None:
                         passed = False
@@ -367,6 +368,9 @@ def execute_assertions(response, assertions, resolver=None, step_context=None):
                         passed = False
                     else:
                         passed = True
+                    if not passed:
+                        result['error'] = f"期望不为空，但实际值为: {actual} (类型: {type(actual).__name__})"
+                    print(f"[断言调试] not_empty断言结果: passed={passed}")
                     result['actual'] = actual
                 except Exception as e:
                     result['error'] = f"JSON提取失败: {str(e)}"
@@ -377,12 +381,13 @@ def execute_assertions(response, assertions, resolver=None, step_context=None):
                 json_path = assertion.get('json_path', '')
                 actual = None
                 passed = False
-                
+
                 try:
                     response_json = json.loads(response.text)
                     from jsonpath_ng import parse
                     matches = parse(json_path).find(response_json)
                     actual = matches[0].value if matches else None
+                    print(f"[断言调试] empty断言: json_path={json_path}, actual={actual}, type={type(actual)}")
                     # 检查是否为空
                     if actual is None:
                         passed = True
@@ -392,6 +397,8 @@ def execute_assertions(response, assertions, resolver=None, step_context=None):
                         passed = True
                     else:
                         passed = False
+                        result['error'] = f"期望为空，但实际值为: {actual}"
+                    print(f"[断言调试] empty断言结果: passed={passed}")
                     result['actual'] = actual
                 except Exception as e:
                     result['error'] = f"JSON提取失败: {str(e)}"

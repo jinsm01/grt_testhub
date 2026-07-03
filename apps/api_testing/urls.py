@@ -42,6 +42,9 @@ urlpatterns = [
     # API Fox CLI 导入（旧版 - TestSuite）
     path('api-testing/apifox/validate/', apifox_import_validate, name='apifox-import-validate'),
     path('api-testing/apifox/import/', apifox_import_execute, name='apifox-import-execute'),
+    # API Fox 导入 v2（新版 - ApifoxImportDialog 使用）
+    path('api-testing/apifox/v2/validate/', apifox_import_validate, name='apifox-import-v2-validate'),
+    path('api-testing/apifox/import-v2/', apifox_import_execute, name='apifox-import-v2-execute'),
     path('api-testing/apifox/functions/', apifox_function_list, name='apifox-function-list'),
     # Apifox 场景检查 - 配置管理
     path('api-testing/apifox-check/config/', apifox_check_config, name='apifox-check-config'),
