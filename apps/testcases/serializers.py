@@ -22,6 +22,68 @@ class TestCaseCommentSerializer(serializers.ModelSerializer):
         model = TestCaseComment
         fields = '__all__'
 
+class TestCaseWriteMixin:
+    """创建/更新用例时共享的归属目录和作者处理逻辑"""
+
+    def _resolve_author(self, author_name):
+        """根据用户名查找用户，找不到返回 None"""
+        from apps.users.models import User
+        if not author_name:
+            return None
+        user = User.objects.filter(username=author_name).first()
+        if not user:
+            user = User.objects.filter(username__icontains=author_name).first()
+        return user
+
+    def _process_category_path(self, category_path, validated_data):
+        """处理归属目录路径，自动创建端和菜单"""
+        from apps.projects.models import Project, ProjectMenu
+        from apps.users.models import User
+
+        path_parts = [p.strip() for p in category_path.split('/') if p.strip()]
+        if not path_parts:
+            return
+
+        project_name = path_parts[0]
+        menu_names = path_parts[1:]
+
+        project = Project.objects.filter(name=project_name).first()
+        if not project:
+            current_user = self.context.get('request').user if self.context.get('request') else None
+            project = Project.objects.create(
+                name=project_name,
+                description=f'从测试用例导入自动创建的端：{project_name}',
+                owner=current_user if current_user else User.objects.first(),
+                status='active'
+            )
+            if current_user:
+                project.members.add(current_user)
+
+        validated_data['project'] = project
+
+        if menu_names:
+            parent_menu = None
+            for menu_name in menu_names:
+                menu = ProjectMenu.objects.filter(
+                    project=project,
+                    name=menu_name,
+                    parent=parent_menu
+                ).first()
+
+                if not menu:
+                    menu = ProjectMenu.objects.create(
+                        project=project,
+                        name=menu_name,
+                        parent=parent_menu,
+                        description=f'从测试用例导入自动创建的菜单：{menu_name}'
+                    )
+
+                parent_menu = menu
+
+            if parent_menu:
+                validated_data['menu'] = parent_menu
+
+
 class ProjectSimpleSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
@@ -36,6 +98,7 @@ class TestCaseSerializer(serializers.ModelSerializer):
     comments = TestCaseCommentSerializer(many=True, read_only=True)
     category_path = serializers.SerializerMethodField()
     reviewer = UserSerializer(read_only=True)
+    automation_scenario = serializers.SerializerMethodField()
     
     review_status_display = serializers.SerializerMethodField()
     
@@ -43,6 +106,19 @@ class TestCaseSerializer(serializers.ModelSerializer):
         model = TestCase
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_automation_scenario(self, obj):
+        """返回关联的接口自动化场景（TestSuite）"""
+        from apps.api_testing.models import TestSuite
+        suite = TestSuite.objects.filter(mainline_test_case=obj).first()
+        if suite:
+            return {
+                'id': suite.id,
+                'name': suite.name,
+                'project_id': suite.project_id,
+                'updated_at': suite.updated_at
+            }
+        return None
     
     def get_review_status_display(self, obj):
         """获取审核状态的中文显示"""
@@ -84,6 +160,7 @@ class TestCaseListSerializer(serializers.ModelSerializer):
     menu = serializers.SerializerMethodField()
     category_path = serializers.SerializerMethodField()
     reviewer = serializers.SerializerMethodField()
+    automation_scenario = serializers.SerializerMethodField()
     
     review_status_display = serializers.SerializerMethodField()
 
@@ -93,9 +170,22 @@ class TestCaseListSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'preconditions', 'steps', 'expected_result',
             'priority', 'test_type', 'module',
             'author', 'assignee', 'project', 'versions', 'tags', 'created_at', 'updated_at',
-            'menu', 'category_path', 'review_status', 'review_status_display', 'review_comment', 'reviewer'
+            'menu', 'category_path', 'review_status', 'review_status_display', 'review_comment', 'reviewer',
+            'automation_scenario'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_automation_scenario(self, obj):
+        """返回关联的接口自动化场景（TestSuite）"""
+        from apps.api_testing.models import TestSuite
+        suite = TestSuite.objects.filter(mainline_test_case=obj).first()
+        if suite:
+            return {
+                'id': suite.id,
+                'name': suite.name,
+                'project_id': suite.project_id
+            }
+        return None
     
     def get_reviewer(self, obj):
         return {'id': obj.reviewer.id, 'username': obj.reviewer.username} if obj.reviewer else None
@@ -144,7 +234,7 @@ class TestCaseListSerializer(serializers.ModelSerializer):
         path_parts.extend(menu_names)
         return '/'.join(path_parts)
 
-class TestCaseCreateSerializer(serializers.ModelSerializer):
+class TestCaseCreateSerializer(TestCaseWriteMixin, serializers.ModelSerializer):
     version_ids = serializers.ListField(
         child=serializers.IntegerField(),
         required=False,
@@ -173,24 +263,11 @@ class TestCaseCreateSerializer(serializers.ModelSerializer):
 
         # 如果指定了作者用户名，查找对应的用户
         if author_name:
-            try:
-                # 尝试精确匹配用户名
-                user = User.objects.filter(username=author_name).first()
-                if not user:
-                    # 如果没有精确匹配，尝试模糊匹配
-                    user = User.objects.filter(username__icontains=author_name).first()
-                if user:
-                    validated_data['author'] = user
-                else:
-                    # 如果找不到用户，直接报错，不允许导入
-                    raise serializers.ValidationError(f"创建人 '{author_name}' 不存在于平台，请先添加该用户或检查用户名是否正确")
-            except serializers.ValidationError:
-                raise
-            except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Error finding user for author_name {author_name}: {e}")
-                raise serializers.ValidationError(f"查找创建人 '{author_name}' 时发生错误: {str(e)}")
+            user = self._resolve_author(author_name)
+            if user:
+                validated_data['author'] = user
+            else:
+                raise serializers.ValidationError(f"创建人 '{author_name}' 不存在于平台，请先添加该用户或检查用户名是否正确")
         else:
             # 如果没有指定作者，直接报错，不允许导入
             raise serializers.ValidationError("创建人不能为空，请填写创建人字段")
@@ -219,63 +296,7 @@ class TestCaseCreateSerializer(serializers.ModelSerializer):
 
         return testcase
 
-    def _process_category_path(self, category_path, validated_data):
-        """处理归属目录路径，自动创建端和菜单"""
-        from apps.projects.models import Project, ProjectMenu
-        from apps.users.models import User
-
-        # 解析路径：端名称/菜单/子菜单
-        path_parts = category_path.split('/')
-        if not path_parts:
-            return
-
-        project_name = path_parts[0].strip()
-        menu_names = [p.strip() for p in path_parts[1:] if p.strip()]
-
-        # 查找或创建端
-        project = Project.objects.filter(name=project_name).first()
-        if not project:
-            # 自动创建端
-            current_user = self.context.get('request').user if self.context.get('request') else None
-            project = Project.objects.create(
-                name=project_name,
-                description=f'从测试用例导入自动创建的端：{project_name}',
-                owner=current_user if current_user else User.objects.first(),
-                status='active'
-            )
-            if current_user:
-                project.members.add(current_user)
-
-        # 设置用例的端
-        validated_data['project'] = project
-
-        # 处理菜单层级
-        if menu_names:
-            parent_menu = None
-            for menu_name in menu_names:
-                # 查找或创建菜单
-                menu = ProjectMenu.objects.filter(
-                    project=project,
-                    name=menu_name,
-                    parent=parent_menu
-                ).first()
-
-                if not menu:
-                    # 自动创建菜单
-                    menu = ProjectMenu.objects.create(
-                        project=project,
-                        name=menu_name,
-                        parent=parent_menu,
-                        description=f'从测试用例导入自动创建的菜单：{menu_name}'
-                    )
-
-                parent_menu = menu
-
-            # 设置用例的菜单（最后一个菜单）
-            if parent_menu:
-                validated_data['menu'] = parent_menu
-
-class TestCaseUpdateSerializer(serializers.ModelSerializer):
+class TestCaseUpdateSerializer(TestCaseWriteMixin, serializers.ModelSerializer):
     project_id = serializers.IntegerField(required=False, allow_null=True, help_text="项目ID，可选")
     version_ids = serializers.ListField(
         child=serializers.IntegerField(), 
@@ -283,18 +304,35 @@ class TestCaseUpdateSerializer(serializers.ModelSerializer):
         allow_empty=True,
         help_text="关联版本ID列表"
     )
+    author_name = serializers.CharField(required=False, allow_null=True, help_text="作者用户名，可选")
+    category_path = serializers.CharField(required=False, allow_null=True, help_text="归属目录路径，格式：端名称/菜单/子菜单，可选")
     
     class Meta:
         model = TestCase
         fields = [
             'title', 'description', 'preconditions', 'steps', 'expected_result',
-            'priority', 'test_type', 'module', 'tags', 'project_id', 'version_ids', 'review_status'
+            'priority', 'test_type', 'module', 'tags', 'project_id', 'version_ids',
+            'review_status', 'review_comment', 'author_name', 'category_path'
         ]
 
     def update(self, instance, validated_data):
         version_ids = validated_data.pop('version_ids', None)
         # project_id会在视图中处理
         validated_data.pop('project_id', None)
+        author_name = validated_data.pop('author_name', None)
+        category_path = validated_data.pop('category_path', None)
+        
+        # 如果指定了作者用户名，查找对应的用户
+        if author_name is not None:
+            user = self._resolve_author(author_name)
+            if user:
+                validated_data['author'] = user
+            else:
+                raise serializers.ValidationError(f"创建人 '{author_name}' 不存在于平台")
+        
+        # 如果指定了归属目录路径，重新解析端和菜单
+        if category_path is not None:
+            self._process_category_path(category_path, validated_data)
         
         instance = super().update(instance, validated_data)
         

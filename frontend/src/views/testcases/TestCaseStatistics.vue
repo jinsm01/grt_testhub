@@ -63,74 +63,61 @@
         </div>
       </el-col>
       
-      <!-- 月度趋势 -->
+      <!-- 项目用例分布 -->
       <el-col :span="8">
         <div class="stats-section">
           <h3 class="section-title">
-            <el-icon><TrendCharts /></el-icon>
-            近6月趋势
+            <el-icon><Folder /></el-icon>
+            项目用例分布
           </h3>
           <el-card shadow="hover" class="chart-card">
-            <div ref="trendChart" class="chart-container"></div>
+            <div ref="projectChart" class="chart-container"></div>
           </el-card>
         </div>
       </el-col>
     </el-row>
 
-    <!-- 项目统计 -->
+    <!-- 自动化覆盖率 -->
+    <div class="stats-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <el-icon><DataAnalysis /></el-icon>
+          自动化覆盖率
+        </h3>
+      </div>
+      <el-row :gutter="20">
+        <el-col :span="6" :xs="12" v-for="item in automationCoverageList" :key="item.priority">
+          <el-card shadow="hover" class="coverage-card" :class="item.type">
+            <div class="coverage-label">{{ item.label }}</div>
+            <div class="coverage-rate">
+              <span class="coverage-value">{{ item.rate }}%</span>
+            </div>
+            <div class="coverage-detail">
+              <span class="coverage-automated">{{ item.automated }}</span>
+              <span class="coverage-separator">/</span>
+              <span class="coverage-total">{{ item.total }}</span>
+            </div>
+            <el-progress
+              :percentage="item.rate"
+              :stroke-width="6"
+              :color="item.color"
+              :show-text="false"
+              class="coverage-progress"
+            />
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
+
+    <!-- 近12月趋势 -->
     <div class="stats-section">
       <h3 class="section-title">
-        <el-icon><Folder /></el-icon>
-        项目用例分布
+        <el-icon><TrendCharts /></el-icon>
+        近12月趋势
       </h3>
-      <el-table :data="stats.project_stats" style="width: 100%" v-loading="loading" class="direct-table">
-        <el-table-column label="序号" width="80" align="center">
-          <template #default="{ $index }">
-            {{ $index + 1 }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="project_name" label="项目名称" min-width="150" align="center">
-          <template #default="{ row }">
-            <span class="project-name-cell">{{ row.project_name }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="total" label="总数" width="100" align="center">
-          <template #default="{ row }">
-            <span class="num-total">{{ row.total }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="active" label="激活" width="100" align="center">
-          <template #default="{ row }">
-            <span class="num-active">{{ row.active }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="draft" label="草稿" width="100" align="center">
-          <template #default="{ row }">
-            <span class="num-draft">{{ row.draft }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="deprecated" label="废弃" width="100" align="center">
-          <template #default="{ row }">
-            <span class="num-deprecated">{{ row.deprecated }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="high_priority" label="高优先级" width="100" align="center">
-          <template #default="{ row }">
-            <span class="high-priority-count">{{ row.high_priority }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="占比" width="150" align="center">
-          <template #default="{ row }">
-            <el-progress 
-              :percentage="stats.total ? Math.round(row.total / stats.total * 100) : 0" 
-              :stroke-width="6"
-              color="#7b42f6"
-              :show-text="true"
-              class="project-progress"
-            />
-          </template>
-        </el-table-column>
-      </el-table>
+      <el-card shadow="hover" class="chart-card trend-chart-card">
+        <div ref="trendChart" class="chart-container trend-chart"></div>
+      </el-card>
     </div>
 
     <!-- 作者排行 -->
@@ -226,6 +213,7 @@ const stats = ref({
   total: 0,
   status_stats: {},
   priority_stats: {},
+  automation_coverage: {},
   project_stats: [],
   author_stats: [],
   monthly_stats: []
@@ -277,12 +265,34 @@ const filteredTotal = computed(() => {
   return filteredAuthorStats.value.reduce((sum, item) => sum + item.count, 0)
 })
 
+// 自动化覆盖率展示列表
+const automationCoverageList = computed(() => {
+  const coverage = stats.value.automation_coverage || {}
+  const config = [
+    { priority: 'critical', label: 'P0 覆盖率', type: 'critical', color: '#dc2626' },
+    { priority: 'high', label: 'P1 覆盖率', type: 'high', color: '#f97316' },
+    { priority: 'medium', label: 'P2 覆盖率', type: 'medium', color: '#eab308' },
+    { priority: 'low', label: 'P3 覆盖率', type: 'low', color: '#22c55e' }
+  ]
+  return config.map(item => {
+    const data = coverage[item.priority] || { total: 0, automated: 0, rate: 0 }
+    return {
+      ...item,
+      total: data.total || 0,
+      automated: data.automated || 0,
+      rate: Math.round(data.rate || 0)
+    }
+  })
+})
+
 const statusChart = ref(null)
 const priorityChart = ref(null)
+const projectChart = ref(null)
 const trendChart = ref(null)
 
 let statusChartInstance = null
 let priorityChartInstance = null
+let projectChartInstance = null
 let trendChartInstance = null
 
 const progressColor = [
@@ -371,6 +381,7 @@ function goToDetail(row) {
 function initCharts() {
   initStatusChart()
   initPriorityChart()
+  initProjectChart()
   initTrendChart()
 }
 
@@ -433,25 +444,53 @@ function initPriorityChart() {
   })
 }
 
+// 项目用例分布饼图
+function initProjectChart() {
+  if (!projectChart.value) return
+  if (projectChartInstance) projectChartInstance.dispose()
+
+  projectChartInstance = echarts.init(projectChart.value)
+  const data = (stats.value.project_stats || [])
+    .filter(item => item.total > 0)
+    .map(item => ({ value: item.total, name: item.project_name }))
+
+  projectChartInstance.setOption({
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    legend: { bottom: 5, textStyle: { color: '#6b7280' }, itemGap: 15 },
+    series: [{
+      type: 'pie',
+      radius: ['35%', '60%'],
+      center: ['50%', '45%'],
+      avoidLabelOverlap: true,
+      itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
+      label: { show: true, formatter: '{b}: {c}', position: 'outside' },
+      labelLine: { show: true, length: 10, length2: 5 },
+      data,
+      color: ['#7b42f6', '#22c55e', '#f59e0b', '#ef4444', '#3b82f6', '#ec4899']
+    }]
+  })
+}
+
 // 月度趋势图
 function initTrendChart() {
   if (!trendChart.value) return
   if (trendChartInstance) trendChartInstance.dispose()
   
   trendChartInstance = echarts.init(trendChart.value)
-  const months = stats.value.monthly_stats.map(item => item.month)
-  const counts = stats.value.monthly_stats.map(item => item.count)
-  const actives = stats.value.monthly_stats.map(item => item.active)
+  const trendData = (stats.value.monthly_stats || []).slice(-12)
+  const months = trendData.map(item => item.month)
+  const counts = trendData.map(item => item.count)
+  const updated = trendData.map(item => item.updated)
 
   trendChartInstance.setOption({
     tooltip: { trigger: 'axis' },
-    legend: { bottom: 0, data: ['新增用例', '激活用例'], textStyle: { color: '#6b7280' } },
+    legend: { bottom: 0, data: ['新增用例', '更新用例'], textStyle: { color: '#6b7280' } },
     grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
     xAxis: { type: 'category', data: months, axisLabel: { color: '#6b7280', rotate: 45, interval: 0 } },
     yAxis: { type: 'value', axisLabel: { color: '#6b7280' } },
     series: [
       { name: '新增用例', type: 'bar', data: counts, itemStyle: { color: '#7b42f6', borderRadius: [4, 4, 0, 0] } },
-      { name: '激活用例', type: 'bar', data: actives, itemStyle: { color: '#22c55e', borderRadius: [4, 4, 0, 0] } }
+      { name: '更新用例', type: 'bar', data: updated, itemStyle: { color: '#22c55e', borderRadius: [4, 4, 0, 0] } }
     ]
   })
 }
@@ -461,6 +500,7 @@ onMounted(() => {
   window.addEventListener('resize', () => {
     statusChartInstance?.resize()
     priorityChartInstance?.resize()
+    projectChartInstance?.resize()
     trendChartInstance?.resize()
   })
 })
@@ -560,6 +600,100 @@ onMounted(() => {
   font-size: 13px;
   color: #6b7280;
   font-weight: 500;
+}
+
+.coverage-card {
+  position: relative;
+  text-align: center;
+  padding: 20px 12px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%);
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.1);
+  border: 1px solid rgba(147, 112, 219, 0.1);
+  transition: all 0.3s ease;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(147, 112, 219, 0.15);
+  }
+
+  .coverage-label {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    color: #8b8db1;
+    background: rgba(147, 112, 219, 0.08);
+  }
+
+  &.critical .coverage-label {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.1);
+  }
+
+  &.high .coverage-label {
+    color: #f97316;
+    background: rgba(249, 115, 22, 0.1);
+  }
+
+  &.medium .coverage-label {
+    color: #b45309;
+    background: rgba(234, 179, 8, 0.12);
+  }
+
+  &.low .coverage-label {
+    color: #16a34a;
+    background: rgba(34, 197, 94, 0.1);
+  }
+
+  .coverage-rate {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    margin-bottom: 4px;
+  }
+
+  .coverage-value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+
+    .critical & { color: #dc2626; }
+    .high & { color: #f97316; }
+    .medium & { color: #eab308; }
+    .low & { color: #22c55e; }
+  }
+
+  .coverage-detail {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-bottom: 10px;
+
+    .coverage-automated {
+      color: #6d28d9;
+      font-weight: 600;
+    }
+
+    .coverage-separator {
+      margin: 0 2px;
+    }
+
+    .coverage-total {
+      color: #6b7280;
+    }
+  }
+
+  .coverage-progress {
+    width: 100%;
+  }
 }
 
 .chart-card {

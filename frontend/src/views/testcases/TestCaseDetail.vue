@@ -82,6 +82,20 @@
             </div>
           </div>
 
+          <div class="info-item">
+            <span class="info-label">关联自动化场景</span>
+            <div class="info-value">
+              <span
+                v-if="testcase.automation_scenario"
+                class="scenario-link"
+                @click="goToAutomationScenario(testcase.automation_scenario.id)"
+              >
+                {{ testcase.automation_scenario.name }}
+              </span>
+              <span v-else class="text-muted">未关联</span>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -94,36 +108,50 @@
           </h3>
         </div>
 
-        <!-- 步骤与结果列表 -->
-        <div class="steps-list">
-          <!-- 前置条件作为第 0 步 -->
-          <div v-if="testcase.preconditions" class="step-item preconditions-item">
-            <div class="step-number preconditions-number">0</div>
-            <div class="step-content">
-              <div class="step-action">
-                <span class="step-label preconditions-label">前置条件</span>
-                <span class="step-text">{{ testcase.preconditions }}</span>
-              </div>
-            </div>
-          </div>
-          <div v-for="(step, index) in parseSteps(testcase.steps)" :key="index" class="step-item">
-            <div class="step-number">{{ Number(index) + 1 }}</div>
-            <div class="step-content">
-              <div class="step-action">
-                <span class="step-label">步骤</span>
-                <span class="step-text">{{ step }}</span>
-              </div>
-              <div class="step-expected">
-                <span class="expected-label">预期</span>
-                <span class="expected-text">{{ parseResults(testcase.expected_result)[index] || '-' }}</span>
-              </div>
-            </div>
-          </div>
+        <!-- 步骤与结果表格 -->
+        <div class="steps-table-wrapper">
+          <table class="steps-table">
+            <thead>
+              <tr>
+                <th class="col-precondition">前置条件</th>
+                <th class="col-step">测试步骤</th>
+                <th class="col-expected">预期结果</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(step, index) in parseSteps(testcase.steps)" :key="index">
+                <td v-if="index === 0 && testcase.preconditions" class="cell-precondition" :rowspan="parseSteps(testcase.steps).length">
+                  <div class="precondition-text">{{ testcase.preconditions }}</div>
+                </td>
+                <td v-else-if="!testcase.preconditions && index === 0" class="cell-precondition">
+                  <span class="muted">无</span>
+                </td>
+                <td class="cell-step">
+                  <div class="step-line">
+                    <span class="step-index">{{ Number(index) + 1 }}.</span>
+                    <span class="step-text">{{ stripStepPrefix(step) }}</span>
+                  </div>
+                </td>
+                <td class="cell-expected">
+                  <div class="expected-line">
+                    <span class="expected-index">{{ Number(index) + 1 }}.</span>
+                    <span class="expected-text">{{ stripResultPrefix(parseResults(testcase.expected_result)[index]) || '-' }}</span>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="parseSteps(testcase.steps).length === 0">
+                <td class="cell-precondition"><span class="muted">无</span></td>
+                <td class="cell-step muted">暂无测试步骤</td>
+                <td class="cell-expected muted">-</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
     </div>
-  </div>
+
+    </div>
 </template>
 
 <script setup>
@@ -208,6 +236,10 @@ const formatDate = (dateString) => {
   })
 }
 
+const goToAutomationScenario = (suiteId) => {
+  router.push(`/api-testing/automation/${suiteId}`)
+}
+
 const formatContent = (content) => {
   if (!content) return ''
   // Convert <br> tags to actual line breaks for display
@@ -226,6 +258,17 @@ const parseResults = (results) => {
   if (!results) return []
   // 按行分割，过滤空行
   return results.split('\n').map(line => line.trim()).filter(line => line.length > 0)
+}
+
+// 去除步骤行首的 "1. " / "1、" 之类的序号前缀
+const stripStepPrefix = (text) => {
+  if (!text) return ''
+  return text.replace(/^\s*\d+\s*[\.\、\)]\s*/, '')
+}
+
+// 去除预期结果行首的 "1. " / "1、" 之类的前缀
+const stripResultPrefix = (text) => {
+  return stripStepPrefix(text)
 }
 
 const fetchTestCase = async () => {
@@ -436,6 +479,23 @@ onMounted(() => {
     margin-right: 8px;
     margin-bottom: 4px;
   }
+
+  .scenario-link {
+    color: #7b42f6;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: #6d33e6;
+      text-decoration: underline;
+    }
+  }
+
+  .text-muted {
+    color: #999;
+    font-size: 14px;
+  }
 }
 
 .info-item-vertical {
@@ -453,85 +513,133 @@ onMounted(() => {
 
 // 测试执行卡片样式
 .test-execution-card {
-  .steps-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+  .steps-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #e8e8e8;
+  }
 
-    .step-item {
-      display: flex;
-      gap: 16px;
-      padding: 20px;
-      background: #fff;
-      border-radius: 12px;
-      border: 1px solid #e8e8e8;
-      transition: all 0.3s ease;
+  .steps-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: #ffffff;
 
-      &:hover {
-        border-color: #7b42f6;
-        box-shadow: 0 4px 12px rgba(123, 66, 246, 0.1);
-      }
+    thead tr {
+      background: linear-gradient(135deg, #f8f7ff 0%, #f0edff 100%);
 
-      .step-number {
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
-        color: #fff;
+      th {
+        padding: 14px 16px;
         font-size: 14px;
         font-weight: 600;
-        border-radius: 50%;
-        flex-shrink: 0;
-
-        &.preconditions-number {
-          background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
-        }
+        color: #5a32a3;
+        text-align: left;
+        border-bottom: 1px solid rgba(147, 112, 219, 0.15);
+        white-space: nowrap;
       }
 
-      .step-content {
-        flex: 1;
+      .col-precondition {
+        width: 22%;
+      }
+
+      .col-step {
+        width: 39%;
+      }
+
+      .col-expected {
+        width: 39%;
+      }
+    }
+
+    tbody tr {
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: #faf9ff;
+      }
+
+      &:not(:last-child) td {
+        border-bottom: 1px solid #f0f0f0;
+      }
+    }
+
+    td {
+      padding: 16px;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #333;
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    .cell-precondition {
+      background: #fafbff;
+      color: #444;
+    }
+
+    .precondition-text {
+      white-space: pre-wrap;
+      color: #5a32a3;
+      font-weight: 500;
+    }
+
+    .cell-step {
+      .step-line {
         display: flex;
-        flex-direction: column;
-        gap: 12px;
+        gap: 8px;
+        align-items: flex-start;
+      }
 
-        .step-action,
-        .step-expected {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
+      .step-index {
+        color: #7b42f6;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
 
-          .step-label,
-          .expected-label {
-            font-size: 12px;
-            font-weight: 500;
-            color: #999;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+      .step-text {
+        color: #333;
+        flex: 1;
+      }
+    }
 
-            &.preconditions-label {
-              color: #ff6b6b;
-            }
-          }
+    .cell-expected {
+      .expected-line {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+      }
 
-          .step-text {
-            font-size: 14px;
-            color: #333;
-            line-height: 1.6;
-          }
+      .expected-index {
+        color: #52c41a;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
 
-          .expected-text {
-            font-size: 14px;
-            color: #52c41a;
-            line-height: 1.6;
-          }
-        }
+      .expected-text {
+        color: #333;
+        flex: 1;
+      }
+    }
 
-        .step-expected {
-          padding-top: 12px;
-          border-top: 1px dashed #e8e8e8;
-        }
+    .muted {
+      color: #bbb;
+      font-style: italic;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .test-execution-card {
+    .steps-table {
+      thead th {
+        padding: 10px 8px;
+        font-size: 13px;
+      }
+
+      td {
+        padding: 10px 8px;
+        font-size: 13px;
       }
     }
   }

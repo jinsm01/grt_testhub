@@ -42,6 +42,37 @@
             <el-row :gutter="24" class="info-row">
               <el-col :span="12">
                 <div class="info-item">
+                  <span class="info-label">用例标题</span>
+                  <el-input
+                    v-model="form.title"
+                    placeholder="请输入用例标题"
+                    maxlength="500"
+                    class="info-input"
+                  />
+                </div>
+              </el-col>
+              <el-col :span="6">
+                <div class="info-item">
+                  <span class="info-label">创建者</span>
+                  <el-select
+                    v-model="form.author_name"
+                    placeholder="请选择作者"
+                    filterable
+                    clearable
+                    class="info-select"
+                    :loading="loadingUsers"
+                  >
+                    <el-option
+                      v-for="user in users"
+                      :key="user.id"
+                      :label="user.username"
+                      :value="user.username"
+                    />
+                  </el-select>
+                </div>
+              </el-col>
+              <el-col :span="6">
+                <div class="info-item">
                   <span class="info-label">{{ $t('testcase.relatedProject') }}</span>
                   <el-input
                     v-model="form.category_path"
@@ -51,7 +82,9 @@
                   />
                 </div>
               </el-col>
-              <el-col :span="4">
+            </el-row>
+            <el-row :gutter="24" class="info-row">
+              <el-col :span="6">
                 <div class="info-item">
                   <span class="info-label">{{ $t('testcase.moduleLabel') }}</span>
                   <el-input
@@ -62,7 +95,7 @@
                   />
                 </div>
               </el-col>
-              <el-col :span="4">
+              <el-col :span="6">
                 <div class="info-item">
                   <span class="info-label">{{ $t('testcase.priority') }}</span>
                   <el-select v-model="form.priority" :placeholder="$t('testcase.selectPriority')" class="info-select">
@@ -73,7 +106,7 @@
                   </el-select>
                 </div>
               </el-col>
-              <el-col :span="4">
+              <el-col :span="6">
                 <div class="info-item">
                   <span class="info-label">{{ $t('testcase.testType') }}</span>
                   <el-select v-model="form.test_type" :placeholder="$t('testcase.selectTestType')" class="info-select">
@@ -96,80 +129,72 @@
             </h3>
           </div>
 
-          <!-- 前置条件 -->
-          <div class="step-card preconditions-card">
-            <div class="step-header">
-              <div class="step-number preconditions-number">0</div>
-              <span class="step-label preconditions-label">前置条件</span>
-            </div>
-            <el-input
-              v-model="form.preconditions"
-              type="textarea"
-              :rows="3"
-              :placeholder="$t('testcase.preconditionsPlaceholder')"
-              class="step-input"
-            />
+          <!-- 步骤与结果编辑表格 -->
+          <div class="steps-table-wrapper">
+            <table class="steps-edit-table">
+              <thead>
+                <tr>
+                  <th class="col-precondition">前置条件</th>
+                  <th class="col-step">测试步骤</th>
+                  <th class="col-expected">预期结果</th>
+                  <th class="col-action">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, index) in form.stepItems" :key="item.id">
+                  <!-- 前置条件列：只在第一行显示，合并行 -->
+                  <td v-if="index === 0" class="cell-precondition" :rowspan="form.stepItems.length">
+                    <el-input
+                      v-model="form.preconditions"
+                      type="textarea"
+                      :rows="Math.min(form.stepItems.length * 3, 12)"
+                      :placeholder="$t('testcase.preconditionsPlaceholder')"
+                      class="table-textarea"
+                    />
+                  </td>
+                  <td class="cell-step">
+                    <div class="cell-inner">
+                      <span class="cell-index">{{ index + 1 }}</span>
+                      <el-input
+                        v-model="item.step"
+                        type="textarea"
+                        :rows="3"
+                        placeholder="请输入步骤描述"
+                        class="table-textarea"
+                      />
+                    </div>
+                  </td>
+                  <td class="cell-expected">
+                    <el-input
+                      v-model="item.expected"
+                      type="textarea"
+                      :rows="3"
+                      placeholder="请输入预期结果"
+                      class="table-textarea"
+                    />
+                  </td>
+                  <td class="cell-action">
+                    <div class="action-btns">
+                      <el-button type="primary" link size="small" @click="addStep(index)" title="添加步骤">
+                        <el-icon><Plus /></el-icon>
+                      </el-button>
+                      <el-button type="primary" link size="small" @click="moveStepUp(index)" :disabled="index === 0" title="上移">
+                        <el-icon><ArrowUp /></el-icon>
+                      </el-button>
+                      <el-button type="primary" link size="small" @click="moveStepDown(index)" :disabled="index === form.stepItems.length - 1" title="下移">
+                        <el-icon><ArrowDown /></el-icon>
+                      </el-button>
+                      <el-button type="danger" link size="small" @click="removeStep(index)" title="删除">
+                        <el-icon><Delete /></el-icon>
+                      </el-button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
-          <!-- 步骤列表 -->
-          <div class="steps-list">
-            <div v-for="(item, index) in form.stepItems" :key="item.id" class="step-card">
-              <div class="step-header">
-                <div class="step-number">{{ index + 1 }}</div>
-                <span class="step-label">步骤 {{ index + 1 }}</span>
-                <div class="step-actions">
-                  <el-button type="primary" link size="small" @click="addStep(index)" title="添加步骤">
-                    <el-icon><Plus /></el-icon>
-                  </el-button>
-                  <el-button type="primary" link size="small" @click="moveStepUp(index)" :disabled="index === 0" title="上移">
-                    <el-icon><ArrowUp /></el-icon>
-                  </el-button>
-                  <el-button type="primary" link size="small" @click="moveStepDown(index)" :disabled="index === form.stepItems.length - 1" title="下移">
-                    <el-icon><ArrowDown /></el-icon>
-                  </el-button>
-                  <el-button type="danger" link size="small" @click="removeStep(index)" title="删除">
-                    <el-icon><Delete /></el-icon>
-                  </el-button>
-                </div>
-              </div>
-              <div class="step-content">
-                <div class="step-field">
-                  <span class="field-label">步骤描述</span>
-                  <el-input
-                    v-model="item.step"
-                    type="textarea"
-                    :rows="3"
-                    placeholder="请输入步骤描述"
-                    class="step-input"
-                  />
-                </div>
-                <div class="expected-field">
-                  <span class="field-label expected-label">预期结果</span>
-                  <el-input
-                    v-model="item.expected"
-                    type="textarea"
-                    :rows="2"
-                    placeholder="请输入预期结果"
-                    class="step-input"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
 
-
-        </div>
-
-        <!-- 底部操作按钮 -->
-        <div class="detail-actions">
-          <el-button @click="$router.back()" class="action-btn cancel-btn">
-            <el-icon><ArrowLeft /></el-icon>
-            <span>{{ $t('common.cancel') }}</span>
-          </el-button>
-          <el-button type="primary" class="action-btn edit-btn" @click="handleSubmit" :loading="submitting">
-            <el-icon><Check /></el-icon>
-            <span>{{ $t('testcase.saveChanges') }}</span>
-          </el-button>
         </div>
       </el-form>
     </div>
@@ -190,9 +215,13 @@ const router = useRouter()
 const formRef = ref()
 const loading = ref(true)
 const submitting = ref(false)
+const users = ref([])
+const loadingUsers = ref(false)
+
 
 const form = reactive({
   title: '',
+  author_name: '',
   category_path: '',
   module: '',
   priority: 'medium',
@@ -316,6 +345,7 @@ const fetchTestCase = async () => {
 
     // Fill form data
     form.title = testcase.title
+    form.author_name = testcase.author_name || testcase.author?.username || ''
     form.category_path = testcase.category_path || ''
     form.module = testcase.module || ''
     form.priority = testcase.priority
@@ -340,6 +370,20 @@ const fetchTestCase = async () => {
   }
 }
 
+const fetchUsers = async () => {
+  loadingUsers.value = true
+  try {
+    const res = await api.get('/users/users/')
+    users.value = (res.data.results || res.data || []).filter(item => item && item.username)
+  } catch (error) {
+    console.error('获取用户列表失败:', error)
+    users.value = []
+  } finally {
+    loadingUsers.value = false
+  }
+}
+
+
 const handleSubmit = async () => {
   if (!formRef.value) return
 
@@ -354,6 +398,7 @@ const handleSubmit = async () => {
         // 保存数据（保持换行符格式，不转换为<br>）
         const submitData = {
           title: form.title,
+          author_name: form.author_name,
           category_path: form.category_path,
           module: form.module,
           priority: form.priority,
@@ -377,8 +422,12 @@ const handleSubmit = async () => {
 }
 
 onMounted(async () => {
-  await fetchTestCase()
+  await Promise.all([
+    fetchTestCase(),
+    fetchUsers()
+  ])
 })
+
 </script>
 
 <style lang="scss" scoped>
@@ -578,124 +627,122 @@ onMounted(async () => {
     margin: 24px 0;
   }
 
-  // 步骤卡片样式 - 与详情页保持一致
-  .step-card {
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    background: #fff;
-    border-radius: 12px;
+  // 步骤编辑表格样式
+  .steps-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: 8px;
     border: 1px solid #e8e8e8;
-    transition: all 0.3s ease;
-    margin-bottom: 16px;
+  }
 
-    &:hover {
-      border-color: #7b42f6;
-      box-shadow: 0 4px 12px rgba(123, 66, 246, 0.1);
-    }
+  .steps-edit-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: #ffffff;
 
-    &.preconditions-card {
-      border-color: rgba(255, 107, 107, 0.3);
+    thead tr {
+      background: linear-gradient(135deg, #f8f7ff 0%, #f0edff 100%);
 
-      &:hover {
-        border-color: #ff6b6b;
-        box-shadow: 0 4px 12px rgba(255, 107, 107, 0.1);
-      }
-    }
-
-    .step-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-
-      .step-number {
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
-        color: #fff;
-        font-size: 14px;
-        font-weight: 600;
-        border-radius: 50%;
-        flex-shrink: 0;
-
-        &.preconditions-number {
-          background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
-        }
-      }
-
-      .step-label {
+      th {
+        padding: 12px 16px;
         font-size: 14px;
         font-weight: 600;
         color: #5a32a3;
-        flex: 1;
-
-        &.preconditions-label {
-          color: #ff6b6b;
-        }
+        text-align: left;
+        border-bottom: 1px solid rgba(147, 112, 219, 0.15);
+        white-space: nowrap;
       }
 
-      .step-actions {
-        display: flex;
-        gap: 4px;
+      .col-precondition { width: 22%; }
+      .col-step { width: 32%; }
+      .col-expected { width: 32%; }
+      .col-action { width: 14%; }
+    }
+
+    tbody tr {
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: #faf9ff;
+      }
+
+      &:not(:last-child) td {
+        border-bottom: 1px solid #f0f0f0;
       }
     }
 
-    .step-content {
+    td {
+      padding: 12px 12px;
+      font-size: 14px;
+      line-height: 1.7;
+      vertical-align: top;
+    }
+
+    .cell-precondition {
+      background: #fafbff;
+      vertical-align: top;
+    }
+
+    .cell-step .cell-inner {
       display: flex;
-      flex-direction: column;
-      gap: 16px;
+      gap: 8px;
+      align-items: flex-start;
 
-      .step-field,
-      .expected-field {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-
-        .field-label {
-          font-size: 12px;
-          font-weight: 500;
-          color: #999;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-
-          &.expected-label {
-            color: #52c41a;
-          }
-        }
+      .cell-index {
+        color: #7b42f6;
+        font-weight: 700;
+        font-size: 14px;
+        flex-shrink: 0;
+        padding-top: 8px;
+        min-width: 20px;
       }
     }
 
-    .step-input {
+    .cell-action {
+      vertical-align: middle;
+      text-align: center;
+    }
+
+    .action-btns {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 2px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .table-textarea {
       :deep(.el-textarea__inner) {
-        border-radius: 8px;
+        border-radius: 6px;
         border: 1px solid rgba(147, 112, 219, 0.2);
-        transition: all 0.3s ease;
         background: #fafaff;
+        font-size: 13px;
+        resize: vertical;
+        min-height: 36px;
+        transition: all 0.3s ease;
 
         &:hover,
         &:focus {
           border-color: #7b42f6;
-          box-shadow: 0 0 0 3px rgba(123, 66, 246, 0.1);
+          box-shadow: 0 0 0 3px rgba(123, 66, 246, 0.08);
           background: #fff;
         }
       }
     }
   }
+}
 
-  .steps-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+// 响应式表格
+@media (max-width: 768px) {
+  .unified-card .steps-edit-table {
+    thead th { padding: 8px 6px; font-size: 12px; }
+    td { padding: 8px 6px; }
 
-  .add-step-container {
-    display: flex;
-    justify-content: center;
-    padding: 16px 0;
+    .cell-action .action-btns {
+      flex-direction: column;
+    }
   }
 }
 

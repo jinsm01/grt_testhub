@@ -321,6 +321,9 @@ class TestSuiteSerializer(serializers.ModelSerializer):
     suite_requests = serializers.SerializerMethodField()
     environment = EnvironmentSerializer(read_only=True)
     scenario_id = serializers.SerializerMethodField()
+    mainline_test_case = serializers.SerializerMethodField()
+    mainline_case_updated = serializers.SerializerMethodField()
+
 
     def get_scenario_id(self, obj):
         """获取关联的自动化场景ID"""
@@ -393,7 +396,8 @@ class TestSuiteSerializer(serializers.ModelSerializer):
         model = TestSuite
         fields = [
             'id', 'name', 'description', 'project', 'environment', 'environment_id',
-            'suite_requests', 'scenario_id', 'created_by', 'created_at', 'updated_at'
+            'suite_requests', 'scenario_id', 'mainline_test_case', 'mainline_case_updated',
+            'created_by', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
 

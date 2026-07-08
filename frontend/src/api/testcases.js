@@ -80,3 +80,39 @@ export function batchUpdateReviewStatus(data) {
     data
   })
 }
+
+// 一键AI审核
+export function aiReviewTestCases(data) {
+  return request({
+    url: '/testcases/ai-review/',
+    method: 'post',
+    data
+  })
+}
+
+// 关联自动化场景
+export function linkTestCaseToSuite(testCaseId, suiteId) {
+  return request({
+    url: `/testcases/${testCaseId}/link-suite/`,
+    method: 'post',
+    data: { suite_id: suiteId }
+  })
+}
+
+// 取消关联自动化场景
+export function unlinkTestCaseFromSuite(testCaseId, suiteId = null) {
+  return request({
+    url: `/testcases/${testCaseId}/unlink-suite/`,
+    method: 'post',
+    data: suiteId ? { suite_id: suiteId } : {}
+  })
+}
+
+// 获取可关联的自动化场景列表
+export function getAvailableSuites(testCaseId, params = {}) {
+  return request({
+    url: `/testcases/${testCaseId}/available-suites/`,
+    method: 'get',
+    params
+  })
+}

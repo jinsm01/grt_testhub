@@ -358,7 +358,6 @@ def execute_assertions(response, assertions, resolver=None, step_context=None):
                     from jsonpath_ng import parse
                     matches = parse(json_path).find(response_json)
                     actual = matches[0].value if matches else None
-                    print(f"[断言调试] not_empty断言: json_path={json_path}, actual={actual}, type={type(actual)}")
                     # 检查是否不为空（None、空字符串、空列表、空字典都视为空）
                     if actual is None:
                         passed = False
@@ -368,9 +367,6 @@ def execute_assertions(response, assertions, resolver=None, step_context=None):
                         passed = False
                     else:
                         passed = True
-                    if not passed:
-                        result['error'] = f"期望不为空，但实际值为: {actual} (类型: {type(actual).__name__})"
-                    print(f"[断言调试] not_empty断言结果: passed={passed}")
                     result['actual'] = actual
                 except Exception as e:
                     result['error'] = f"JSON提取失败: {str(e)}"
@@ -381,13 +377,12 @@ def execute_assertions(response, assertions, resolver=None, step_context=None):
                 json_path = assertion.get('json_path', '')
                 actual = None
                 passed = False
-
+                
                 try:
                     response_json = json.loads(response.text)
                     from jsonpath_ng import parse
                     matches = parse(json_path).find(response_json)
                     actual = matches[0].value if matches else None
-                    print(f"[断言调试] empty断言: json_path={json_path}, actual={actual}, type={type(actual)}")
                     # 检查是否为空
                     if actual is None:
                         passed = True
@@ -397,8 +392,6 @@ def execute_assertions(response, assertions, resolver=None, step_context=None):
                         passed = True
                     else:
                         passed = False
-                        result['error'] = f"期望为空，但实际值为: {actual}"
-                    print(f"[断言调试] empty断言结果: passed={passed}")
                     result['actual'] = actual
                 except Exception as e:
                     result['error'] = f"JSON提取失败: {str(e)}"
@@ -709,141 +702,22 @@ def execute_test_suite(test_suite, environment, executed_by):
                 
                 # 准备请求体
                 body_data = None
-                request_kwargs = {
-                    'method': api_request.method,
-                    'url': url,
-                    'headers': headers,
-                    'params': params,
-                    'timeout': 30
-                }
-                
                 if api_request.body and api_request.method in ['POST', 'PUT', 'PATCH']:
-                    body_type = api_request.body.get('type', '')
-                    
-                    if body_type == 'json':
+                    if api_request.body.get('type') == 'json':
                         body_data = api_request.body.get('data', {})
                         body_data = _replace_variables_in_dict(body_data, variables)
                         body_data = _resolve_variables_in_dict(body_data, resolver)
-                        request_kwargs['json'] = body_data
-                    
-                    elif body_type in ('form-data', 'formdata'):
-                        # 处理 form-data 类型
-                        form_items = api_request.body.get('data', [])
-                        multipart_data = {}
-                        has_files = False
-                        
-                        print(f"[DEBUG utils.py] form-data 字段数量: {len(form_items)}")
-                        
-                        if isinstance(form_items, list):
-                            for item in form_items:
-                                if isinstance(item, dict) and item.get('key'):
-                                    item_key = item.get('key')
-                                    item_value = item.get('value', '')
-                                    item_type = item.get('type', 'string')
-                                    
-                                    print(f"[DEBUG utils.py] 处理字段: {item_key}={item_value}, type={item_type}")
-                                    
-                                    # 变量替换
-                                    item_value = _replace_variables(str(item_value), variables)
-                                    item_value = resolver.resolve(item_value)
-                                    
-                                    print(f"[DEBUG utils.py] 替换后: {item_key}={item_value}")
-                                    
-                                    if item_type == 'file':
-                                        # 文件字段
-                                        file_path = item.get('file_path')
-                                        has_files = True
-                                        
-                                        if file_path:
-                                            from django.conf import settings
-                                            import os
-                                            full_file_path = os.path.join(settings.MEDIA_ROOT, file_path)
-                                            
-                                            if os.path.exists(full_file_path):
-                                                try:
-                                                    with open(full_file_path, 'rb') as f:
-                                                        file_content = f.read()
-                                                    
-                                                    file_name = os.path.basename(full_file_path)
-                                                    if '_' in file_name and len(file_name.split('_')[0]) == 8:
-                                                        original_name = file_name.split('_', 1)[1]
-                                                    else:
-                                                        original_name = file_name
-                                                    
-                                                    multipart_data[item_key] = (
-                                                        original_name,
-                                                        file_content,
-                                                        item.get('content_type') or 'application/octet-stream'
-                                                    )
-                                                except Exception as e:
-                                                    logger.error(f"读取文件失败: {e}")
-                                                    multipart_data[item_key] = (item_value, b'', 'application/octet-stream')
-                                            else:
-                                                logger.warning(f"文件不存在: {full_file_path}")
-                                                multipart_data[item_key] = (item_value, b'', 'application/octet-stream')
-                                        else:
-                                            multipart_data[item_key] = (item_value, b'', 'application/octet-stream')
-                                    else:
-                                        # 普通字段 - 使用 MultipartEncoder 格式
-                                        multipart_data[item_key] = (None, str(item_value))
-                        
-                        print(f"[DEBUG utils.py] 最终 multipart_data: {multipart_data}")
-                        print(f"[DEBUG utils.py] has_files: {has_files}")
-                        
-                        if has_files:
-                            # 使用 MultipartEncoder
-                            try:
-                                from requests_toolbelt.multipart.encoder import MultipartEncoder
-                                encoder = MultipartEncoder(fields=multipart_data)
-                                request_kwargs['headers'] = headers.copy()
-                                request_kwargs['headers']['Content-Type'] = encoder.content_type
-                                request_kwargs['data'] = encoder
-                            except ImportError:
-                                logger.warning("requests_toolbelt 未安装，使用普通 form 数据")
-                                form_dict = {}
-                                for key, value in multipart_data.items():
-                                    if isinstance(value, tuple):
-                                        if value[0] is None:
-                                            form_dict[key] = value[1]
-                                        else:
-                                            form_dict[key] = value[0]
-                                    else:
-                                        form_dict[key] = value
-                                request_kwargs['data'] = form_dict
-                        else:
-                            # 没有文件，转换为普通 form 数据
-                            form_dict = {}
-                            for key, value in multipart_data.items():
-                                if isinstance(value, tuple):
-                                    if value[0] is None:
-                                        form_dict[key] = value[1]
-                                    else:
-                                        form_dict[key] = value[0]
-                                else:
-                                    form_dict[key] = value
-                            request_kwargs['data'] = form_dict
-                    
-                    elif body_type == 'x-www-form-urlencoded':
-                        form_items = api_request.body.get('data', [])
-                        form_dict = {}
-                        if isinstance(form_items, list):
-                            for item in form_items:
-                                if isinstance(item, dict) and item.get('key'):
-                                    item_value = item.get('value', '')
-                                    item_value = _replace_variables(str(item_value), variables)
-                                    item_value = resolver.resolve(item_value)
-                                    form_dict[item['key']] = item_value
-                        request_kwargs['data'] = form_dict
-                    
-                    elif body_type == 'raw':
-                        raw_data = api_request.body.get('data', '')
-                        raw_data = _replace_variables(str(raw_data), variables)
-                        raw_data = resolver.resolve(raw_data)
-                        request_kwargs['data'] = raw_data
                 
                 # 执行请求
                 start_time = time.time()
-                response = requests.request(**request_kwargs)
+                response = requests.request(
+                    method=api_request.method,
+                    url=url,
+                    headers=headers,
+                    params=params,
+                    json=body_data,
+                    timeout=30
+                )
                 end_time = time.time()
                 response_time = (end_time - start_time) * 1000
                 

@@ -233,6 +233,16 @@ class TestSuite(SoftDeleteModel):
                                    verbose_name='创建者')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+    # 关联主线用例
+    mainline_test_case = models.ForeignKey(
+        'testcases.TestCase', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='api_test_suites', verbose_name='关联主线用例',
+        help_text='将该接口测试场景与主线用例一对一关联'
+    )
+    mainline_case_checked_at = models.DateTimeField(
+        null=True, blank=True, verbose_name='主线用例已确认时间',
+        help_text='上次确认主线用例内容的时间，用于提示用例内容是否有更新'
+    )
 
     class Meta:
         db_table = 'api_test_suites'

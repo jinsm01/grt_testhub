@@ -117,6 +117,17 @@
             </span>
           </template>
         </el-table-column>
+        <!-- 关联自动化场景 -->
+        <el-table-column label="关联自动化场景" width="140" header-align="center" align="center">
+          <template #default="{ row }">
+            <span
+              class="status-badge"
+              :class="row.automation_scenario ? 'linked' : 'unlinked'"
+            >
+              {{ row.automation_scenario ? '已关联' : '未关联' }}
+            </span>
+          </template>
+        </el-table-column>
         <!-- 操作 -->
         <el-table-column :label="$t('project.actions')" width="180" fixed="right" header-align="center" align="center">
           <template #default="{ row }">
@@ -1461,6 +1472,18 @@ onActivated(() => {
       background: #fff1f0;
       color: #f5222d;
       font-weight: 600;
+    }
+
+    // 已关联 - 紫色
+    &.linked {
+      background: #f9f0ff;
+      color: #722ed1;
+    }
+
+    // 未关联 - 浅灰
+    &.unlinked {
+      background: #f5f5f5;
+      color: #999;
     }
   }
 

@@ -18,8 +18,17 @@
           <el-option label="待审核" value="pending" />
         </el-select>
       </div>
-      <!-- 全局批量操作按钮 -->
-      <div class="filter-right" v-if="hasSelectedCases">
+    <!-- 全局操作按钮 -->
+    <div class="filter-right">
+      <el-button
+        type="primary"
+        class="action-btn ai-review-btn"
+        @click="handleAIReview"
+      >
+        <el-icon><MagicStick /></el-icon>
+        <span>一键AI审核</span>
+      </el-button>
+      <template v-if="hasSelectedCases">
         <el-button
           class="action-btn preview-btn"
           @click="openGlobalBatchPreviewDrawer"
@@ -35,7 +44,16 @@
           <el-icon><CircleCheckFilled /></el-icon>
           <span>一键通过</span>
         </el-button>
-      </div>
+        <el-button
+          type="danger"
+          class="action-btn"
+          @click="handleGlobalBatchReview('rejected')"
+        >
+          <el-icon><CircleCloseFilled /></el-icon>
+          <span>一键拒绝</span>
+        </el-button>
+      </template>
+    </div>
     </div>
 
     <!-- 目录列表 - 可展开收起 -->
@@ -97,7 +115,11 @@
             </el-table-column>
             <el-table-column prop="review_status" label="审核结果" width="115" align="center">
               <template #default="{ row }">
-                <span class="badge" :class="`badge-review-${row.review_status || 'pending'}`">
+                <span
+                  class="badge"
+                  :class="[`badge-review-${row.review_status || 'pending'}`, row.review_status === 'rejected' ? 'badge-review-rejected-clickable' : '']"
+                  @click="handleReviewBadgeClick(row)"
+                >
                   {{ getReviewStatusLabel(row.review_status) }}
                 </span>
               </template>
@@ -224,6 +246,23 @@
         </div>
       </div>
     </el-drawer>
+
+    <!-- 拒绝原因弹窗 -->
+    <el-dialog
+      v-model="reasonDialogVisible"
+      title="拒绝原因"
+      width="520px"
+      align-center
+      :close-on-click-modal="false"
+      class="reason-dialog"
+    >
+      <div class="reason-content">
+        <pre>{{ currentReason }}</pre>
+      </div>
+      <template #footer>
+        <el-button @click="reasonDialogVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -231,8 +270,8 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, Folder, ArrowDown, ArrowRight, Operation, Check, Close, View, List, CircleCheckFilled, CircleCloseFilled } from '@element-plus/icons-vue'
-import { getAuthorTestCases, getTestCaseStatistics, updateTestCase, batchUpdateReviewStatus } from '@/api/testcases'
+import { ArrowLeft, Folder, ArrowDown, ArrowRight, Operation, Check, Close, View, List, CircleCheckFilled, CircleCloseFilled, MagicStick } from '@element-plus/icons-vue'
+import { getAuthorTestCases, getTestCaseStatistics, updateTestCase, batchUpdateReviewStatus, aiReviewTestCases } from '@/api/testcases'
 import { useUserStore } from '@/stores/user'
 import dayjs from 'dayjs'
 
@@ -264,6 +303,21 @@ const globalReviewFilter = ref('')
 const batchPreviewDrawerVisible = ref(false)
 const previewCases = ref([])
 const currentPreviewDirectory = ref('')
+
+// 拒绝原因弹窗
+const reasonDialogVisible = ref(false)
+const currentReason = ref('')
+
+// 一键AI审核规则弹窗
+const aiReviewDialogVisible = ref(false)
+const aiReviewRules = [
+  '测试步骤不能少于3步',
+  '用例名称必填且全局不重复',
+  '前置条件不能为空',
+  '主线用例只描述当前最新功能，步骤和预期不能包含【原有规则】【调整】【历史数据】',
+  '相同归属目录下：P0 ≤ 3 个，P1 ≤ 10 个，P2~P4 不限',
+  '相同归属目录下，不同用例的测试步骤和预期结果重复率不能100%'
+]
 
 // 计算目录数量
 const directoryCount = computed(() => groupedCases.value.length)
@@ -459,6 +513,9 @@ function getFilteredCases(group) {
   if (reviewFilterValue) {
     filteredCases = filteredCases.filter(c => {
       const status = c.review_status || 'none'
+      if (reviewFilterValue === 'pending') {
+        return status === 'pending' || status === 'none'
+      }
       return status === reviewFilterValue
     })
   }
@@ -535,6 +592,26 @@ async function handleBatchReviewForDirectory(command, group) {
     return
   }
 
+  let review_comment = ''
+  if (command === 'rejected') {
+    try {
+      const { value } = await ElMessageBox.prompt('请输入拒绝理由', '批量拒绝', {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        inputType: 'textarea',
+        inputValidator: (value) => {
+          if (!value || !value.trim()) {
+            return '拒绝理由不能为空'
+          }
+          return true
+        }
+      })
+      review_comment = value.trim()
+    } catch (error) {
+      return
+    }
+  }
+
   try {
     await ElMessageBox.confirm(
       `确定将选中的 ${selectedIds.length} 条用例审核结果设为「${getReviewStatusLabel(command)}」吗？`,
@@ -548,7 +625,8 @@ async function handleBatchReviewForDirectory(command, group) {
 
     await batchUpdateReviewStatus({
       ids: selectedIds,
-      review_status: command
+      review_status: command,
+      review_comment
     })
 
     ElMessage.success('批量审核成功')
@@ -575,6 +653,26 @@ async function handleGlobalBatchReview(command) {
     return
   }
 
+  let review_comment = ''
+  if (command === 'rejected') {
+    try {
+      const { value } = await ElMessageBox.prompt('请输入拒绝理由', '批量拒绝', {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        inputType: 'textarea',
+        inputValidator: (value) => {
+          if (!value || !value.trim()) {
+            return '拒绝理由不能为空'
+          }
+          return true
+        }
+      })
+      review_comment = value.trim()
+    } catch (error) {
+      return
+    }
+  }
+
   try {
     await ElMessageBox.confirm(
       `确定将选中的 ${allSelectedIds.length} 条用例审核结果设为「${getReviewStatusLabel(command)}」吗？`,
@@ -588,7 +686,8 @@ async function handleGlobalBatchReview(command) {
 
     await batchUpdateReviewStatus({
       ids: allSelectedIds,
-      review_status: command
+      review_status: command,
+      review_comment
     })
 
     ElMessage.success('批量审核成功')
@@ -608,6 +707,46 @@ async function handleGlobalBatchReview(command) {
       console.error('批量审核失败:', error)
       ElMessage.error('批量审核失败')
     }
+  }
+}
+
+// 一键AI审核
+async function handleAIReview() {
+  try {
+    await ElMessageBox.confirm(
+      '确定对当前作者所有待审核用例执行一键AI审核吗？',
+      '一键AI审核',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+  } catch (error) {
+    return
+  }
+
+  loading.value = true
+  try {
+    const res = await aiReviewTestCases({
+      username: author.value,
+      month: selectedMonth.value || undefined
+    })
+    ElMessage.success(`AI审核完成：通过 ${res.data.approved_count || 0} 条，拒绝 ${res.data.rejected_count || 0} 条`)
+    await loadData(true)
+  } catch (error) {
+    console.error('AI审核失败:', error)
+    ElMessage.error('AI审核失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 点击已拒绝徽章查看拒绝原因
+function handleReviewBadgeClick(row) {
+  if (row.review_status === 'rejected') {
+    currentReason.value = row.review_comment || '暂无拒绝原因'
+    reasonDialogVisible.value = true
   }
 }
 
@@ -662,19 +801,40 @@ function openGlobalBatchPreviewDrawer() {
 
 // 处理预览中的单个用例审核
 async function handlePreviewCaseReview(status, testCase) {
+  let review_comment = ''
+  if (status === 'rejected') {
+    try {
+      const { value } = await ElMessageBox.prompt('请输入拒绝理由', '拒绝用例', {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        inputType: 'textarea',
+        inputValidator: (value) => {
+          if (!value || !value.trim()) {
+            return '拒绝理由不能为空'
+          }
+          return true
+        }
+      })
+      review_comment = value.trim()
+    } catch (error) {
+      return
+    }
+  }
+
   try {
-    await updateTestCase(testCase.id, { review_status: status })
+    await updateTestCase(testCase.id, { review_status: status, review_comment })
     testCase.review_status = status
+    testCase.review_comment = review_comment
     ElMessage.success('审核状态已更新')
-    
+
     // 同步更新主列表中的数据
-    const group = groupedCases.value.find(g => g.directory === currentPreviewDirectory.value)
-    if (group) {
+    groupedCases.value.forEach(group => {
       const caseInGroup = group.cases.find(c => c.id === testCase.id)
       if (caseInGroup) {
         caseInGroup.review_status = status
+        caseInGroup.review_comment = review_comment
       }
-    }
+    })
   } catch (error) {
     console.error('更新审核状态失败:', error)
     ElMessage.error('更新审核状态失败')
@@ -1773,6 +1933,77 @@ function getStepCount(steps, expectedResult) {
   .el-drawer__body {
     padding: 24px;
     background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+  }
+}
+// 一键AI审核按钮样式
+.ai-review-btn {
+  background: linear-gradient(135deg, #7b42f6 0%, #6d28d9 100%);
+  border: none;
+  color: #ffffff;
+
+  &:hover {
+    background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
+  }
+
+  .el-icon,
+  span {
+    color: #ffffff !important;
+  }
+}
+
+// 已拒绝徽章可点击
+.badge-review-rejected-clickable {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+// 拒绝原因弹窗内容
+.reason-content {
+  pre {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 16px;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #334155;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-family: inherit;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    max-height: 400px;
+    overflow-y: auto;
+  }
+}
+
+::deep(.reason-dialog) {
+  .el-dialog__header {
+    padding: 20px 24px;
+    margin-bottom: 0;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+
+    .el-dialog__title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+  }
+
+  .el-dialog__body {
+    padding: 24px;
+  }
+
+  .el-dialog__footer {
+    padding: 12px 24px 24px;
   }
 }
 </style>

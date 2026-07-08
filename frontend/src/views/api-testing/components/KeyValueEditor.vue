@@ -60,20 +60,16 @@
                 {{ row.file ? $t('apiTesting.component.keyValueEditor.reselectFile') : (row.value ? $t('apiTesting.component.keyValueEditor.reselectFile') : $t('apiTesting.component.keyValueEditor.selectFile')) }}
               </el-button>
             </el-upload>
-            <el-tooltip v-if="row.file" :content="row.file.name + ' (' + formatFileSize(row.file.size) + ')'" placement="top" :show-after="200">
-              <span class="file-name">
-                <el-icon><Document /></el-icon>
-                {{ row.file.name }}
-                <span class="file-size">({{ formatFileSize(row.file.size) }})</span>
-              </span>
-            </el-tooltip>
-            <el-tooltip v-else-if="row.value" :content="row.value" placement="top" :show-after="200">
-              <span class="file-name file-name-saved">
-                <el-icon><Document /></el-icon>
-                {{ row.value }}
-                <span class="file-hint">({{ $t('apiTesting.component.keyValueEditor.pleaseReselect') }})</span>
-              </span>
-            </el-tooltip>
+            <span v-if="row.file" class="file-name" :title="row.file.name">
+              <el-icon><Document /></el-icon>
+              {{ row.file.name }}
+              <span class="file-size">({{ formatFileSize(row.file.size) }})</span>
+            </span>
+            <span v-else-if="row.value" class="file-name file-name-saved" :title="row.value">
+              <el-icon><Document /></el-icon>
+              {{ row.value }}
+              <span class="file-hint">({{ $t('apiTesting.component.keyValueEditor.pleaseReselect') }})</span>
+            </span>
             <span v-else class="file-placeholder">{{ $t('apiTesting.component.keyValueEditor.noFileSelected') }}</span>
           </div>
           <el-tooltip :content="$t('apiTesting.component.keyValueEditor.insertDynamicVariable')" placement="top" v-if="!showFile || row.type !== 'file'">
@@ -789,19 +785,13 @@ defineExpose({
 
 .file-upload-wrapper {
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
   flex: 1;
-  min-width: 0;
 }
 
 .file-upload {
   flex-shrink: 0;
-}
-
-.file-select-btn {
-  white-space: nowrap;
 }
 
 .file-select-btn {
@@ -833,8 +823,7 @@ defineExpose({
   gap: 6px;
   font-size: 13px;
   color: #606266;
-  flex: 1;
-  min-width: 0;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

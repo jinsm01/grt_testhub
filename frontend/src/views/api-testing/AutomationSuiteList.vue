@@ -68,23 +68,44 @@
             {{ (currentPage - 1) * pageSize + $index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column prop="name" :label="$t('apiTesting.automation.suiteName')" min-width="100" header-align="center" align="center">
+        <el-table-column prop="name" :label="$t('apiTesting.automation.suiteName')" min-width="180" header-align="center" align="center" show-overflow-tooltip>
           <template #default="scope">
             <span>{{ scope.row.name }}</span>
           </template>
         </el-table-column>
-        <el-table-column :label="$t('apiTesting.automation.executionEnvironment')" width="140" header-align="center" align="center">
+        <el-table-column :label="$t('apiTesting.automation.executionEnvironment')" width="150" header-align="center" align="center">
           <template #default="scope">
             <span class="status-badge" :class="scope.row.environment ? 'environment' : 'no-environment'">
               {{ getEnvironmentName(scope.row.environment) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="评审状态" width="140" header-align="center" align="center">
+        <el-table-column label="评审状态" width="110" header-align="center" align="center">
           <template #default="scope">
             <span class="status-badge" :class="getReviewStatusClass(scope.row.review_status)">
               {{ getReviewStatusText(scope.row.review_status) }}
             </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="关联主线用例" min-width="200" header-align="center" align="center" show-overflow-tooltip>
+          <template #default="scope">
+            <div class="mainline-cell">
+              <template v-if="scope.row.mainline_test_case">
+                <span
+                  class="mainline-link"
+                  @click="goToTestCase(scope.row.mainline_test_case.id)"
+                >
+                  {{ scope.row.mainline_test_case.title }}
+                </span>
+                <el-tooltip v-if="scope.row.mainline_case_updated" content="主线用例已更新，请点击确认是否一致" placement="top">
+                  <span class="update-indicator" @click="openConfirmMainlineDialog(scope.row)">
+                    <el-icon><Warning /></el-icon>
+                    更新
+                  </span>
+                </el-tooltip>
+              </template>
+              <span v-else class="text-muted">未关联</span>
+            </div>
           </template>
         </el-table-column>
         <el-table-column :label="$t('apiTesting.automation.creator')" width="100" header-align="center" align="center">
@@ -92,26 +113,57 @@
             {{ scope.row.created_by?.username }}
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" :label="$t('apiTesting.automation.createTime')" width="200" header-align="center" align="center">
+        <el-table-column prop="created_at" :label="$t('apiTesting.automation.createTime')" width="180" header-align="center" align="center">
           <template #default="scope">
             {{ formatDate(scope.row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column :label="$t('apiTesting.common.operation')" width="270" fixed="right" header-align="center" align="center">
+        <el-table-column :label="$t('apiTesting.common.operation')" width="240" fixed="right" header-align="center" align="center">
           <template #default="scope">
             <div class="action-buttons">
               <el-button size="small" type="primary" class="action-btn view-btn" @click="goToSuiteDetail(scope.row.id)">
                 <el-icon><View /></el-icon>
                 <span>{{ $t('apiTesting.common.view') }}</span>
               </el-button>
-              <el-button size="small" type="warning" class="action-btn edit-btn" @click="editSuite(scope.row)">
-                <el-icon><Edit /></el-icon>
-                <span>{{ $t('apiTesting.common.edit') }}</span>
+              <el-button
+                v-if="!scope.row.mainline_test_case"
+                size="small"
+                type="success"
+                class="action-btn link-btn"
+                @click="openLinkMainlineDialog(scope.row)"
+              >
+                <el-icon><Link /></el-icon>
+                <span>关联</span>
               </el-button>
-              <el-button size="small" type="danger" class="action-btn delete-btn" @click="deleteSuite(scope.row)">
-                <el-icon><Delete /></el-icon>
-                <span>{{ $t('apiTesting.common.delete') }}</span>
+              <el-button
+                v-else
+                size="small"
+                type="danger"
+                class="action-btn unlink-btn"
+                @click="handleUnlinkMainline(scope.row)"
+                :loading="scope.row._unlinking"
+              >
+                <el-icon><Link /></el-icon>
+                <span>取消</span>
               </el-button>
+              <el-dropdown trigger="click" placement="bottom-end" @command="(command) => handleMoreAction(command, scope.row)">
+                <el-button size="small" type="info" class="action-btn more-btn">
+                  <el-icon><MoreFilled /></el-icon>
+                  <span>更多</span>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="edit">
+                      <el-icon><Edit /></el-icon>
+                      <span>{{ $t('apiTesting.common.edit') }}</span>
+                    </el-dropdown-item>
+                    <el-dropdown-item command="delete" divided>
+                      <el-icon><Delete /></el-icon>
+                      <span>{{ $t('apiTesting.common.delete') }}</span>
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
             </div>
           </template>
         </el-table-column>
@@ -130,6 +182,127 @@
         />
       </div>
     </div>
+
+    <!-- 关联主线用例对话框 -->
+    <el-dialog
+      v-model="linkMainlineDialogVisible"
+      title="关联主线用例"
+      width="900px"
+      :close-on-click-modal="false"
+      class="purple-dialog link-mainline-dialog"
+    >
+      <div class="link-dialog-content">
+        <div class="link-dialog-info">
+          <p class="suite-title">场景：<strong>{{ linkingSuite?.name }}</strong></p>
+        </div>
+        <div class="link-dialog-search">
+          <el-input
+            v-model="mainlineSearchText"
+            placeholder="搜索主线用例标题..."
+            clearable
+            @input="fetchAvailableMainlines"
+            style="margin-bottom: 12px;"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+        <el-table
+          :data="availableMainlines"
+          v-loading="loadingMainlines"
+          max-height="360"
+          highlight-current-row
+          @current-change="handleMainlineSelect"
+          style="width: 100%"
+        >
+          <el-table-column label="" width="50" align="center">
+            <template #default="{ row }">
+              <el-radio
+                :model-value="selectedMainlineId"
+                :value="row.id"
+                @change="handleMainlineSelect(row)"
+              />
+            </template>
+          </el-table-column>
+          <el-table-column label="用例标题" min-width="240" show-overflow-tooltip>
+            <template #default="{ row }">
+              <span>{{ row.title }}</span>
+              <el-tag v-if="row.is_linked" size="small" type="success" style="margin-left: 8px;">已关联</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="所属模块" width="130" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ row.module || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="用例级别" width="90" align="center">
+            <template #default="{ row }">
+              <span class="status-badge" :class="row.priority">
+                {{ getPriorityText(row.priority) }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="创建人" width="100" align="center">
+            <template #default="{ row }">
+              {{ row.author?.username || '-' }}
+            </template>
+          </el-table-column>
+        </el-table>
+        <div v-if="availableMainlines.length === 0 && !loadingMainlines" class="empty-hint">
+          暂无可关联的主线用例
+        </div>
+        <div v-if="mainlineTotal > 0" class="pagination-container">
+          <el-pagination
+            v-model:current-page="mainlineCurrentPage"
+            v-model:page-size="mainlinePageSize"
+            :total="mainlineTotal"
+            :page-sizes="[10, 20, 50, 100]"
+            layout="total, sizes, prev, pager, next"
+            @current-change="handleMainlinePageChange"
+            @size-change="handleMainlineSizeChange"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="linkMainlineDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          :disabled="!selectedMainlineId"
+          :loading="linkingMainline"
+          @click="handleLinkMainline"
+        >
+          确认关联
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 确认主线用例一致性对话框 -->
+    <el-dialog
+      v-model="confirmMainlineDialogVisible"
+      title="确认主线用例一致性"
+      width="500px"
+      :close-on-click-modal="false"
+      class="purple-dialog confirm-mainline-dialog"
+    >
+      <div class="confirm-mainline-content">
+        <p class="confirm-tip">
+          场景 <strong>"{{ confirmingSuite?.name }}"</strong> 关联的主线用例
+          <strong>"{{ confirmingSuite?.mainline_test_case?.title }}"</strong> 已发生更新。
+        </p>
+        <p class="confirm-question">请确认当前场景是否仍与该主线用例保持一致？</p>
+      </div>
+      <template #footer>
+        <el-button @click="confirmMainlineDialogVisible = false">不一致</el-button>
+        <el-button
+          type="primary"
+          :loading="confirmingMainline"
+          @click="handleConfirmMainline"
+        >
+          一致
+        </el-button>
+      </template>
+    </el-dialog>
 
     <!-- 创建/编辑测试套件对话框 -->
     <el-dialog
@@ -257,7 +430,13 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '@/utils/api'
-import { Plus, MoreFilled, Document, User, Clock, VideoPlay, Edit, CopyDocument, Delete, View } from '@element-plus/icons-vue'
+import {
+  linkAutomationSuiteMainline,
+  unlinkAutomationSuiteMainline,
+  getAutomationSuiteAvailableMainlines,
+  confirmAutomationSuiteMainline
+} from '@/api/automation-suites'
+import { Plus, MoreFilled, Document, User, Clock, VideoPlay, Edit, CopyDocument, Delete, View, Search, Link, Warning } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -284,6 +463,23 @@ const showExecutionDialog = ref(false)
 const submittingSuite = ref(false)
 const editingSuite = ref(null)
 const currentExecution = ref(null)
+
+// 确认主线用例一致性弹窗
+const confirmMainlineDialogVisible = ref(false)
+const confirmingSuite = ref(null)
+const confirmingMainline = ref(false)
+
+// 关联主线用例弹窗
+const linkMainlineDialogVisible = ref(false)
+const linkingSuite = ref(null)
+const mainlineSearchText = ref('')
+const availableMainlines = ref([])
+const loadingMainlines = ref(false)
+const selectedMainlineId = ref(null)
+const linkingMainline = ref(false)
+const mainlineCurrentPage = ref(1)
+const mainlinePageSize = ref(20)
+const mainlineTotal = ref(0)
 
 // 表单
 const suiteFormRef = ref(null)
@@ -494,6 +690,143 @@ const handleCurrentChange = (page) => {
 
 const goToSuiteDetail = (suiteId) => {
   router.push(`/api-testing/automation/${suiteId}`)
+}
+
+const goToTestCase = (testCaseId) => {
+  router.push(`/ai-generation/testcases/${testCaseId}`)
+}
+
+// ========== 关联/取消关联主线用例 ==========
+
+const openLinkMainlineDialog = async (suite) => {
+  linkingSuite.value = suite
+  selectedMainlineId.value = null
+  mainlineSearchText.value = ''
+  mainlineCurrentPage.value = 1
+  linkMainlineDialogVisible.value = true
+  await fetchAvailableMainlines()
+}
+
+const fetchAvailableMainlines = async () => {
+  if (!linkingSuite.value) return
+  loadingMainlines.value = true
+  try {
+    const params = {
+      page: mainlineCurrentPage.value,
+      page_size: mainlinePageSize.value
+    }
+    if (mainlineSearchText.value) {
+      params.search = mainlineSearchText.value
+    }
+    const res = await getAutomationSuiteAvailableMainlines(linkingSuite.value.id, params)
+    availableMainlines.value = res.data?.results || []
+    mainlineTotal.value = res.data?.count || 0
+  } catch (error) {
+    console.error('获取可用主线用例失败:', error)
+    ElMessage.error('获取可用主线用例列表失败')
+  } finally {
+    loadingMainlines.value = false
+  }
+}
+
+const handleMainlinePageChange = (page) => {
+  mainlineCurrentPage.value = page
+  fetchAvailableMainlines()
+}
+
+const handleMainlineSizeChange = (size) => {
+  mainlinePageSize.value = size
+  mainlineCurrentPage.value = 1
+  fetchAvailableMainlines()
+}
+
+const handleMainlineSelect = (row) => {
+  if (row) {
+    selectedMainlineId.value = row.id
+  }
+}
+
+const getPriorityText = (priority) => {
+  const textMap = {
+    critical: 'P0',
+    high: 'P1',
+    medium: 'P2',
+    low: 'P3'
+  }
+  return textMap[priority] || priority || '-'
+}
+
+const handleLinkMainline = async () => {
+  if (!selectedMainlineId.value || !linkingSuite.value) return
+  linkingMainline.value = true
+  try {
+    await linkAutomationSuiteMainline(linkingSuite.value.id, selectedMainlineId.value)
+    ElMessage.success('关联成功')
+    linkMainlineDialogVisible.value = false
+    await loadTestSuites()
+  } catch (error) {
+    const msg = error.response?.data?.error || '关联失败'
+    ElMessage.error(msg)
+  } finally {
+    linkingMainline.value = false
+  }
+}
+
+const openConfirmMainlineDialog = (suite) => {
+  confirmingSuite.value = suite
+  confirmMainlineDialogVisible.value = true
+}
+
+const handleConfirmMainline = async () => {
+  if (!confirmingSuite.value) return
+  confirmingMainline.value = true
+  try {
+    await confirmAutomationSuiteMainline(confirmingSuite.value.id)
+    ElMessage.success('已确认场景与主线用例一致')
+    confirmMainlineDialogVisible.value = false
+    await loadTestSuites()
+  } catch (error) {
+    const msg = error.response?.data?.error || '确认失败'
+    ElMessage.error(msg)
+  } finally {
+    confirmingMainline.value = false
+  }
+}
+
+const handleUnlinkMainline = async (suite) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要取消场景 "${suite.name}" 与用例 "${suite.mainline_test_case.title}" 的关联吗？`,
+      '取消关联',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    suite._unlinking = true
+    await unlinkAutomationSuiteMainline(suite.id)
+    ElMessage.success('已取消关联')
+    await loadTestSuites()
+  } catch (error) {
+    if (error !== 'cancel') {
+      const msg = error.response?.data?.error || '取消关联失败'
+      ElMessage.error(msg)
+    }
+  } finally {
+    suite._unlinking = false
+  }
+}
+
+const handleMoreAction = (command, suite) => {
+  switch (command) {
+    case 'edit':
+      editSuite(suite)
+      break
+    case 'delete':
+      deleteSuite(suite)
+      break
+  }
 }
 
 const handleSuiteAction = async ({ action, suite }) => {
@@ -991,6 +1324,31 @@ onMounted(() => {
     background: #e6f7ff;
     color: #1890ff;
   }
+
+  // 用例级别 - P3 低优先级
+  &.low {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  // 用例级别 - P2 中优先级
+  &.medium {
+    background: #e6f7ff;
+    color: #1890ff;
+  }
+
+  // 用例级别 - P1 高优先级
+  &.high {
+    background: #fff7e6;
+    color: #fa8c16;
+  }
+
+  // 用例级别 - P0 严重优先级
+  &.critical {
+    background: #fff1f0;
+    color: #f5222d;
+    font-weight: 600;
+  }
 }
 
 .pagination-container {
@@ -1376,6 +1734,164 @@ onMounted(() => {
       background: linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%) !important;
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(245, 34, 45, 0.4);
+    }
+  }
+
+  &.link-btn {
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
+    }
+  }
+
+  &.unlink-btn {
+    background: linear-gradient(135deg, #ff7a45 0%, #ff4d4f 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #ff9c6b 0%, #ff7875 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4);
+    }
+  }
+
+  &.more-btn {
+    background: linear-gradient(135deg, #909399 0%, #6b6d71 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #a6a9ad 0%, #8c8e92 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(144, 147, 153, 0.4);
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+}
+
+// 关联主线用例相关样式
+.mainline-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mainline-link {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: #7b42f6;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: #6d33e6;
+    text-decoration: underline;
+  }
+}
+
+.text-muted {
+  color: #999;
+  font-size: 13px;
+}
+
+// 主线用例更新标识
+.update-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #fff7e6;
+  color: #fa8c16;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #ffd8bf;
+  }
+
+  .el-icon {
+    font-size: 12px;
+  }
+}
+
+// 确认主线用例一致性弹窗样式
+.confirm-mainline-dialog {
+  .confirm-mainline-content {
+    padding: 8px 4px;
+
+    .confirm-tip {
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      line-height: 1.8;
+      color: #333;
+
+      strong {
+        color: #7b42f6;
+      }
+    }
+
+    .confirm-question {
+      margin: 0;
+      padding: 12px 16px;
+      background: #f5f3ff;
+      border-radius: 8px;
+      border: 1px solid #e8e4ff;
+      color: #5a32a3;
+      font-size: 14px;
+      font-weight: 500;
+    }
+  }
+}
+
+// 关联主线用例对话框样式
+.link-mainline-dialog {
+  .link-dialog-content {
+    .link-dialog-info {
+      margin-bottom: 16px;
+      padding: 8px 16px;
+      background: #f5f3ff;
+      border-radius: 8px;
+      border: 1px solid #e8e4ff;
+
+      .suite-title {
+        margin: 0;
+        font-size: 14px;
+        color: #5a32a3;
+      }
+    }
+
+    .link-dialog-search {
+      :deep(.el-input__wrapper) {
+        border-radius: 8px;
+        box-shadow: 0 0 0 1px #c4b5fd;
+      }
+    }
+
+    .empty-hint {
+      text-align: center;
+      padding: 40px 0;
+      color: #999;
+      font-size: 14px;
     }
   }
 }
