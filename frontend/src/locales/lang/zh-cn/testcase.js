@@ -161,7 +161,19 @@ export default {
     importSuccessCount: '成功',
     importFailCount: '失败',
     errorDetails: '错误详情',
-    categoryLabel: '归属目录'
+    categoryLabel: '归属目录',
+
+    // Import conflict resolution
+    conflictTitle: '处理导入冲突',
+    conflictDescription: '以下用例名称已存在，请选择覆盖更新或跳过导入。',
+    conflictUpdate: '覆盖更新',
+    conflictSkip: '跳过导入',
+    updateAll: '全部覆盖',
+    skipAll: '全部跳过',
+    continueImport: '继续导入',
+    importSkippedSuffix: '，跳过 {skip} 条',
+    importPartialMessageWithSkip: '导入完成，成功 {success} 条，失败 {fail} 条，跳过 {skip} 条',
+    operation: '操作'
   },
   testSuite: {
     title: '测试套件',

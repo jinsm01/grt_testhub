@@ -156,7 +156,19 @@ export default {
     importSuccessCount: 'Success',
     importFailCount: 'Failed',
     errorDetails: 'Error Details',
-    categoryLabel: 'Category'
+    categoryLabel: 'Category',
+
+    // Import conflict resolution
+    conflictTitle: 'Resolve Import Conflicts',
+    conflictDescription: 'The following case names already exist. Choose to overwrite or skip.',
+    conflictUpdate: 'Overwrite',
+    conflictSkip: 'Skip',
+    updateAll: 'Overwrite All',
+    skipAll: 'Skip All',
+    continueImport: 'Continue Import',
+    importSkippedSuffix: ', skipped {skip}',
+    importPartialMessageWithSkip: 'Import completed: {success} success, {fail} failed, {skip} skipped',
+    operation: 'Action'
   },
   testSuite: {
     title: 'Test Suites',

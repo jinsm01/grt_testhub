@@ -162,11 +162,11 @@
     <!-- 导入对话框 - 步骤引导 -->
     <el-dialog
       v-model="importDialogVisible"
-      :title="importStep === 3 ? $t('testcase.importResult') : $t('testcase.importTitle')"
+      :title="importStep === 2 ? $t('testcase.conflictTitle') : importStep === 3 ? $t('testcase.importResult') : $t('testcase.importTitle')"
       width="900px"
       :close-on-click-modal="false"
-      :show-close="importStep !== 2"
-      :close-on-press-escape="importStep !== 2"
+      :show-close="!isImporting"
+      :close-on-press-escape="!isImporting"
       class="import-dialog"
     >
 
@@ -192,7 +192,7 @@
           </el-upload>
         </div>
 
-        <!-- 步骤2: 数据预览 -->
+        <!-- 步骤1: 数据预览 -->
         <div v-if="importStep === 1" class="preview-section">
           <el-table :data="previewData" stripe style="width: 100%" max-height="480">
             <el-table-column
@@ -203,6 +203,43 @@
               :min-width="getPreviewColumnWidth(field.systemKey)"
               show-overflow-tooltip
             />
+          </el-table>
+        </div>
+
+        <!-- 步骤2: 冲突处理 -->
+        <div v-if="importStep === 2" class="conflict-section">
+          <div class="conflict-header">
+            <p class="conflict-desc">{{ $t('testcase.conflictDescription') }}</p>
+            <div class="conflict-batch-actions">
+              <el-button size="small" type="primary" plain @click="setAllConflictActions('update')">
+                {{ $t('testcase.updateAll') }}
+              </el-button>
+              <el-button size="small" type="warning" plain @click="setAllConflictActions('skip')">
+                {{ $t('testcase.skipAll') }}
+              </el-button>
+            </div>
+          </div>
+          <el-table :data="importConflicts" stripe style="width: 100%" max-height="420">
+            <el-table-column type="index" :label="$t('testcase.serialNumber')" width="80" header-align="center" align="center" />
+            <el-table-column prop="title" :label="$t('testcase.caseTitle')" min-width="240" show-overflow-tooltip />
+            <el-table-column :label="$t('testcase.project')" min-width="180" show-overflow-tooltip>
+              <template #default="{ row }">
+                {{ row.data.category_path || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('testcase.author')" width="120" header-align="center" align="center">
+              <template #default="{ row }">
+                {{ row.data.author_name || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column :label="$t('testcase.operation')" width="180" header-align="center" align="center" fixed="right">
+              <template #default="{ row }">
+                <el-radio-group v-model="row.action" size="small">
+                  <el-radio-button label="update">{{ $t('testcase.conflictUpdate') }}</el-radio-button>
+                  <el-radio-button label="skip">{{ $t('testcase.conflictSkip') }}</el-radio-button>
+                </el-radio-group>
+              </template>
+            </el-table-column>
           </el-table>
         </div>
 
@@ -252,14 +289,27 @@
 
           <!-- 步骤1: 预览确认 -->
           <template v-if="importStep === 1">
-            <el-button @click="importStep = 0">上一步</el-button>
-            <el-button 
-              type="primary" 
-              @click="confirmImport" 
+            <el-button @click="importStep = 0">{{ $t('common.previous') }}</el-button>
+            <el-button
+              type="primary"
+              @click="confirmImport"
               :loading="isImporting"
               class="action-btn edit-btn"
             >
-              确认导入
+              {{ $t('testcase.confirmImport') }}
+            </el-button>
+          </template>
+
+          <!-- 步骤2: 冲突处理 -->
+          <template v-if="importStep === 2">
+            <el-button @click="importStep = 1">{{ $t('common.previous') }}</el-button>
+            <el-button
+              type="primary"
+              @click="continueImport"
+              :loading="isImporting"
+              class="action-btn edit-btn"
+            >
+              {{ $t('testcase.continueImport') }}
             </el-button>
           </template>
 
@@ -325,7 +375,7 @@ const fetchAllModules = async () => {
 
 // 导入相关
 const importDialogVisible = ref(false)
-const importStep = ref(0) // 0:上传文件, 1:预览确认, 3:导入完成
+const importStep = ref(0) // 0:上传文件, 1:预览确认, 2:冲突处理, 3:导入完成
 const uploadRef = ref(null)
 const excelHeaders = ref([])
 const excelData = ref([])
@@ -336,8 +386,12 @@ const importResult = ref({
   message: '',
   successCount: 0,
   failCount: 0,
+  skipCount: 0,
   errors: []
 })
+const importConflicts = ref([])
+const importItems = ref([])
+const existingCaseMap = ref(new Map())
 
 // 进入预览步骤
 const goToPreview = () => {
@@ -355,6 +409,9 @@ const closeImportDialog = () => {
     excelHeaders.value = []
     excelData.value = []
     fieldMapping.value = {}
+    importConflicts.value = []
+    importItems.value = []
+    existingCaseMap.value = new Map()
     if (uploadRef.value) {
       uploadRef.value.clearFiles()
     }
@@ -560,119 +617,114 @@ const mapTestType = (excelType) => {
   return typeMap[excelType] || 'text'
 }
 
-// 确认导入
-const confirmImport = async () => {
-  if (!canImport.value) {
-    ElMessage.warning(t('testcase.noTitleMapping'))
-    return
+// 根据Excel行构造用例数据
+const buildTestCaseData = (row) => {
+  const testcaseData = {
+    title: '',
+    preconditions: '',
+    steps: '',
+    expected_result: '',
+    priority: 'medium',
+    test_type: 'text',
+    description: '',
+    module: ''
   }
 
-  isImporting.value = true
+  // 处理创建者字段（直接从Excel行数据读取）
+  if (row['创建者'] !== undefined) {
+    testcaseData.author_name = row['创建者']
+  }
+
+  // 处理创建时间字段（直接从Excel行数据读取）
+  if (row['创建时间'] !== undefined) {
+    testcaseData.created_at = row['创建时间']
+  }
+
+  // 处理归属目录字段（直接从Excel行数据读取，格式：端名称/菜单/子菜单）
+  if (row['归属目录'] !== undefined) {
+    testcaseData.category_path = row['归属目录']
+  }
+
+  // 根据字段映射转换数据
+  Object.entries(fieldMapping.value).forEach(([excelField, systemField]) => {
+    if (!systemField || row[excelField] === undefined) return
+
+    const value = row[excelField]
+    // 跳过用例编号（系统自动生成）
+    if (excelField === '用例编号') return
+
+    // 跳过创建时间、创建者和归属目录（已单独处理）
+    if (excelField === '创建时间' || excelField === '创建者' || excelField === '归属目录') return
+
+    switch (systemField) {
+      case 'title':
+        testcaseData.title = value
+        break
+      case 'preconditions':
+        testcaseData.preconditions = value
+        break
+      case 'steps':
+        testcaseData.steps = value
+        break
+      case 'expected_result':
+        testcaseData.expected_result = value
+        break
+      case 'priority':
+        testcaseData.priority = mapPriority(value)
+        break
+      case 'test_type':
+        testcaseData.test_type = mapTestType(value)
+        break
+      case 'description':
+        testcaseData.description = value
+        break
+      case 'module':
+        testcaseData.module = value
+        break
+    }
+  })
+
+  return testcaseData
+}
+
+// 设置所有冲突项的操作
+const setAllConflictActions = (action) => {
+  importConflicts.value.forEach(item => {
+    item.action = action
+  })
+}
+
+// 执行导入（创建/更新/跳过）
+const processImport = async (items) => {
   const errors = []
   let successCount = 0
   let failCount = 0
+  let skipCount = 0
+
+  isImporting.value = true
 
   try {
-    // 获取所有现有用例名称用于去重校验
-    const existingTitles = new Set()
-    try {
-      const response = await api.get('/testcases/', { params: { page_size: 10000 } })
-      const allTestCases = response.data.results || []
-      allTestCases.forEach(tc => {
-        if (tc.title) {
-          existingTitles.add(tc.title.trim())
-        }
-      })
-    } catch (error) {
-      console.error('Failed to fetch existing test cases:', error)
-    }
-
-    for (let i = 0; i < excelData.value.length; i++) {
-      const row = excelData.value[i]
-      const testcaseData = {
-        title: '',
-        preconditions: '',
-        steps: '',
-        expected_result: '',
-        priority: 'medium',
-        test_type: 'text',
-        description: '',
-        module: ''
-      }
-
-      // 处理创建者字段（直接从Excel行数据读取）
-      if (row['创建者'] !== undefined) {
-        testcaseData.author_name = row['创建者']
-      }
-
-      // 处理创建时间字段（直接从Excel行数据读取）
-      if (row['创建时间'] !== undefined) {
-        testcaseData.created_at = row['创建时间']
-      }
-
-      // 处理归属目录字段（直接从Excel行数据读取，格式：端名称/菜单/子菜单）
-      if (row['归属目录'] !== undefined) {
-        testcaseData.category_path = row['归属目录']
-      }
-
-      // 根据字段映射转换数据
-      Object.entries(fieldMapping.value).forEach(([excelField, systemField]) => {
-        if (!systemField || row[excelField] === undefined) return
-
-        const value = row[excelField]
-        // 跳过用例编号（系统自动生成）
-        if (excelField === '用例编号') return
-
-        // 跳过创建时间、创建者和归属目录（已单独处理）
-        if (excelField === '创建时间' || excelField === '创建者' || excelField === '归属目录') return
-
-        switch (systemField) {
-          case 'title':
-            testcaseData.title = value
-            break
-          case 'preconditions':
-            testcaseData.preconditions = value
-            break
-          case 'steps':
-            testcaseData.steps = value
-            break
-          case 'expected_result':
-            testcaseData.expected_result = value
-            break
-          case 'priority':
-            testcaseData.priority = mapPriority(value)
-            break
-          case 'test_type':
-            testcaseData.test_type = mapTestType(value)
-            break
-          case 'description':
-            testcaseData.description = value
-            break
-          case 'module':
-            testcaseData.module = value
-            break
-        }
-      })
-
-      // 验证必填字段
-      if (!testcaseData.title) {
-        errors.push(t('testcase.rowNoTitle', { row: i + 2 }))
-        failCount++
+    for (const item of items) {
+      if (item.action === 'skip') {
+        skipCount++
         continue
       }
 
-      // 验证用例名称是否重复
-      if (existingTitles.has(testcaseData.title.trim())) {
-        errors.push(`第 ${i + 2} 行：用例名称 "${testcaseData.title}" 已存在，跳过导入`)
+      if (item.action === 'error') {
+        errors.push(item.error)
         failCount++
         continue
       }
 
       try {
-        await api.post('/testcases/', testcaseData)
+        if (item.action === 'update') {
+          await api.put(`/testcases/${item.existingId}/`, item.data)
+        } else {
+          await api.post('/testcases/', item.data)
+        }
         successCount++
       } catch (error) {
-        console.error(`Import row ${i + 2} failed:`, error)
+        console.error(`Import row ${item.row} failed:`, error)
         let errorMsg = error.message || t('common.error')
         if (error.response && error.response.data) {
           const responseData = error.response.data
@@ -684,7 +736,7 @@ const confirmImport = async () => {
             errorMsg = String(responseData)
           }
         }
-        errors.push(t('testcase.rowImportFailed', { row: i + 2, error: errorMsg }))
+        errors.push(t('testcase.rowImportFailed', { row: item.row, error: errorMsg }))
         failCount++
       }
     }
@@ -693,11 +745,12 @@ const confirmImport = async () => {
     importResult.value = {
       success: failCount === 0,
       message: failCount === 0
-        ? t('testcase.importAllSuccess', { count: successCount })
-        : t('testcase.importPartialMessage', { success: successCount, fail: failCount }),
+        ? t('testcase.importAllSuccess', { count: successCount }) + (skipCount > 0 ? t('testcase.importSkippedSuffix', { skip: skipCount }) : '')
+        : t('testcase.importPartialMessageWithSkip', { success: successCount, fail: failCount, skip: skipCount }),
       successCount,
       failCount,
-      errors: errors // 显示所有错误
+      skipCount,
+      errors
     }
     // 进入结果步骤
     importStep.value = 3
@@ -715,6 +768,122 @@ const confirmImport = async () => {
   } finally {
     isImporting.value = false
   }
+}
+
+// 确认导入：先校验并检测冲突
+const confirmImport = async () => {
+  if (!canImport.value) {
+    ElMessage.warning(t('testcase.noTitleMapping'))
+    return
+  }
+
+  isImporting.value = true
+  importConflicts.value = []
+  importItems.value = []
+  existingCaseMap.value = new Map()
+
+  try {
+    // 获取现有用例，建立标题->ID映射（分页获取，避免 max_page_size 限制）
+    try {
+      const pageSize = 100
+      let page = 1
+      let hasMore = true
+      while (hasMore) {
+        const response = await api.get('/testcases/', { params: { page, page_size: pageSize } })
+        const pageCases = response.data.results || []
+        pageCases.forEach(tc => {
+          if (tc.title) {
+            const title = tc.title.trim()
+            if (!existingCaseMap.value.has(title)) {
+              existingCaseMap.value.set(title, tc.id)
+            }
+          }
+        })
+        if (pageCases.length < pageSize) {
+          hasMore = false
+        } else {
+          page++
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch existing test cases:', error)
+    }
+
+    const items = []
+    let hasConflict = false
+
+    for (let i = 0; i < excelData.value.length; i++) {
+      const row = excelData.value[i]
+      const rowNum = i + 2
+      const testcaseData = buildTestCaseData(row)
+
+      // 验证必填字段
+      if (!testcaseData.title) {
+        items.push({
+          row: rowNum,
+          data: testcaseData,
+          action: 'error',
+          error: t('testcase.rowNoTitle', { row: rowNum })
+        })
+        continue
+      }
+
+      // 验证用例名称是否重复
+      const existingId = existingCaseMap.value.get(testcaseData.title.trim())
+      if (existingId) {
+        hasConflict = true
+        items.push({
+          row: rowNum,
+          data: testcaseData,
+          action: null,
+          existingId,
+          title: testcaseData.title
+        })
+      } else {
+        items.push({
+          row: rowNum,
+          data: testcaseData,
+          action: 'create'
+        })
+      }
+    }
+
+    importItems.value = items
+
+    if (hasConflict) {
+      importConflicts.value = items
+        .filter(item => item.action === null)
+        .map(item => ({ ...item, action: 'skip' }))
+      importStep.value = 2
+      return
+    }
+
+    // 无冲突，直接执行导入
+    await processImport(items)
+  } catch (error) {
+    console.error('Import preparation failed:', error)
+    ElMessage.error(t('testcase.importFailed'))
+  } finally {
+    isImporting.value = false
+  }
+}
+
+// 冲突处理完成后继续导入
+const continueImport = async () => {
+  if (importConflicts.value.some(item => !item.action)) {
+    ElMessage.warning('请先处理所有冲突项')
+    return
+  }
+
+  const conflictMap = new Map(importConflicts.value.map(item => [item.row, item.action]))
+  const items = importItems.value.map(item => {
+    if (item.action === null) {
+      return { ...item, action: conflictMap.get(item.row) || 'skip' }
+    }
+    return item
+  })
+
+  await processImport(items)
 }
 
 const filters = reactive({
@@ -2095,6 +2264,46 @@ onActivated(() => {
 
     :deep(.el-table__header-wrapper) {
       margin-top: 0;
+    }
+  }
+
+  .conflict-section {
+    height: 520px;
+    display: flex;
+    flex-direction: column;
+
+    .conflict-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 16px;
+
+      .conflict-desc {
+        margin: 0;
+        font-size: 14px;
+        color: #666;
+        line-height: 1.5;
+      }
+
+      .conflict-batch-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+    }
+
+    :deep(.el-table) {
+      border-radius: 8px;
+      overflow: hidden;
+      flex: 1;
+    }
+
+    :deep(.el-radio-group) {
+      .el-radio-button__inner {
+        padding: 5px 12px;
+        font-size: 12px;
+      }
     }
   }
 }
