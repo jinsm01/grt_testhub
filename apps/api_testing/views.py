@@ -46,7 +46,6 @@ from .utils import execute_assertions
 from .operation_logger import log_operation
 from .variable_resolver import VariableResolver
 from .variable_extractor import extract_variables, save_variables_to_environment
-from .scenario_engine.context import ScenarioContext
 from .serializers import (
     ApiProjectSerializer, ApiCollectionSerializer, ApiRequestSerializer,
     EnvironmentSerializer, RequestHistorySerializer, TestSuiteSerializer,
@@ -460,8 +459,9 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
                         # 确保文件对象在正确的位置
                         if hasattr(file_obj, 'seek'):
                             file_obj.seek(0)
-                        # 使用文件对象的 chunks() 方法读取内容
-                        multipart_data[param_name] = (file_obj.name, file_obj, getattr(file_obj, 'content_type', None) or 'application/octet-stream')
+                        # 读取文件内容为字节
+                        file_content = file_obj.read() if hasattr(file_obj, 'read') else b''
+                        multipart_data[param_name] = (file_obj.name, file_content, getattr(file_obj, 'content_type', None) or 'application/octet-stream')
 
                     # 使用 MultipartEncoder 编码数据
                     print(f"DEBUG - multipart_data before encoding: {multipart_data}")
@@ -658,20 +658,20 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
             )
 
             return Response(RequestHistorySerializer(history).data, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
     def _replace_variables(self, text, variables, step_context=None):
-        """替换文本中的变量，支持跨步骤引用"""
+        """替换文本中的变量，支持跨步骤引用和 $.current 引用"""
         if not isinstance(text, str):
             return text
 
         result = text
 
-        # 首先处理跨步骤变量引用格式: {{$.N.request.body.xxx}} 或 {{$.N.response.body.xxx}}
+        # 处理跨步骤变量引用格式: {{$.N.xxx}} 和 {{$.current.xxx}}
         if step_context:
             import re
-            # 匹配跨步骤引用: {{$.数字.request.xxx}} 或 {{$.数字.response.xxx}}
-            # 注意: Apifox 格式是 {{$.11.response.body.data[0].id}}
-            cross_step_pattern = r'\{\{\$\.(\d+)\.(request|response)(?:\.(.+?))?\}\}'
+            # 匹配跨步骤引用: {{$.数字/当前步.request或response.路径}}
+            # 支持 Apifox 的 $.current 格式和 TestHub 的 $.N 格式
+            cross_step_pattern = r'\{\{\$\.(current|\d+)\.(request|response)(?:\.(.+?))?\}\}'
             
             # 调试: 检查是否匹配到跨步骤变量
             matches = list(re.finditer(cross_step_pattern, result))
@@ -681,29 +681,40 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
                 for m in matches:
                     logger.info(f"DEBUG - 匹配: step={m.group(1)}, type={m.group(2)}, path={m.group(3)}")
 
+
             def replace_cross_step_ref(match):
-                step_num = int(match.group(1))
+                step_key = match.group(1)  # 数字步骤号 或 "current"
                 data_type = match.group(2)  # request or response
                 json_path = match.group(3) or ''
 
-                if step_num not in step_context:
-                    logger.warning(f"步骤 {step_num} 不存在于上下文中")
-                    return match.group(0)  # 返回原始字符串
+                # 处理 $.current 格式：引用当前步骤的请求数据
+                if step_key == 'current':
+                    # $.current 只支持 request 类型（当前步骤还没有 response）
+                    if data_type != 'request':
+                        logger.warning(f"$.current 只支持 request 类型，不支持 {data_type}")
+                        return match.group(0)
+                    # 从 step_context 的特殊 'current' 键获取当前请求的原始数据
+                    data_source = step_context.get('current', {}).get('request')
+                    if not data_source:
+                        logger.warning("$.current 请求数据不可用")
+                        return match.group(0)
+                else:
+                    step_num = int(step_key)
+                    if step_num not in step_context:
+                        logger.warning(f"步骤 {step_num} 不存在于上下文中")
+                        return match.group(0)
 
-                data_source = step_context[step_num].get(data_type)
-                if not data_source:
-                    return match.group(0)
+                    data_source = step_context[step_num].get(data_type)
+                    if not data_source:
+                        return match.group(0)
 
                 # 如果没有进一步的路径，返回整个数据源
                 if not json_path:
-                    return json.dumps(data_source) if isinstance(data_source, dict) else str(data_source)
+                    return json.dumps(data_source, ensure_ascii=False) if isinstance(data_source, dict) else str(data_source)
 
                 # 解析具体路径
                 try:
-                    # 支持 body.data[0].id 或 headers.Authorization 格式
                     current = data_source
-                    parts = re.findall(r'([^\.\[\]]+)|\[(\d+)\]', json_path)
-                    # 解析路径部分
                     path_parts = []
                     for part in re.finditer(r'\[(\d+)\]|([^\.\[\]]+)', json_path):
                         if part.group(1):  # 数组索引 [0]
@@ -727,7 +738,7 @@ class ApiRequestViewSet(viewsets.ModelViewSet):
 
                     # 返回提取的值
                     if isinstance(current, (dict, list)):
-                        return json.dumps(current)
+                        return json.dumps(current, ensure_ascii=False)
                     return str(current)
                 except Exception as e:
                     logger.warning(f"解析跨步骤引用失败: {match.group(0)}, 错误: {e}")
@@ -1083,7 +1094,6 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = TestSuite.objects.all().select_related('mainline_test_case', 'created_by')
 
-
         # 排除自身（用于引用其他场景时）
         exclude_self = self.request.query_params.get('exclude_self')
         if exclude_self:
@@ -1141,90 +1151,230 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    @action(detail=True, methods=['post'], url_path='link-mainline')
+    def link_mainline(self, request, pk=None):
+        """将测试套件（自动化场景）与主线用例一一关联"""
+        test_suite = self.get_object()
+        test_case_id = request.data.get('test_case_id')
+
+        if not test_case_id:
+            return Response(
+                {'error': 'test_case_id 参数必填'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from apps.testcases.models import TestCase
+
+        try:
+            test_case = TestCase.objects.get(pk=test_case_id)
+        except TestCase.DoesNotExist:
+            return Response(
+                {'error': '主线用例不存在'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 检查该 TestSuite 是否已关联其他 TestCase
+        if test_suite.mainline_test_case_id and test_suite.mainline_test_case_id != test_case.id:
+            return Response(
+                {
+                    'error': f'该场景已关联到用例 "{test_suite.mainline_test_case.title}"（ID: {test_suite.mainline_test_case_id}），请先取消关联'
+                },
+                status=status.HTTP_409_CONFLICT
+            )
+
+        # 检查该 TestCase 是否已关联其他 TestSuite
+        existing_suite = TestSuite.objects.filter(
+            mainline_test_case=test_case
+        ).exclude(pk=test_suite.id).first()
+        if existing_suite:
+            return Response(
+                {
+                    'error': f'该用例已关联到场景 "{existing_suite.name}"（ID: {existing_suite.id}），请先取消该关联'
+                },
+                status=status.HTTP_409_CONFLICT
+            )
+
+        test_suite.mainline_test_case = test_case
+        test_suite.mainline_case_checked_at = timezone.now()
+        test_suite.save(update_fields=['mainline_test_case', 'mainline_case_checked_at', 'updated_at'])
+
+        return Response({
+            'success': True,
+            'message': f'已成功将场景 "{test_suite.name}" 关联到用例 "{test_case.title}"',
+            'test_suite_id': test_suite.id,
+            'test_case_id': test_case.id,
+            'test_case_title': test_case.title,
+        })
+
+    @action(detail=True, methods=['post'], url_path='unlink-mainline')
+    def unlink_mainline(self, request, pk=None):
+        """取消测试套件与主线用例的关联"""
+        test_suite = self.get_object()
+
+        if not test_suite.mainline_test_case:
+            return Response(
+                {'error': '该场景未关联主线用例'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        old_case_title = test_suite.mainline_test_case.title
+        test_suite.mainline_test_case = None
+        test_suite.mainline_case_checked_at = None
+        test_suite.save(update_fields=['mainline_test_case', 'mainline_case_checked_at', 'updated_at'])
+
+        return Response({
+            'success': True,
+            'message': f'已取消场景 "{test_suite.name}" 与用例 "{old_case_title}" 的关联',
+            'test_suite_id': test_suite.id,
+        })
+
+    @action(detail=True, methods=['post'], url_path='confirm-mainline')
+    def confirm_mainline(self, request, pk=None):
+        """确认当前场景与关联主线用例内容一致，更新确认时间"""
+        test_suite = self.get_object()
+
+        if not test_suite.mainline_test_case:
+            return Response(
+                {'error': '该场景未关联主线用例'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        test_suite.mainline_case_checked_at = timezone.now()
+        test_suite.save(update_fields=['mainline_case_checked_at', 'updated_at'])
+
+        return Response({
+            'success': True,
+            'message': '已确认场景与主线用例一致',
+            'test_suite_id': test_suite.id,
+            'mainline_case_checked_at': test_suite.mainline_case_checked_at,
+        })
+
+    @action(detail=True, methods=['get'], url_path='available-mainlines')
+    def available_mainlines(self, request, pk=None):
+        """获取可关联到该场景的主线用例列表"""
+        test_suite = self.get_object()
+
+        from apps.testcases.models import TestCase
+
+        # 获取已被其他场景关联的用例 ID
+        linked_case_ids = set(
+            TestSuite.objects.filter(
+                mainline_test_case__isnull=False
+            ).exclude(pk=test_suite.pk).values_list('mainline_test_case_id', flat=True)
+        )
+
+        # 可关联的用例：未被其他场景关联，或已关联到当前场景
+        available = TestCase.objects.filter(
+            ~models.Q(id__in=linked_case_ids) | models.Q(id=test_suite.mainline_test_case_id)
+        ).select_related('author').order_by('-created_at')
+
+        # 支持搜索
+        search = request.query_params.get('search', '')
+        if search:
+            available = available.filter(title__icontains=search)
+
+        # 支持模块筛选
+        module = request.query_params.get('module')
+        if module:
+            available = available.filter(module=module)
+
+        current_suite_linked_id = test_suite.mainline_test_case_id
+
+        # 转换为响应数据
+        data = []
+        for tc in available:
+            data.append({
+                'id': tc.id,
+                'title': tc.title,
+                'module': tc.module or '',
+                'priority': tc.priority or '',
+                'author': {
+                    'id': tc.author.id if tc.author else None,
+                    'username': tc.author.username if tc.author else '-'
+                },
+                'is_linked': tc.id == current_suite_linked_id,
+                'linked_to_other': tc.id in linked_case_ids and tc.id != current_suite_linked_id,
+            })
+
+        # 标准分页
+        paginator = StandardPagination()
+        paginated_data = paginator.paginate_queryset(data, request)
+        return paginator.get_paginated_response(paginated_data)
+
     def _replace_variables(self, text, variables, step_context=None):
-        """替换文本中的变量，支持跨步骤引用"""
+        """替换文本中的变量，支持跨步骤引用和 $.current 引用"""
         if not isinstance(text, str):
             return text
 
         result = text
 
-        # 首先处理跨步骤变量引用格式: {{$.N.request.body.xxx}} 或 {{$.N.response.body.xxx}}
+        # 处理跨步骤变量引用格式: {{$.N.xxx}} 和 {{$.current.xxx}}
         if step_context:
             import re
-            # 匹配跨步骤引用: {{$.数字.request.xxx}} 或 {{$.数字.response.xxx}}
-            # 注意: Apifox 格式是 {{$.11.response.body.data[0].id}}
-            cross_step_pattern = r'\{\{\$\.(\d+)\.(request|response)(?:\.(.+?))?\}\}'
+            # 匹配跨步骤引用: {{$.数字/当前步.request或response.路径}}
+            # 支持 Apifox 的 $.current 格式和 TestHub 的 $.N 格式
+            cross_step_pattern = r'\{\{\$\.(current|\d+)\.(request|response)(?:\.(.+?))?\}\}'
 
             # 调试日志
             matches = list(re.finditer(cross_step_pattern, result))
             print(f"DEBUG - TestSuiteViewSet._replace_variables: text='{text}', step_context={list(step_context.keys()) if step_context else None}, matches={len(matches)}")
 
             def replace_cross_step_ref(match):
-                step_num = int(match.group(1))
+                step_key = match.group(1)  # 数字步骤号 或 "current"
                 data_type = match.group(2)  # request or response
                 json_path = match.group(3) or ''
 
-                print(f"DEBUG - replace_cross_step_ref: step_num={step_num}, data_type={data_type}, json_path={json_path}")
-                print(f"DEBUG - step_context keys: {list(step_context.keys())}")
+                # 处理 $.current 格式：引用当前步骤的请求数据
+                if step_key == 'current':
+                    if data_type != 'request':
+                        print(f"DEBUG - $.current 只支持 request 类型，不支持 {data_type}")
+                        return match.group(0)
+                    data_source = step_context.get('current', {}).get('request')
+                    if not data_source:
+                        print(f"DEBUG - $.current 请求数据不可用")
+                        return match.group(0)
+                else:
+                    step_num = int(step_key)
+                    if step_num not in step_context:
+                        print(f"DEBUG - step {step_num} not in step_context")
+                        return match.group(0)
 
-                if step_num not in step_context:
-                    print(f"DEBUG - step {step_num} not in step_context")
-                    return match.group(0)  # 返回原始字符串
+                    data_source = step_context[step_num].get(data_type)
+                    if not data_source:
+                        return match.group(0)
 
-                data_source = step_context[step_num].get(data_type)
-                print(f"DEBUG - data_source for {data_type}: {data_source is not None}")
-                if not data_source:
-                    return match.group(0)
-
-                # 如果没有进一步的路径，返回整个数据源
                 if not json_path:
-                    return json.dumps(data_source) if isinstance(data_source, dict) else str(data_source)
+                    return json.dumps(data_source, ensure_ascii=False) if isinstance(data_source, dict) else str(data_source)
 
-                # 解析具体路径
                 try:
-                    # 支持 body.data[0].id 或 headers.Authorization 格式
                     current = data_source
-                    print(f"DEBUG - current data_source type: {type(current)}")
-                    # 解析路径部分
                     path_parts = []
                     for part in re.finditer(r'\[(\d+)\]|([^\.\[\]]+)', json_path):
-                        if part.group(1):  # 数组索引 [0]
+                        if part.group(1):
                             path_parts.append(int(part.group(1)))
-                        else:  # 属性名
+                        else:
                             path_parts.append(part.group(2))
-                    print(f"DEBUG - path_parts: {path_parts}")
 
                     for i, part in enumerate(path_parts):
-                        print(f"DEBUG - processing part {i}: {part}, current type: {type(current)}")
-                        # 如果当前是字符串（通常是 body），尝试解析为 JSON
-                        if isinstance(current, str) and i > 0:  # i > 0 确保不是第一层
+                        if isinstance(current, str) and i > 0:
                             try:
                                 current = json.loads(current)
-                                print(f"DEBUG - parsed string to JSON")
                             except:
-                                pass  # 如果不是有效 JSON，保持原样
-
+                                pass
                         if isinstance(current, dict):
                             current = current.get(part)
-                            print(f"DEBUG - got from dict: {current}")
                         elif isinstance(current, list) and isinstance(part, int):
                             if 0 <= part < len(current):
                                 current = current[part]
                             else:
-                                print(f"DEBUG - index {part} out of range")
                                 return match.group(0)
                         else:
-                            print(f"DEBUG - cannot navigate: current is {type(current)}, part is {part}")
                             return match.group(0)
-
                         if current is None:
-                            print(f"DEBUG - current is None after part {part}")
                             return match.group(0)
 
-                    # 返回提取的值
-                    print(f"DEBUG - final value: {current}")
                     if isinstance(current, (dict, list)):
-                        return json.dumps(current)
+                        return json.dumps(current, ensure_ascii=False)
                     return str(current)
                 except Exception as e:
                     print(f"DEBUG - exception: {e}")
@@ -1385,6 +1535,17 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
                     effective_headers = suite_request.get_effective_headers()
                     effective_params = suite_request.get_effective_params()
                     effective_body = suite_request.get_effective_body()
+
+                    # 将当前步骤的原始请求数据存入 step_context，支持 $.current 引用
+                    step_context['current'] = {
+                        'request': {
+                            'method': effective_method,
+                            'url': effective_url,
+                            'headers': effective_headers,
+                            'params': effective_params,
+                            'body': effective_body
+                        }
+                    }
                     
                     logger.info(f"DEBUG - effective_method: {effective_method}")
                     logger.info(f"DEBUG - effective_url: {effective_url}")
@@ -1570,7 +1731,106 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
                     start_time = time.time()
                     
                     # 根据请求体类型决定使用 data 还是 json 参数
-                    if body_type == 'raw':
+                    if body_type in ['form-data', 'formdata']:
+                        # form-data 类型：使用 multipart 编码
+                        print(f"[DEBUG views.py] 处理 form-data 请求")
+                        multipart_data = {}
+                        has_files = False
+                        
+                        if isinstance(body_data, list):
+                            for item in body_data:
+                                if isinstance(item, dict) and item.get('key'):
+                                    item_key = item.get('key')
+                                    item_value = item.get('value', '')
+                                    item_type = item.get('type', 'string')
+                                    
+                                    print(f"[DEBUG views.py] 处理字段: {item_key}={item_value}, type={item_type}")
+                                    
+                                    if item_type == 'file':
+                                        has_files = True
+                                        file_path = item.get('file_path')
+                                        
+                                        if file_path:
+                                            full_file_path = os.path.join(settings.MEDIA_ROOT, file_path)
+                                            if os.path.exists(full_file_path):
+                                                try:
+                                                    with open(full_file_path, 'rb') as f:
+                                                        file_content = f.read()
+                                                    
+                                                    file_name = os.path.basename(full_file_path)
+                                                    if '_' in file_name and len(file_name.split('_')[0]) == 8:
+                                                        original_name = file_name.split('_', 1)[1]
+                                                    else:
+                                                        original_name = file_name
+                                                    
+                                                    multipart_data[item_key] = (
+                                                        original_name,
+                                                        file_content,
+                                                        item.get('content_type') or 'application/octet-stream'
+                                                    )
+                                                except Exception as e:
+                                                    logger.error(f"读取文件失败: {e}")
+                                                    multipart_data[item_key] = (item_value, b'', 'application/octet-stream')
+                                            else:
+                                                logger.warning(f"文件不存在: {full_file_path}")
+                                                multipart_data[item_key] = (item_value, b'', 'application/octet-stream')
+                                        else:
+                                            multipart_data[item_key] = (item_value, b'', 'application/octet-stream')
+                                    else:
+                                        # 普通字段
+                                        multipart_data[item_key] = (None, str(item_value))
+                        
+                        print(f"[DEBUG views.py] 最终 multipart_data: {multipart_data}")
+                        print(f"[DEBUG views.py] has_files: {has_files}")
+                        
+                        if has_files:
+                            # 使用 MultipartEncoder
+                            try:
+                                from requests_toolbelt.multipart.encoder import MultipartEncoder
+                                encoder = MultipartEncoder(fields=multipart_data)
+                                request_headers = headers.copy() if headers else {}
+                                request_headers['Content-Type'] = encoder.content_type
+                                response = requests.request(
+                                    method=effective_method,
+                                    url=url,
+                                    headers=request_headers,
+                                    params=params,
+                                    data=encoder,
+                                    timeout=30
+                                )
+                            except ImportError:
+                                logger.warning("requests_toolbelt 未安装")
+                                form_dict = {}
+                                for key, value in multipart_data.items():
+                                    if isinstance(value, tuple):
+                                        form_dict[key] = value[1] if value[0] is None else value[0]
+                                    else:
+                                        form_dict[key] = value
+                                response = requests.request(
+                                    method=effective_method,
+                                    url=url,
+                                    headers=headers,
+                                    params=params,
+                                    data=form_dict,
+                                    timeout=30
+                                )
+                        else:
+                            # 没有文件，转换为普通 form 数据
+                            form_dict = {}
+                            for key, value in multipart_data.items():
+                                if isinstance(value, tuple):
+                                    form_dict[key] = value[1] if value[0] is None else value[0]
+                                else:
+                                    form_dict[key] = value
+                            response = requests.request(
+                                method=effective_method,
+                                url=url,
+                                headers=headers,
+                                params=params,
+                                data=form_dict,
+                                timeout=30
+                            )
+                    elif body_type == 'raw':
                         # raw 类型：尝试解析为 JSON，如果成功则作为 JSON 发送
                         if isinstance(body_data, str):
                             try:
@@ -2335,157 +2595,6 @@ class TestSuiteViewSet(viewsets.ModelViewSet):
             'test_suite_id': test_suite.id,
             'test_suite_name': test_suite.name
         })
-
-    @action(detail=True, methods=['post'], url_path='link-mainline')
-    def link_mainline(self, request, pk=None):
-        """将测试套件（自动化场景）与主线用例一一关联"""
-        test_suite = self.get_object()
-        test_case_id = request.data.get('test_case_id')
-
-        if not test_case_id:
-            return Response(
-                {'error': 'test_case_id 参数必填'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        from apps.testcases.models import TestCase
-
-        try:
-            test_case = TestCase.objects.get(pk=test_case_id)
-        except TestCase.DoesNotExist:
-            return Response(
-                {'error': '主线用例不存在'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        # 检查该 TestSuite 是否已关联其他 TestCase
-        if test_suite.mainline_test_case_id and test_suite.mainline_test_case_id != test_case.id:
-            return Response(
-                {
-                    'error': f'该场景已关联到用例 "{test_suite.mainline_test_case.title}"（ID: {test_suite.mainline_test_case_id}），请先取消关联'
-                },
-                status=status.HTTP_409_CONFLICT
-            )
-
-        # 检查该 TestCase 是否已关联其他 TestSuite
-        existing_suite = TestSuite.objects.filter(
-            mainline_test_case=test_case
-        ).exclude(pk=test_suite.id).first()
-        if existing_suite:
-            return Response(
-                {
-                    'error': f'该用例已关联到场景 "{existing_suite.name}"（ID: {existing_suite.id}），请先取消该关联'
-                },
-                status=status.HTTP_409_CONFLICT
-            )
-
-        test_suite.mainline_test_case = test_case
-        test_suite.mainline_case_checked_at = timezone.now()
-        test_suite.save(update_fields=['mainline_test_case', 'mainline_case_checked_at', 'updated_at'])
-
-        return Response({
-            'success': True,
-            'message': f'已成功将场景 "{test_suite.name}" 关联到用例 "{test_case.title}"',
-            'test_suite_id': test_suite.id,
-            'test_case_id': test_case.id,
-            'test_case_title': test_case.title,
-        })
-
-    @action(detail=True, methods=['post'], url_path='unlink-mainline')
-    def unlink_mainline(self, request, pk=None):
-        """取消测试套件与主线用例的关联"""
-        test_suite = self.get_object()
-
-        if not test_suite.mainline_test_case:
-            return Response(
-                {'error': '该场景未关联主线用例'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        old_case_title = test_suite.mainline_test_case.title
-        test_suite.mainline_test_case = None
-        test_suite.mainline_case_checked_at = None
-        test_suite.save(update_fields=['mainline_test_case', 'mainline_case_checked_at', 'updated_at'])
-
-        return Response({
-            'success': True,
-            'message': f'已取消场景 "{test_suite.name}" 与用例 "{old_case_title}" 的关联',
-            'test_suite_id': test_suite.id,
-        })
-
-    @action(detail=True, methods=['post'], url_path='confirm-mainline')
-    def confirm_mainline(self, request, pk=None):
-        """确认当前场景与关联主线用例内容一致，更新确认时间"""
-        test_suite = self.get_object()
-
-        if not test_suite.mainline_test_case:
-            return Response(
-                {'error': '该场景未关联主线用例'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        test_suite.mainline_case_checked_at = timezone.now()
-        test_suite.save(update_fields=['mainline_case_checked_at', 'updated_at'])
-
-        return Response({
-            'success': True,
-            'message': '已确认场景与主线用例一致',
-            'test_suite_id': test_suite.id,
-            'mainline_case_checked_at': test_suite.mainline_case_checked_at,
-        })
-
-    @action(detail=True, methods=['get'], url_path='available-mainlines')
-    def available_mainlines(self, request, pk=None):
-
-        """获取可关联到该场景的主线用例列表"""
-        test_suite = self.get_object()
-
-        from apps.testcases.models import TestCase
-
-        # 获取已被其他场景关联的用例 ID（排除软删除场景导致的 __isnull 误判）
-        linked_case_ids = set(
-            TestSuite.objects.filter(
-                mainline_test_case__isnull=False
-            ).exclude(pk=test_suite.pk).values_list('mainline_test_case_id', flat=True)
-        )
-
-        # 可关联的用例：未被其他场景关联，或已关联到当前场景
-        available = TestCase.objects.filter(
-            ~models.Q(id__in=linked_case_ids) | models.Q(id=test_suite.mainline_test_case_id)
-        ).select_related('author').order_by('-created_at')
-
-        # 支持搜索
-        search = request.query_params.get('search', '')
-        if search:
-            available = available.filter(title__icontains=search)
-
-        # 支持模块筛选
-        module = request.query_params.get('module')
-        if module:
-            available = available.filter(module=module)
-
-        current_suite_linked_id = test_suite.mainline_test_case_id
-
-        # 转换为响应数据
-        data = []
-        for tc in available:
-            data.append({
-                'id': tc.id,
-                'title': tc.title,
-                'module': tc.module or '',
-                'priority': tc.priority or '',
-                'author': {
-                    'id': tc.author.id if tc.author else None,
-                    'username': tc.author.username if tc.author else '-'
-                },
-                'is_linked': tc.id == current_suite_linked_id,
-                'linked_to_other': tc.id in linked_case_ids and tc.id != current_suite_linked_id,
-            })
-
-        # 标准分页
-        paginator = StandardPagination()
-        paginated_data = paginator.paginate_queryset(data, request)
-        return paginator.get_paginated_response(paginated_data)
 
 
 class TestSuiteRequestViewSet(viewsets.ModelViewSet):
@@ -5897,9 +6006,9 @@ def apifox_import_execute(request):
     """
     from .apifox_importer import import_apifox_cli
     
-    # 获取参数
+    # 获取参数（兼容前端 target_collection_id 和旧版 collection_id）
     project_id = request.data.get('project_id')
-    collection_id = request.data.get('collection_id')
+    collection_id = request.data.get('target_collection_id') or request.data.get('collection_id')
     import_env = request.data.get('import_env', False)
     
     if 'file' not in request.FILES:

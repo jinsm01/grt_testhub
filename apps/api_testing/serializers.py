@@ -324,7 +324,6 @@ class TestSuiteSerializer(serializers.ModelSerializer):
     mainline_test_case = serializers.SerializerMethodField()
     mainline_case_updated = serializers.SerializerMethodField()
 
-
     def get_scenario_id(self, obj):
         """获取关联的自动化场景ID"""
         if hasattr(obj, 'scenario') and obj.scenario:
@@ -350,7 +349,6 @@ class TestSuiteSerializer(serializers.ModelSerializer):
             return False
         if not obj.mainline_test_case or not obj.mainline_case_checked_at:
             return False
-        from django.utils import timezone
         return obj.mainline_test_case.updated_at > obj.mainline_case_checked_at
 
     def get_suite_requests(self, obj):
