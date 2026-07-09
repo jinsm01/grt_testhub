@@ -1181,6 +1181,7 @@ class BaseBrowserAgent:
             controller=controller,
             browser_profile=browser_profile,
             use_vision=False,
+            directly_open_url=False,  # 禁用自动初始导航，让访问URL成为主循环第一步，确保能正确截图
             max_actions_per_step=10,  # 增加步进密度，减少总步骤数，降低超时风险
             max_retries=1,  # 减少重试次数以提高速度 (从2改为1)
             max_failures=2,  # 减少最大失败次数，避免过长等待 (从默认3改为2)
@@ -1282,7 +1283,7 @@ class BaseBrowserAgent:
                                 last_marked_task_id = next_expected_task_id
 
                         # 每步截图：在步骤执行完成后保存当前页面截图
-                        # 优化：只对有实际操作的步骤截图，降低质量，fire-and-forget 完全不阻塞主流程
+                        # 优化：只对有实际操作的步骤截图，降低质量
                         if self.enable_gif and has_real_action:
                             try:
                                 from django.conf import settings
@@ -1290,10 +1291,11 @@ class BaseBrowserAgent:
                                 if browser_session:
                                     page = await browser_session.get_current_page()
                                     if page:
-                                        # 截图必须在后台完成，任何等待都不能阻塞 on_step_end
-                                        # 通过参数传递 page 和 step_idx，避免闭包变量被后续迭代覆盖
-                                        async def _capture_and_save(_page, _step_idx):
+                                        # 通过参数传递 page 和 step_idx 和 action，避免闭包变量被后续迭代覆盖
+                                        async def _capture_and_save(_page, _step_idx, _action):
                                             try:
+                                                url = await _page.evaluate('() => window.location.href') if _page else 'no page'
+                                                logger.info(f"📸 Capturing screenshot for step {_step_idx}, action={_action}, url={url}")
                                                 b64 = await _page.screenshot(format='jpeg', quality=50)
                                                 ts = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]
                                                 safe_case = "".join(c for c in self.case_name if c.isalnum() or c in ('_', '-')).rstrip()
@@ -1305,9 +1307,9 @@ class BaseBrowserAgent:
                                                 self.screenshots_sequence.append(rel_path)
                                                 logger.info(f"📸 Screenshot saved for step {_step_idx}: {rel_path}")
                                             except Exception as inner_err:
-                                                logger.warning(f"⚠️ Screenshot bg failed for step {_step_idx}: {inner_err}")
-                                        # 完全不等待，纯后台执行
-                                        asyncio.create_task(_capture_and_save(page, i + 1))
+                                                logger.warning(f"⚠️ Screenshot failed for step {_step_idx}: {inner_err}")
+                                        # 同步等待截图完成，确保截取到当前步骤的页面状态
+                                        await _capture_and_save(page, i + 1, action_str)
                             except Exception as screenshot_err:
                                 logger.warning(f"⚠️ Screenshot init failed for step {i+1}: {screenshot_err}")
 
@@ -1800,6 +1802,7 @@ class PersistentBrowserSession:
                 controller=self.controller,
                 browser_session=self.browser_session,  # 复用同一个浏览器会话
                 use_vision=False,
+                directly_open_url=False,  # 禁用自动初始导航，让访问URL成为主循环第一步，确保能正确截图
                 max_actions_per_step=10,
                 max_retries=1,
                 max_failures=2,
@@ -1815,7 +1818,6 @@ class PersistentBrowserSession:
         
         last_processed_step = 0
         last_marked_task_id = 0
-        screenshot_tasks = []
         step_task_ids = {}  # 记录每个步骤对应的全局唯一 task_id
         
         async def on_step_end(agent_instance):
@@ -1910,8 +1912,10 @@ class PersistentBrowserSession:
                                         elif hasattr(b, 'pages') and b.pages:
                                             page = b.pages[0]
                                     if page:
-                                        async def _capture_and_save(_page, _step_idx):
+                                        async def _capture_and_save(_page, _step_idx, _action):
                                             try:
+                                                url = await _page.evaluate('() => window.location.href') if _page else 'no page'
+                                                logger.info(f"📸 Capturing screenshot for step {_step_idx}, action={_action}, url={url}")
                                                 b64 = await _page.screenshot(format='jpeg', quality=50)
                                                 ts = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]
                                                 safe_case = "".join(c for c in case_name if c.isalnum() or c in ('_', '-')).rstrip()
@@ -1923,9 +1927,9 @@ class PersistentBrowserSession:
                                                 self.screenshots_sequence.append(rel_path)
                                                 logger.info(f"📸 Screenshot saved for step {_step_idx}: {rel_path}")
                                             except Exception as inner_err:
-                                                logger.warning(f"⚠️ Screenshot bg failed for step {_step_idx}: {inner_err}")
-                                        task = asyncio.create_task(_capture_and_save(page, i + 1))
-                                        screenshot_tasks.append(task)
+                                                logger.warning(f"⚠️ Screenshot failed for step {_step_idx}: {inner_err}")
+                                        # 同步等待截图完成，确保截取到当前步骤的页面状态
+                                        await _capture_and_save(page, i + 1, action_str)
                             except Exception as screenshot_err:
                                 logger.warning(f"⚠️ Screenshot init failed for step {i+1}: {screenshot_err}")
 
@@ -2051,19 +2055,6 @@ class PersistentBrowserSession:
                         if isinstance(params, dict):
                             ai_success = params.get('success')
                         break
-
-        # 等待后台截图任务完成（带超时，避免被其他长时间任务阻塞）
-        try:
-            if screenshot_tasks:
-                pending = [t for t in screenshot_tasks if not t.done()]
-                if pending:
-                    logger.info(f"⏳ Waiting for {len(pending)} screenshot tasks to complete")
-                    await asyncio.wait_for(asyncio.gather(*pending, return_exceptions=True), timeout=5.0)
-                    logger.info(f"✅ Screenshot tasks completed, count: {len(self.screenshots_sequence)}")
-        except asyncio.TimeoutError:
-            logger.warning(f"⚠️ Screenshot tasks timed out, collected {len(self.screenshots_sequence)} screenshots")
-        except Exception as e:
-            logger.warning(f"⚠️ Error waiting for screenshot tasks: {e}")
 
         logger.info(f"🏁 run_single_case returning for case: {case_name}, screenshots: {len(self.screenshots_sequence)}, history steps: {len(history) if history else 0}")
         return {'history': history, 'screenshots_sequence': self.screenshots_sequence, 'success': ai_success, 'step_task_ids': step_task_ids}

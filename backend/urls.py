@@ -52,3 +52,10 @@ urlpatterns += [
          serve, 
          {'document_root': os.path.join(settings.MEDIA_ROOT, 'app-automation', 'allure-reports')}),
 ]
+
+# API测试 Allure 报告访问
+urlpatterns += [
+    path('api-testing/allure-reports/<path:path>', 
+         serve, 
+         {'document_root': os.path.join(settings.MEDIA_ROOT, 'api-testing', 'allure-reports')}),
+]
