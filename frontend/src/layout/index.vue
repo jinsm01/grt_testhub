@@ -236,7 +236,7 @@
           <template v-else-if="currentModule === 'app-automation'">
             <el-menu-item index="/app-automation/dashboard">
               <el-icon><Odometer /></el-icon>
-              <span>Dashboard</span>
+              <span>数据看板</span>
             </el-menu-item>
             <el-menu-item index="/app-automation/projects">
               <el-icon><Folder /></el-icon>
@@ -471,7 +471,7 @@
 
         <!-- 页面内容 -->
         <el-main>
-          <router-view />
+          <router-view :key="$route.fullPath" />
         </el-main>
       </el-container>
     </el-container>
@@ -836,7 +836,7 @@ const breadcrumbTitle = computed(() => {
     '/ui-automation/notification-logs': t('menu.notificationList'),
 
     // APP自动化测试
-    '/app-automation/dashboard': 'Dashboard',
+    '/app-automation/dashboard': '数据看板',
     '/app-automation/projects': '项目管理',
     '/app-automation/devices': '设备管理',
     '/app-automation/packages': '包名管理',

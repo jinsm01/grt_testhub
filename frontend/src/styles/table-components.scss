@@ -1,0 +1,115 @@
+// 全局表格样式
+// 统一所有页面的表格对齐、间距、悬停等样式
+
+// Element Plus 表格变量覆盖
+.el-table {
+  --el-color-primary: #7b42f6;
+  --el-color-primary-light-3: #9370db;
+  --el-color-primary-light-5: #a888e0;
+  --el-color-primary-light-7: #c2a9f3;
+  --el-color-primary-light-9: #f8f7ff;
+  --el-border-color: #e9ecef;
+  --el-border-color-light: #e9ecef;
+  --el-border-color-lighter: #e9ecef;
+  --el-fill-color-light: #ffffff;
+  --el-fill-color-lighter: #ffffff;
+  --el-fill-color-blank: #ffffff;
+  --el-text-color-primary: #333;
+  --el-text-color-regular: #333;
+  --el-text-color-secondary: #666;
+  --el-text-color-placeholder: #999;
+  --el-table-header-bg-color: #ffffff;
+  --el-table-row-hover-bg-color: #f8f7ff;
+  --el-table-stripe-bg-color: #fafaff;
+
+  // 表头包装器
+  .el-table__header-wrapper {
+    background-color: #ffffff !important;
+  }
+
+  // 表头
+  .el-table__header {
+    background-color: #ffffff !important;
+  }
+
+  // 表头单元格
+  .el-table__header th {
+    background-color: #ffffff !important;
+    color: #5a32a3 !important;
+    font-weight: 600 !important;
+    font-size: 14px;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0 !important;
+    text-align: center;
+    transition: all 0.3s ease;
+    line-height: 40px !important;
+    height: 50px !important;
+
+    &:hover {
+      background-color: #ffffff !important;
+    }
+
+    .cell {
+      background-color: #ffffff !important;
+      color: #5a32a3 !important;
+      font-weight: 600 !important;
+      white-space: nowrap !important;
+      line-height: 24px !important;
+      padding: 12px 16px !important;
+    }
+  }
+
+  // 表格内容
+  .el-table__body-wrapper {
+    background-color: #ffffff !important;
+  }
+
+  // 表格行
+  .el-table__row {
+    transition: all 0.3s ease;
+    background-color: #ffffff !important;
+    line-height: 40px !important;
+    height: 50px !important;
+
+    td {
+      padding: 10px 0 !important;
+    }
+
+    &:hover {
+      background-color: #f8f7ff !important;
+    }
+
+    &.el-table__row--striped {
+      background-color: #fafaff !important;
+    }
+  }
+
+  // 表格单元格 - 关键：使用 flex 居中
+  td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #e9ecef;
+    color: #333;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 24px;
+    transition: all 0.3s ease;
+    vertical-align: middle;
+
+    // cell 内部使用 flex 居中
+    .cell {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      min-height: 24px;
+      line-height: 24px !important;
+      width: 100%;
+      word-break: break-word;
+    }
+  }
+
+  // 空数据
+  .el-table__empty-block {
+    padding: 60px 0;
+    background: #ffffff !important;
+  }
+}

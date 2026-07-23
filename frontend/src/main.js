@@ -12,6 +12,7 @@ import router from './router'
 import './assets/css/global.scss'
 import './styles/filter-components.scss'
 import './styles/dialog-components.scss'
+import './styles/table-components.scss'
 
 // Axios 基础配置
 axios.defaults.xsrfCookieName = 'csrftoken';

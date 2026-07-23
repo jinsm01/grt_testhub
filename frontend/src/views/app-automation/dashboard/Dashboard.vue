@@ -140,7 +140,7 @@
     </el-row>
     
     <!-- 快速操作 -->
-    <el-row :gutter="20" class="quick-actions-section">
+    <el-row :gutter="20" class="quick-actions-section" v-show="false">
       <el-col :span="24">
         <el-card shadow="hover">
           <template #header>
@@ -193,6 +193,8 @@ import {
   Picture,
   Aim
 } from '@element-plus/icons-vue'
+
+defineOptions({ name: 'AppAutomationDashboard' })
 
 const loading = ref(false)
 const statistics = ref({
@@ -262,7 +264,13 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .app-automation-dashboard {
-  padding: 20px;
+  padding: 24px;
+  min-height: calc(100vh - 60px);
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  display: flex;
+  flex-direction: column;
+  line-height: 24px;
+  gap: 20px;
 }
 
 .stats-section {
@@ -270,32 +278,40 @@ onUnmounted(() => {
 }
 
 .stat-card {
-  cursor: pointer;
-  transition: transform 0.3s;
+  height: 100%;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.1);
+  border: 1px solid rgba(147, 112, 219, 0.1);
+  transition: all 0.3s ease;
   
   &:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(147, 112, 219, 0.15);
   }
   
   .stat-content {
     display: flex;
     align-items: center;
-    gap: 15px;
+    height: 100px;
+    padding: 20px;
     
     .stat-icon {
       width: 60px;
       height: 60px;
-      border-radius: 12px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
+      margin-right: 20px;
       font-size: 24px;
       color: white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       
       &.bg-blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-      &.bg-green { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-      &.bg-orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-      &.bg-purple { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+      &.bg-green { background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%); }
+      &.bg-orange { background: linear-gradient(135deg, #fa8c16 0%, #d46b08 100%); }
+      &.bg-purple { background: linear-gradient(135deg, #722ed1 0%, #531dab 100%); }
     }
     
     .stat-info {
@@ -304,14 +320,13 @@ onUnmounted(() => {
       .stat-value {
         font-size: 28px;
         font-weight: bold;
-        color: #303133;
-        line-height: 1;
-        margin-bottom: 8px;
+        color: #5a32a3;
+        margin-bottom: 5px;
       }
       
       .stat-label {
         font-size: 14px;
-        color: #909399;
+        color: #666;
       }
     }
   }
@@ -319,6 +334,16 @@ onUnmounted(() => {
 
 .content-section {
   margin-bottom: 20px;
+}
+
+.content-section .el-col {
+  display: flex;
+}
+
+.content-section .el-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-header {
@@ -329,51 +354,83 @@ onUnmounted(() => {
 }
 
 .stat-chart {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.1);
+  border: 1px solid rgba(147, 112, 219, 0.1);
+
+  :deep(.el-card__body) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
   .chart-container {
+    flex: 1;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
-    
+    align-content: center;
+
     .stat-item {
       text-align: center;
       padding: 15px;
       border-radius: 8px;
-      background: #f5f7fa;
-      
+      background: rgba(147, 112, 219, 0.05);
+
       .stat-label {
         font-size: 14px;
-        color: #909399;
+        color: #666;
         margin-bottom: 10px;
       }
-      
+
       .stat-value {
         font-size: 24px;
         font-weight: bold;
-        
-        &.large { font-size: 32px; color: #409eff; }
-        &.success { color: #67c23a; }
-        &.warning { color: #e6a23c; }
-        &.danger { color: #f56c6c; }
+
+        &.large { font-size: 32px; color: #5a32a3; }
+        &.success { color: #52c41a; }
+        &.warning { color: #fa8c16; }
+        &.danger { color: #f5222d; }
       }
     }
   }
 }
 
 .recent-executions {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f7ff 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.1);
+  border: 1px solid rgba(147, 112, 219, 0.1);
+
+  :deep(.el-card__body) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .loading-container,
+  .empty-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .executions-list {
     .execution-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 12px;
-      border-bottom: 1px solid #ebeef5;
+      border-bottom: 1px solid rgba(147, 112, 219, 0.08);
       
       &:last-child {
         border-bottom: none;
       }
       
       &:hover {
-        background: #f5f7fa;
+        background: rgba(147, 112, 219, 0.05);
       }
       
       .execution-info {
@@ -382,7 +439,7 @@ onUnmounted(() => {
         .execution-name {
           font-size: 14px;
           font-weight: 500;
-          color: #303133;
+          color: #333;
           margin-bottom: 8px;
         }
         
@@ -391,7 +448,7 @@ onUnmounted(() => {
           gap: 12px;
           align-items: center;
           font-size: 12px;
-          color: #909399;
+          color: #666;
           
           .device-name {
             display: flex;
@@ -419,34 +476,35 @@ onUnmounted(() => {
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.3s;
-      background: #f5f7fa;
+      background: rgba(147, 112, 219, 0.05);
       
       &:hover {
-        background: #ecf5ff;
+        background: rgba(147, 112, 219, 0.1);
         transform: translateY(-3px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 12px rgba(147, 112, 219, 0.15);
       }
       
       .action-icon {
         width: 50px;
         height: 50px;
-        border-radius: 10px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 24px;
         color: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         
         &.bg-blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        &.bg-green { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        &.bg-orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        &.bg-purple { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        &.bg-green { background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%); }
+        &.bg-orange { background: linear-gradient(135deg, #fa8c16 0%, #d46b08 100%); }
+        &.bg-purple { background: linear-gradient(135deg, #722ed1 0%, #531dab 100%); }
       }
       
       .action-label {
         font-size: 14px;
         font-weight: 500;
-        color: #303133;
+        color: #5a32a3;
       }
     }
   }

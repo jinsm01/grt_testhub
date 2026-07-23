@@ -3,12 +3,7 @@
     <!-- 工具栏 -->
     <el-card class="toolbar" shadow="never">
       <el-row :gutter="20">
-        <el-col :span="4">
-          <el-select v-model="projectFilter" placeholder="全部项目" clearable filterable @change="loadExecutions">
-            <el-option v-for="p in projectList" :key="p.id" :label="p.name" :value="p.id" />
-          </el-select>
-        </el-col>
-        <el-col :span="8">
+        <el-col :span="6">
           <el-input
             v-model="searchQuery"
             placeholder="搜索用例名称、设备"
@@ -21,25 +16,28 @@
             </template>
           </el-input>
         </el-col>
-        <el-col :span="12" class="text-right">
+        <el-col :span="4">
+          <el-select v-model="projectFilter" placeholder="全部项目" clearable filterable @change="loadExecutions">
+            <el-option v-for="p in projectList" :key="p.id" :label="p.name" :value="p.id" />
+          </el-select>
+        </el-col>
+        <el-col :span="4">
           <el-select
             v-model="statusFilter"
-            placeholder="状态筛选"
+            placeholder="执行状态"
             clearable
-            style="width: 150px; margin-right: 10px"
             @change="loadExecutions"
           >
-            <el-option label="全部" value="" />
+            <el-option label="全部状态" value="" />
             <el-option label="等待中" value="pending" />
             <el-option label="执行中" value="running" />
             <el-option label="已完成" value="completed" />
             <el-option label="执行异常" value="error" />
             <el-option label="已停止" value="stopped" />
           </el-select>
-          <el-button @click="loadExecutions">
-            <el-icon><Refresh /></el-icon>
-            刷新
-          </el-button>
+        </el-col>
+        <el-col :span="10" class="text-right">
+          <!-- 刷新按钮已隐藏 -->
         </el-col>
       </el-row>
     </el-card>
@@ -128,7 +126,7 @@
       </el-table>
       
       <!-- 分页 -->
-      <div class="pagination">
+      <div class="pagination-container">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
@@ -287,7 +285,9 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .execution-list {
-  padding: 20px;
+  padding: 24px;
+  min-height: calc(100vh - 60px);
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
 }
 
 .toolbar {
@@ -298,11 +298,161 @@ onUnmounted(() => {
   }
 }
 
-.table-card {
-  .pagination {
-    margin-top: 20px;
+.execution-list {
+  .card-container {
+    background: #ffffff;
+    border: 1px solid rgba(167, 139, 250, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(167, 139, 250, 0.08);
     display: flex;
-    justify-content: flex-end;
+    flex-direction: column;
+    overflow: hidden;
+    padding-top: 16px;
+
+    .el-table {
+      border: none;
+      border-radius: 8px 8px 0 0;
+      overflow: hidden;
+      min-height: 200px;
+      box-shadow: none;
+      transition: all 0.3s ease;
+      background-color: transparent !important;
+
+      /* 覆盖 Element Plus 默认主题变量 */
+      --el-color-primary: #7b42f6;
+      --el-color-primary-light-3: #9370db;
+      --el-color-primary-light-5: #a888e0;
+      --el-color-primary-light-7: #c2a9f3;
+      --el-color-primary-light-9: #f8f7ff;
+      --el-border-color: #e9ecef;
+      --el-border-color-light: #e9ecef;
+      --el-border-color-lighter: #e9ecef;
+      --el-fill-color-light: #ffffff;
+      --el-fill-color-lighter: #ffffff;
+      --el-fill-color-blank: #ffffff;
+      --el-text-color-primary: #333;
+      --el-text-color-regular: #333;
+      --el-text-color-secondary: #666;
+      --el-text-color-placeholder: #999;
+      --el-table-header-bg-color: #ffffff;
+      --el-table-row-hover-bg-color: #f8f7ff;
+      --el-table-stripe-bg-color: #fafaff;
+
+      &::before {
+        display: none;
+      }
+
+      :deep(.el-table__header-wrapper) {
+        background-color: #ffffff !important;
+      }
+
+      :deep(.el-table__header) {
+        background-color: #ffffff !important;
+      }
+
+      :deep(.el-table__header th) {
+        background-color: #ffffff !important;
+        color: #5a32a3 !important;
+        font-weight: 600 !important;
+        font-size: 14px;
+        border-bottom: 1px solid #e9ecef;
+        padding: 0 !important;
+        text-align: center;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background-color: #ffffff !important;
+        }
+      }
+
+      :deep(.el-table__header th .cell) {
+        background-color: #ffffff !important;
+        color: #5a32a3 !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+        line-height: 24px !important;
+        padding: 16px !important;
+      }
+
+      :deep(.el-table__body-wrapper) {
+        background-color: #ffffff !important;
+      }
+
+      :deep(.el-table__row) {
+        transition: all 0.3s ease;
+        background-color: #ffffff !important;
+        line-height: 24px;
+
+        &:hover {
+          background-color: #f8f7ff !important;
+        }
+
+        &.el-table__row--striped {
+          background-color: #fafaff !important;
+        }
+      }
+
+      :deep(td) {
+        padding: 14px 16px;
+        border-bottom: 1px solid #e9ecef;
+        color: #333;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 24px;
+        transition: all 0.3s ease;
+        vertical-align: middle;
+      }
+
+      :deep(.el-table__empty-block) {
+        padding: 60px 0;
+        background: #ffffff !important;
+      }
+    }
+  }
+}
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 0;
+  margin-top: 8px;
+  background: transparent;
+  border: none;
+  transition: all 0.3s ease;
+
+  --primary-color: #a78bfa;
+  --primary-dark: #8b5cf6;
+  --primary-light: #f3f0ff;
+  --text-primary: #262626;
+  --text-secondary: #595959;
+  --text-tertiary: #8c8c8c;
+
+  --el-color-primary: var(--primary-color);
+  --el-color-primary-light-3: #c4b5fd;
+  --el-color-primary-light-5: #ddd6fe;
+  --el-color-primary-light-7: #ede9fe;
+  --el-color-primary-light-9: #f5f3ff;
+  --el-border-color: rgba(167, 139, 250, 0.3);
+  --el-border-color-light: rgba(167, 139, 250, 0.2);
+  --el-border-color-lighter: rgba(167, 139, 250, 0.1);
+  --el-fill-color-light: #f5f3ff;
+  --el-fill-color-lighter: #f5f3ff;
+  --el-fill-color-blank: #f5f3ff;
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+
+  :deep(.el-pagination) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+
+    .el-pagination__total { color: #6b7280; font-size: 14px; font-weight: 500; margin-right: 12px; }
+    .el-pagination__sizes { margin-right: 12px; .el-select .el-input__wrapper { border-radius: 8px; border: 1px solid #e5e7eb; background: #ffffff; box-shadow: none; &:hover { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1); } &.is-focus { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15); } } .el-input__inner { color: #374151; font-weight: 500; } }
+    .btn-prev, .btn-next { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb; background: #ffffff; color: #6b7280; transition: all 0.3s ease; &:hover:not(:disabled) { background: #f5f3ff; border-color: #a78bfa; color: #8b5cf6; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(167, 139, 250, 0.2); } &:disabled { background: #f5f5f5; border-color: #e0e0e0; color: #c0c0c0; } .el-icon { font-size: 14px; font-weight: bold; } }
+    .el-pager { display: flex; gap: 8px; li { min-width: 32px; height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid #d1d5db; background: #ffffff; color: #6b7280; font-size: 14px; font-weight: 500; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; &:hover:not(.is-active) { background: #f5f3ff; border-color: #a78bfa; color: #8b5cf6; transform: translateY(-1px); } &.is-active { background: #f5f3ff; border-color: #a78bfa; color: #8b5cf6; box-shadow: 0 2px 8px rgba(167, 139, 250, 0.2); } &.is-active:hover { background: #ede9fe; border-color: #8b5cf6; } } }
+    .el-pagination__jump { color: #6b7280; font-weight: 500; margin-left: 12px; .el-input { width: 50px; margin: 0 4px; .el-input__wrapper { border-radius: 8px; border: 1px solid #e5e7eb; background: #ffffff; box-shadow: none; &:hover { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1); } &.is-focus { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15); } } .el-input__inner { color: #374151; font-weight: 500; text-align: center; } } }
   }
 }
 
@@ -330,6 +480,108 @@ onUnmounted(() => {
     line-height: 1.5;
     white-space: pre-wrap;
     word-wrap: break-word;
+  }
+}
+
+// 操作按钮样式
+.page-container {
+  .action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: nowrap;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px !important;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    border: none !important;
+
+    .el-icon {
+      font-size: 14px;
+      color: #ffffff !important;
+    }
+
+    span {
+      font-size: 12px;
+      color: #ffffff !important;
+    }
+
+    &.edit-btn {
+      background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+
+      &:hover {
+        background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
+      }
+    }
+
+    &.run-btn {
+      background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+
+      &:hover {
+        background: linear-gradient(135deg, #73d13d 0%, #52c41a 100%) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(82, 196, 26, 0.4);
+      }
+    }
+
+    &.delete-btn {
+      background: linear-gradient(135deg, #ff4d4f 0%, #f5222d 100%) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+
+      &:hover {
+        background: linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(245, 34, 45, 0.4);
+      }
+    }
+  }
+}
+
+// 状态徽章样式
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+
+  &.success {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  &.failed {
+    background: #fff1f0;
+    color: #f5222d;
+  }
+
+  &.processing {
+    background: #fff7e6;
+    color: #fa8c16;
+  }
+
+  &.pending {
+    background: #f5f5f5;
+    color: #8c8c8c;
   }
 }
 </style>

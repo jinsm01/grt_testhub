@@ -128,13 +128,13 @@
                 </td>
                 <td class="cell-step">
                   <div class="step-line">
-                    <span class="step-index">{{ Number(index) + 1 }}.</span>
+                    <span class="step-index">{{ Number(index) + 1 }}. </span>
                     <span class="step-text">{{ stripStepPrefix(step) }}</span>
                   </div>
                 </td>
                 <td class="cell-expected">
                   <div class="expected-line">
-                    <span class="expected-index">{{ Number(index) + 1 }}.</span>
+                    <span class="expected-index">{{ Number(index) + 1 }}. </span>
                     <span class="expected-text">{{ stripResultPrefix(parseResults(testcase.expected_result)[index]) || '-' }}</span>
                   </div>
                 </td>
@@ -185,7 +185,8 @@ const testcase = ref({
   review_status: 'none',
   review_status_display: '未审核',
   review_comment: '',
-  reviewer: null
+  reviewer: null,
+  automation_scenario: null
 })
 
 const priorityType = (priority) => {

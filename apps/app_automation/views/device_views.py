@@ -89,11 +89,22 @@ class AppDeviceViewSet(viewsets.ModelViewSet):
                 'devices': AppDeviceSerializer(db_devices, many=True).data
             })
         except Exception as e:
-            logger.error(f"发现设备失败: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"发现设备失败: {error_msg}")
+            
+            # 检查是否是 ADB 相关错误，返回更友好的错误信息
+            if 'ADB' in error_msg or 'adb' in error_msg or '找不到' in error_msg or 'not found' in error_msg.lower():
+                return Response({
+                    'success': False,
+                    'message': 'ADB 未安装或配置错误，请先安装 Android SDK 并配置 ADB 环境变量，或在系统设置中配置 ADB 路径',
+                    'devices': []
+                })
+            
             return Response({
                 'success': False,
-                'message': f'发现设备失败: {str(e)}'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                'message': f'发现设备失败: {error_msg}',
+                'devices': []
+            })
     
     @action(detail=True, methods=['post'])
     def lock(self, request, pk=None):
@@ -229,12 +240,31 @@ class AppDeviceViewSet(viewsets.ModelViewSet):
         if device.status == 'offline':
             return Response({
                 'code': 400,
-                'msg': '设备离线，无法截图',
+                'message': '设备离线，无法截图',
                 'success': False
             }, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             adb_path = get_adb_path()
+            
+            # 先检查设备是否真的在线（通过ADB）
+            check_result = subprocess.run(
+                [adb_path, '-s', device.device_id, 'get-state'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if check_result.returncode != 0 or 'device' not in check_result.stdout:
+                # 设备实际已离线，更新数据库状态
+                device.status = 'offline'
+                device.save(update_fields=['status'])
+                logger.warning(f"设备 {device.device_id} 已离线")
+                return Response({
+                    'code': 400,
+                    'message': '设备连接已断开，请先连接设备',
+                    'success': False
+                }, status=status.HTTP_400_BAD_REQUEST)
             
             # 使用 adb screencap 命令截图
             result = subprocess.run(
@@ -248,7 +278,7 @@ class AppDeviceViewSet(viewsets.ModelViewSet):
             if not result.stdout:
                 return Response({
                     'code': 500,
-                    'msg': '截图失败：无返回数据',
+                    'message': '截图失败：无返回数据',
                     'success': False
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
@@ -259,7 +289,7 @@ class AppDeviceViewSet(viewsets.ModelViewSet):
             
             return Response({
                 'code': 0,
-                'msg': '截图成功',
+                'message': '截图成功',
                 'success': True,
                 'data': {
                     'filename': f"device_{device.id}_{int(timezone.now().timestamp())}.png",
@@ -273,13 +303,13 @@ class AppDeviceViewSet(viewsets.ModelViewSet):
             logger.error(f"设备 {device.device_id} 截图超时")
             return Response({
                 'code': 500,
-                'msg': '截图超时，请检查设备连接',
+                'message': '截图超时，请检查设备连接',
                 'success': False
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             logger.error(f"设备 {device.device_id} 截图失败: {str(e)}")
             return Response({
                 'code': 500,
-                'msg': f'截图失败: {str(e)}',
+                'message': f'截图失败: {str(e)}',
                 'success': False
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

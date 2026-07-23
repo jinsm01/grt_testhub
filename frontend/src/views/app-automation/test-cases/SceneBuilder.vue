@@ -1,26 +1,27 @@
 <template>
     <div class="ui-test-scene-builder">
-        <div class="page-header">
-            <h3>App自动化用例编排</h3>
-            <div class="header-actions">
-                <el-button
-                    type="primary"
-                    size="small"
-                    :icon="Check"
-                    :loading="saving"
-                    @click="saveScene"
-                >
-                    保存用例
-                </el-button>
-                <el-button size="small" :icon="Refresh" @click="resetScene">
-                    重置
-                </el-button>
-            </div>
-        </div>
-
-        <el-card class="scene-config">
-            <el-form :model="sceneForm" label-width="120px" size="small">
-                <el-row :gutter="16">
+        <el-card class="scene-config" shadow="never">
+            <template #header>
+                <div class="scene-config-header">
+                    <el-icon><Setting /></el-icon>
+                    <span>场景配置</span>
+                    <el-button
+                        type="primary"
+                        size="small"
+                        class="action-btn edit-btn"
+                        :icon="Check"
+                        :loading="saving"
+                        @click="saveScene"
+                    >
+                        保存用例
+                    </el-button>
+                    <el-button size="small" class="action-btn cancel-btn" :icon="Refresh" @click="resetScene">
+                            重置
+                        </el-button>
+                </div>
+            </template>
+            <el-form :model="sceneForm" label-position="top" size="default">
+                <el-row :gutter="20">
                     <el-col :span="8">
                         <el-form-item label="场景名称" required>
                             <el-input
@@ -30,116 +31,165 @@
                             />
                         </el-form-item>
                     </el-col>
-                    <el-col :span="8">
+                    <el-col :span="6">
                         <el-form-item label="所属项目">
                             <el-select v-model="sceneForm.project" placeholder="请选择项目" clearable filterable style="width:100%">
                                 <el-option v-for="p in projectList" :key="p.id" :label="p.name" :value="p.id" />
                             </el-select>
                         </el-form-item>
                     </el-col>
-                    <el-col :span="8">
+                    <el-col :span="10">
                         <el-form-item label="场景描述">
                             <el-input
                                 v-model.trim="sceneForm.description"
-                                placeholder="可选"
+                                placeholder="可选，简要说明场景用途"
                                 clearable
                             />
                         </el-form-item>
                     </el-col>
                 </el-row>
-                <el-row :gutter="16">
-                    <el-col :span="24">
-                        <el-form-item label="场景变量">
-                            <div class="scene-variables">
-                                <div
-                                    v-for="(item, index) in sceneVariables"
-                                    :key="`var_${index}`"
-                                    class="scene-variable-item"
+
+                <div class="section-block">
+                    <div class="section-title">
+                        <el-icon><Coin /></el-icon>
+                        <span>场景变量</span>
+                        <el-tag size="small" type="warning" effect="plain" round>{{ sceneVariables.length }} 个</el-tag>
+                        <div class="section-actions">
+                            <el-button
+                                v-if="sceneVariables.length > 0"
+                                class="add-variable"
+                                type="primary"
+                                size="small"
+                                :icon="Plus"
+                                @click="addSceneVariable"
+                            >
+                                添加变量
+                            </el-button>
+                        </div>
+                    </div>
+                    <div class="scene-variables">
+                        <div
+                            v-for="(item, index) in sceneVariables"
+                            :key="`var_${index}`"
+                            class="scene-variable-item"
+                        >
+                            <el-input
+                                v-model.trim="item.name"
+                                placeholder="变量名"
+                                class="var-name"
+                                size="small"
+                            >
+                                <template #prefix>
+                                    <el-icon><Document /></el-icon>
+                                </template>
+                            </el-input>
+                            <el-select v-model="item.scope" class="var-scope" size="small">
+                                <el-option label="local" value="local" />
+                                <el-option label="global" value="global" />
+                            </el-select>
+                            <el-select v-model="item.type" class="var-type" size="small">
+                                <el-option label="string" value="string" />
+                                <el-option label="number" value="number" />
+                                <el-option label="boolean" value="boolean" />
+                                <el-option label="array" value="array" />
+                                <el-option label="object" value="object" />
+                            </el-select>
+                            <el-input
+                                v-model.trim="item.value"
+                                placeholder="默认值"
+                                class="var-value"
+                                size="small"
+                            />
+                            <el-input
+                                v-model.trim="item.description"
+                                placeholder="说明"
+                                class="var-desc"
+                                size="small"
+                            />
+                            <el-button
+                                class="var-remove"
+                                type="danger"
+                                :icon="Delete"
+                                circle
+                                plain
+                                size="small"
+                                @click="removeSceneVariable(index)"
+                            />
+                        </div>
+                        <div v-if="sceneVariables.length === 0" class="variables-empty">
+                        <span class="empty-text">暂无场景变量，点击下方按钮添加</span>
+                        <el-button
+                            class="empty-add-btn"
+                            type="primary"
+                            size="small"
+                            :icon="Plus"
+                            @click="addSceneVariable"
+                        >
+                            添加变量
+                        </el-button>
+                    </div>
+                    </div>
+                </div>
+
+                <div class="section-block">
+                    <div class="section-title">
+                        <el-icon><Operation /></el-icon>
+                        <span>运行时配置</span>
+                    </div>
+                    <el-row :gutter="16">
+                        <el-col :span="12">
+                            <el-form-item label="接口基础地址">
+                                <el-input
+                                    v-model.trim="sceneRuntime.base_url"
+                                    placeholder="http://127.0.0.1:8000"
+                                    clearable
+                                    size="default"
                                 >
-                                    <el-input
-                                        v-model.trim="item.name"
-                                        placeholder="变量名"
-                                        size="small"
-                                    />
-                                    <el-select v-model="item.scope" placeholder="作用域" size="small">
-                                        <el-option label="local" value="local" />
-                                        <el-option label="global" value="global" />
-                                    </el-select>
-                                    <el-select v-model="item.type" placeholder="类型" size="small">
-                                        <el-option label="string" value="string" />
-                                        <el-option label="number" value="number" />
-                                        <el-option label="boolean" value="boolean" />
-                                        <el-option label="array" value="array" />
-                                        <el-option label="object" value="object" />
-                                    </el-select>
-                                    <el-input
-                                        v-model.trim="item.value"
-                                        placeholder="默认值"
-                                        size="small"
-                                    />
-                                    <el-input
-                                        v-model.trim="item.description"
-                                        placeholder="说明"
-                                        size="small"
-                                    />
-                                    <el-button link size="small" @click="removeSceneVariable(index)">
-                                        删除
-                                    </el-button>
-                                </div>
-                                <el-button link size="small" @click="addSceneVariable">
-                                    + 添加变量
-                                </el-button>
-                            </div>
-                        </el-form-item>
-                    </el-col>
-                </el-row>
-                <el-row :gutter="16">
-                    <el-col :span="10">
-                        <el-form-item label="API_BASE_URL">
-                            <el-input
-                                v-model.trim="sceneRuntime.base_url"
-                                placeholder="http://127.0.0.1:8000"
-                                size="small"
+                                    <template #prefix>
+                                        <el-icon><Link /></el-icon>
+                                    </template>
+                                </el-input>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item label="重试次数">
+                                <el-input-number
+                                    v-model="sceneRuntime.retry_times"
+                                    :min="0"
+                                    :max="10"
+                                    size="default"
+                                    style="width: 100%"
+                                />
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-form-item label="重试间隔(秒)">
+                            <el-input-number
+                                v-model="sceneRuntime.retry_interval"
+                                :min="0"
+                                :max="60"
+                                :step="0.5"
+                                :precision="1"
+                                style="width: 100%"
                             />
                         </el-form-item>
                     </el-col>
                 </el-row>
-                <el-row :gutter="16">
-                    <el-col :span="8">
-                        <el-form-item label="重试次数">
-                            <el-input
-                                v-model.number="sceneRuntime.retry_times"
-                                type="number"
-                                placeholder="0"
-                                size="small"
-                            />
-                        </el-form-item>
-                    </el-col>
-                    <el-col :span="8">
-                        <el-form-item label="重试间隔(秒)">
-                            <el-input
-                                v-model.number="sceneRuntime.retry_interval"
-                                type="number"
-                                placeholder="0.5"
-                                size="small"
-                            />
-                        </el-form-item>
-                    </el-col>
-                </el-row>
+            </div>
             </el-form>
         </el-card>
 
         <el-row :gutter="16" class="scene-layout">
-            <el-col :span="6">
+            <el-col :span="8">
                 <el-card class="palette-card" shadow="never">
                     <template #header>
                         <div class="card-title">
                             <span>组件库</span>
                             <div class="palette-toolbar">
-                                <el-button type="primary" size="small" :icon="Upload" @click="openPackageDialog">
+                                <el-button type="primary" size="small" class="action-btn edit-btn" :icon="Upload" @click="openPackageDialog">
                                     导入组件包
                                 </el-button>
-                                <el-button type="success" size="small" :icon="Download" @click="openExportDialog">
+                                <el-button size="small" class="action-btn cancel-btn" :icon="Download" @click="openExportDialog">
                                     导出组件包
                                 </el-button>
                             </div>
@@ -213,7 +263,7 @@
                 </el-card>
             </el-col>
 
-            <el-col :span="12">
+            <el-col :span="10">
                 <el-card class="scene-card" shadow="never">
                     <template #header>
                         <div class="card-title">
@@ -221,6 +271,7 @@
                             <el-button
                                 type="primary"
                                 size="small"
+                                class="action-btn edit-btn"
                                 :icon="FolderAdd"
                                 :disabled="scenarioSteps.length === 0"
                                 @click="openCustomComponentDialog"
@@ -229,17 +280,18 @@
                             </el-button>
                         </div>
                     </template>
-                    <div class="scene-hint" v-if="scenarioSteps.length === 0">
-                        从左侧拖动组件到此处，组成UI测试场景
-                    </div>
-                    <draggable
-                        v-model="scenarioSteps"
-                        class="scene-list"
-                        :group="{ name: 'ui-components', pull: true, put: true }"
-                        :animation="200"
-                        item-key="id"
-                    >
-                        <template #item="{ element, index }">
+                    <div class="scene-list-wrapper">
+                        <div class="scene-hint" v-if="scenarioSteps.length === 0">
+                            从左侧拖动组件到此处，组成UI测试场景
+                        </div>
+                        <draggable
+                            v-model="scenarioSteps"
+                            class="scene-list"
+                            :group="{ name: 'ui-components', pull: true, put: true }"
+                            :animation="200"
+                            item-key="id"
+                        >
+                            <template #item="{ element, index }">
                             <div class="scene-item-wrapper">
                                 <div
                                     class="scene-item"
@@ -308,6 +360,7 @@
                             </div>
                         </template>
                     </draggable>
+                    </div>
                 </el-card>
             </el-col>
 
@@ -316,9 +369,10 @@
                     <template #header>
                         <div class="card-title">
                             组件配置
-                            <el-button 
-                                type="success" 
-                                size="small" 
+                            <el-button
+                                type="primary"
+                                size="small"
+                                class="action-btn edit-btn"
                                 :icon="Camera"
                                 style="margin-left: auto;"
                                 @click="openCaptureElementDialog"
@@ -879,16 +933,17 @@
                 </el-table>
                 
                 <!-- 分页 -->
-                <el-pagination
-                    v-model:current-page="elementCurrentPage"
-                    v-model:page-size="elementPageSize"
-                    :total="elementTotal"
-                    :page-sizes="[10, 20, 50]"
-                    layout="total, sizes, prev, pager, next"
-                    @current-change="loadElementsForSelector"
-                    @size-change="loadElementsForSelector"
-                    style="margin-top: 15px; justify-content: flex-end"
-                />
+                <div class="pagination-container">
+                    <el-pagination
+                        v-model:current-page="elementCurrentPage"
+                        v-model:page-size="elementPageSize"
+                        :total="elementTotal"
+                        :page-sizes="[10, 20, 50]"
+                        layout="total, sizes, prev, pager, next"
+                        @current-change="loadElementsForSelector"
+                        @size-change="loadElementsForSelector"
+                    />
+                </div>
             </div>
             
             <template #footer>
@@ -902,7 +957,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Upload, Download, FolderAdd, DocumentCopy, Check, Search, Link, Refresh, Camera } from '@element-plus/icons-vue'
+import { Upload, Download, FolderAdd, DocumentCopy, Check, Search, Link, Refresh, Camera, Setting, Document, Coin, Operation, Delete, Plus } from '@element-plus/icons-vue'
 import draggable from "vuedraggable"
 import CaptureElementDialog from '../elements/components/CaptureElementDialog.vue'
 import {
@@ -2888,92 +2943,466 @@ defineExpose({
 </script>
 
 <style scoped>
+/* ========================================
+   主容器 - 保持浅紫色背景不动
+   ======================================== */
 .ui-test-scene-builder {
-    padding: 16px;
+    padding: 20px 24px;
+    min-height: calc(100vh - 60px);
+    background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
 }
 
-.page-header {
-    display: flex;
+/* ========================================
+   场景配置卡片 - 现代化设计
+   ======================================== */
+
+/* 统一按钮样式 - 与平台其他模块一致 */
+.ui-test-scene-builder .action-btn {
+    display: inline-flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 16px;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 18px !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease;
+    border: none !important;
 }
 
-.page-header h3 {
-    margin: 0;
+.ui-test-scene-builder .action-btn .el-icon {
+    font-size: 14px;
 }
 
-.header-actions {
-    display: flex;
-    gap: 8px;
+.ui-test-scene-builder .action-btn.edit-btn {
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+.ui-test-scene-builder .action-btn.edit-btn:hover {
+    background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
+}
+
+.ui-test-scene-builder .action-btn.cancel-btn {
+    background: #ffffff !important;
+    border: 1px solid rgba(123, 66, 246, 0.3) !important;
+    color: #5a32a3 !important;
+    font-weight: 500 !important;
+}
+
+.ui-test-scene-builder .action-btn.cancel-btn:hover {
+    background: #f5f3ff !important;
+    border-color: #7b42f6 !important;
+    color: #4a2593 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(123, 66, 246, 0.15);
 }
 
 .scene-config {
+    margin-top: 0;
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 12px rgba(139, 92, 246, 0.08);
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.scene-config :deep(.el-card__header) {
+    padding: 12px 20px;
+    border-bottom: 1px solid #f3e8ff;
+    background: linear-gradient(to right, #faf5ff, #ffffff);
+}
+
+.scene-config :deep(.el-card__body) {
+    padding: 14px 20px 16px;
+}
+
+.section-block {
     margin-top: 12px;
+    padding: 4px 0 0 0;
+    background: transparent;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.section-block:hover {
+    border-color: transparent;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #5b21b6;
+    margin-bottom: 10px;
+}
+
+.section-title .el-icon {
+    font-size: 15px;
+    color: #7c3aed;
+}
+
+.section-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.scene-config-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.scene-config-header .el-icon {
+    font-size: 16px;
+    color: #7c3aed;
+    margin-right: 4px;
+}
+
+.scene-config-header > span {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-right: auto;
+}
+
+.header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    color: #374151;
+}
+
+.header-title .el-icon {
+    color: #8b5cf6;
+    font-size: 18px;
+}
+
+.header-meta {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.meta-label {
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, #f3f0ff 0%, #ede4ff 100%);
+    border: 1px solid #d4c5f9;
+    border-radius: 12px;
+    margin-right: 12px;
+}
+
+.config-divider {
+    margin: 18px 0 14px;
+}
+
+.config-divider.hidden-divider {
+    margin: 8px 0 0 0;
+}
+
+.config-divider.hidden-divider :deep(.el-divider__text) {
+    background: transparent;
+    padding: 0;
+}
+
+.config-divider.hidden-divider :deep(.el-divider__line) {
+    display: none;
+}
+
+.config-divider :deep(.el-divider__text) {
+    background: transparent;
+    padding: 0 12px;
+}
+
+.divider-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.divider-text .el-icon {
+    color: #a78bfa;
+    font-size: 14px;
+}
+
+.scene-config :deep(.el-form-item) {
+    margin-bottom: 14px;
+}
+
+.scene-config :deep(.el-form-item__label) {
+    font-weight: 500;
+    color: #4b5563;
+    padding-bottom: 4px;
+    line-height: 1.4;
+}
+
+.scene-config :deep(.el-form-item.is-required .el-form-item__label::before) {
+    color: #f87171;
 }
 
 .scene-layout {
     margin-top: 16px;
 }
 
+/* ========================================
+   卡片标题 - 统一样式
+   ======================================== */
 .card-title {
     font-weight: 600;
+    font-size: 15px;
+    color: #374151;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding-bottom: 4px;
 }
 
+/* ========================================
+   场景变量区域 - 现代化设计
+   ======================================== */
 .scene-variables {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
+    padding: 0;
 }
 
 .scene-variable-item {
     display: grid;
-    grid-template-columns: 140px 120px 120px 1fr 1fr auto;
+    grid-template-columns: 150px 110px 100px 1.2fr 1.5fr 32px;
     gap: 8px;
     align-items: center;
+    padding: 4px 8px;
+    background: transparent;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.scene-variable-item:hover {
+    border-color: #ede9fe;
+    background: #faf5ff;
+}
+
+.scene-variable-item .var-name :deep(.el-input__wrapper) {
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 0 1px #e5e7eb inset;
+}
+
+.scene-variable-item .el-select {
+    width: 100%;
+}
+
+.add-variable,
+.add-variable-empty {
+    align-self: flex-start;
+    margin-top: 4px;
+}
+
+.variables-empty {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    text-align: left;
+}
+
+.variables-empty .empty-text {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.variables-empty:hover {
+    background: transparent;
+}
+
+.variables-empty .empty-add-btn {
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    padding: 8px 20px !important;
+    border-radius: 6px !important;
+}
+
+.variables-empty .empty-add-btn:hover {
+    background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
 }
 
 .variable-hint {
     font-size: 12px;
-    color: #909399;
-    margin: 0 0 8px 0;
+    color: #9ca3af;
+    margin: 0 0 10px 0;
+    padding: 6px 10px;
+    background: #f9fafb;
+    border-radius: 6px;
+    border-left: 3px solid #a78bfa;
 }
 
 .hint-danger {
-    color: #f56c6c;
+    color: #ef4444;
+    background: #fef2f2;
+    border-left-color: #f87171;
+}
+
+/* ========================================
+   组件库卡片 - 现代化设计
+   ======================================== */
+.palette-card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 12px rgba(139, 92, 246, 0.08);
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 200px);
+    max-height: 600px;
+}
+
+.palette-card :deep(.el-card__header) {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f3e8ff;
+    background: linear-gradient(to right, #faf5ff, #ffffff);
+    flex-shrink: 0;
+}
+
+.palette-card :deep(.el-card__body) {
+    padding: 12px;
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.palette-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+/* 拖拽区域必须可见且可交互 */
+.palette-card :deep(.el-tabs) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.palette-card :deep(.el-tabs__header) {
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+
+.palette-card :deep(.el-tabs__content) {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: visible;
+}
+
+.palette-card :deep(.el-tab-pane) {
+    position: relative;
+    height: 100%;
+    overflow: visible;
 }
 
 .palette-list {
-    min-height: 360px;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px;
+}
+
+.palette-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.palette-list::-webkit-scrollbar-thumb {
+    background: #c4b5fd;
+    border-radius: 4px;
+}
+
+.palette-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.palette-list::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .palette-item {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
-    padding: 8px 10px;
-    border: 1px dashed #dcdfe6;
-    border-radius: 4px;
-    margin-bottom: 8px;
+    padding: 12px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    margin-bottom: 10px;
     cursor: grab;
-    background: #fafafa;
+    background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+    transition: all 0.25s ease;
+}
+
+.palette-item:hover {
+    border-color: #a78bfa;
+    background: linear-gradient(135deg, #fefefe 0%, #f5f3ff 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+}
+
+.palette-item:active {
+    cursor: grabbing;
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.2);
 }
 
 .palette-left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .palette-actions {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     opacity: 0;
-    transition: opacity 0.15s ease;
+    transition: opacity 0.2s ease;
 }
 
 .palette-item:hover .palette-actions {
@@ -2981,52 +3410,419 @@ defineExpose({
 }
 
 .palette-empty {
-    color: #909399;
-    font-size: 12px;
-    padding: 8px 10px;
+    color: #9ca3af;
+    font-size: 13px;
+    padding: 24px 12px;
+    text-align: center;
+    background: #f9fafb;
+    border-radius: 8px;
 }
 
 .palette-name {
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 14px;
+    color: #374151;
     line-height: 20px;
 }
 
 .palette-type {
-    color: #909399;
+    color: #a78bfa;
     font-size: 12px;
+    font-weight: 500;
+    background: #f5f3ff;
+    padding: 2px 8px;
+    border-radius: 6px;
     line-height: 20px;
 }
 
+/* ========================================
+   场景步骤卡片 - 核心编排区
+   ======================================== */
+.scene-card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 12px rgba(139, 92, 246, 0.08);
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 200px);
+    max-height: 600px;
+}
+
+.scene-card :deep(.el-card__header) {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f3e8ff;
+    background: linear-gradient(to right, #faf5ff, #ffffff);
+    flex-shrink: 0;
+}
+
+.scene-card :deep(.el-card__body) {
+    padding: 12px;
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: visible;
+}
+
+.scene-hint {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    font-size: 14px;
+    text-align: center;
+    background: linear-gradient(135deg, #f9fafb 0%, #f5f3ff 100%);
+    border-radius: 10px;
+    border: 2px dashed #e5e7eb;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.scene-list-wrapper {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.scene-list-wrapper .scene-list {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px;
+}
+
+.scene-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.scene-list::-webkit-scrollbar-thumb {
+    background: #c4b5fd;
+    border-radius: 4px;
+}
+
+.scene-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* 确保拖拽目标区域可见 */
+.scene-list.drag-over {
+    background: rgba(167, 139, 250, 0.05);
+}
+
+.scene-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    background: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.scene-item:hover {
+    border-color: #c4b5fd;
+    background: #fefefe;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+}
+
+.scene-item.active {
+    border-color: #a78bfa;
+    background: linear-gradient(135deg, #f5f3ff 0%, #ffffff 100%);
+    box-shadow: 0 2px 12px rgba(139, 92, 246, 0.15);
+}
+
+.scene-item-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.scene-index {
+    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 8px;
+    min-width: 24px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+}
+
+.scene-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #374151;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.scene-type {
+    color: #6b7280;
+    font-size: 12px;
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+
+.scene-item-wrapper {
+    margin-bottom: 10px;
+}
+
+.scene-item-wrapper > .scene-item {
+    margin-bottom: 0;
+}
+
+.scene-item-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.scene-item:hover .scene-item-actions {
+    opacity: 1;
+}
+
+/* 自定义组件展开状态 */
+.scene-item.is-expanded {
+    border-color: #f59e0b;
+    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-bottom: 0;
+}
+
+.custom-sub-steps {
+    border: 1px solid #f59e0b;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    background: linear-gradient(135deg, #fffbeb 0%, #fefce8 100%);
+    padding: 8px 8px 6px 8px;
+    margin-bottom: 10px;
+}
+
+.sub-step-item {
+    margin-bottom: 6px !important;
+    padding: 10px 12px !important;
+    margin-left: 20px !important;
+    border-color: #e5e7eb !important;
+    background: #ffffff !important;
+    font-size: 13px;
+    border-radius: 8px !important;
+}
+
+.sub-step-item.active {
+    border-color: #f59e0b !important;
+    background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%) !important;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15) !important;
+}
+
+.sub-index {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3) !important;
+}
+
+.sub-step-toolbar {
+    text-align: center;
+    padding: 4px 0 2px 0;
+    margin-left: 20px;
+}
+
+/* ========================================
+   配置面板卡片
+   ======================================== */
+.config-card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 2px 12px rgba(139, 92, 246, 0.08);
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 200px);
+    max-height: 600px;
+}
+
+.config-card :deep(.el-card__header) {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f3e8ff;
+    background: linear-gradient(to right, #faf5ff, #ffffff);
+    flex-shrink: 0;
+}
+
+.config-card :deep(.el-card__body) {
+    padding: 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: visible;
+}
+
+.config-empty {
+    color: #9ca3af;
+    font-size: 14px;
+    padding: 48px 24px;
+    text-align: center;
+    background: linear-gradient(135deg, #f9fafb 0%, #f5f3ff 100%);
+    border-radius: 10px;
+    border: 2px dashed #e5e7eb;
+    margin: 8px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.config-form {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px;
+}
+
+.config-form::-webkit-scrollbar {
+    width: 4px;
+}
+
+.config-form::-webkit-scrollbar-thumb {
+    background: #c4b5fd;
+    border-radius: 4px;
+}
+
+.config-form::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* ========================================
+   元素选择器样式
+   ======================================== */
+.element-selector-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.element-selector-filter {
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #f9fafb 0%, #f5f3ff 100%);
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+}
+
+.preview-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.preview-pos,
+.preview-region {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* ========================================
+   字段分组样式
+   ======================================== */
+.field-group {
+    margin-bottom: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, #f9fafb 0%, #fefefe 100%);
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.field-group:hover {
+    border-color: #c4b5fd;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+}
+
+.group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.group-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.element-linked-alert {
+    margin-bottom: 12px;
+    border-radius: 8px;
+}
+
+.field-group :deep(.el-form-item) {
+    margin-bottom: 14px;
+}
+
+.field-group:last-child {
+    margin-bottom: 0;
+}
+
+/* ========================================
+   自定义组件编辑区
+   ======================================== */
 .custom-steps-section {
-    margin-top: 12px;
+    margin-top: 16px;
 }
 
 .custom-steps-label {
     font-size: 14px;
-    font-weight: 500;
-    color: #606266;
-    margin-bottom: 8px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e5e7eb;
 }
 
 .custom-edit-steps {
     display: flex;
-    gap: 12px;
+    gap: 16px;
 }
 
 .custom-step-list {
     flex: 1;
-    border: 1px solid #ebeef5;
-    border-radius: 6px;
-    padding: 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px;
     min-height: 220px;
     max-height: 500px;
     overflow-y: auto;
+    background: #fafafa;
 }
 
 .custom-step-toolbar {
     display: flex;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 10px;
+    margin-bottom: 12px;
     align-items: center;
 }
 
@@ -3060,155 +3856,60 @@ defineExpose({
 
 .custom-step-config {
     flex: 1;
-    border: 1px solid #ebeef5;
-    border-radius: 6px;
-    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 14px;
     min-height: 220px;
     max-height: 500px;
     overflow-y: auto;
+    background: #fafafa;
 }
 
-
-.scene-card {
-    min-height: 480px;
-}
-
-.scene-hint {
-    color: #909399;
-    font-size: 13px;
-    padding: 12px;
-}
-
-.scene-list {
-    min-height: 420px;
-}
-
-.scene-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 12px;
-    border: 1px solid #ebeef5;
-    border-radius: 6px;
-    cursor: pointer;
-    background: #fff;
-}
-
-.scene-item.active {
-    border-color: #409eff;
-    background: #ecf5ff;
-}
-
-.scene-item-main {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.scene-index {
-    background: #409eff;
-    color: #fff;
-    font-size: 12px;
-    padding: 2px 6px;
-    border-radius: 10px;
-}
-
-.scene-name {
-    font-weight: 500;
-}
-
-.scene-type {
-    color: #909399;
-    font-size: 12px;
-}
-
-.scene-item-wrapper {
-    margin-bottom: 8px;
-}
-
-.scene-item-wrapper > .scene-item {
-    margin-bottom: 0;
-}
-
-.scene-item.is-expanded {
-    border-color: #e6a23c;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-    margin-bottom: 0;
-}
-
-.custom-sub-steps {
-    border: 1px solid #e6a23c;
-    border-top: none;
-    border-radius: 0 0 6px 6px;
-    background: #fdf6ec;
-    padding: 6px 6px 4px 6px;
-}
-
-.sub-step-item {
-    margin-bottom: 4px !important;
-    padding: 7px 10px !important;
-    margin-left: 16px !important;
-    border-color: #dcdfe6 !important;
-    background: #fff !important;
-    font-size: 13px;
-}
-
-.sub-step-item.active {
-    border-color: #e6a23c !important;
-    background: #fef0e0 !important;
-}
-
-.sub-index {
-    background: #e6a23c !important;
-    font-size: 11px !important;
-    padding: 1px 5px !important;
-}
-
-.sub-step-toolbar {
-    text-align: center;
-    padding: 2px 0 4px 0;
-}
-
-.config-card {
-    min-height: 480px;
-}
-
-.config-empty {
-    color: #909399;
-    font-size: 13px;
-    padding: 16px;
-}
-
+/* ========================================
+   组件包列表
+   ======================================== */
 .package-title {
     font-size: 12px;
-    color: #909399;
-    margin-bottom: 6px;
+    color: #6b7280;
+    margin-bottom: 8px;
+    font-weight: 500;
 }
 
 .package-list {
     max-height: 240px;
     overflow-y: auto;
-    border: 1px solid #ebeef5;
-    border-radius: 4px;
-    padding: 6px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 10px;
+    background: #fafafa;
 }
 
 .package-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 4px 0;
-    border-bottom: 1px dashed #ebeef5;
+    padding: 10px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
 }
 
 .package-item:last-child {
     border-bottom: none;
+    margin-bottom: 0;
+}
+
+.package-item:hover {
+    border-color: #c4b5fd;
+    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.1);
 }
 
 .package-name {
-    font-size: 12px;
-    color: #303133;
+    font-size: 13px;
+    color: #374151;
+    font-weight: 500;
     max-width: 220px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3217,75 +3918,263 @@ defineExpose({
 
 .package-meta {
     display: flex;
-    gap: 8px;
-    color: #909399;
+    gap: 10px;
+    color: #6b7280;
     font-size: 12px;
 }
 
 .package-empty {
-    color: #909399;
-    font-size: 12px;
-    padding: 6px 0;
+    color: #9ca3af;
+    font-size: 13px;
+    padding: 24px 12px;
+    text-align: center;
+    background: #f9fafb;
+    border-radius: 8px;
 }
 
-/* 元素选择器样式 */
-.element-selector-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+/* ========================================
+   对话框优化
+   ======================================== */
+:deep(.el-dialog) {
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(139, 92, 246, 0.2);
 }
 
-.element-selector-filter {
-    padding: 10px;
-    background-color: #f5f7fa;
-    border-radius: 4px;
+:deep(.el-dialog__header) {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f3e8ff;
+    background: linear-gradient(to right, #faf5ff, #ffffff);
+    border-radius: 12px 12px 0 0;
 }
 
-.preview-image {
+:deep(.el-dialog__title) {
+    font-weight: 600;
+    color: #374151;
+}
+
+:deep(.el-dialog__body) {
+    padding: 20px;
+}
+
+:deep(.el-dialog__footer) {
+    padding: 12px 20px;
+    border-top: 1px solid #f3e8ff;
+    background: #fafafa;
+    border-radius: 0 0 12px 12px;
+}
+
+/* ========================================
+   全局滚动条美化
+   ======================================== */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c4b5fd;
+    border-radius: 6px;
+    transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a78bfa;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* ========================================
+   Tab 标签优化
+   ======================================== */
+:deep(.el-tabs__header) {
+    margin-bottom: 12px;
+}
+
+:deep(.el-tabs__nav-wrap::after) {
+    height: 1px;
+    background: #e5e7eb;
+}
+
+:deep(.el-tabs__item) {
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    transition: all 0.2s ease;
+}
+
+:deep(.el-tabs__item:hover) {
+    color: #a78bfa;
+}
+
+:deep(.el-tabs__item.is-active) {
+    color: #8b5cf6;
+    font-weight: 600;
+}
+
+:deep(.el-tabs__active-bar) {
+    background-color: #a78bfa;
+}
+
+/* ========================================
+   按钮悬停效果增强
+   ======================================== */
+:deep(.el-button--primary) {
+    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+    border-color: transparent;
+    transition: all 0.25s ease;
+}
+
+:deep(.el-button--primary:hover) {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+:deep(.el-button--success) {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    border-color: transparent;
+    transition: all 0.25s ease;
+}
+
+:deep(.el-button--success:hover) {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* ========================================
+   输入框聚焦效果
+   ======================================== */
+:deep(.el-input__wrapper:focus-within),
+:deep(.el-textarea__inner:focus) {
+    box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2) !important;
+    border-color: #a78bfa !important;
+}
+
+:deep(.el-select .el-input.is-focus .el-input__wrapper) {
+    box-shadow: 0 0 0 2px rgba(167, 139, 250, 0.2) !important;
+    border-color: #a78bfa !important;
+}
+
+.ui-test-scene-builder :deep(.el-table) {
+    border: none;
+    border-radius: 8px;
+    overflow: hidden;
+    min-height: 200px;
+    box-shadow: none;
+    transition: all 0.3s ease;
+    background-color: transparent !important;
+    --el-color-primary: #a78bfa;
+    --el-color-primary-light-3: #c4b5fd;
+    --el-color-primary-light-5: #ddd6fe;
+    --el-color-primary-light-7: #ede9fe;
+    --el-color-primary-light-9: #f5f3ff;
+    --el-border-color: #e9ecef;
+    --el-border-color-light: #e9ecef;
+    --el-border-color-lighter: #e9ecef;
+    --el-fill-color-light: #ffffff;
+    --el-fill-color-lighter: #ffffff;
+    --el-fill-color-blank: #ffffff;
+    --el-text-color-primary: #262626;
+    --el-text-color-regular: #595959;
+    --el-text-color-secondary: #8c8c8c;
+    --el-table-header-bg-color: #ffffff;
+    --el-table-row-hover-bg-color: #f8f7ff;
+    --el-table-stripe-bg-color: #fafaff;
+
+    &::before { display: none; }
+
+    :deep(.el-table__header-wrapper) {
+        background-color: #ffffff !important;
+        :deep(.el-table__header) {
+            background-color: #ffffff !important;
+            :deep(th) {
+                background-color: #ffffff !important;
+                color: #5a32a3;
+                font-weight: 600;
+                font-size: 14px;
+                border-bottom: 1px solid #e9ecef;
+                padding: 16px;
+                text-align: left;
+                line-height: 24px;
+                transition: all 0.3s ease;
+                :deep(.cell) {
+                    background-color: #ffffff !important;
+                    color: #5a32a3 !important;
+                    font-weight: 600 !important;
+                }
+            }
+        }
+    }
+
+    :deep(.el-table__body-wrapper) {
+        background-color: #ffffff !important;
+        :deep(.el-table__row) {
+            transition: all 0.3s ease;
+            background-color: #ffffff !important;
+            line-height: 24px;
+            &:hover { background-color: #f8f7ff !important; }
+            &.el-table__row--striped { background-color: #fafaff !important; }
+            :deep(td) {
+                padding: 14px 16px;
+                border-bottom: 1px solid #e9ecef;
+                color: #595959;
+                font-size: 14px;
+                font-weight: normal;
+                line-height: 24px;
+                transition: all 0.3s ease;
+                .el-tag { border-radius: 4px; font-size: 12px; font-weight: 500; padding: 2px 8px; transition: all 0.3s ease; }
+                :deep(.cell) { font-size: 14px; font-weight: normal; color: #595959; line-height: 24px; }
+            }
+        }
+    }
+}
+.pagination-container {
     display: flex;
     justify-content: center;
     align-items: center;
-}
+    padding: 16px 0;
+    margin-top: 8px;
+    background: transparent;
+    border: none;
+    transition: all 0.3s ease;
 
-.preview-pos,
-.preview-region {
-    font-size: 12px;
-}
+    --primary-color: #a78bfa;
+    --primary-dark: #8b5cf6;
+    --primary-light: #f3f0ff;
+    --text-primary: #262626;
+    --text-secondary: #595959;
+    --text-tertiary: #8c8c8c;
 
-/* 字段分组样式 */
-.field-group {
-    margin-bottom: 20px;
-    padding: 16px;
-    background: #f5f7fa;
-    border-radius: 4px;
-    border: 1px solid #e4e7ed;
-}
+    --el-color-primary: var(--primary-color);
+    --el-color-primary-light-3: #c4b5fd;
+    --el-color-primary-light-5: #ddd6fe;
+    --el-color-primary-light-7: #ede9fe;
+    --el-color-primary-light-9: #f5f3ff;
+    --el-border-color: rgba(167, 139, 250, 0.3);
+    --el-border-color-light: rgba(167, 139, 250, 0.2);
+    --el-border-color-lighter: rgba(167, 139, 250, 0.1);
+    --el-fill-color-light: #f5f3ff;
+    --el-fill-color-lighter: #f5f3ff;
+    --el-fill-color-blank: #f5f3ff;
+    --el-text-color-primary: var(--text-primary);
+    --el-text-color-regular: var(--text-secondary);
+    --el-text-color-secondary: var(--text-tertiary);
 
-.group-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #dcdfe6;
-}
+    :deep(.el-pagination) {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-weight: 500;
 
-.group-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #303133;
-}
-
-.element-linked-alert {
-    margin-bottom: 12px;
-}
-
-.field-group :deep(.el-form-item) {
-    margin-bottom: 12px;
-}
-
-.field-group:last-child {
-    margin-bottom: 0;
+        .el-pagination__total { color: #6b7280; font-size: 14px; font-weight: 500; margin-right: 12px; }
+        .el-pagination__sizes { margin-right: 12px; .el-select .el-input__wrapper { border-radius: 8px; border: 1px solid #e5e7eb; background: #ffffff; box-shadow: none; &:hover { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1); } &.is-focus { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15); } } .el-input__inner { color: #374151; font-weight: 500; } }
+        .btn-prev, .btn-next { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb; background: #ffffff; color: #6b7280; transition: all 0.3s ease; &:hover:not(:disabled) { background: #f5f3ff; border-color: #a78bfa; color: #8b5cf6; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(167, 139, 250, 0.2); } &:disabled { background: #f5f5f5; border-color: #e0e0e0; color: #c0c0c0; } .el-icon { font-size: 14px; font-weight: bold; } }
+        .el-pager { display: flex; gap: 8px; li { min-width: 32px; height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid #d1d5db; background: #ffffff; color: #6b7280; font-size: 14px; font-weight: 500; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; &:hover:not(.is-active) { background: #f5f3ff; border-color: #a78bfa; color: #8b5cf6; transform: translateY(-1px); } &.is-active { background: #f5f3ff; border-color: #a78bfa; color: #8b5cf6; box-shadow: 0 2px 8px rgba(167, 139, 250, 0.2); } &.is-active:hover { background: #ede9fe; border-color: #8b5cf6; } } }
+        .el-pagination__jump { color: #6b7280; font-weight: 500; margin-left: 12px; .el-input { width: 50px; margin: 0 4px; } }
+    }
 }
 </style>
 

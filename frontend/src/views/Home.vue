@@ -210,12 +210,6 @@ const handleLogout = async () => {
   await userStore.logout()
 }
 
-// 点击计数器（用于APP自动化后门功能）
-const appClickCount = ref(0)
-const lastAppClickTime = ref(0)
-const SECRET_CLICK_THRESHOLD = 10 // 连续点击10次后允许访问
-const CLICK_RESET_TIMEOUT = 3000 // 3秒内未点击则重置计数
-
 const handleNavigate = (type) => {
   const routes = {
     'ai': '/ai-generation/requirement-analysis',
@@ -226,30 +220,6 @@ const handleNavigate = (type) => {
     'assistant': '/ai-assistant/chat',
     'config': '/configuration/ai-model',
     'data': '/data-factory/by-scenario'
-  }
-
-  // 对 APP 自动化进行特殊处理
-  if (type === 'app') {
-    const currentTime = Date.now()
-
-    // 检查是否需要重置计数（超过3秒未点击）
-    if (currentTime - lastAppClickTime.value > CLICK_RESET_TIMEOUT) {
-      appClickCount.value = 0
-    }
-
-    // 更新点击时间和计数
-    lastAppClickTime.value = currentTime
-    appClickCount.value++
-
-    // 未达到阈值，显示提示
-    if (appClickCount.value < SECRET_CLICK_THRESHOLD) {
-      ElMessage.info(`功能完善中，请耐心等待（${appClickCount.value}/${SECRET_CLICK_THRESHOLD}）`)
-      return
-    }
-
-    // 达到阈值，允许访问并提示
-    ElMessage.success(`APP自动化功能已解锁！`)
-    appClickCount.value = 0 // 重置计数
   }
 
   if (routes[type]) {

@@ -1,102 +1,70 @@
 <template>
-  <div class="ui-flow-case-list">
-    <!-- 页面标题 -->
-    <div class="page-header">
-      <h3>APP测试用例</h3>
-      <div class="header-actions">
-        <el-button
-          type="primary"
-          size="small"
-          :icon="Refresh"
-          :loading="loading"
-          @click="loadTestCases"
-        >
-          刷新
-        </el-button>
-      </div>
+  <div class="page-container">
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <el-input
+        v-model="searchQuery"
+        placeholder="搜索测试用例名称"
+        clearable
+        @clear="loadTestCases"
+        @keyup.enter="loadTestCases"
+        class="search-input"
+        style="width: 300px"
+      >
+        <template #suffix>
+          <el-icon @click="loadTestCases" style="cursor: pointer;"><Search /></el-icon>
+        </template>
+      </el-input>
+      <el-select
+        v-model="form.projectId"
+        placeholder="所属项目"
+        clearable
+        filterable
+        style="width: 160px"
+        @change="loadTestCases"
+        class="filter-select"
+      >
+        <el-option
+          v-for="proj in projectList"
+          :key="proj.id"
+          :label="proj.name"
+          :value="proj.id"
+        />
+      </el-select>
+      <el-select
+        v-model="form.deviceId"
+        placeholder="选择设备"
+        filterable
+        style="width: 160px"
+        :loading="devicesLoading"
+        class="filter-select"
+      >
+        <el-option
+          v-for="device in availableDevices"
+          :key="device.id"
+          :label="`${device.name} (${device.device_id})`"
+          :value="device.id"
+          :disabled="device.status !== 'available' && device.status !== 'online'"
+        />
+      </el-select>
+      <el-select
+        v-model="form.packageId"
+        placeholder="选择应用"
+        clearable
+        filterable
+        style="width: 160px"
+        class="filter-select"
+      >
+        <el-option
+          v-for="pkg in appPackages"
+          :key="pkg.id"
+          :label="`${pkg.name} (${pkg.package_name})`"
+          :value="pkg.id"
+        />
+      </el-select>
+      <div class="filter-bar-spacer"></div>
+      <!-- 刷新按钮已隐藏 -->
     </div>
-
-    <!-- 设备和应用选择 -->
-    <el-card class="device-card">
-      <el-form :model="form" label-width="100px" size="small">
-        <el-row :gutter="16">
-          <el-col :span="5">
-            <el-form-item label="所属项目">
-              <el-select
-                v-model="form.projectId"
-                placeholder="全部项目"
-                clearable
-                filterable
-                style="width: 100%"
-                @change="loadTestCases"
-              >
-                <el-option
-                  v-for="proj in projectList"
-                  :key="proj.id"
-                  :label="proj.name"
-                  :value="proj.id"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="5">
-            <el-form-item label="选择设备" required>
-              <el-select
-                v-model="form.deviceId"
-                placeholder="请选择设备"
-                filterable
-                style="width: 100%"
-                :loading="devicesLoading"
-              >
-                <el-option
-                  v-for="device in availableDevices"
-                  :key="device.id"
-                  :label="`${device.name} (${device.device_id})`"
-                  :value="device.id"
-                  :disabled="device.status !== 'available' && device.status !== 'online'"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="5">
-            <el-form-item label="选择应用">
-              <el-select
-                v-model="form.packageId"
-                placeholder="请选择应用（可选）"
-                clearable
-                filterable
-                style="width: 100%"
-              >
-                <el-option
-                  v-for="pkg in appPackages"
-                  :key="pkg.id"
-                  :label="`${pkg.name} (${pkg.package_name})`"
-                  :value="pkg.id"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="9">
-            <el-form-item label="搜索用例">
-              <el-input
-                v-model="searchQuery"
-                placeholder="搜索测试用例名称"
-                clearable
-                @clear="loadTestCases"
-                @keyup.enter="loadTestCases"
-              >
-                <template #prefix>
-                  <el-icon><Search /></el-icon>
-                </template>
-                <template #append>
-                  <el-button :icon="Search" @click="loadTestCases">搜索</el-button>
-                </template>
-              </el-input>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-    </el-card>
 
     <!-- 批量操作栏 -->
     <div v-if="selectedCases.length > 0" class="batch-bar">
@@ -109,134 +77,66 @@
       </el-button>
     </div>
 
-    <!-- 测试用例列表 -->
-    <el-table
-      ref="tableRef"
-      v-loading="loading"
-      :data="testCases"
-      style="width: 100%; margin-top: 16px"
-      empty-text="暂无测试用例"
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column type="selection" width="50" />
-      <el-table-column prop="name" label="用例名称" min-width="200" />
-      <el-table-column label="场景描述" min-width="250">
-        <template #default="{ row }">
-          {{ row.description || '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column prop="updated_at" label="更新时间" width="180">
-        <template #default="{ row }">
-          {{ formatDateTime(row.updated_at) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="200">
-        <template #default="{ row }">
-          <el-button link type="success" size="small" @click="runCase(row)">
-            运行
-          </el-button>
-          <el-button link type="primary" size="small" @click="editCase(row)">
-            编辑
-          </el-button>
-          <el-button link type="danger" size="small" @click="deleteCase(row)">
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <!-- 分页 -->
-    <el-pagination
-      v-show="caseTotal > 0"
-      v-model:current-page="caseCurrentPage"
-      v-model:page-size="casePageSize"
-      :page-sizes="[10, 20, 30, 50]"
-      :total="caseTotal"
-      layout="total, sizes, prev, pager, next, jumper"
-      style="margin-top: 16px; text-align: right"
-      @size-change="handleCaseSizeChange"
-      @current-change="handleCasePageChange"
-    />
-
-    <!-- 测试执行记录 -->
-    <el-card class="execution-card" style="margin-top: 20px">
-      <template #header>
-        <div class="card-header">
-          <span>最近测试执行记录</span>
-          <div class="card-actions">
-            <el-button link type="primary" @click="refreshExecutions">
-              刷新
-            </el-button>
-            <el-button link type="primary" @click="viewAllExecutions">
-              查看全部
-            </el-button>
-          </div>
-        </div>
-      </template>
-
+    <!-- 表格容器 -->
+    <div class="card-container">
+      <!-- 测试用例列表 -->
       <el-table
-        v-loading="executionsLoading"
-        :data="executionData.results"
+        ref="tableRef"
+        v-loading="loading"
+        :data="testCases"
+        stripe
         style="width: 100%"
+        empty-text="暂无测试用例"
+        @selection-change="handleSelectionChange"
       >
-        <el-table-column prop="case_name" label="测试用例" width="200" />
-        <el-table-column prop="device_name" label="设备" width="150" />
-        <el-table-column prop="user_name" label="测试人员" width="120" />
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column type="selection" width="50" />
+        <el-table-column prop="name" label="用例名称" min-width="200" />
+        <el-table-column label="场景描述" min-width="250">
           <template #default="{ row }">
-            <el-tag :type="getDisplayStatus(row.status, row.result).type" size="small">
-              {{ getDisplayStatus(row.status, row.result).text }}
-            </el-tag>
+            {{ row.description || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="执行进度" width="280">
+        <el-table-column prop="updated_at" label="更新时间" width="180">
           <template #default="{ row }">
-            <div class="progress-wrapper">
-              <el-progress
-                :percentage="calculateProgress(row)"
-                :status="getProgressStatus(row)"
-                :stroke-width="8"
-                :show-text="false"
-                style="flex: 1"
-              />
-              <span class="progress-text">{{ calculateProgress(row) }}%</span>
+            {{ formatDateTime(row.updated_at) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="280" fixed="right" header-align="center" align="center">
+          <template #default="{ row }">
+            <div class="action-buttons">
+              <el-button size="small" class="action-btn run-btn" @click="runCase(row)">
+                <el-icon><VideoPlay /></el-icon>
+                <span>运行</span>
+              </el-button>
+              <el-button size="small" class="action-btn edit-btn" @click="editCase(row)">
+                <el-icon><Edit /></el-icon>
+                <span>编辑</span>
+              </el-button>
+              <el-button size="small" class="action-btn delete-btn" @click="deleteCase(row)">
+                <el-icon><Delete /></el-icon>
+                <span>删除</span>
+              </el-button>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="started_at" label="开始时间" width="180">
-          <template #default="{ row }">
-            {{ formatDateTime(row.started_at) }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="finished_at" label="结束时间" width="180">
-          <template #default="{ row }">
-            {{ row.finished_at ? formatDateTime(row.finished_at) : '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="150">
-          <template #default="{ row }">
-            <el-button
-              v-if="row.status === 'completed' || row.status === 'error'"
-              link
-              type="primary"
-              size="small"
-              @click="viewReport(row)"
-            >
-              查看报告
-            </el-button>
-            <el-button
-              v-if="row.status === 'running'"
-              link
-              type="danger"
-              size="small"
-              @click="stopTest(row)"
-            >
-              停止
-            </el-button>
-          </template>
-        </el-table-column>
       </el-table>
-    </el-card>
+
+      <!-- 分页 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-show="caseTotal > 0"
+          v-model:current-page="caseCurrentPage"
+          v-model:page-size="casePageSize"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="caseTotal"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleCaseSizeChange"
+          @current-change="handleCasePageChange"
+        />
+      </div>
+    </div>
+
+    <!-- 执行记录 - 已隐藏 -->
   </div>
 </template>
 
@@ -244,7 +144,9 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, Search } from '@element-plus/icons-vue'
+import { Refresh, Search, VideoPlay, Edit, Delete } from '@element-plus/icons-vue'
+
+defineOptions({ name: 'AppTestCaseList' })
 import {
   getTestCaseList,
   deleteTestCase as apiDeleteTestCase,
@@ -802,8 +704,101 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped lang="scss">
-.ui-flow-case-list {
-  padding: 0;
+:root {
+  --primary-color: #a78bfa;
+  --primary-dark: #8b5cf6;
+  --primary-light: #f3f0ff;
+  --primary-lighter: #f5f3ff;
+  --border-color: #e9ecef;
+  --text-primary: #262626;
+  --text-secondary: #595959;
+  --text-tertiary: #8c8c8c;
+  --bg-light: #ffffff;
+  --bg-gray: #fafafa;
+  --success-color: #52c41a;
+  --warning-color: #faad14;
+  --danger-color: #ff4d4f;
+  --info-color: #1890ff;
+}
+
+.page-container {
+  padding: 24px;
+  min-height: calc(100vh - 60px);
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  display: flex;
+  flex-direction: column;
+  line-height: 24px;
+  gap: 20px;
+}
+
+.filter-bar {
+  padding: 20px 24px;
+  background: #ffffff;
+  border: 1px solid rgba(167, 139, 250, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .filter-select {
+    :deep(.el-input__wrapper) {
+      border-radius: 8px;
+      box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.2) inset;
+      background: #ffffff;
+
+      &:hover, &.is-focus {
+        box-shadow: 0 0 0 1px #a78bfa inset;
+      }
+    }
+
+    :deep(.el-input__inner) {
+      color: #5b21b6;
+      font-weight: 500;
+    }
+  }
+
+  .search-input {
+    :deep(.el-input__wrapper) {
+      border-radius: 8px;
+      box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.2) inset;
+      background: #ffffff;
+
+      &:hover, &.is-focus {
+        box-shadow: 0 0 0 1px #a78bfa inset;
+      }
+    }
+
+    :deep(.el-input__inner) {
+      color: #8b5cf6;
+      font-weight: 500;
+    }
+  }
+
+  .filter-bar-spacer {
+    flex: 1;
+  }
+
+  .refresh-btn {
+    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 12px rgba(167, 139, 250, 0.3) !important;
+
+    .el-icon {
+      margin-right: 6px;
+    }
+
+    &:hover {
+      background: linear-gradient(135deg, #9370db 0%, #7c3aed 100%) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 6px 20px rgba(167, 139, 250, 0.4) !important;
+    }
+  }
 }
 
 .batch-bar {
@@ -811,49 +806,182 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  margin-top: 12px;
-  background: #ecf5ff;
-  border: 1px solid #b3d8ff;
-  border-radius: 4px;
+  background: rgba(167, 139, 250, 0.08);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 8px;
   font-size: 14px;
 
   strong {
-    color: #409eff;
+    color: #8b5cf6;
   }
 }
 
-.page-header {
+.card-container {
+  background: #ffffff;
+  border: 1px solid rgba(167, 139, 250, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.08);
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  background: white;
-  padding: 16px 20px;
-  border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: 16px;
 
-  h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #303133;
+  .el-table {
+    border: none;
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+    min-height: 200px;
+    box-shadow: none;
+    transition: all 0.3s ease;
+    background-color: transparent !important;
+
+    /* 覆盖 Element Plus 默认主题变量 */
+    --el-color-primary: #7b42f6;
+    --el-color-primary-light-3: #9370db;
+    --el-color-primary-light-5: #a888e0;
+    --el-color-primary-light-7: #c2a9f3;
+    --el-color-primary-light-9: #f8f7ff;
+    --el-border-color: #e9ecef;
+    --el-border-color-light: #e9ecef;
+    --el-border-color-lighter: #e9ecef;
+    --el-fill-color-light: #ffffff;
+    --el-fill-color-lighter: #ffffff;
+    --el-fill-color-blank: #ffffff;
+    --el-text-color-primary: #333;
+    --el-text-color-regular: #333;
+    --el-text-color-secondary: #666;
+    --el-text-color-placeholder: #999;
+    --el-table-header-bg-color: #ffffff;
+    --el-table-row-hover-bg-color: #f8f7ff;
+    --el-table-stripe-bg-color: #fafaff;
+
+    &::before {
+      display: none;
+    }
+
+    :deep(.el-table__header-wrapper) {
+      background-color: #ffffff !important;
+    }
+
+    :deep(.el-table__header) {
+      background-color: #ffffff !important;
+    }
+
+    :deep(.el-table__header th) {
+      background-color: #ffffff !important;
+      color: #5a32a3 !important;
+      font-weight: 600 !important;
+      font-size: 14px;
+      border-bottom: 1px solid #e9ecef;
+      padding: 0 !important;
+      text-align: center;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background-color: #ffffff !important;
+      }
+    }
+
+    :deep(.el-table__header th .cell) {
+      background-color: #ffffff !important;
+      color: #5a32a3 !important;
+      font-weight: 600 !important;
+      white-space: nowrap !important;
+      line-height: 24px !important;
+      padding: 16px !important;
+    }
+
+    :deep(.el-table__body-wrapper) {
+      background-color: #ffffff !important;
+    }
+
+    :deep(.el-table__row) {
+      transition: all 0.3s ease;
+      background-color: #ffffff !important;
+      line-height: 24px;
+
+      &:hover {
+        background-color: #f8f7ff !important;
+      }
+
+      &.el-table__row--striped {
+        background-color: #fafaff !important;
+      }
+    }
+
+    :deep(td) {
+      padding: 14px 16px;
+      border-bottom: 1px solid #e9ecef;
+      color: #333;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 24px;
+      transition: all 0.3s ease;
+      vertical-align: middle;
+    }
+
+    :deep(.el-table__empty-block) {
+      padding: 60px 0;
+      background: #ffffff !important;
+    }
   }
 
-  .header-actions {
+  .pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px 0;
+    margin-top: 8px;
+    background: transparent;
+    border: none;
+    transition: all 0.3s ease;
+
+    --el-color-primary: var(--primary-color);
+    --el-color-primary-light-3: #c4b5fd;
+    --el-color-primary-light-5: #ddd6fe;
+    --el-color-primary-light-7: #ede9fe;
+    --el-color-primary-light-9: #f5f3ff;
+    --el-border-color: rgba(167, 139, 250, 0.3);
+    --el-border-color-light: rgba(167, 139, 250, 0.2);
+    --el-border-color-lighter: rgba(167, 139, 250, 0.1);
+    --el-fill-color-light: #f5f3ff;
+    --el-fill-color-lighter: #f5f3ff;
+    --el-fill-color-blank: #f5f3ff;
+    --el-text-color-primary: var(--text-primary);
+    --el-text-color-regular: var(--text-secondary);
+    --el-text-color-secondary: var(--text-tertiary);
+
+    :deep(.el-pagination) {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 500;
+
+      .el-pagination__total { color: #6b7280; font-size: 14px; font-weight: 500; margin-right: 12px; }
+      .el-pagination__sizes { margin-right: 12px; .el-select .el-input__wrapper { border-radius: 8px; border: 1px solid #e5e7eb; background: #ffffff; box-shadow: none; &:hover { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1); } &.is-focus { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15); } } .el-input__inner { color: #374151; font-weight: 500; } }
+      .btn-prev, .btn-next { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb; background: #ffffff; color: #6b7280; transition: all 0.3s ease; &:hover:not(:disabled) { background: #f5f3ff; border-color: #a78bfa; color: #8b5cf6; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(167, 139, 250, 0.2); } &:disabled { background: #f5f5f5; border-color: #e0e0e0; color: #c0c0c0; } .el-icon { font-size: 14px; font-weight: bold; } }
+      .el-pager { display: flex; gap: 8px; li { min-width: 32px; height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid #d1d5db; background: #ffffff; color: #6b7280; font-size: 14px; font-weight: 500; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; &:hover:not(.is-active) { background: #f5f3ff; border-color: #a78bfa; color: #8b5cf6; transform: translateY(-1px); } &.is-active { background: #f5f3ff; border-color: #a78bfa; color: #8b5cf6; box-shadow: 0 2px 8px rgba(167, 139, 250, 0.2); } &.is-active:hover { background: #ede9fe; border-color: #8b5cf6; } } }
+      .el-pagination__jump { color: #6b7280; font-weight: 500; margin-left: 12px; .el-input { width: 50px; margin: 0 4px; .el-input__wrapper { border-radius: 8px; border: 1px solid #e5e7eb; background: #ffffff; box-shadow: none; &:hover { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1); } &.is-focus { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15); } } .el-input__inner { color: #374151; font-weight: 500; text-align: center; } } }
+    }
+  }
+}
+
+.execution-card {
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: linear-gradient(135deg, #f8f7ff 0%, #f0e6ff 100%);
+    border-bottom: 1px solid rgba(167, 139, 250, 0.15);
+    font-size: 16px;
+    font-weight: 600;
+    color: #8b5cf6;
+  }
+
+  .card-actions {
     display: flex;
     gap: 12px;
-  }
-}
-
-.device-card {
-  margin-bottom: 16px;
-
-  :deep(.el-card__body) {
-    padding: 20px;
-  }
-
-  :deep(.el-form-item) {
-    margin-bottom: 0;
   }
 }
 
@@ -874,54 +1002,169 @@ onBeforeUnmount(() => {
   }
 }
 
-.execution-card {
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .card-actions {
-    display: flex;
-    gap: 12px;
-  }
-
-  :deep(.el-card__header) {
-    padding: 16px 20px;
-    background-color: #fafafa;
-    border-bottom: 1px solid #e8e8e8;
-  }
-
-  :deep(.el-card__body) {
-    padding: 20px;
-  }
-}
-
-// 表格样式优化
-:deep(.el-table) {
-  .el-table__header {
-    th {
-      background-color: #fafafa;
-      color: #606266;
-      font-weight: 600;
-    }
-  }
-
-  .el-table__body {
-    tr:hover {
-      background-color: #f5f7fa;
-    }
-  }
-}
-
-// 响应式设计
 @media screen and (max-width: 1366px) {
-  .page-header h3 {
-    font-size: 16px;
+  .filter-bar :deep(.el-form-item__label) {
+    font-size: 13px;
+  }
+}
+
+// 操作按钮样式
+.page-container {
+  .action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: nowrap;
   }
 
-  .device-card :deep(.el-form-item__label) {
-    font-size: 13px;
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px !important;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    border: none !important;
+
+    .el-icon {
+      font-size: 14px;
+      color: #ffffff !important;
+    }
+
+    span {
+      font-size: 12px;
+      color: #ffffff !important;
+    }
+
+    &.edit-btn {
+      background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+
+      &:hover {
+        background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
+      }
+    }
+
+    &.run-btn {
+      background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+
+      &:hover {
+        background: linear-gradient(135deg, #73d13d 0%, #52c41a 100%) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(82, 196, 26, 0.4);
+      }
+    }
+
+    &.delete-btn {
+      background: linear-gradient(135deg, #ff4d4f 0%, #f5222d 100%) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+
+      &:hover {
+        background: linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(245, 34, 45, 0.4);
+      }
+    }
+  }
+}
+
+// 状态徽章样式
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+
+  &.success {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  &.failed {
+    background: #fff1f0;
+    color: #f5222d;
+  }
+
+  &.processing {
+    background: #fff7e6;
+    color: #fa8c16;
+  }
+
+  &.pending {
+    background: #f5f5f5;
+    color: #8c8c8c;
+  }
+}
+
+/* 操作按钮样式 */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px !important;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  border: none !important;
+
+  .el-icon {
+    font-size: 14px;
+    color: #ffffff !important;
+  }
+
+  span {
+    font-size: 12px;
+    color: #ffffff !important;
+  }
+
+  &.run-btn {
+    background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%) !important;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(82, 196, 26, 0.3);
+    }
+  }
+
+  &.edit-btn {
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(123, 66, 246, 0.3);
+    }
+  }
+
+  &.delete-btn {
+    background: linear-gradient(135deg, #ff4d4f 0%, #cf1322 100%) !important;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+    }
   }
 }
 </style>

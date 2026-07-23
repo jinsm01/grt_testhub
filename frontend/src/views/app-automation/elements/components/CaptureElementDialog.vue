@@ -400,11 +400,13 @@ const captureScreen = async () => {
       }
       ElMessage.success('截图成功')
     } else {
-      ElMessage.error(data.message || '截图失败')
+      ElMessage.error(data.message || data.msg || '截图失败')
     }
   } catch (error) {
     console.error('截图失败:', error)
-    ElMessage.error('截图失败')
+    // 显示更详细的错误信息
+    const errorMsg = error.response?.data?.message || error.response?.data?.msg || error.message || '截图失败'
+    ElMessage.error(errorMsg)
   } finally {
     capturing.value = false
   }

@@ -1,130 +1,116 @@
 <template>
-  <div class="scheduled-tasks">
-    <div class="header">
-      <h3>APP定时任务</h3>
-      <el-button type="primary" @click="handleCreate">
-        <el-icon><Plus /></el-icon>
-        新建任务
+  <div class="page-container">
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <el-select v-model="filters.project" placeholder="全部项目" clearable filterable style="width: 160px;" @change="loadTasks">
+        <el-option v-for="p in projectList" :key="p.id" :label="p.name" :value="p.id" />
+      </el-select>
+      <el-select v-model="filters.task_type" placeholder="任务类型" clearable style="width: 160px;" @change="loadTasks">
+        <el-option label="测试套件执行" value="TEST_SUITE" />
+        <el-option label="测试用例执行" value="TEST_CASE" />
+      </el-select>
+      <el-select v-model="filters.trigger_type" placeholder="触发器类型" clearable style="width: 160px;" @change="loadTasks">
+        <el-option label="Cron表达式" value="CRON" />
+        <el-option label="固定间隔" value="INTERVAL" />
+        <el-option label="单次执行" value="ONCE" />
+      </el-select>
+      <el-select v-model="filters.status" placeholder="执行状态" clearable style="width: 160px;" @change="loadTasks">
+        <el-option label="启用" value="ACTIVE" />
+        <el-option label="暂停" value="PAUSED" />
+        <el-option label="已完成" value="COMPLETED" />
+        <el-option label="失败" value="FAILED" />
+      </el-select>
+      <div class="filter-bar-spacer"></div>
+      <el-button type="primary" class="create-btn" @click="handleCreate">
+        <el-icon><Plus /></el-icon>新建任务
       </el-button>
     </div>
 
-    <!-- 筛选 -->
-    <div class="filters">
-      <el-row :gutter="20">
-        <el-col :span="5">
-          <el-select v-model="filters.project" placeholder="全部项目" clearable filterable>
-            <el-option v-for="p in projectList" :key="p.id" :label="p.name" :value="p.id" />
-          </el-select>
-        </el-col>
-        <el-col :span="5">
-          <el-select v-model="filters.task_type" placeholder="任务类型" clearable>
-            <el-option label="测试套件执行" value="TEST_SUITE" />
-            <el-option label="测试用例执行" value="TEST_CASE" />
-          </el-select>
-        </el-col>
-        <el-col :span="5">
-          <el-select v-model="filters.trigger_type" placeholder="触发器类型" clearable>
-            <el-option label="Cron表达式" value="CRON" />
-            <el-option label="固定间隔" value="INTERVAL" />
-            <el-option label="单次执行" value="ONCE" />
-          </el-select>
-        </el-col>
-        <el-col :span="4">
-          <el-select v-model="filters.status" placeholder="状态" clearable>
-            <el-option label="启用" value="ACTIVE" />
-            <el-option label="暂停" value="PAUSED" />
-            <el-option label="已完成" value="COMPLETED" />
-            <el-option label="失败" value="FAILED" />
-          </el-select>
-        </el-col>
-        <el-col :span="5">
-          <el-button @click="resetFilters">重置</el-button>
-          <el-button type="primary" @click="loadTasks">查询</el-button>
-        </el-col>
-      </el-row>
-    </div>
+    <!-- 表格容器 -->
+    <div class="card-container">
+      <el-table :data="tasks" v-loading="loading" stripe style="width: 100%">
+        <el-table-column prop="name" label="任务名称" min-width="180" header-align="center" align="center" show-overflow-tooltip />
+        <el-table-column label="任务类型" min-width="120" header-align="center" align="center">
+          <template #default="{ row }">
+            <span class="status-badge" :class="row.task_type === 'TEST_SUITE' ? 'success' : 'processing'">
+              {{ row.task_type_display }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="触发器" min-width="100" header-align="center" align="center">
+          <template #default="{ row }">
+            <span class="status-badge processing">{{ row.trigger_type_display }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="通知" min-width="100" header-align="center" align="center">
+          <template #default="{ row }">
+            <span v-if="row.notification_type" class="status-badge" :class="row.notification_type === 'webhook' ? 'processing' : row.notification_type === 'both' ? 'pending' : ''">
+              {{ row.notification_type_display }}
+            </span>
+            <span v-else class="status-badge pending">-</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" min-width="90" header-align="center" align="center">
+          <template #default="{ row }">
+            <span class="status-badge" :class="getStatusClass(row.status)">
+              {{ row.status_display }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="设备" min-width="130" header-align="center" align="center">
+          <template #default="{ row }">
+            {{ row.device_name || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="下次执行" min-width="170" header-align="center" align="center">
+          <template #default="{ row }">
+            <span class="time-text">{{ formatDateTime(row.next_run_time) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="上次执行" min-width="170" header-align="center" align="center">
+          <template #default="{ row }">
+            <span class="time-text">{{ formatDateTime(row.last_run_time) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="执行统计" min-width="220" header-align="center" align="center">
+          <template #default="{ row }">
+            <span class="count-badge">总 {{ row.total_runs }}</span>
+            <span class="count-badge success">成功 {{ row.successful_runs }}</span>
+            <span class="count-badge failed">失败 {{ row.failed_runs }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="240" fixed="right" header-align="center" align="center">
+          <template #default="{ row }">
+            <div class="action-buttons">
+              <el-button size="small" class="action-btn run-btn" @click="runNow(row)" :loading="row._running">
+                <el-icon><VideoPlay /></el-icon>
+                <span>执行</span>
+              </el-button>
+              <el-button size="small" class="action-btn edit-btn" @click="editTask(row)">
+                <el-icon><Edit /></el-icon>
+                <span>编辑</span>
+              </el-button>
+              <el-button size="small" class="action-btn delete-btn" @click="deleteTask(row)">
+                <el-icon><Delete /></el-icon>
+                <span>删除</span>
+              </el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <!-- 列表 -->
-    <el-table :data="tasks" v-loading="loading" border>
-      <el-table-column prop="name" label="任务名称" min-width="180" />
-      <el-table-column prop="task_type" label="任务类型" width="120">
-        <template #default="{ row }">
-          <el-tag :type="row.task_type === 'TEST_SUITE' ? 'success' : 'primary'" size="small">
-            {{ row.task_type_display }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="trigger_type" label="触发器" width="100">
-        <template #default="{ row }">
-          <el-tag size="small">{{ row.trigger_type_display }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="通知" width="100">
-        <template #default="{ row }">
-          <el-tag v-if="row.notification_type" :type="row.notification_type === 'webhook' ? 'primary' : row.notification_type === 'both' ? 'warning' : ''" size="small">
-            {{ row.notification_type_display }}
-          </el-tag>
-          <span v-else>-</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="status" label="状态" width="90">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 'ACTIVE' ? 'success' : row.status === 'PAUSED' ? 'warning' : 'info'" size="small">
-            {{ row.status_display }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="设备" width="130">
-        <template #default="{ row }">
-          {{ row.device_name || '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column label="下次执行" width="170">
-        <template #default="{ row }">
-          {{ formatDateTime(row.next_run_time) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="上次执行" width="170">
-        <template #default="{ row }">
-          {{ formatDateTime(row.last_run_time) }}
-        </template>
-      </el-table-column>
-      <el-table-column label="执行统计" width="140">
-        <template #default="{ row }">
-          <span>总 {{ row.total_runs }}  </span>
-          <span style="color:#67c23a">成功 {{ row.successful_runs }}  </span>
-          <span style="color:#f56c6c">失败 {{ row.failed_runs }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
-        <template #default="{ row }">
-          <el-button size="small" @click="runNow(row)" :loading="row._running">执行</el-button>
-          <el-dropdown @command="cmd => handleAction(cmd, row)">
-            <el-button size="small">更多<el-icon><ArrowDown /></el-icon></el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="edit">编辑</el-dropdown-item>
-                <el-dropdown-item command="pause" v-if="row.status === 'ACTIVE'">暂停</el-dropdown-item>
-                <el-dropdown-item command="resume" v-if="row.status === 'PAUSED'">恢复</el-dropdown-item>
-                <el-dropdown-item command="delete" divided>删除</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <!-- 分页 -->
-    <div class="pagination">
-      <el-pagination
-        v-model:current-page="pagination.current"
-        v-model:page-size="pagination.size"
-        :total="pagination.total"
-        :page-sizes="[10, 20, 50]"
-        layout="total, sizes, prev, pager, next"
-        @size-change="loadTasks"
-        @current-change="loadTasks"
-      />
+      <!-- 分页 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="pagination.current"
+          v-model:page-size="pagination.size"
+          :total="pagination.total"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="loadTasks"
+          @current-change="loadTasks"
+        />
+      </div>
     </div>
 
     <!-- 创建/编辑对话框 -->
@@ -249,7 +235,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, ArrowDown } from '@element-plus/icons-vue'
+import { Plus, VideoPlay, Edit, Delete } from '@element-plus/icons-vue'
 import {
   getAppScheduledTasks,
   createAppScheduledTask,
@@ -264,6 +250,8 @@ import {
   getPackageList,
   getAppProjects,
 } from '@/api/app-automation.js'
+
+defineOptions({ name: 'AppScheduledTasks' })
 
 const projectList = ref([])
 const tasks = ref([])
@@ -421,6 +409,16 @@ const deleteTask = async (task) => {
   } catch (e) { if (e !== 'cancel') ElMessage.error('删除失败') }
 }
 
+const getStatusClass = (status) => {
+  const classMap = {
+    'ACTIVE': 'success',
+    'PAUSED': 'pending',
+    'COMPLETED': 'success',
+    'FAILED': 'failed',
+  }
+  return classMap[status] || 'pending'
+}
+
 const formatDateTime = (s) => {
   if (!s) return '-'
   return new Date(s).toLocaleString('zh-CN', {
@@ -430,11 +428,378 @@ const formatDateTime = (s) => {
 }
 </script>
 
-<style scoped>
-.scheduled-tasks { padding: 20px; display: flex; flex-direction: column; height: 100%; }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.filters { margin-bottom: 20px; background: #f8f9fa; padding: 20px; border-radius: 8px; }
-.pagination { margin-top: 20px; display: flex; justify-content: flex-end; }
+<style scoped lang="scss">
+.page-container {
+  padding: 24px;
+  min-height: calc(100vh - 60px);
+  background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+  display: flex;
+  flex-direction: column;
+  line-height: 24px;
+  gap: 20px;
+}
+
+.filter-bar {
+  padding: 20px 24px;
+  background: #ffffff;
+  border: 1px solid rgba(167, 139, 250, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .filter-bar-spacer {
+    flex: 1;
+  }
+
+  .create-btn {
+    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 12px rgba(167, 139, 250, 0.3) !important;
+
+    .el-icon {
+      margin-right: 6px;
+    }
+
+    &:hover {
+      background: linear-gradient(135deg, #9370db 0%, #7c3aed 100%) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 6px 20px rgba(167, 139, 250, 0.4) !important;
+    }
+  }
+}
+
+.card-container {
+  background: #ffffff;
+  border: 1px solid rgba(167, 139, 250, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-top: 16px;
+
+  .el-table {
+    border: none;
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+    min-height: 200px;
+    box-shadow: none;
+    transition: all 0.3s ease;
+    background-color: transparent !important;
+
+    /* 覆盖 Element Plus 默认主题变量 */
+    --el-color-primary: #7b42f6;
+    --el-color-primary-light-3: #9370db;
+    --el-color-primary-light-5: #a888e0;
+    --el-color-primary-light-7: #c2a9f3;
+    --el-color-primary-light-9: #f8f7ff;
+    --el-border-color: #e9ecef;
+    --el-border-color-light: #e9ecef;
+    --el-border-color-lighter: #e9ecef;
+    --el-fill-color-light: #ffffff;
+    --el-fill-color-lighter: #ffffff;
+    --el-fill-color-blank: #ffffff;
+    --el-text-color-primary: #333;
+    --el-text-color-regular: #333;
+    --el-text-color-secondary: #666;
+    --el-text-color-placeholder: #999;
+    --el-table-header-bg-color: #ffffff;
+    --el-table-row-hover-bg-color: #f8f7ff;
+    --el-table-stripe-bg-color: #fafaff;
+
+    &::before {
+      display: none;
+    }
+
+    :deep(.el-table__header-wrapper) {
+      background-color: #ffffff !important;
+    }
+
+    :deep(.el-table__header) {
+      background-color: #ffffff !important;
+    }
+
+    :deep(.el-table__header th) {
+      background-color: #ffffff !important;
+      color: #5a32a3 !important;
+      font-weight: 600 !important;
+      font-size: 14px;
+      border-bottom: 1px solid #e9ecef;
+      padding: 0 !important;
+      text-align: center;
+      transition: all 0.3s ease;
+
+      &:hover {
+        background-color: #ffffff !important;
+      }
+    }
+
+    :deep(.el-table__header th .cell) {
+      background-color: #ffffff !important;
+      color: #5a32a3 !important;
+      font-weight: 600 !important;
+      white-space: nowrap !important;
+      line-height: 24px !important;
+      padding: 16px !important;
+    }
+
+    :deep(.el-table__body-wrapper) {
+      background-color: #ffffff !important;
+    }
+
+    :deep(.el-table__row) {
+      transition: all 0.3s ease;
+      background-color: #ffffff !important;
+      line-height: 24px;
+
+      &:hover {
+        background-color: #f8f7ff !important;
+      }
+
+      &.el-table__row--striped {
+        background-color: #fafaff !important;
+      }
+    }
+
+    :deep(td) {
+      padding: 14px 16px;
+      border-bottom: 1px solid #e9ecef;
+      color: #333;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 24px;
+      transition: all 0.3s ease;
+      vertical-align: middle;
+    }
+
+    :deep(td .cell) {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      min-height: 24px;
+      line-height: 1.5;
+      width: 100%;
+
+      .time-text {
+        color: #666 !important;
+        font-size: 14px !important;
+        white-space: nowrap;
+      }
+    }
+
+    :deep(.el-table__empty-block) {
+      padding: 60px 0;
+      background: #ffffff !important;
+    }
+  }
+}
+
+// 时间文本样式
+:deep(td) .time-text {
+  color: #666 !important;
+  font-size: 14px !important;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+:deep(td .cell) > .time-text {
+  color: #666 !important;
+  font-size: 14px !important;
+  white-space: nowrap;
+}
+
+:deep(.time-text) {
+  color: #666 !important;
+  font-size: 14px !important;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.time-text {
+  color: #666 !important;
+  font-size: 14px !important;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 0;
+  margin-top: 8px;
+  background: transparent;
+  border: none;
+  transition: all 0.3s ease;
+
+  --primary-color: #a78bfa;
+  --primary-dark: #8b5cf6;
+  --primary-light: #f3f0ff;
+  --text-primary: #262626;
+  --text-secondary: #595959;
+  --text-tertiary: #8c8c8c;
+
+  --el-color-primary: var(--primary-color);
+  --el-color-primary-light-3: #c4b5fd;
+  --el-color-primary-light-5: #ddd6fe;
+  --el-color-primary-light-7: #ede9fe;
+  --el-color-primary-light-9: #f5f3ff;
+  --el-border-color: rgba(167, 139, 250, 0.3);
+  --el-border-color-light: rgba(167, 139, 250, 0.2);
+  --el-border-color-lighter: rgba(167, 139, 250, 0.1);
+  --el-fill-color-light: #f5f3ff;
+  --el-fill-color-lighter: #f5f3ff;
+  --el-fill-color-blank: #f5f3ff;
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+
+  :deep(.el-pagination) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+
+    .el-pagination__total { color: #6b7280; font-size: 14px; font-weight: 500; margin-right: 12px; }
+    .el-pagination__sizes { margin-right: 12px; .el-select .el-input__wrapper { border-radius: 8px; border: 1px solid #e5e7eb; background: #ffffff; box-shadow: none; &:hover { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1); } &.is-focus { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15); } } .el-input__inner { color: #374151; font-weight: 500; } }
+    .btn-prev, .btn-next { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e5e7eb; background: #ffffff; color: #6b7280; transition: all 0.3s ease; &:hover:not(:disabled) { background: #f5f3ff; border-color: #a78bfa; color: #8b5cf6; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(167, 139, 250, 0.2); } &:disabled { background: #f5f5f5; border-color: #e0e0e0; color: #c0c0c0; } .el-icon { font-size: 14px; font-weight: bold; } }
+    .el-pager { display: flex; gap: 8px; li { min-width: 32px; height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid #d1d5db; background: #ffffff; color: #6b7280; font-size: 14px; font-weight: 500; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; &:hover:not(.is-active) { background: #f5f3ff; border-color: #a78bfa; color: #8b5cf6; transform: translateY(-1px); } &.is-active { background: #f5f3ff; border-color: #a78bfa; color: #8b5cf6; box-shadow: 0 2px 8px rgba(167, 139, 250, 0.2); } &.is-active:hover { background: #ede9fe; border-color: #8b5cf6; } } }
+    .el-pagination__jump { color: #6b7280; font-weight: 500; margin-left: 12px; .el-input { width: 50px; margin: 0 4px; .el-input__wrapper { border-radius: 8px; border: 1px solid #e5e7eb; background: #ffffff; box-shadow: none; &:hover { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1); } &.is-focus { border-color: #a78bfa; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15); } } .el-input__inner { color: #374151; font-weight: 500; text-align: center; } } }
+  }
+}
 .cron-help { margin-top: 8px; font-size: 12px; }
-.unit { margin-left: 8px; color: #606266; }
+.unit { margin-left: 8px; color: #666; }
+
+// 状态徽章样式
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+
+  &.success {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  &.failed {
+    background: #fff1f0;
+    color: #f5222d;
+  }
+
+  &.processing {
+    background: #fff7e6;
+    color: #fa8c16;
+  }
+
+  &.pending {
+    background: #f5f5f5;
+    color: #8c8c8c;
+  }
+}
+
+// 数量徽章样式
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  background: #e6f7ff;
+  color: #1890ff;
+  white-space: nowrap;
+  margin-right: 4px;
+
+  &.success {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  &.failed {
+    background: #fff1f0;
+    color: #f5222d;
+  }
+}
+
+// 操作按钮样式
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px !important;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  border: none !important;
+
+  .el-icon {
+    font-size: 14px;
+    color: #ffffff !important;
+  }
+
+  span {
+    font-size: 12px;
+    color: #ffffff !important;
+  }
+
+  &.edit-btn {
+    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
+    }
+  }
+
+  &.run-btn {
+    background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #73d13d 0%, #52c41a 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(82, 196, 26, 0.4);
+    }
+  }
+
+  &.delete-btn {
+    background: linear-gradient(135deg, #ff4d4f 0%, #f5222d 100%) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(245, 34, 45, 0.4);
+    }
+  }
+}
 </style>

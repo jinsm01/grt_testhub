@@ -80,32 +80,27 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="评审状态" width="110" header-align="center" align="center">
+        <el-table-column label="评审状态" width="150" header-align="center" align="center">
           <template #default="scope">
             <span class="status-badge" :class="getReviewStatusClass(scope.row.review_status)">
               {{ getReviewStatusText(scope.row.review_status) }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="关联主线用例" min-width="200" header-align="center" align="center" show-overflow-tooltip>
+        <el-table-column label="关联主线用例" min-width="160" header-align="center" align="center">
           <template #default="scope">
-            <div class="mainline-cell">
-              <template v-if="scope.row.mainline_test_case">
+            <template v-if="scope.row.mainline_test_case">
+              <el-tooltip :content="scope.row.mainline_test_case.title" placement="top">
                 <span
-                  class="mainline-link"
+                  class="status-badge mainline-badge linked-badge"
                   @click="goToTestCase(scope.row.mainline_test_case.id)"
                 >
-                  {{ scope.row.mainline_test_case.title }}
+                  <span class="badge-text">{{ scope.row.mainline_test_case.title }}</span>
+                  <span v-if="scope.row.mainline_case_updated" class="badge-dot"></span>
                 </span>
-                <el-tooltip v-if="scope.row.mainline_case_updated" content="主线用例已更新，请点击确认是否一致" placement="top">
-                  <span class="update-indicator" @click="openConfirmMainlineDialog(scope.row)">
-                    <el-icon><Warning /></el-icon>
-                    更新
-                  </span>
-                </el-tooltip>
-              </template>
-              <span v-else class="text-muted">未关联</span>
-            </div>
+              </el-tooltip>
+            </template>
+            <span v-else class="status-badge mainline-badge unlinked-badge">未关联</span>
           </template>
         </el-table-column>
         <el-table-column :label="$t('apiTesting.automation.creator')" width="100" header-align="center" align="center">
@@ -113,12 +108,12 @@
             {{ scope.row.created_by?.username }}
           </template>
         </el-table-column>
-        <el-table-column prop="created_at" :label="$t('apiTesting.automation.createTime')" width="180" header-align="center" align="center">
+        <el-table-column prop="created_at" :label="$t('apiTesting.automation.createTime')" width="210" header-align="center" align="center">
           <template #default="scope">
             {{ formatDate(scope.row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column :label="$t('apiTesting.common.operation')" width="240" fixed="right" header-align="center" align="center">
+        <el-table-column :label="$t('apiTesting.common.operation')" width="320" fixed="right" header-align="center" align="center">
           <template #default="scope">
             <div class="action-buttons">
               <el-button size="small" type="primary" class="action-btn view-btn" @click="goToSuiteDetail(scope.row.id)">
@@ -146,24 +141,19 @@
                 <el-icon><Link /></el-icon>
                 <span>取消</span>
               </el-button>
-              <el-dropdown trigger="click" placement="bottom-end" @command="(command) => handleMoreAction(command, scope.row)">
-                <el-button size="small" type="info" class="action-btn more-btn">
-                  <el-icon><MoreFilled /></el-icon>
-                  <span>更多</span>
-                </el-button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item command="edit">
-                      <el-icon><Edit /></el-icon>
-                      <span>{{ $t('apiTesting.common.edit') }}</span>
-                    </el-dropdown-item>
-                    <el-dropdown-item command="delete" divided>
-                      <el-icon><Delete /></el-icon>
-                      <span>{{ $t('apiTesting.common.delete') }}</span>
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+              <el-button size="small" type="warning" class="action-btn edit-btn" @click="editSuite(scope.row)">
+                <el-icon><Edit /></el-icon>
+                <span>{{ $t('apiTesting.common.edit') }}</span>
+              </el-button>
+              <el-button
+                v-if="scope.row.mainline_test_case && scope.row.mainline_case_updated"
+                size="small"
+                class="action-btn update-btn"
+                @click="openConfirmMainlineDialog(scope.row)"
+              >
+                <el-icon><Warning /></el-icon>
+                <span>确认</span>
+              </el-button>
             </div>
           </template>
         </el-table-column>
@@ -1313,6 +1303,18 @@ onMounted(() => {
     color: #8c8c8c;
   }
 
+  // 已通过 - 绿色
+  &.approved {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  // 已拒绝 - 红色
+  &.rejected {
+    background: #fff2f0;
+    color: #f5222d;
+  }
+
   // 环境 - 紫色
   &.environment {
     background: #f9f0ff;
@@ -1348,6 +1350,59 @@ onMounted(() => {
     background: #fff1f0;
     color: #f5222d;
     font-weight: 600;
+  }
+}
+
+// 主线用例徽章样式
+.mainline-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+
+  .badge-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 120px;
+  }
+
+  .badge-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f5222d;
+    border: 2px solid #fff;
+  }
+}
+
+.linked-badge {
+  background: #e6f7ff;
+  color: #1890ff;
+
+  &:hover {
+    background: #bae7ff;
+    color: #096dd9;
+  }
+}
+
+.unlinked-badge {
+  background: #f5f5f5;
+  color: #8c8c8c;
+  cursor: default;
+
+  &:hover {
+    background: #f5f5f5;
+    color: #8c8c8c;
   }
 }
 
@@ -1699,15 +1754,28 @@ onMounted(() => {
   }
 
   &.edit-btn {
-    background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+    background: #fa8c16 !important;
     border: none !important;
     color: #ffffff !important;
     font-weight: 600 !important;
 
     &:hover {
-      background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+      background: #ffb366 !important;
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
+      box-shadow: 0 4px 12px rgba(250, 140, 22, 0.4);
+    }
+  }
+
+  &.update-btn {
+    background: linear-gradient(135deg, #ff9f43 0%, #ff6b35 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #ffb366 0%, #ff7f50 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
     }
   }
 
@@ -1760,23 +1828,6 @@ onMounted(() => {
       background: linear-gradient(135deg, #ff9c6b 0%, #ff7875 100%) !important;
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4);
-    }
-  }
-
-  &.more-btn {
-    background: linear-gradient(135deg, #909399 0%, #6b6d71 100%) !important;
-    border: none !important;
-    color: #ffffff !important;
-    font-weight: 600 !important;
-
-    &:hover {
-      background: linear-gradient(135deg, #a6a9ad 0%, #8c8e92 100%) !important;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(144, 147, 153, 0.4);
-    }
-
-    &:focus-visible {
-      outline: none;
     }
   }
 }
