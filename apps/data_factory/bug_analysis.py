@@ -250,10 +250,16 @@ def _preprocess_bugs(bugs):
     """
     预处理每条bug: 提取标签、分类模块、缺陷类型、推断严重度
     直接在原列表上修改，避免创建新列表节省内存
+
+    模块来源优先级:
+    1. 已存在的 module 字段（如云效同步从 labels 提取的）—— 不覆盖
+    2. 标题【】标签 + 兜底标题前10字
     """
     for b in bugs:
         b['tags'] = extract_tags(b.get('title', ''))
-        b['module'] = classify_module(b['tags'], b.get('title', ''))
+        # 仅在 module 为空时按标题分类，避免覆盖云效同步过来的 module（来自 labels）
+        if not b.get('module'):
+            b['module'] = classify_module(b['tags'], b.get('title', ''))
         b['defect_type'] = classify_defect(b.get('title', ''), b.get('desc', ''))
         b['inferred_sev'] = infer_severity(
             b.get('title', ''), b.get('desc', ''), b.get('severity', '')

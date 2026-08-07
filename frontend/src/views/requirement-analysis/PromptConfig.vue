@@ -24,7 +24,7 @@
             <div class="config-name-cell">{{ row.name || $t('promptConfig.unnamed') }}</div>
           </template>
         </el-table-column>
-        <el-table-column :label="$t('promptConfig.promptType')" width="140" header-align="center" align="center">
+        <el-table-column :label="$t('promptConfig.promptType')" width="200" header-align="center" align="center">
           <template #default="{ row }">
             <span class="type-badge" :class="row.prompt_type">
               {{ getPromptTypeLabel(row.prompt_type) }}
@@ -93,10 +93,12 @@
             <span>{{ $t('promptConfig.promptType') }}</span><span class="required-star">*</span>
           </template>
           <el-select v-model="configForm.prompt_type" :placeholder="$t('promptConfig.selectPromptType')" style="width: 100%">
-            <el-option value="writer" :label="$t('promptConfig.writerPrompt')" />
-            <el-option value="reviewer" :label="$t('promptConfig.reviewerPrompt')" />
-            <el-option value="knowledge_base" label="知识库问答" />
-            <el-option value="assertion_generator" label="断言生成" />
+            <el-option
+              v-for="choice in promptTypeChoices"
+              :key="choice.value"
+              :value="choice.value"
+              :label="choice.label"
+            />
           </el-select>
           <div v-if="formErrors.prompt_type" class="error-message">{{ formErrors.prompt_type }}</div>
         </el-form-item>
@@ -157,27 +159,17 @@
     </el-dialog>
 
     <!-- 默认提示词预览弹窗 -->
-    <el-dialog v-model="showDefaultsModal" :title="$t('promptConfig.defaultPromptsPreview')" width="700px" class="defaults-dialog">
+    <el-dialog v-model="showDefaultsModal" :title="$t('promptConfig.defaultPromptsPreview')" width="900px" class="defaults-dialog">
       <div class="defaults-content">
         <el-tabs v-model="activeTab">
-          <el-tab-pane :label="$t('promptConfig.writerTab')" name="writer">
+          <el-tab-pane
+            v-for="choice in promptTypeChoices"
+            :key="choice.value"
+            :label="choice.label"
+            :name="choice.value"
+          >
             <div class="content-display">
-              <div class="content-text">{{ defaultPrompts.writer || $t('promptConfig.noContent') }}</div>
-            </div>
-          </el-tab-pane>
-          <el-tab-pane :label="$t('promptConfig.reviewerTab')" name="reviewer">
-            <div class="content-display">
-              <div class="content-text">{{ defaultPrompts.reviewer || $t('promptConfig.noContent') }}</div>
-            </div>
-          </el-tab-pane>
-          <el-tab-pane label="知识库问答" name="knowledge_base">
-            <div class="content-display">
-              <div class="content-text">{{ defaultPrompts.knowledge_base || $t('promptConfig.noContent') }}</div>
-            </div>
-          </el-tab-pane>
-          <el-tab-pane label="断言生成" name="assertion_generator">
-            <div class="content-display">
-              <div class="content-text">{{ defaultPrompts.assertion_generator || $t('promptConfig.noContent') }}</div>
+              <div class="content-text">{{ defaultPrompts[choice.value] || $t('promptConfig.noContent') }}</div>
             </div>
           </el-tab-pane>
         </el-tabs>
@@ -224,13 +216,9 @@ export default {
       showDefaultsModal: false,
       isLoadingDefaults: false,
       previewConfig: {},
-      defaultPrompts: {
-        writer: '',
-        reviewer: '',
-        knowledge_base: '',
-        assertion_generator: ''
-      },
-      activeTab: 'writer',
+      defaultPrompts: {},
+      activeTab: '',
+      promptTypeChoices: [],
       configForm: {
         name: '',
         prompt_type: '',
@@ -247,17 +235,25 @@ export default {
 
   mounted() {
     this.loadConfigs()
+    this.loadPromptTypes()
   },
 
   methods: {
     getPromptTypeLabel(type) {
-      const typeMap = {
-        'writer': this.$t('promptConfig.writerPrompt'),
-        'reviewer': this.$t('promptConfig.reviewerPrompt'),
-        'knowledge_base': '知识库问答',
-        'assertion_generator': '断言生成'
+      const choice = this.promptTypeChoices.find(c => c.value === type)
+      return choice ? choice.label : type
+    },
+
+    async loadPromptTypes() {
+      try {
+        const response = await api.get('/requirement-analysis/prompts/prompt_types/')
+        if (response.data && response.data.choices) {
+          this.promptTypeChoices = response.data.choices
+        }
+      } catch (error) {
+        console.error('加载提示词类型失败:', error)
+        this.promptTypeChoices = []
       }
-      return typeMap[type] || type
     },
 
     openAddModal() {
@@ -308,6 +304,9 @@ export default {
         const response = await api.get('/requirement-analysis/prompts/load_defaults/')
         console.log('Default prompts response:', response.data)
         this.defaultPrompts = response.data.defaults
+        if (this.promptTypeChoices.length > 0) {
+          this.activeTab = this.promptTypeChoices[0].value
+        }
         this.showDefaultsModal = true
         console.log('showDefaultsModal set to:', this.showDefaultsModal)
       } catch (error) {
@@ -320,29 +319,12 @@ export default {
       this.isLoadingDefaults = true
 
       try {
-        // 根据当前选中的Tab，只加载对应的提示词配置
         const promptType = this.activeTab
         const promptContent = this.defaultPrompts[promptType]
 
         if (promptContent) {
-          // 根据类型确定配置名称
-          let configName = ''
-          switch (promptType) {
-            case 'writer':
-              configName = this.t('promptConfig.defaultWriterName')
-              break
-            case 'reviewer':
-              configName = this.t('promptConfig.defaultReviewerName')
-              break
-            case 'knowledge_base':
-              configName = '默认知识库问答提示词'
-              break
-            case 'assertion_generator':
-              configName = '默认断言生成提示词'
-              break
-            default:
-              configName = '默认提示词'
-          }
+          const typeLabel = this.getPromptTypeLabel(promptType)
+          const configName = `默认${typeLabel}`
 
           await api.post('/requirement-analysis/prompts/', {
             name: configName,
@@ -487,8 +469,8 @@ export default {
 
     closeDefaultsModal() {
       this.showDefaultsModal = false
-      this.defaultPrompts = { writer: '', reviewer: '', knowledge_base: '', assertion_generator: '' }
-      this.activeTab = 'writer'
+      this.defaultPrompts = {}
+      this.activeTab = this.promptTypeChoices.length > 0 ? this.promptTypeChoices[0].value : ''
     },
 
     truncateContent(content, maxLength) {
@@ -650,6 +632,51 @@ export default {
 .type-badge.assertion_generator {
   background: #fff7e6;
   color: #fa8c16;
+}
+
+.type-badge.bug_classify {
+  background: #fff1f0;
+  color: #cf1322;
+}
+
+.type-badge.bug_severity {
+  background: #fff7e6;
+  color: #d46b08;
+}
+
+.type-badge.bug_module_fallback {
+  background: #f0f5ff;
+  color: #2f54eb;
+}
+
+.type-badge.bug_root_cause {
+  background: #f9f0ff;
+  color: #531dab;
+}
+
+.type-badge.bug_test_focus {
+  background: #e6fffb;
+  color: #08979c;
+}
+
+.type-badge.bug_summary {
+  background: #fcffe6;
+  color: #614700;
+}
+
+.type-badge.bug_risks {
+  background: #fff2f0;
+  color: #a8071a;
+}
+
+.type-badge.bug_keywords {
+  background: #e6f7ff;
+  color: #096dd9;
+}
+
+.type-badge.bug_module_deep {
+  background: #f3f0ff;
+  color: #391085;
 }
 
 .creator-name {
@@ -1087,11 +1114,48 @@ export default {
 
 .defaults-content :deep(.el-tabs__header) {
   margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.defaults-content :deep(.el-tabs__nav-wrap) {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #c4b5e0 transparent;
+}
+
+.defaults-content :deep(.el-tabs__nav-wrap)::-webkit-scrollbar {
+  height: 6px;
+}
+
+.defaults-content :deep(.el-tabs__nav-wrap)::-webkit-scrollbar-track {
+  background: #f5f3ff;
+  border-radius: 3px;
+}
+
+.defaults-content :deep(.el-tabs__nav-wrap)::-webkit-scrollbar-thumb {
+  background: #c4b5e0;
+  border-radius: 3px;
+}
+
+.defaults-content :deep(.el-tabs__nav-wrap)::-webkit-scrollbar-thumb:hover {
+  background: #9370db;
+}
+
+.defaults-content :deep(.el-tabs__nav-scroll) {
+  display: flex;
+  min-width: min-content;
 }
 
 .defaults-content :deep(.el-tabs__item) {
   color: #6d5d8f;
   font-weight: 500;
+  padding: 0 12px;
+  height: 36px;
+  line-height: 36px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .defaults-content :deep(.el-tabs__item.is-active) {

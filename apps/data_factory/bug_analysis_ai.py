@@ -19,6 +19,364 @@ from asgiref.sync import sync_to_async
 logger = logging.getLogger(__name__)
 
 
+class MockFallbackException(Exception):
+    """当 AI 配置不可用时，抛出此异常以触发 Mock 回退"""
+    pass
+
+
+DEFAULT_PROMPT_TEMPLATES = {
+    'bug_classify': {
+        'system': '你是资深软件测试分析师，擅长对Bug进行准确分类。只输出分类结果，不要多余解释。',
+        'user': '''你是一个资深软件测试分析师。请将以下 Bug 归类到一种缺陷类型。
+
+可选类型: UI显示 / 功能逻辑 / 数据内容 / 交互操作 / 性能稳定 / 跨端兼容 / 其他
+
+Bug标题: {title}
+{desc_part}
+
+要求:
+1. 只返回类型名称，不要解释
+2. 如果难以判断，返回"其他"
+'''
+    },
+    'bug_severity': {
+        'system': '你是资深测试专家，擅长判断Bug的真实严重程度。严格按标准输出P0/P1/P2。',
+        'user': '''判断此 Bug 的真实严重程度。
+
+判断标准:
+- P0 (致命): 白屏/崩溃/死循环/数据丢失/阻塞核心全量用户流程
+- P1 (严重): 无法完成关键操作/影响大量用户/无 workaround
+- P2 (一般): 非核心功能问题/有 workaround/影响少数用户
+
+考虑因素:
+- 影响用户范围（全部/部分/单个）
+- 是否阻塞核心流程
+- 是否有 workaround（替代方案）
+- 是否偶现 vs 必现
+- 是否线上已发生
+
+Bug标题: {title}
+{desc_part}
+原始标注严重度: {original_sev}
+
+严格只返回 P0 / P1 / P2 其中之一，不要解释。
+'''
+    },
+    'bug_module_fallback': {
+        'system': '你是项目架构师，熟悉各功能模块的划分。只输出最接近的模块名称。',
+        'user': '''将以下 Bug 归类到最接近的功能模块。
+
+可选模块: {available_modules}
+
+如果都不匹配，返回"新模块-<你认为合适的名称>"。
+
+Bug标题: {title}
+标签: {tags}
+
+只返回模块名称或"新模块-xxx"，不要解释。
+'''
+    },
+    'bug_root_cause': {
+        'system': '你是资深技术专家，善于从Bug模式中推断根本原因。给出简洁有力的结论。',
+        'user': '''以下是【{module_name}】模块收集到的 Top Bug：
+
+{titles}
+
+请分析可能的根本原因（选1-2个最可能）:
+1. 前端问题（组件库/样式/兼容性）
+2. 后端接口问题（逻辑/数据/性能）
+3. 数据问题（迁移/配置/脏数据）
+4. 测试覆盖不足
+5. 其他原因
+
+用简洁语言输出根因假设，不超过100字。直接给出结论，不要列举所有可能性。
+'''
+    },
+    'bug_test_focus': {
+        'system': '你是资深测试专家，擅长根据历史Bug数据制定精准的回归测试策略。',
+        'user': '''你是资深测试专家。针对【{module_name}】模块生成迭代测试重点：
+
+统计数据：
+- 总Bug数: {total}
+- 线上故障数: {online}
+- 二次打开数: {reopened}
+- 缺陷类型分布: {dtype_dist}
+
+要求：
+1. 按优先级排列 3-5 个测试关注点
+2. 每个点注明 回归范围 + 验证方法
+3. 如果某类问题特别突出，给出具体测试用例方向
+4. 语言简洁专业，每条不超过50字
+5. 直接输出编号列表，不要开场白
+'''
+    },
+    'bug_summary': {
+        'system': '你是测试团队负责人，擅长向技术管理者汇报Bug分析结果。语言简洁有力，突出风险和行动项。严格遵守输出格式要求。',
+        'user': '''基于以下 Bug 分析数据，生成一份给技术管理者的简报：
+
+## 基础数据
+- 总Bug数: {total_bugs}
+- P0/P1/P2 分布: {sev_inf}
+- Top5模块: {top_modules}
+
+## 风险概况
+- P0详情: {p0_detail}
+- P1详情: {p1_detail}
+
+【格式要求 - 必须严格遵守】
+1. 第一行：整体态势（一句话概括严重程度）
+2. 空一行
+3. 关键风险点：必须使用 "1. " "2. " "3. " 这样的数字列表格式（2-4条），示例：
+   1. **风险标题**: 风险描述
+   2. **风险标题**: 风险描述
+4. 空一行
+5. 行动建议：必须使用 "1. " "2. " "3. " 这样的数字列表格式（2-3条），示例：
+   1. **行动标题**: 行动描述
+   2. **行动标题**: 行动描述
+6. 禁止使用任何 Markdown 标题符号（如 ### 或 ##）
+7. 禁止使用 - 或 * 作为列表符号，只能用数字列表格式
+
+【输出示例】
+本次分析共收录 100 条 Bug，其中推断 P0 有 5 条、P1 有 20 条、P2 有 75 条。
+
+1. **P0 高危问题**: 登录功能不可用等 5 条，需要最高优先级处理
+2. **高发模块 Top3**: 用户中心(25条)、订单模块(18条)、支付模块(12条)，应作为回归重点区域
+3. **线上故障**: 共 3 条需逐条确认修复状态
+
+1. **P0/P1 问题优先修复**: 共 25 条高危问题需在本次迭代内解决
+2. **Top 模块深度回归**: 对用户中心、订单模块、支付模块进行全面回归测试
+3. **线上故障专项验证**: 3 条线上故障需逐一验证不再复现
+'''
+    },
+    'bug_risks': {
+        'system': '你是资深质量工程师，擅长从Bug数据中提炼风险模式。用流畅的中文输出分析报告。',
+        'user': '''你是资深质量工程师。请基于以下 {total} 条 Bug 数据（展示前{sample_count}条样本），
+用纯中文分析回归风险，输出可直接阅读的报告段落。
+
+## Bug 样本数据
+{bug_samples}
+
+## 分析要求
+请用流畅的中文段落，分别描述三个风险级别：
+
+1. **P0 高风险**（服务中断/应用崩溃）：列出具体的风险场景，每个场景说明影响和回归建议
+2. **P1 中风险**（功能阻塞/修复质量存疑）：列出需要重点回归的问题类型
+3. **P2 低风险**（影响较轻/边界场景）：列出低优先级但需要关注的风险
+
+## 输出格式
+请按以下格式输出（纯文本，不要JSON）：
+
+【P0 高风险】
+- 白屏问题：共约15条，多涉及首页加载，需优先验证各入口跳转流程
+- 504超时：共约8条，集中在接口调用场景，需重点回归高频接口
+（继续列举其他高风险...）
+
+【P1 中风险】
+- 二次回归Bug：共约12条，历史修复后重现的问题，需对照历史验证
+- 线上故障：共约5条，线上已发生的问题必须回归
+（继续列举其他中风险...）
+
+【P2 低风险】
+- 边界场景：如异常输入、极端值处理等，按需回归
+- 偶现问题：复现难度高，可酌情回归
+（继续列举其他低风险...）
+
+要求：
+- 每个风险类型要具体，避免泛泛而谈
+- 说明预估数量和回归建议
+- 只输出纯文本报告，不要任何JSON或其他格式
+'''
+    },
+    'bug_keywords': {
+        'system': '你是资深产品经理，擅长从Bug标题中提炼核心问题主题。只输出JSON格式结果。',
+        'user': '''你是资深产品经理。请基于以下 {total} 条 Bug 标题（展示前{sample_count}条），
+语义分析并提炼出 10-15 个最核心的关键词/主题。
+
+## Bug 标题数据
+{bug_titles}
+
+## 分析要求
+1. **基于语义理解**：不要只是提取原文词汇，要理解标题含义后提炼主题
+2. **合并同义词**：如"样式"和"CSS"合并为"UI样式"
+3. **概括抽象**：将具体问题上升为领域概念，如"无法登录"→"登录功能"
+4. **按重要性排序**：Bug 数量越多的主题越靠前
+
+## 输出格式
+必须是合法的 JSON 数组：
+[
+  ["关键词1", 预估出现次数],
+  ["关键词2", 预估出现次数],
+  ...
+]
+
+要求：
+- 提供 10-15 个关键词
+- 关键词要简洁，2-6个字为宜
+- count 是预估数量，根据样本推断
+- 只输出 JSON，不要任何其他文字
+'''
+    },
+    'bug_module_deep': {
+        'system': '你是资深测试架构师，擅长从Bug数据中提炼质量风险和测试策略。输出必须是合法JSON格式，不要有任何额外说明文字。',
+        'user': '''作为资深测试架构师，深度分析【{module_name}】模块的 Bug 数据，提取测试重点指标。
+
+基础统计数据:
+- 总Bug数: {total}
+- 线上故障: {online_count}条
+- 二次打开: {reopened_count}条
+- 严重程度分布: {severity_dist}
+- 功能点分布: {feature_dist}
+
+Bug样本数据(已按优先级排序):
+{bug_samples}
+
+请进行深度分析:
+
+1. **问题模式识别**: 从Bug标题和描述中识别出3-5个核心问题模式
+   - 例如: 数据缺失问题、权限控制问题、UI兼容性问题等
+
+2. **根因推断**: 分析这些问题最可能的技术根因
+   - 前端/后端/数据/配置/第三方依赖等
+
+3. **高频场景**: 提取最容易出问题的用户场景或功能点
+
+4. **测试建议**: 针对每个问题模式给出具体的测试验证策略
+
+5. **风险评级**: 综合判断该模块的整体质量风险等级
+
+输出必须为标准JSON格式，结构如下:
+{
+  "core_issue_patterns": [
+    {
+      "pattern_name": "问题模式名称",
+      "evidence": ["相关Bug标题1", "相关Bug标题2"],
+      "frequency": "high/medium/low",
+      "root_cause": "推断的技术根因",
+      "test_strategy": "具体测试策略"
+    }
+  ],
+  "high_risk_scenarios": ["场景1", "场景2", "场景3"],
+  "technical_insights": {
+    "primary_domain": "主要问题域(前端/后端/数据/接口)",
+    "architecture_concern": "架构层面关注点",
+    "integration_risks": ["集成风险1", "集成风险2"]
+  },
+  "actionable_recommendations": [
+    {
+      "priority": "P0/P1/P2",
+      "action": "具体行动项",
+      "rationale": "原因说明"
+    }
+  ]
+}
+'''
+    }
+}
+
+
+class PromptConfigService:
+    """
+    提示词配置服务 - 支持从数据库读取配置或使用默认模板
+    
+    设计原则:
+    1. 优先从数据库读取 PromptConfig 配置
+    2. 如果数据库无配置，使用代码内置的 DEFAULT_PROMPT_TEMPLATES
+    3. 支持模板变量替换
+    4. 异步安全（使用 sync_to_async 包装数据库查询）
+    """
+    
+    _instance = None
+    _config_cache = {}  # 简单内存缓存
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    @classmethod
+    def clear_cache(cls):
+        """清除配置缓存"""
+        cls._config_cache.clear()
+    
+    async def get_prompt(self, prompt_type: str, variables: Dict[str, str] = None) -> Dict[str, str]:
+        """
+        获取提示词（系统提示词 + 用户提示词）
+        
+        Args:
+            prompt_type: 提示词类型，如 'bug_classify'
+            variables: 模板变量字典，用于替换 {variable} 占位符
+            
+        Returns:
+            Dict: {'system': '系统提示词', 'user': '用户提示词'}
+        """
+        variables = variables or {}
+        
+        # 1. 尝试从数据库获取配置
+        db_config = await self._get_db_config(prompt_type)
+        
+        if db_config:
+            content = db_config.content
+            # 尝试解析JSON格式的配置（支持 system + user 分开配置）
+            try:
+                import json
+                config_dict = json.loads(content)
+                if isinstance(config_dict, dict) and 'system' in config_dict and 'user' in config_dict:
+                    system_prompt = self._format_template(config_dict['system'], variables)
+                    user_prompt = self._format_template(config_dict['user'], variables)
+                    return {'system': system_prompt, 'user': user_prompt}
+            except (json.JSONDecodeError, ValueError):
+                pass
+            
+            # 如果是纯文本，作为用户提示词，系统提示词使用默认
+            default = DEFAULT_PROMPT_TEMPLATES.get(prompt_type, {})
+            system_prompt = default.get('system', '')
+            user_prompt = self._format_template(content, variables)
+            return {'system': system_prompt, 'user': user_prompt}
+        
+        # 2. 使用默认模板
+        default = DEFAULT_PROMPT_TEMPLATES.get(prompt_type)
+        if default:
+            system_prompt = self._format_template(default['system'], variables)
+            user_prompt = self._format_template(default['user'], variables)
+            return {'system': system_prompt, 'user': user_prompt}
+        
+        # 3. 返回空配置
+        logger.warning(f"[PromptConfig] 未找到提示词配置: {prompt_type}")
+        return {'system': '', 'user': ''}
+    
+    async def _get_db_config(self, prompt_type: str):
+        """从数据库获取配置（异步）"""
+        if prompt_type in self._config_cache:
+            return self._config_cache[prompt_type]
+        
+        try:
+            from apps.requirement_analysis.models import PromptConfig
+            
+            get_config = sync_to_async(PromptConfig.get_active_config)
+            config = await get_config(prompt_type)
+            
+            if config:
+                self._config_cache[prompt_type] = config
+                logger.debug(f"[PromptConfig] 从数据库加载配置: {prompt_type}")
+            return config
+        except Exception as e:
+            logger.debug(f"[PromptConfig] 从数据库获取配置失败: {prompt_type}, 错误: {e}")
+            return None
+    
+    @staticmethod
+    def _format_template(template: str, variables: Dict[str, str]) -> str:
+        """格式化模板，替换变量"""
+        if not template:
+            return template
+        
+        result = template
+        for key, value in variables.items():
+            placeholder = '{' + key + '}'
+            result = result.replace(placeholder, str(value) if value is not None else '')
+        
+        return result
+
+
 class BugAnalysisAIProvider(ABC):
     """
     Bug 分析 AI 增强提供者基类
@@ -397,9 +755,46 @@ class QwenBugAnalysisAI(BugAnalysisAIProvider):
         """
         self.config_id = config_id or self.DEFAULT_CONFIG_ID
         self._config = None
+        self._mock_fallback = False
+        self._mock_ai = None
+
+    def _get_mock_ai(self):
+        """获取 Mock AI 实例 (懒加载)"""
+        if self._mock_ai is None:
+            self._mock_ai = MockBugAnalysisAI()
+        return self._mock_ai
+
+    async def _run_with_fallback(self, llm_func, mock_func_name: str, *args, **kwargs):
+        """
+        执行 LLM 调用，失败时回退到 Mock 实现
+
+        Args:
+            llm_func: 调用 LLM 的异步函数
+            mock_func_name: Mock 回退方法名
+            *args, **kwargs: 传递给 LLM/Mock 的参数
+
+        Returns:
+            LLM 或 Mock 的执行结果
+        """
+        try:
+            return await llm_func()
+        except MockFallbackException:
+            logger.warning(f"[Qwen AI] 配置不可用，回退到 Mock 实现: {mock_func_name}")
+            mock_ai = self._get_mock_ai()
+            mock_method = getattr(mock_ai, mock_func_name)
+            return await mock_method(*args, **kwargs)
+        except Exception as e:
+            logger.warning(f"[Qwen AI] 调用失败: {e}，回退到 Mock 实现: {mock_func_name}")
+            try:
+                mock_ai = self._get_mock_ai()
+                mock_method = getattr(mock_ai, mock_func_name)
+                return await mock_method(*args, **kwargs)
+            except Exception as mock_e:
+                logger.error(f"[Qwen AI] Mock 回退也失败: {mock_e}")
+                raise
 
     async def _get_config(self):
-        """懒加载 AI 配置 (异步)"""
+        """懒加载 AI 配置 (异步)，找不到时回退到 Mock"""
         if self._config is None:
             try:
                 from apps.requirement_analysis.models import AIModelConfig as AMC
@@ -417,16 +812,17 @@ class QwenBugAnalysisAI(BugAnalysisAIProvider):
                     self._config = configs[0] if configs else None
 
                 if not self._config:
-                    raise ValueError("未找到可用的 AI 模型配置，请在系统中添加通义千问或其他大语言模型配置")
+                    logger.warning("未找到可用的 AI 模型配置，将回退到 Mock AI 分析")
+                    return None
             except Exception as e:
-                logger.error(f"获取 AI 模型配置失败: {e}")
-                raise
+                logger.warning(f"获取 AI 模型配置失败: {e}，将回退到 Mock AI 分析")
+                return None
 
         return self._config
 
     async def _call_llm(self, messages: List[Dict], temperature: float = 0.1) -> str:
         """
-        调用 LLM API 的统一入口
+        调用 LLM API 的统一入口，配置缺失时回退到 Mock
 
         Args:
             messages: OpenAI 格式的消息列表 [{"role": "system/user", "content": "..."}]
@@ -438,6 +834,12 @@ class QwenBugAnalysisAI(BugAnalysisAIProvider):
         from ..requirement_analysis.ai_models import AIModelService
         config = await self._get_config()
 
+        if config is None:
+            logger.warning("AI 配置不可用，回退到 Mock 实现")
+            self._mock_fallback = True
+            raise MockFallbackException("AI 配置不可用，回退到 Mock 实现")
+
+        self._mock_fallback = False
         try:
             response = await AIModelService.call_openai_compatible_api(config, messages)
             content = response['choices'][0]['message']['content']
@@ -448,21 +850,18 @@ class QwenBugAnalysisAI(BugAnalysisAIProvider):
 
     async def classify_defect(self, title: str, desc: str = '') -> str:
         """AI 辅助缺陷分类"""
-        prompt = f"""你是一个资深软件测试分析师。请将以下 Bug 归类到一种缺陷类型。
-
-可选类型: UI显示 / 功能逻辑 / 数据内容 / 交互操作 / 性能稳定 / 跨端兼容 / 其他
-
-Bug标题: {title}
-{'Bug描述: ' + desc[:200] if desc else ''}
-
-要求:
-1. 只返回类型名称，不要解释
-2. 如果难以判断，返回"其他"
-"""
-
+        desc_part = f'Bug描述: {desc[:200]}' if desc else ''
+        variables = {
+            'title': title,
+            'desc_part': desc_part
+        }
+        
+        prompt_service = PromptConfigService()
+        prompt_config = await prompt_service.get_prompt('bug_classify', variables)
+        
         messages = [
-            {"role": "system", "content": "你是资深软件测试分析师，擅长对Bug进行准确分类。只输出分类结果，不要多余解释。"},
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": prompt_config['system']},
+            {"role": "user", "content": prompt_config['user']},
         ]
 
         result = await self._call_llm(messages, temperature=0.1)
@@ -475,30 +874,19 @@ Bug标题: {title}
 
     async def infer_severity(self, title: str, desc: str = '', original_sev: str = '') -> str:
         """AI 上下文感知严重度推断"""
-        prompt = f"""判断此 Bug 的真实严重程度。
-
-判断标准:
-- P0 (致命): 白屏/崩溃/死循环/数据丢失/阻塞核心全量用户流程
-- P1 (严重): 无法完成关键操作/影响大量用户/无 workaround
-- P2 (一般): 非核心功能问题/有 workaround/影响少数用户
-
-考虑因素:
-- 影响用户范围（全部/部分/单个）
-- 是否阻塞核心流程
-- 是否有 workaround（替代方案）
-- 是否偶现 vs 必现
-- 是否线上已发生
-
-Bug标题: {title}
-{'描述: ' + desc[:150] if desc else ''}
-原始标注严重度: {original_sev or '无'}
-
-严格只返回 P0 / P1 / P2 其中之一，不要解释。
-"""
-
+        desc_part = f'描述: {desc[:150]}' if desc else ''
+        variables = {
+            'title': title,
+            'desc_part': desc_part,
+            'original_sev': original_sev or '无'
+        }
+        
+        prompt_service = PromptConfigService()
+        prompt_config = await prompt_service.get_prompt('bug_severity', variables)
+        
         messages = [
-            {"role": "system", "content": "你是资深测试专家，擅长判断Bug的真实严重程度。严格按标准输出P0/P1/P2。"},
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": prompt_config['system']},
+            {"role": "user", "content": prompt_config['user']},
         ]
 
         result = await self._call_llm(messages, temperature=0.1)
@@ -511,22 +899,19 @@ Bug标题: {title}
         """AI 模块归类 fallback"""
         from .bug_analysis import MODULE_MAP
         available_modules = ', '.join(MODULE_MAP.keys())
-
-        prompt = f"""将以下 Bug 归类到最接近的功能模块。
-
-可选模块: {available_modules}
-
-如果都不匹配，返回"新模块-<你认为合适的名称>"。
-
-Bug标题: {title}
-标签: {', '.join(tags) if tags else '无'}
-
-只返回模块名称或"新模块-xxx"，不要解释。
-"""
-
+        
+        variables = {
+            'available_modules': available_modules,
+            'title': title,
+            'tags': ', '.join(tags) if tags else '无'
+        }
+        
+        prompt_service = PromptConfigService()
+        prompt_config = await prompt_service.get_prompt('bug_module_fallback', variables)
+        
         messages = [
-            {"role": "system", "content": "你是项目架构师，熟悉各功能模块的划分。只输出最接近的模块名称。"},
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": prompt_config['system']},
+            {"role": "user", "content": prompt_config['user']},
         ]
 
         result = await self._call_llm(messages, temperature=0)
@@ -551,23 +936,17 @@ Bug标题: {title}
             for b in sorted_bugs
         )
 
-        prompt = f"""以下是【{module_name}】模块收集到的 Top Bug：
-
-{titles}
-
-请分析可能的根本原因（选1-2个最可能）:
-1. 前端问题（组件库/样式/兼容性）
-2. 后端接口问题（逻辑/数据/性能）
-3. 数据问题（迁移/配置/脏数据）
-4. 测试覆盖不足
-5. 其他原因
-
-用简洁语言输出根因假设，不超过100字。直接给出结论，不要列举所有可能性。
-"""
-
+        variables = {
+            'module_name': module_name,
+            'titles': titles
+        }
+        
+        prompt_service = PromptConfigService()
+        prompt_config = await prompt_service.get_prompt('bug_root_cause', variables)
+        
         messages = [
-            {"role": "system", "content": "你是资深技术专家，善于从Bug模式中推断根本原因。给出简洁有力的结论。"},
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": prompt_config['system']},
+            {"role": "user", "content": prompt_config['user']},
         ]
 
         result = await self._call_llm(messages, temperature=0.3)
@@ -580,27 +959,22 @@ Bug标题: {title}
         online = mod_stats.get('online', 0)
         reopened = mod_stats.get('reopened', 0)
         dtype_dist = mod_stats.get('dtype_dist', {})
-        top_examples_raw = mod_stats.get('examples', []) or []  # 从模块统计数据获取示例
+        top_examples_raw = mod_stats.get('examples', []) or []
 
-        prompt = f"""你是资深测试专家。针对【{module_name}】模块生成迭代测试重点：
-
-统计数据：
-- 总Bug数: {total}
-- 线上故障数: {online}
-- 二次打开数: {reopened}
-- 缺陷类型分布: {json.dumps(dtype_dist, ensure_ascii=False)}
-
-要求：
-1. 按优先级排列 3-5 个测试关注点
-2. 每个点注明 回归范围 + 验证方法
-3. 如果某类问题特别突出，给出具体测试用例方向
-4. 语言简洁专业，每条不超过50字
-5. 直接输出编号列表，不要开场白
-"""
-
+        variables = {
+            'module_name': module_name,
+            'total': total,
+            'online': online,
+            'reopened': reopened,
+            'dtype_dist': json.dumps(dtype_dist, ensure_ascii=False)
+        }
+        
+        prompt_service = PromptConfigService()
+        prompt_config = await prompt_service.get_prompt('bug_test_focus', variables)
+        
         messages = [
-            {"role": "system", "content": "你是资深测试专家，擅长根据历史Bug数据制定精准的回归测试策略。"},
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": prompt_config['system']},
+            {"role": "user", "content": prompt_config['user']},
         ]
 
         result = await self._call_llm(messages, temperature=0.2)
@@ -616,45 +990,20 @@ Bug标题: {title}
 
         top_modules = sorted(modules.items(), key=lambda x: x[1], reverse=True)[:5]
 
-        prompt = f"""基于以下 Bug 分析数据，生成一份给技术管理者的简报：
-
-## 基础数据
-- 总Bug数: {meta.get('total_bugs', 0)}
-- P0/P1/P2 分布: {json.dumps(sev_inf, ensure_ascii=False)}
-- Top5模块: {json.dumps(top_modules, ensure_ascii=False)}
-
-## 风险概况
-- P0详情: {json.dumps(risk.get('P0', {}).get('detail', {}), ensure_ascii=False)}
-- P1详情: {json.dumps(risk.get('P1', {}).get('detail', {}), ensure_ascii=False)}
-
-【格式要求 - 必须严格遵守】
-1. 第一行：整体态势（一句话概括严重程度）
-2. 空一行
-3. 关键风险点：必须使用 "1. " "2. " "3. " 这样的数字列表格式（2-4条），示例：
-   1. **风险标题**: 风险描述
-   2. **风险标题**: 风险描述
-4. 空一行
-5. 行动建议：必须使用 "1. " "2. " "3. " 这样的数字列表格式（2-3条），示例：
-   1. **行动标题**: 行动描述
-   2. **行动标题**: 行动描述
-6. 禁止使用任何 Markdown 标题符号（如 ### 或 ##）
-7. 禁止使用 - 或 * 作为列表符号，只能用数字列表格式
-
-【输出示例】
-本次分析共收录 100 条 Bug，其中推断 P0 有 5 条、P1 有 20 条、P2 有 75 条。
-
-1. **P0 高危问题**: 登录功能不可用等 5 条，需要最高优先级处理
-2. **高发模块 Top3**: 用户中心(25条)、订单模块(18条)、支付模块(12条)，应作为回归重点区域
-3. **线上故障**: 共 3 条需逐条确认修复状态
-
-1. **P0/P1 问题优先修复**: 共 25 条高危问题需在本次迭代内解决
-2. **Top 模块深度回归**: 对用户中心、订单模块、支付模块进行全面回归测试
-3. **线上故障专项验证**: 3 条线上故障需逐一验证不再复现
-"""
-
+        variables = {
+            'total_bugs': meta.get('total_bugs', 0),
+            'sev_inf': json.dumps(sev_inf, ensure_ascii=False),
+            'top_modules': json.dumps(top_modules, ensure_ascii=False),
+            'p0_detail': json.dumps(risk.get('P0', {}).get('detail', {}), ensure_ascii=False),
+            'p1_detail': json.dumps(risk.get('P1', {}).get('detail', {}), ensure_ascii=False)
+        }
+        
+        prompt_service = PromptConfigService()
+        prompt_config = await prompt_service.get_prompt('bug_summary', variables)
+        
         messages = [
-            {"role": "system", "content": "你是测试团队负责人，擅长向技术管理者汇报Bug分析结果。语言简洁有力，突出风险和行动项。严格遵守输出格式要求。"},
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": prompt_config['system']},
+            {"role": "user", "content": prompt_config['user']},
         ]
 
         result = await self._call_llm(messages, temperature=0.3)
@@ -673,56 +1022,27 @@ Bug标题: {title}
 
         # 准备样本数据（取前50条避免prompt过长）
         sample_bugs = bugs[:50]
-        bug_samples = []
+        bug_samples_data = []
         for b in sample_bugs:
-            bug_samples.append({
+            bug_samples_data.append({
                 'title': b.get('title', ''),
                 'module': b.get('module', ''),
                 'defect_type': b.get('defect_type', ''),
                 'severity': b.get('severity', '')
             })
 
-        prompt = f"""你是资深质量工程师。请基于以下 {total} 条 Bug 数据（展示前{len(bug_samples)}条样本），
-用纯中文分析回归风险，输出可直接阅读的报告段落。
-
-## Bug 样本数据
-```
-{json.dumps(bug_samples, ensure_ascii=False, indent=2)}
-```
-
-## 分析要求
-请用流畅的中文段落，分别描述三个风险级别：
-
-1. **P0 高风险**（服务中断/应用崩溃）：列出具体的风险场景，每个场景说明影响和回归建议
-2. **P1 中风险**（功能阻塞/修复质量存疑）：列出需要重点回归的问题类型
-3. **P2 低风险**（影响较轻/边界场景）：列出低优先级但需要关注的风险
-
-## 输出格式
-请按以下格式输出（纯文本，不要JSON）：
-
-【P0 高风险】
-- 白屏问题：共约15条，多涉及首页加载，需优先验证各入口跳转流程
-- 504超时：共约8条，集中在接口调用场景，需重点回归高频接口
-（继续列举其他高风险...）
-
-【P1 中风险】
-- 二次回归Bug：共约12条，历史修复后重现的问题，需对照历史验证
-- 线上故障：共约5条，线上已发生的问题必须回归
-（继续列举其他中风险...）
-
-【P2 低风险】
-- 边界场景：如异常输入、极端值处理等，按需回归
-- 偶现问题：复现难度高，可酌情回归
-（继续列举其他低风险...）
-
-要求：
-- 每个风险类型要具体，避免泛泛而谈
-- 说明预估数量和回归建议
-- 只输出纯文本报告，不要任何JSON或其他格式"""
-
+        variables = {
+            'total': total,
+            'sample_count': len(bug_samples_data),
+            'bug_samples': json.dumps(bug_samples_data, ensure_ascii=False, indent=2)
+        }
+        
+        prompt_service = PromptConfigService()
+        prompt_config = await prompt_service.get_prompt('bug_risks', variables)
+        
         messages = [
-            {"role": "system", "content": "你是资深质量工程师，擅长从Bug数据中提炼风险模式。用流畅的中文输出分析报告。"},
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": prompt_config['system']},
+            {"role": "user", "content": prompt_config['user']},
         ]
 
         try:
@@ -790,37 +1110,18 @@ Bug标题: {title}
         sample_bugs = bugs[:50]
         bug_titles = [b.get('title', '') for b in sample_bugs]
 
-        prompt = f"""你是资深产品经理。请基于以下 {total} 条 Bug 标题（展示前{len(bug_titles)}条），
-语义分析并提炼出 10-15 个最核心的关键词/主题。
-
-## Bug 标题数据
-```
-{chr(10).join(f"- {t}" for t in bug_titles)}
-```
-
-## 分析要求
-1. **基于语义理解**：不要只是提取原文词汇，要理解标题含义后提炼主题
-2. **合并同义词**：如"样式"和"CSS"合并为"UI样式"
-3. **概括抽象**：将具体问题上升为领域概念，如"无法登录"→"登录功能"
-4. **按重要性排序**：Bug 数量越多的主题越靠前
-
-## 输出格式
-必须是合法的 JSON 数组：
-[
-  ["关键词1", 预估出现次数],
-  ["关键词2", 预估出现次数],
-  ...
-]
-
-要求：
-- 提供 10-15 个关键词
-- 关键词要简洁，2-6个字为宜
-- count 是预估数量，根据样本推断
-- 只输出 JSON，不要任何其他文字"""
-
+        variables = {
+            'total': total,
+            'sample_count': len(bug_titles),
+            'bug_titles': chr(10).join(f"- {t}" for t in bug_titles)
+        }
+        
+        prompt_service = PromptConfigService()
+        prompt_config = await prompt_service.get_prompt('bug_keywords', variables)
+        
         messages = [
-            {"role": "system", "content": "你是资深产品经理，擅长从Bug标题中提炼核心问题主题。只输出JSON格式结果。"},
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": prompt_config['system']},
+            {"role": "user", "content": prompt_config['user']},
         ]
 
         try:
@@ -968,65 +1269,22 @@ Bug标题: {title}
                 "desc_preview": str(b.get('描述', ''))[:150] if b.get('描述') else ""
             })
         
-        prompt = f"""作为资深测试架构师，深度分析【{module_name}】模块的 Bug 数据，提取测试重点指标。
-
-基础统计数据:
-- 总Bug数: {stats['total']}
-- 线上故障: {stats['online_count']}条
-- 二次打开: {stats['reopened_count']}条
-- 严重程度分布: {json.dumps(stats['severity_dist'], ensure_ascii=False)}
-- 功能点分布: {json.dumps(stats['feature_dist'], ensure_ascii=False)}
-
-Bug样本数据(已按优先级排序):
-```json
-{json.dumps(bug_samples, ensure_ascii=False, indent=2)}
-```
-
-请进行深度分析:
-
-1. **问题模式识别**: 从Bug标题和描述中识别出3-5个核心问题模式
-   - 例如: 数据缺失问题、权限控制问题、UI兼容性问题等
-
-2. **根因推断**: 分析这些问题最可能的技术根因
-   - 前端/后端/数据/配置/第三方依赖等
-
-3. **高频场景**: 提取最容易出问题的用户场景或功能点
-
-4. **测试建议**: 针对每个问题模式给出具体的测试验证策略
-
-5. **风险评级**: 综合判断该模块的整体质量风险等级
-
-输出必须为标准JSON格式:
-```json
-{{
-  "core_issue_patterns": [
-    {{
-      "pattern_name": "问题模式名称",
-      "evidence": ["相关Bug标题1", "相关Bug标题2"],
-      "frequency": "high/medium/low",
-      "root_cause": "推断的技术根因",
-      "test_strategy": "具体测试策略"
-    }}
-  ],
-  "high_risk_scenarios": ["场景1", "场景2", "场景3"],
-  "technical_insights": {{
-    "primary_domain": "主要问题域(前端/后端/数据/接口)",
-    "architecture_concern": "架构层面关注点",
-    "integration_risks": ["集成风险1", "集成风险2"]
-  }},
-  "actionable_recommendations": [
-    {{
-      "priority": "P0/P1/P2",
-      "action": "具体行动项",
-      "rationale": "原因说明"
-    }}
-  ]
-}}
-"""
-
+        variables = {
+            'module_name': module_name,
+            'total': stats['total'],
+            'online_count': stats['online_count'],
+            'reopened_count': stats['reopened_count'],
+            'severity_dist': json.dumps(stats['severity_dist'], ensure_ascii=False),
+            'feature_dist': json.dumps(stats['feature_dist'], ensure_ascii=False),
+            'bug_samples': json.dumps(bug_samples, ensure_ascii=False, indent=2)
+        }
+        
+        prompt_service = PromptConfigService()
+        prompt_config = await prompt_service.get_prompt('bug_module_deep', variables)
+        
         messages = [
-            {"role": "system", "content": "你是资深测试架构师，擅长从Bug数据中提炼质量风险和测试策略。输出必须是合法JSON格式，不要有任何额外说明文字。"},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": prompt_config['system']},
+            {"role": "user", "content": prompt_config['user']}
         ]
         
         try:
@@ -1239,24 +1497,21 @@ def get_ai_provider(provider_name: str = 'qwen', config_id: int = None) -> BugAn
     工厂函数: 创建 AI 提供者实例
 
     Args:
-        provider_name: AI 提供者名称（仅支持 'qwen'）
+        provider_name: AI 提供者名称 ('mock' 或 'qwen')
         config_id: AIModelConfig ID
 
     Returns:
-        BugAnalysisAIProvider 实例 (QwenBugAnalysisAI)
-
-    Raises:
-        ValueError: 不支持的 provider 名称
+        BugAnalysisAIProvider 实例
     """
-    # 强制使用 qwen，忽略 mock 请求
     actual_provider = provider_name.lower()
+    
     if actual_provider == 'mock':
-        logger.warning("Mock AI 已禁用，强制使用 Qwen AI")
-        actual_provider = 'qwen'
+        logger.info("使用 Mock AI 提供者 (基于规则引擎)")
+        return MockBugAnalysisAI()
+    
+    if actual_provider == 'qwen':
+        instance = QwenBugAnalysisAI(config_id=config_id)
+        logger.info(f"初始化 AI 提供者: qwen → QwenBugAnalysisAI")
+        return instance
 
-    if actual_provider != 'qwen':
-        raise ValueError(f"不支持的 AI 提供者: {provider_name}，仅支持: qwen")
-
-    instance = QwenBugAnalysisAI(config_id=config_id)
-    logger.info(f"初始化 AI 提供者: qwen → QwenBugAnalysisAI")
-    return instance
+    raise ValueError(f"不支持的 AI 提供者: {provider_name}，支持: mock, qwen")

@@ -71,27 +71,36 @@ export function getResultText(result) {
  * 适用于列表中单列展示场景
  * @param {string} status - 任务状态
  * @param {string|null} result - 测试结果
- * @returns {{ type: string, text: string }}
+ * @returns {{ type: string, text: string, class: string }}
  */
 export function getDisplayStatus(status, result) {
   // 任务还在进行中，显示任务状态
-  if (status === 'pending' || status === 'running') {
-    return EXECUTION_STATUS_MAP[status]
+  if (status === 'pending') {
+    return { type: 'info', text: '等待中', class: 'pending' }
+  }
+  if (status === 'running') {
+    return { type: 'warning', text: '执行中', class: 'processing' }
   }
   // 任务异常，显示异常状态
   if (status === 'error') {
-    return { type: 'danger', text: '执行异常' }
+    return { type: 'danger', text: '执行异常', class: 'failed' }
   }
   // 任务已停止
   if (status === 'stopped') {
-    return { type: 'info', text: '已停止' }
+    return { type: 'info', text: '已停止', class: 'pending' }
   }
   // 任务已完成，显示测试结果
-  if (result) {
-    return EXECUTION_RESULT_MAP[result] || { type: 'info', text: result }
+  if (result === 'passed') {
+    return { type: 'success', text: '通过', class: 'success' }
+  }
+  if (result === 'failed') {
+    return { type: 'danger', text: '失败', class: 'failed' }
+  }
+  if (result === 'skipped') {
+    return { type: 'warning', text: '跳过', class: 'processing' }
   }
   // 兜底
-  return EXECUTION_STATUS_MAP[status] || { type: 'info', text: status || '-' }
+  return { type: 'info', text: status || '-', class: 'pending' }
 }
 
 /**

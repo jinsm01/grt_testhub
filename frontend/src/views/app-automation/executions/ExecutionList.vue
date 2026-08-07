@@ -43,20 +43,25 @@
     </el-card>
     
     <!-- 执行记录列表 -->
-    <el-card class="table-card" shadow="never">
+    <div class="card-container">
       <el-table
         v-loading="loading"
         :data="executions"
         stripe
         style="width: 100%"
       >
-        <el-table-column prop="case_name" label="测试用例" min-width="180" />
-        <el-table-column prop="device_name" label="设备" width="150" />
-        <el-table-column label="状态" width="100">
+        <el-table-column label="测试用例" min-width="180">
           <template #default="{ row }">
-            <el-tag :type="getDisplayStatus(row.status, row.result).type" size="small">
+            <el-link v-if="row.report_path" type="primary" @click="viewReport(row)">{{ row.case_name }}</el-link>
+            <span v-else>{{ row.case_name }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="device_name" label="设备" width="150" />
+        <el-table-column label="状态" width="100" align="center">
+          <template #default="{ row }">
+            <span class="status-badge" :class="getDisplayStatus(row.status, row.result).class">
               {{ getDisplayStatus(row.status, row.result).text }}
-            </el-tag>
+            </span>
           </template>
         </el-table-column>
         <el-table-column label="进度" width="150">
@@ -67,12 +72,21 @@
             />
           </template>
         </el-table-column>
-        <el-table-column label="步骤统计" width="180">
+        <el-table-column label="步骤统计" width="220" align="center">
           <template #default="{ row }">
-            <div class="step-stats">
-              <span class="stat-item success">通过: {{ row.passed_steps || 0 }}</span>
-              <span class="stat-item danger">失败: {{ row.failed_steps || 0 }}</span>
-              <span class="stat-item">总数: {{ row.total_steps || 0 }}</span>
+            <div class="count-cell">
+              <span class="count-badge success">
+                <el-icon><CircleCheck /></el-icon>
+                {{ row.passed_steps || 0 }}
+              </span>
+              <span class="count-badge failed">
+                <el-icon><CircleClose /></el-icon>
+                {{ row.failed_steps || 0 }}
+              </span>
+              <span class="count-badge total">
+                <el-icon><DataLine /></el-icon>
+                总计 {{ row.total_steps || 0 }}
+              </span>
             </div>
           </template>
         </el-table-column>
@@ -92,35 +106,37 @@
             {{ row.finished_at ? formatDateTime(row.finished_at) : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right" header-align="center" align="center">
           <template #default="{ row }">
-            <el-button
-              v-if="row.status === 'running'"
-              type="warning"
-              size="small"
-              text
-              @click="stopExecution(row)"
-            >
-              停止
-            </el-button>
-            <el-button
-              v-if="row.report_path"
-              type="primary"
-              size="small"
-              text
-              @click="viewReport(row)"
-            >
-              查看报告
-            </el-button>
-            <el-button
-              v-if="row.error_message"
-              type="danger"
-              size="small"
-              text
-              @click="viewError(row)"
-            >
-              查看错误
-            </el-button>
+            <div class="action-buttons">
+              <el-button
+                v-if="row.status === 'running'"
+                size="small"
+                class="action-btn stop-btn"
+                @click="stopExecution(row)"
+              >
+                <el-icon><VideoPause /></el-icon>
+                <span>停止</span>
+              </el-button>
+              <el-button
+                v-if="row.report_path"
+                size="small"
+                class="action-btn report-btn"
+                @click="viewReport(row)"
+              >
+                <el-icon><Document /></el-icon>
+                <span>报告</span>
+              </el-button>
+              <el-button
+                v-if="row.error_message"
+                size="small"
+                class="action-btn error-btn"
+                @click="viewError(row)"
+              >
+                <el-icon><Warning /></el-icon>
+                <span>错误</span>
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -137,7 +153,7 @@
           @current-change="loadExecutions"
         />
       </div>
-    </el-card>
+    </div>
     
     <!-- 错误信息对话框 -->
     <el-dialog
@@ -165,7 +181,7 @@ import {
   stopExecution as apiStopExecution,
   getAppProjects
 } from '@/api/app-automation'
-import { Search, Refresh } from '@element-plus/icons-vue'
+import { Search, Refresh, VideoPause, Document, Warning, CircleCheck, CircleClose, DataLine } from '@element-plus/icons-vue'
 import { getExecutionStatusType, getExecutionStatusText, getDisplayStatus, formatDateTime } from '@/utils/app-automation-helpers'
 
 const loading = ref(false)
@@ -456,6 +472,48 @@ onUnmounted(() => {
   }
 }
 
+// 数量徽章容器
+.count-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
+// 数量徽章样式
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  color: #0369a1;
+  white-space: nowrap;
+  line-height: 1.2;
+
+  .el-icon {
+    font-size: 12px;
+  }
+
+  &.success {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #047857;
+  }
+
+  &.failed {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #b91c1c;
+  }
+
+  &.total {
+    background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+    color: #5b21b6;
+  }
+}
+
 .step-stats {
   display: flex;
   gap: 8px;
@@ -535,6 +593,42 @@ onUnmounted(() => {
         background: linear-gradient(135deg, #73d13d 0%, #52c41a 100%) !important;
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(82, 196, 26, 0.4);
+      }
+    }
+
+    &.stop-btn {
+      background: linear-gradient(135deg, #fa8c16 0%, #d46b08 100%) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+
+      &:hover {
+        background: linear-gradient(135deg, #ffa940 0%, #fa8c16 100%) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(250, 140, 22, 0.4);
+      }
+    }
+
+    &.report-btn {
+      background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+
+      &:hover {
+        background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+      }
+    }
+
+    &.error-btn {
+      background: linear-gradient(135deg, #ff4d4f 0%, #f5222d 100%) !important;
+      color: #ffffff !important;
+      font-weight: 600 !important;
+
+      &:hover {
+        background: linear-gradient(135deg, #ff7875 0%, #ff4d4f 100%) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(245, 34, 45, 0.4);
       }
     }
 

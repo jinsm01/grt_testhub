@@ -1533,6 +1533,22 @@ class PromptConfigViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-created_at')
 
     @action(detail=False, methods=['get'])
+    def prompt_types(self, request):
+        """获取所有可用的提示词类型选项"""
+        try:
+            choices = [{'value': value, 'label': label} for value, label in PromptConfig.PROMPT_CHOICES]
+            return Response({
+                'message': '获取提示词类型成功',
+                'choices': choices
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"获取提示词类型失败: {e}")
+            return Response(
+                {'error': f'获取失败: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['get'])
     def load_defaults(self, request):
         """加载默认提示词"""
         try:
@@ -1581,7 +1597,6 @@ class PromptConfigViewSet(viewsets.ModelViewSet):
 3. 补充的测试场景（如有）
 4. 修改后的测试用例（如需要）"""
 
-            # 添加知识库问答默认提示词
             defaults['knowledge_base'] = """你是一个专业的文档问答助手。请严格基于以下文档内容回答问题。
 
 重要要求：
@@ -1597,9 +1612,6 @@ class PromptConfigViewSet(viewsets.ModelViewSet):
 
 请给出精确、简洁的回答："""
 
-            # 添加断言生成默认提示词
-            # 支持变量：
-            #   {{response_time_threshold}} - 响应时间阈值（毫秒），默认5000
             defaults['assertion_generator'] = """你是一个专业的API测试专家。请基于提供的API响应数据，生成合适的测试断言。
 
 生成的断言需要满足以下要求：
@@ -1629,6 +1641,183 @@ class PromptConfigViewSet(viewsets.ModelViewSet):
   {"name": "返回码验证", "type": "json_path", "json_path": "$.code", "expected": "00000"},
   {"name": "data.access_token存在", "type": "json_path", "json_path": "$.data.access_token", "expected": "exist"}
 ]"""
+
+            defaults['bug_classify'] = """System: 你是资深软件测试分析师，擅长对Bug进行准确分类。只输出分类结果，不要多余解释。
+
+User: 你是一个资深软件测试分析师。请将以下 Bug 归类到一种缺陷类型。
+
+可选类型: UI显示 / 功能逻辑 / 数据内容 / 交互操作 / 性能稳定 / 跨端兼容 / 其他
+
+Bug标题: {title}
+{desc_part}
+
+要求:
+1. 只返回类型名称，不要解释
+2. 如果难以判断，返回"其他" """
+
+            defaults['bug_severity'] = """System: 你是资深测试专家，擅长判断Bug的真实严重程度。严格按标准输出P0/P1/P2。
+
+User: 判断此 Bug 的真实严重程度。
+
+判断标准:
+- P0 (致命): 白屏/崩溃/死循环/数据丢失/阻塞核心全量用户流程
+- P1 (严重): 无法完成关键操作/影响大量用户/无 workaround
+- P2 (一般): 非核心功能问题/有 workaround/影响少数用户
+
+考虑因素:
+- 影响用户范围（全部/部分/单个）
+- 是否阻塞核心流程
+- 是否有 workaround（替代方案）
+- 是否偶现 vs 必现
+- 是否线上已发生
+
+Bug标题: {title}
+{desc_part}
+原始标注严重度: {original_sev}
+
+严格只返回 P0 / P1 / P2 其中之一，不要解释。"""
+
+            defaults['bug_module_fallback'] = """System: 你是项目架构师，熟悉各功能模块的划分。只输出最接近的模块名称。
+
+User: 将以下 Bug 归类到最接近的功能模块。
+
+可选模块: {available_modules}
+
+如果都不匹配，返回"新模块-<你认为合适的名称>"。
+
+Bug标题: {title}
+标签: {tags}
+
+只返回模块名称或"新模块-xxx"，不要解释。"""
+
+            defaults['bug_root_cause'] = """System: 你是资深技术专家，善于从Bug模式中推断根本原因。给出简洁有力的结论。
+
+User: 以下是【{module_name}】模块收集到的 Top Bug：
+
+{titles}
+
+请分析可能的根本原因（选1-2个最可能）:
+1. 前端问题（组件库/样式/兼容性）
+2. 后端接口问题（逻辑/数据/性能）
+3. 数据问题（迁移/配置/脏数据）
+4. 测试覆盖不足
+5. 其他原因
+
+用简洁语言输出根因假设，不超过100字。直接给出结论，不要列举所有可能性。"""
+
+            defaults['bug_test_focus'] = """System: 你是资深测试专家，擅长根据历史Bug数据制定精准的回归测试策略。
+
+User: 你是资深测试专家。针对【{module_name}】模块生成迭代测试重点：
+
+统计数据：
+- 总Bug数: {total}
+- 线上故障数: {online}
+- 二次打开数: {reopened}
+- 缺陷类型分布: {dtype_dist}
+
+要求：
+1. 按优先级排列 3-5 个测试关注点
+2. 每个点注明 回归范围 + 验证方法
+3. 如果某类问题特别突出，给出具体测试用例方向
+4. 语言简洁专业，每条不超过50字
+5. 直接输出编号列表，不要开场白"""
+
+            defaults['bug_summary'] = """System: 你是测试团队负责人，擅长向技术管理者汇报Bug分析结果。语言简洁有力，突出风险和行动项。严格遵守输出格式要求。
+
+User: 基于以下 Bug 分析数据，生成一份给技术管理者的简报：
+
+## 基础数据
+- 总Bug数: {total_bugs}
+- P0/P1/P2 分布: {sev_inf}
+- Top5模块: {top_modules}
+
+## 风险概况
+- P0详情: {p0_detail}
+- P1详情: {p1_detail}
+
+【格式要求 - 必须严格遵守】
+1. 第一行：整体态势（一句话概括严重程度）
+2. 空一行
+3. 关键风险点：必须使用 "1. " "2. " "3. " 这样的数字列表格式（2-4条）
+4. 空一行
+5. 行动建议：必须使用 "1. " "2. " "3. " 这样的数字列表格式（2-3条）
+6. 禁止使用任何 Markdown 标题符号"""
+
+            defaults['bug_risks'] = """System: 你是资深质量工程师，擅长从Bug数据中提炼风险模式。用流畅的中文输出分析报告。
+
+User: 你是资深质量工程师。请基于以下 {total} 条 Bug 数据（展示前{sample_count}条样本），
+用纯中文分析回归风险，输出可直接阅读的报告段落。
+
+## Bug 样本数据
+{bug_samples}
+
+## 分析要求
+请用流畅的中文段落，分别描述三个风险级别：
+
+1. **P0 高风险**（服务中断/应用崩溃）：列出具体的风险场景
+2. **P1 中风险**（功能阻塞/修复质量存疑）：列出需要重点回归的问题类型
+3. **P2 低风险**（影响较轻/边界场景）：列出低优先级但需要关注的风险
+
+要求：
+- 每个风险类型要具体，避免泛泛而谈
+- 说明预估数量和回归建议
+- 只输出纯文本报告"""
+
+            defaults['bug_keywords'] = """System: 你是资深产品经理，擅长从Bug标题中提炼核心问题主题。只输出JSON格式结果。
+
+User: 你是资深产品经理。请基于以下 {total} 条 Bug 标题（展示前{sample_count}条），
+语义分析并提炼出 10-15 个最核心的关键词/主题。
+
+## Bug 标题数据
+{bug_titles}
+
+## 分析要求
+1. **基于语义理解**：不要只是提取原文词汇，要理解标题含义后提炼主题
+2. **合并同义词**：如"样式"和"CSS"合并为"UI样式"
+3. **概括抽象**：将具体问题上升为领域概念
+4. **按重要性排序**：Bug 数量越多的主题越靠前
+
+## 输出格式
+必须是合法的 JSON 数组：
+[
+  ["关键词1", 预估出现次数],
+  ["关键词2", 预估出现次数],
+  ...
+]
+
+要求：
+- 提供 10-15 个关键词
+- 关键词要简洁，2-6个字为宜
+- 只输出 JSON"""
+
+            defaults['bug_module_deep'] = """System: 你是资深测试架构师，擅长从Bug数据中提炼质量风险和测试策略。输出必须是合法JSON格式。
+
+User: 作为资深测试架构师，深度分析【{module_name}】模块的 Bug 数据，提取测试重点指标。
+
+基础统计数据:
+- 总Bug数: {total}
+- 线上故障: {online_count}条
+- 二次打开: {reopened_count}条
+- 严重程度分布: {severity_dist}
+- 功能点分布: {feature_dist}
+
+Bug样本数据(已按优先级排序):
+{bug_samples}
+
+请进行深度分析:
+1. **问题模式识别**: 从Bug标题和描述中识别出3-5个核心问题模式
+2. **根因推断**: 分析这些问题最可能的技术根因
+3. **高频场景**: 提取最容易出问题的用户场景或功能点
+4. **测试建议**: 针对每个问题模式给出具体的测试验证策略
+5. **风险评级**: 综合判断该模块的整体质量风险等级
+
+输出必须为标准JSON格式，结构如下:
+{
+  "core_issue_patterns": [...],
+  "high_risk_scenarios": [...],
+  "technical_insights": {...},
+  "actionable_recommendations": [...]
+}"""
 
             return Response({
                 'message': '默认提示词加载成功',

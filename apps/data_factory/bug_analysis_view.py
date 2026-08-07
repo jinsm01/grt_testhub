@@ -223,10 +223,11 @@ async def _run_enhanced_analysis(bugs, filename='', save_record=True,
     ai_stats = {'calls': 0, 'errors': 0}
     if not skip_ai and ai_provider_name and ai_provider_name != 'none':
         try:
-            from .bug_analysis_ai import get_ai_provider
+            from .bug_analysis_ai import get_ai_provider, MockFallbackException, MockBugAnalysisAI
+            
             ai = get_ai_provider(provider_name=ai_provider_name, config_id=ai_config_id)
+            use_mock = False
 
-            # 对每个 TOP 模块生成测试建议和根因假设
             modules = analysis_result.get('modulesData', {})
             test_focus = analysis_result.get('testFocusData', {})
             top_modules = list(modules.keys())[:10]
@@ -239,6 +240,8 @@ async def _run_enhanced_analysis(bugs, filename='', save_record=True,
                 try:
                     mod_stats = test_focus.get(mod, {})
                     return mod, await ai.generate_test_focus(mod, mod_stats), None
+                except MockFallbackException:
+                    return mod, None, MockFallbackException("Mock fallback needed")
                 except Exception as e:
                     return mod, None, e
 
@@ -246,12 +249,30 @@ async def _run_enhanced_analysis(bugs, filename='', save_record=True,
             focus_results = await asyncio.gather(*focus_tasks)
 
             for mod, focus_text, error in focus_results:
-                if error:
+                if isinstance(error, MockFallbackException):
+                    use_mock = True
+                    break
+                elif error:
                     logger.warning(f"AI测试建议[{mod}]失败: {error}")
                     ai_stats['errors'] += 1
                 else:
                     enhanced_focus[mod] = focus_text
                     ai_stats['calls'] += 1
+
+            # 如果检测到 Mock 回退信号，切换到 Mock 实现
+            if use_mock:
+                logger.warning("检测到 AI 配置不可用，切换到 Mock AI 实现")
+                ai = MockBugAnalysisAI()
+                # 重新执行测试建议
+                enhanced_focus = {}
+                for mod in top_modules:
+                    try:
+                        mod_stats = test_focus.get(mod, {})
+                        enhanced_focus[mod] = await ai.generate_test_focus(mod, mod_stats)
+                        ai_stats['calls'] += 1
+                    except Exception as e:
+                        logger.warning(f"Mock AI测试建议[{mod}]失败: {e}")
+                        ai_stats['errors'] += 1
 
             # 并发执行：Top5 模块的根因分析同时进行
             top5_modules = top_modules[:5]
@@ -837,8 +858,9 @@ def enhance_with_ai(request):
 
         # 执行AI增强
         try:
-            from .bug_analysis_ai import get_ai_provider
+            from .bug_analysis_ai import get_ai_provider, MockFallbackException, MockBugAnalysisAI
             ai = get_ai_provider(provider_name=ai_provider, config_id=ai_config_id)
+            use_mock = False
 
             modules = analysis_result.get('modulesData', {})
             test_focus = analysis_result.get('testFocusData', {})
@@ -853,6 +875,8 @@ def enhance_with_ai(request):
                 try:
                     mod_stats = test_focus.get(mod, {})
                     return mod, await ai.generate_test_focus(mod, mod_stats), None
+                except MockFallbackException:
+                    return mod, None, MockFallbackException("Mock fallback needed")
                 except Exception as e:
                     return mod, None, e
 
@@ -864,12 +888,30 @@ def enhance_with_ai(request):
             focus_results = async_to_sync(run_focus_tasks)()
 
             for mod, focus_text, error in focus_results:
-                if error:
+                if isinstance(error, MockFallbackException):
+                    use_mock = True
+                    break
+                elif error:
                     logger.warning(f"AI测试建议[{mod}]失败: {error}")
                     ai_stats['errors'] += 1
                 else:
                     enhanced_focus[mod] = focus_text
                     ai_stats['calls'] += 1
+
+            # 如果检测到 Mock 回退信号，切换到 Mock 实现
+            if use_mock:
+                logger.warning("检测到 AI 配置不可用，切换到 Mock AI 实现")
+                ai = MockBugAnalysisAI()
+                # 重新执行测试建议
+                enhanced_focus = {}
+                for mod in top_modules:
+                    try:
+                        mod_stats = test_focus.get(mod, {})
+                        enhanced_focus[mod] = async_to_sync(ai.generate_test_focus)(mod, mod_stats)
+                        ai_stats['calls'] += 1
+                    except Exception as e:
+                        logger.warning(f"Mock AI测试建议[{mod}]失败: {e}")
+                        ai_stats['errors'] += 1
 
             # 并发执行：Top5 模块的根因分析同时进行
             top5_modules = top_modules[:5]

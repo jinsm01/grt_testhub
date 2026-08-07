@@ -477,7 +477,7 @@
             <el-row v-for="(data, fieldName) in customFieldCharts" :key="fieldName" :gutter="16" class="chart-row">
               <el-col :span="24">
                 <el-card class="chart-card">
-                  <template #header><span class="chart-title">{{ fieldName }}分布（自定义字段）</span></template>
+                  <template #header><span class="chart-title">端 × 应用分布</span></template>
                   <div :ref="el => setCustomFieldChartRef(el, fieldName)" class="chart-container" style="height: 350px;"></div>
                 </el-card>
               </el-col>
@@ -2503,7 +2503,7 @@ const renderModuleChart=()=>{
     xAxis:{type:'category',data:names,axisLabel:{color:'#333',rotate:35,fontSize:11},axisLine:{lineStyle:{color:'#ccc'}}},
     yAxis:{type:'value',axisLabel:{color:'#333'},axisLine:{lineStyle:{color:'#ccc'}},splitLine:{lineStyle:{color:'#e0e0e0'}}},
     series:[{type:'bar',data:values,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#e53935'},{offset:1,color:'#ffcdd2'}])},label:{show:true,position:'top',color:'#333',fontSize:11}}],
-    grid:{left:'10%',bottom:'22%',top:'15%'}
+    grid:{left:'12%',right:'5%',bottom:'22%',top:'15%',containLabel:true}
   })
   // 绑定点击事件 - 联动到测试重点卡片
   chart.off('click')
@@ -2523,7 +2523,7 @@ const renderSeverityCrossChart=()=>{
   const typeMap={'P0':'致命','P1':'严重','P2':'一般'}
   const types=['P0','P1','P2'], typeLabels=['致命','严重','一般'], colors=['#e53935','#f59e0b','#22c55e']
   const series=types.map((t,i)=>({name:typeLabels[i],type:'bar',stack:'total',data:labels.map(s=>d[s][t]||0),itemStyle:{color:colors[i]},label:{show:false}}))
-  chart.setOption({backgroundColor:'#fff',tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},legend:{data:typeLabels,textStyle:{color:'#333'},top:10},xAxis:{type:'category',data:labels,axisLabel:{color:'#333',fontSize:12},axisLine:{lineStyle:{color:'#ccc'}}},yAxis:{type:'value',axisLabel:{color:'#333'},axisLine:{lineStyle:{color:'#ccc'}},splitLine:{lineStyle:{color:'#e0e0e0'}}},series,grid:{left:'15%',right:'5%',top:'20%',bottom:'10%'}})
+  chart.setOption({backgroundColor:'#fff',tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},legend:{data:typeLabels,textStyle:{color:'#333'},top:10},xAxis:{type:'category',data:labels,axisLabel:{color:'#333',fontSize:12},axisLine:{lineStyle:{color:'#ccc'}}},yAxis:{type:'value',axisLabel:{color:'#333'},axisLine:{lineStyle:{color:'#ccc'}},splitLine:{lineStyle:{color:'#e0e0e0'}}},series,grid:{left:'15%',right:'5%',top:'20%',bottom:'10%',containLabel:true}})
 }
 const renderSeverityPieChart=()=>{
   if(!severityPieChartRef.value)return
@@ -2568,8 +2568,7 @@ const renderKeywordChart=()=>{
   const data = aiKeywords.value && aiKeywords.value.length > 0 ? aiKeywords.value : []
   console.log('[关键词图表] 数据:', data, 'aiKeywords:', aiKeywords.value)
   const names=data.map(e=>e[0]), values=data.map(e=>e[1])
-  const titleText = data.length > 0 ? '关键词词频 Top 20(AI 语义提取)' : '关键词词频 (等待 AI 分析...)'
-  chart.setOption({backgroundColor:'#fff',title:{text:titleText,textStyle:{color:'#7b42f6',fontSize:14}},tooltip:{formatter:p=>`${p.name}: ${p.value}条相关Bug`},xAxis:{type:'value',axisLabel:{color:'#333'},axisLine:{lineStyle:{color:'#ccc'}},splitLine:{lineStyle:{color:'#e0e0e0'}}},yAxis:{type:'category',data:names,inverse:true,axisLabel:{color:'#333',fontSize:12},axisLine:{lineStyle:{color:'#ccc'}}},series:[{type:'bar',data:values,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#ffcdd2'},{offset:1,color:'#e53935'}])},label:{show:true,position:'right',color:'#333'}}],grid:{left:'15%',right:'10%'}})
+  chart.setOption({backgroundColor:'#fff',tooltip:{formatter:p=>`${p.name}: ${p.value}条相关Bug`},xAxis:{type:'value',axisLabel:{color:'#333'},axisLine:{lineStyle:{color:'#ccc'}},splitLine:{lineStyle:{color:'#e0e0e0'}}},yAxis:{type:'category',data:names,inverse:true,axisLabel:{color:'#333',fontSize:12},axisLine:{lineStyle:{color:'#ccc'}}},series:[{type:'bar',data:values,itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:'#ffcdd2'},{offset:1,color:'#e53935'}])},label:{show:true,position:'right',color:'#333'}}],grid:{left:'15%',right:'10%'}})
 }
 const renderCreatorChart=()=>{
   if(!creatorChartRef.value)return
@@ -2610,8 +2609,7 @@ const renderCustomFieldCharts=()=>{
     const names = data.map(e => e[0]), values = data.map(e => e[1])
     chart.setOption({
       backgroundColor: '#fff',
-      title: { text: `${fieldName}分布 Top 20`, textStyle: { color: '#7b42f6', fontSize: 14 } },
-      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: p => `${p.name}: ${p.value}条` },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: p => `${p[0].name}: ${p[0].value}条` },
       xAxis: { type: 'category', data: names, axisLabel: { color: '#333', rotate: 30, fontSize: 11 }, axisLine: { lineStyle: { color: '#ccc' } } },
       yAxis: { type: 'value', axisLabel: { color: '#333' }, axisLine: { lineStyle: { color: '#ccc' } }, splitLine: { lineStyle: { color: '#e0e0e0' } } },
       series: [{
@@ -2620,7 +2618,7 @@ const renderCustomFieldCharts=()=>{
         itemStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: '#9b59b6' }, { offset: 1, color: '#e0e0e0' }]) },
         label: { show: true, position: 'top', color: '#333', fontSize: 11 }
       }],
-      grid: { left: '5%', right: '5%', bottom: '18%', top: 50 }
+      grid: { left: '12%', right: '5%', bottom: '18%', top: 50, containLabel: true }
     })
     customFieldChartInstances.value[fieldName] = chart
   })
@@ -2632,7 +2630,7 @@ const renderTimelineChart=()=>{
   if(existingChart){existingChart.dispose()}
   const chart=echarts.init(timelineChartRef.value)
   const d=timelineCleanData.value, hasImport=metaData.value?.import_count>0
-  chart.setOption({backgroundColor:'#fff',tooltip:{trigger:'axis',formatter:p=>`${p[0].name}<br/>新增Bug:${p[0].value}条`},xAxis:{type:'category',data:Object.keys(d),axisLabel:{color:'#333',rotate:30},axisLine:{lineStyle:{color:'#ccc'}}},yAxis:{type:'value',axisLabel:{color:'#333'},axisLine:{lineStyle:{color:'#ccc'}},splitLine:{lineStyle:{color:'#e0e0e0'}}},series:[{type:'line',data:Object.values(d),smooth:true,itemStyle:{color:'#e53935'},lineStyle:{color:'#e53935',width:3},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(229,57,53,0.25)'},{offset:1,color:'rgba(229,57,53,0.05)'}])},markPoint:{data:[{type:'max',name:'峰值',label:{color:'#333'}}],itemStyle:{color:'#e53935'}}}],grid:{left:'10%',bottom:'18%',top:30}})
+  chart.setOption({backgroundColor:'#fff',tooltip:{trigger:'axis',formatter:p=>`${p[0].name}<br/>新增Bug:${p[0].value}条`},xAxis:{type:'category',data:Object.keys(d),axisLabel:{color:'#333',rotate:30},axisLine:{lineStyle:{color:'#ccc'}}},yAxis:{type:'value',axisLabel:{color:'#333'},axisLine:{lineStyle:{color:'#ccc'}},splitLine:{lineStyle:{color:'#e0e0e0'}}},series:[{type:'line',data:Object.values(d),smooth:true,itemStyle:{color:'#e53935'},lineStyle:{color:'#e53935',width:3},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(229,57,53,0.25)'},{offset:1,color:'rgba(229,57,53,0.05)'}])},markPoint:{data:[{type:'max',name:'峰值',label:{color:'#333'}}],itemStyle:{color:'#e53935'}}}],grid:{left:'12%',right:'5%',bottom:'18%',top:30,containLabel:true}})
 }
 
 // 重置分析数据（保留在详情视图）

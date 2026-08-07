@@ -279,6 +279,28 @@ def _extract_name(obj):
     return obj or ""
 
 
+# 状态/类型类关键词（用于过滤 label，挑出最像模块名的那个）
+_NON_MODULE_KEYWORDS = [
+    "测试", "记录", "修复", "已修复", "已完成", "关闭", "打开", "待处理",
+    "同步", "标签", "跟踪", "需求", "任务", "缺陷", "排查", "跟进", "复盘", "回归",
+]
+
+
+def _pick_module_name_from_labels(label_names: List[str]) -> str:
+    """
+    从多个 label 中挑选最像模块名的那个
+    - 优先选不含状态/类型类关键词的 label
+    - 都包含则回退到第一个（保持原行为）
+    - 空列表返回空串
+    """
+    if not label_names:
+        return ""
+    for name in label_names:
+        if name and not any(kw in name for kw in _NON_MODULE_KEYWORDS):
+            return name
+    return label_names[0]
+
+
 def _extract_custom_field_values(custom_field_values: List[Dict]) -> Dict[str, Any]:
     """将云效 customFieldValues 数组解析为字典"""
     result = {}
@@ -379,6 +401,21 @@ def convert_yunxiao_bugs(raw_workitems: List[Dict]) -> List[Dict]:
                 if participant_name:
                     cf_map["参与者"] = participant_name
 
+        # 解析顶层 labels 字段（云效原生标签，每个元素含 id/name/color）
+        # 用于模块归类：labels[0].name 优先作为 module 来源
+        labels_raw = item.get("labels") or item.get("label") or []
+        label_names = []
+        if isinstance(labels_raw, list):
+            for lb in labels_raw:
+                if isinstance(lb, dict):
+                    name = lb.get("name") or lb.get("displayName")
+                    if name:
+                        label_names.append(str(name).strip())
+                elif isinstance(lb, str) and lb.strip():
+                    label_names.append(lb.strip())
+        if label_names:
+            cf_map["labels"] = label_names
+
         # 提取时间字段：尝试多种可能的字段名（camelCase / snake_case / 其他变体）
         created_raw = (item.get("gmtCreate") or item.get("gmt_create") or
                        item.get("createdAt") or item.get("created_at") or
@@ -402,7 +439,9 @@ def convert_yunxiao_bugs(raw_workitems: List[Dict]) -> List[Dict]:
             "status": _extract_name(item.get("status")),
             "severity": cf_map.get("严重程度") or cf_map.get("seriousLevel") or item.get("severity") or item.get("severityName", ""),
             "priority": cf_map.get("优先级") or cf_map.get("priority") or item.get("priority") or item.get("priorityName", ""),
-            "module": cf_map.get("所属模块") or cf_map.get("功能模块") or cf_map.get("module") or item.get("module") or item.get("moduleName", ""),
+            "module": (_pick_module_name_from_labels(label_names) or
+                       cf_map.get("所属模块") or cf_map.get("功能模块") or
+                       cf_map.get("module") or item.get("module") or item.get("moduleName", "")),
             "creator": _extract_name(item.get("creator")),
             "reporter": _extract_name(item.get("creator")),
             "assignee": _extract_name(item.get("assignedTo")),

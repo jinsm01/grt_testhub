@@ -261,6 +261,15 @@ class PromptConfig(models.Model):
         ('reviewer', '用例评审提示词'),
         ('knowledge_base', '知识库问答提示词'),
         ('assertion_generator', '断言生成提示词'),
+        ('bug_classify', 'Bug缺陷分类提示词'),
+        ('bug_severity', 'Bug严重度推断提示词'),
+        ('bug_module_fallback', 'Bug模块归类提示词'),
+        ('bug_root_cause', 'Bug根因分析提示词'),
+        ('bug_test_focus', 'Bug测试建议提示词'),
+        ('bug_summary', 'Bug智能摘要提示词'),
+        ('bug_risks', 'Bug风险分析提示词'),
+        ('bug_keywords', 'Bug关键词提取提示词'),
+        ('bug_module_deep', 'Bug模块深度分析提示词'),
     ]
 
     name = models.CharField(max_length=100, verbose_name='配置名称')
