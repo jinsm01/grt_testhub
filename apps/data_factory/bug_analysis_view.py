@@ -14,6 +14,7 @@ Bug 分析 API 视图 V2
 
 import os
 import time
+import json
 import asyncio
 import tempfile
 import logging
@@ -28,6 +29,7 @@ from rest_framework import status
 from django.conf import settings
 from django.db.models import Q
 from django.utils.timezone import localtime
+from django.utils import timezone
 import openpyxl
 
 from .bug_analysis import analyze_bugs
@@ -106,6 +108,26 @@ def _serialize_for_json(obj):
         return obj.strftime('%Y-%m-%d')
     else:
         return obj
+
+
+import re
+
+def _clean_bug_description(desc):
+    """
+    清理Bug描述中的markdown图片/附件链接
+    
+    移除 ![alt](url) 格式的markdown图片语法，以及纯URL括号行。
+    图片和附件已通过单独的附件字段管理，不需要在纯文本描述中保留链接。
+    """
+    if not desc:
+        return ''
+    # 移除markdown图片语法 ![...](url)
+    cleaned = re.sub(r'!\[.*?\]\(https?://[^\s)]+\)', '', desc)
+    # 移除单独的云效附件URL行：(https://...)
+    cleaned = re.sub(r'^\s*\(https?://[^\s)]+\)\s*$', '', cleaned, flags=re.MULTILINE)
+    # 清理多余空行（3个以上换行变成2个）
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+    return cleaned.strip()
 
 
 def _validate_bug_data(bugs):
@@ -2117,6 +2139,46 @@ def bug_analysis_summary_delete(request, summary_id):
 # API 端点：云效同步 (新增)
 # ============================================================
 
+def _resolve_yunxiao_client(request):
+    """
+    从请求中解析 token_id, 查询 YunxiaoToken 表, 返回 YunxiaoClient 实例。
+    若 token_id 未提供或 token 记录不存在, 返回 (None, error_response) 元组。
+    """
+    from .models import YunxiaoToken
+    from .yunxiao_client import YunxiaoClient, YunxiaoAPIError, DEFAULT_ORGANIZATION_ID
+
+    token_id = request.data.get('token_id') or request.query_params.get('token_id')
+    if token_id is not None:
+        try:
+            token_id = int(token_id)
+        except (ValueError, TypeError):
+            return None, _build_error_response('无效的 Token ID')
+
+        try:
+            token_obj = YunxiaoToken.objects.get(id=token_id, is_active=True)
+        except YunxiaoToken.DoesNotExist:
+            return None, _build_error_response('指定的 Token 不存在或已禁用')
+
+        if not token_obj.token:
+            return None, _build_error_response('指定的 Token 值为空')
+
+        return YunxiaoClient(
+            token=token_obj.token,
+            organization_id=DEFAULT_ORGANIZATION_ID,
+        ), None
+
+    # 兼容旧接口: 直接传 token (用于 token 管理接口自身的测试)
+    token = (request.data.get('token') or request.query_params.get('token') or '').strip()
+    if token:
+        org_id = (request.data.get('organization_id') or request.query_params.get('organization_id') or '').strip()
+        return YunxiaoClient(
+            token=token,
+            organization_id=org_id or DEFAULT_ORGANIZATION_ID,
+        ), None
+
+    return None, _build_error_response('请选择访问令牌')
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def yunxiao_projects(request):
@@ -2124,29 +2186,19 @@ def yunxiao_projects(request):
     获取云效项目列表 (代理接口)
 
     POST参数:
-        - token: 云效个人访问令牌 (必填)
-        - organization_id: 组织 ID (中心版必填)
-        - domain: API 域名 (可选)
+        - token_id: 云效Token配置ID (推荐, 替代 token + organization_id)
         - keyword: 搜索关键词 (可选)
         - page: 页码 (默认1)
         - per_page: 每页数量 (默认50)
     """
     try:
-        token = request.data.get('token', '').strip()
-        organization_id = request.data.get('organization_id', '').strip()
-        domain = request.data.get('domain', '').strip()
+        client, err = _resolve_yunxiao_client(request)
+        if err:
+            return err
+
         keyword = request.data.get('keyword', '').strip()
         page = int(request.data.get('page', 1))
         per_page = min(int(request.data.get('per_page', 50)), 200)
-
-        if not token:
-            return _build_error_response('请提供云效访问令牌 (token)')
-
-        from .yunxiao_client import YunxiaoClient, YunxiaoAPIError
-        client_kwargs = {"token": token, "organization_id": organization_id}
-        if domain:
-            client_kwargs["domain"] = domain
-        client = YunxiaoClient(**client_kwargs)
 
         projects = client.search_projects(keyword=keyword, page=page, per_page=per_page)
 
@@ -2179,31 +2231,22 @@ def yunxiao_sprints(request):
     获取云效迭代列表 (代理接口)
 
     POST参数:
-        - token: 云效个人访问令牌 (必填)
-        - organization_id: 组织 ID (中心版必填)
-        - domain: API 域名 (可选)
+        - token_id: 云效Token配置ID (推荐, 替代 token + organization_id)
         - space_id: 项目 ID (必填)
         - page: 页码 (默认1)
         - per_page: 每页数量 (默认50)
     """
     try:
-        token = request.data.get('token', '').strip()
-        organization_id = request.data.get('organization_id', '').strip()
-        domain = request.data.get('domain', '').strip()
+        client, err = _resolve_yunxiao_client(request)
+        if err:
+            return err
+
         space_id = request.data.get('space_id', '').strip()
         page = int(request.data.get('page', 1))
         per_page = min(int(request.data.get('per_page', 50)), 200)
 
-        if not token:
-            return _build_error_response('请提供云效访问令牌 (token)')
         if not space_id:
             return _build_error_response('请提供项目 ID (space_id)')
-
-        from .yunxiao_client import YunxiaoClient, YunxiaoAPIError
-        client_kwargs = {"token": token, "organization_id": organization_id}
-        if domain:
-            client_kwargs["domain"] = domain
-        client = YunxiaoClient(**client_kwargs)
 
         sprints = client.list_sprints(space_id=space_id, page=page, per_page=per_page)
 
@@ -2232,14 +2275,106 @@ def yunxiao_sprints(request):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+def yunxiao_members(request):
+    """
+    获取云效项目成员列表 (代理接口)
+
+    POST参数:
+        - token_id: 云效Token配置ID (推荐)
+        - space_id: 项目 ID (必填)
+
+    返回:
+        - members: 成员列表, 每个成员包含 userId, userName, email 等字段
+    """
+    try:
+        client, err = _resolve_yunxiao_client(request)
+        if err:
+            return err
+
+        space_id = request.data.get('space_id', '').strip()
+
+        if not space_id:
+            return _build_error_response('请提供项目 ID (space_id)')
+
+        members = client.list_project_members(space_id=space_id)
+
+        items = []
+        for m in members:
+            items.append({
+                'userId': m.get('userId') or m.get('id') or '',
+                'userName': m.get('userName') or m.get('name') or '',
+                'email': m.get('email') or '',
+                'avatar': m.get('avatar') or m.get('avatarUrl') or '',
+                'displayName': m.get('displayName') or m.get('userName') or '',
+            })
+
+        return _build_api_response({
+            'items': items,
+            'total': len(items),
+        }, f'获取 {len(items)} 个成员')
+
+    except YunxiaoAPIError as e:
+        return _build_error_response(f'云效 API 错误: {e}')
+    except Exception as e:
+        logger.error(f'[API:yunxiao_members] 错误: {e}', exc_info=True)
+        return _build_error_response(f'获取项目成员列表失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def yunxiao_labels(request):
+    """
+    获取云效项目标签列表 (用于模块选择)
+
+    POST参数:
+        - token_id: 云效Token配置ID (推荐)
+        - space_id: 项目 ID (必填)
+
+    返回:
+        - items: 标签列表, 每个标签包含 id, name, color 等字段
+    """
+    try:
+        client, err = _resolve_yunxiao_client(request)
+        if err:
+            return err
+
+        space_id = request.data.get('space_id', '').strip()
+
+        if not space_id:
+            return _build_error_response('请提供项目 ID (space_id)')
+
+        labels = client.list_project_labels(space_id=space_id)
+
+        items = []
+        for lb in labels:
+            items.append({
+                'id': lb.get('id') or lb.get('labelId') or '',
+                'name': lb.get('name') or lb.get('labelName') or '',
+                'color': lb.get('color') or '',
+            })
+
+        return _build_api_response({
+            'items': items,
+            'total': len(items),
+        }, f'获取 {len(items)} 个标签')
+
+    except YunxiaoAPIError as e:
+        return _build_error_response(f'云效 API 错误: {e}')
+    except Exception as e:
+        logger.error(f'[API:yunxiao_labels] 错误: {e}', exc_info=True)
+        return _build_error_response(f'获取项目标签列表失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def sync_from_yunxiao(request):
     """
     从云效同步 Bug 数据并进行分析
 
     POST参数:
-        - token: 云效个人访问令牌 (必填)
-        - organization_id: 组织 ID (中心版必填)
-        - domain: API 域名 (可选)
+        - token_id: 云效Token配置ID (推荐, 替代 token + organization_id)
         - space_id: 项目 ID (必填)
         - sprint_id: 迭代 ID (可选)
         - version_tag: 版本标签 (可选)
@@ -2255,8 +2390,14 @@ def sync_from_yunxiao(request):
 
     try:
         # 参数提取
-        token = request.data.get('token', '').strip()
-        organization_id = request.data.get('organization_id', '').strip()
+        client, err = _resolve_yunxiao_client(request)
+        if err:
+            return err
+
+        from .yunxiao_client import DEFAULT_ORGANIZATION_ID
+        # 从 client 中提取 token (client.token 属性)
+        token = client.token
+        organization_id = DEFAULT_ORGANIZATION_ID
         domain = request.data.get('domain', '').strip()
         space_id = request.data.get('space_id', '').strip()
         sprint_id = request.data.get('sprint_id', '').strip() or None
@@ -2269,8 +2410,6 @@ def sync_from_yunxiao(request):
         skip_ai = str(skip_ai_raw).lower() in ('true', '1', 'yes')
         max_bugs = int(request.data.get('max_bugs', 1000))
 
-        if not token:
-            return _build_error_response('请提供云效访问令牌 (token)')
         if not space_id:
             return _build_error_response('请提供项目 ID (space_id)')
 
@@ -2349,6 +2488,1198 @@ def sync_from_yunxiao(request):
     except Exception as e:
         logger.error(f'[API:sync_from_yunxiao] 未预期错误: {e}', exc_info=True)
         return _build_error_response(f'同步失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+# ============================================================
+# API 端点：Bug 双向同步 (云效 ↔ 本地)
+# ============================================================
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_bug_to_yunxiao(request):
+    """
+    创建 Bug 并推送到云效指定迭代
+
+    POST参数:
+        - token_id: 云效Token配置ID (推荐, 替代 token + organization_id)
+        - space_id: 项目 ID (必填)
+        - sprint_id: 迭代 ID (必填)
+        - title: Bug 标题 (必填)
+        - desc: Bug 描述 (可选)
+        - severity: 严重程度 (可选)
+        - priority: 优先级 (可选)
+        - module: 所属模块 (可选)
+        - assignee: 处理人 (可选)
+        - analysis_record_id: 关联分析记录ID (可选)
+
+    返回:
+        - 创建结果 + BugSyncItem 记录
+    """
+    start_time = time.time()
+    try:
+        client, err = _resolve_yunxiao_client(request)
+        if err:
+            return err
+
+        from .yunxiao_client import DEFAULT_ORGANIZATION_ID
+        token = client.token
+        organization_id = DEFAULT_ORGANIZATION_ID
+        domain = request.data.get('domain', '').strip()
+        space_id = request.data.get('space_id', '').strip()
+        sprint_id = request.data.get('sprint_id', '').strip()
+        title = request.data.get('title', '').strip()
+        desc = request.data.get('desc', '').strip()
+        severity = request.data.get('severity', '').strip()
+        priority = request.data.get('priority', '').strip()
+        status_val = request.data.get('status', '').strip()
+        module = request.data.get('module', '').strip()
+        assignee = request.data.get('assignee', '').strip()
+        analysis_record_id = request.data.get('analysis_record_id')
+
+        if not space_id:
+            return _build_error_response('请提供项目 ID (space_id)')
+        if not sprint_id:
+            return _build_error_response('请提供迭代 ID (sprint_id)')
+        if not title:
+            return _build_error_response('请提供 Bug 标题 (title)')
+
+        from .yunxiao_client import YunxiaoClient, YunxiaoAPIError
+        client_kwargs = {"token": token, "organization_id": organization_id}
+        if domain:
+            client_kwargs["domain"] = domain
+        client = YunxiaoClient(**client_kwargs)
+
+        # 解析指派人ID (支持直接传递userId或用户名)
+        resolved_assignee = None
+        resolved_verifier = None
+        members_cache = None
+        
+        def is_user_id_format(value):
+            """检查是否为云效用户ID格式 (24位十六进制)"""
+            if not value:
+                return False
+            value = str(value)
+            return len(value) == 24 and all(c in '0123456789abcdef' for c in value.lower())
+        
+        def get_members():
+            nonlocal members_cache
+            if members_cache is None:
+                members_cache = client.list_project_members(space_id)
+            return members_cache
+        
+        if assignee:
+            # 如果已经是userId格式，直接使用
+            if is_user_id_format(assignee):
+                resolved_assignee = assignee
+            else:
+                # 否则查找对应的用户ID
+                try:
+                    members = get_members()
+                    for m in members:
+                        if m.get("userName") == assignee or m.get("userId") == assignee:
+                            resolved_assignee = m["userId"]
+                            break
+                    if not resolved_assignee:
+                        logger.warning(f"[create_bug_to_yunxiao] 未找到指派人 '{assignee}', 使用默认值")
+                except Exception as e:
+                    logger.warning(f"[create_bug_to_yunxiao] 解析指派人失败: {e}")
+        
+        # 通过云效API获取当前Token对应的用户ID，作为验证者 (verifier)
+        if not resolved_verifier:
+            try:
+                current_user = client.get_current_user()
+                if current_user and current_user.get("id"):
+                    resolved_verifier = str(current_user["id"])
+                    logger.info(f"[create_bug_to_yunxiao] 根据Token获取到验证者userId: {resolved_verifier}, name: {current_user.get('name')}")
+                else:
+                    logger.warning("[create_bug_to_yunxiao] 无法通过Token获取当前用户信息，验证者将使用fallback")
+            except Exception as e:
+                logger.warning(f"[create_bug_to_yunxiao] 获取Token当前用户异常: {e}")
+
+        # 验证者fallback: Token无法获取用户时，取项目第一个成员
+        if not resolved_verifier:
+            try:
+                members = get_members()
+                if members:
+                    resolved_verifier = members[0]["userId"]
+                    logger.info(f"[create_bug_to_yunxiao] 验证者fallback到项目第一个成员: {resolved_verifier}")
+            except Exception:
+                pass
+
+        # 确保至少有一个指派人 (assignee fallback)
+        if not resolved_assignee:
+            try:
+                members = get_members()
+                if members:
+                    resolved_assignee = members[0]["userId"]
+            except Exception:
+                pass
+
+        # 构建自定义字段 (仅附加非严重程度/优先级的自定义字段，因为这两个已通过severity/priority参数处理)
+        custom_fields = {}
+
+        # 调试日志：查看标签参数
+        logger.info(f"[create_bug_to_yunxiao] module参数: '{module}', 长度: {len(module)}")
+        
+        # 推送到云效 (severity/priority 会自动解析为标识符)
+        result = client.create_bug(
+            space_id=space_id,
+            subject=title,
+            description=desc,
+            sprint_id=sprint_id,
+            severity=severity,
+            priority=priority,
+            assignee=resolved_assignee,
+            verifier=resolved_verifier,
+            custom_fields=custom_fields,
+            labels=[module] if module else None,
+        )
+
+        # 从响应中提取 workitem ID 和序列号
+        # 云效API可能返回 {data: {...}} 或直接返回 {...}
+        workitem_id = ""
+        serial_number = ""
+        logger.info(f"[API:create_bug_to_yunxiao] 云效原始返回结果: {json.dumps(result, ensure_ascii=False)[:1500]}")
+        
+        def _extract_value_recursive(data_dict, target_keys, depth=0):
+            """递归从数据字典中提取目标字段值，处理嵌套的data/result等结构"""
+            if depth > 5 or not isinstance(data_dict, dict):
+                return ""
+            # 打印键名帮助调试（仅第一层）
+            if depth == 0:
+                logger.info(f"[API:create_bug_to_yunxiao] 返回数据字段列表: {list(data_dict.keys())}")
+            # 直接在当前层级查找
+            for key in target_keys:
+                val = data_dict.get(key)
+                if val:
+                    val_str = str(val).strip()
+                    if val_str:
+                        logger.info(f"[API:create_bug_to_yunxiao] 从字段 '{key}' (depth={depth}) 提取到值: {val_str}")
+                        return val_str
+            # 递归查找嵌套的data/result/value字段
+            for nested_key in ["data", "result", "value", "workitem", "item"]:
+                nested_val = data_dict.get(nested_key)
+                if isinstance(nested_val, dict):
+                    found = _extract_value_recursive(nested_val, target_keys, depth + 1)
+                    if found:
+                        return found
+            return ""
+        
+        if isinstance(result, dict):
+            # 提取workitem ID
+            workitem_id = _extract_value_recursive(result, ["id", "identifier", "workitemId", "workitem_id"])
+            # 提取serialNumber（优先取这个字段！）
+            serial_number = _extract_value_recursive(result, ["serialNumber", "serial_number", "serial", "showName", "key"])
+
+        # 如果创建成功但serialNumber为空，尝试调用get_workitem获取详情来提取serialNumber
+        if workitem_id and not serial_number:
+            try:
+                logger.info(f"[API:create_bug_to_yunxiao] 创建响应中无serialNumber，尝试查询workitem详情: workitem_id={workitem_id}")
+                workitem_detail = client.get_workitem(workitem_id, space_id=space_id)
+                logger.info(f"[API:create_bug_to_yunxiao] workitem详情: {json.dumps(workitem_detail, ensure_ascii=False)[:1500]}")
+                serial_number = _extract_value_recursive(workitem_detail, ["serialNumber", "serial_number", "serial", "showName", "key"])
+            except Exception as e:
+                logger.warning(f"[API:create_bug_to_yunxiao] 获取workitem详情失败: {e}")
+
+        # 如果序列号为空但有ID，使用ID作为备选显示
+        if not serial_number and workitem_id:
+            serial_number = workitem_id
+
+        logger.info(f"[API:create_bug_to_yunxiao] 提取结果: workitem_id={workitem_id}, serial_number={serial_number}")
+
+        # 上传附件（如果有）
+        uploaded_attachments = []
+        if workitem_id and request.FILES:
+            logger.info(f"[API:create_bug_to_yunxiao] 开始上传 {len(request.FILES)} 个附件")
+            for file_key in request.FILES:
+                uploaded_file = request.FILES[file_key]
+                try:
+                    file_content = uploaded_file.read()
+                    filename = uploaded_file.name
+                    content_type = uploaded_file.content_type or "application/octet-stream"
+                    
+                    logger.info(f"[API:create_bug_to_yunxiao] 上传附件: {filename}, 大小: {len(file_content)} bytes, 类型: {content_type}")
+                    attach_result = client.upload_attachment(
+                        workitem_id=workitem_id,
+                        file_content=file_content,
+                        filename=filename,
+                        content_type=content_type
+                    )
+                    uploaded_attachments.append({
+                        "name": filename,
+                        "size": len(file_content),
+                        "id": attach_result.get("id", ""),
+                        "url": attach_result.get("url", ""),
+                        "is_image": content_type.startswith("image/"),
+                    })
+                    
+                    logger.info(f"[API:create_bug_to_yunxiao] 附件 {filename} 上传成功: id={attach_result.get('id')}")
+                except Exception as e:
+                    logger.error(f"[API:create_bug_to_yunxiao] 上传附件 {uploaded_file.name} 失败: {e}")
+                    # 单个附件上传失败不影响主流程，继续上传其他附件
+        
+        # 描述使用用户原始输入（图片/视频/文档都已作为附件上传，无需在描述中追加链接）
+        final_desc = _clean_bug_description(desc)
+
+        # 构建本地存储数据
+        # 直接从 request 获取 token_id
+        request_token_id = request.data.get('token_id')
+        # 如果module是标签ID（24位hex），反查标签名称用于本地存储显示
+        module_name = module
+        if module and space_id:
+            module_name = client._resolve_label_name(space_id, module)
+        # 获取当前用户名作为创建人
+        creator_name = request.user.username if request.user.is_authenticated else 'system'
+        bug_data = {
+            "token_id": request_token_id,
+            "title": title,
+            "desc": final_desc,
+            "severity": severity,
+            "priority": priority,
+            "status": status_val,
+            "module": module_name,  # 存储标签名称用于显示
+            "assignee": assignee,
+            "space_id": space_id,
+            "sprint_id": sprint_id,
+            "creator": creator_name,
+            "attachments": uploaded_attachments,
+        }
+
+        # 创建 BugSyncItem 记录
+        from .models import BugSyncItem
+        sync_item = BugSyncItem.objects.create(
+            analysis_record_id=analysis_record_id if analysis_record_id else None,
+            yunxiao_workitem_id=workitem_id,
+            yunxiao_serial_number=serial_number,
+            local_data=bug_data,
+            sync_status='synced' if workitem_id else 'pending',
+            last_synced_at=timezone.now() if workitem_id else None,
+        )
+
+        elapsed = round((time.time() - start_time) * 1000)
+        logger.info(f"[API:create_bug_to_yunxiao] 成功: workitem_id={workitem_id}, 耗时{elapsed}ms")
+
+        return _build_api_response({
+            'sync_item': sync_item.to_list_dict(),
+            'workitem_id': workitem_id,
+            'serial_number': serial_number,
+            'yunxiao_result': result if not isinstance(result, (list, dict)) or len(str(result)) < 500 else str(result)[:500],
+        }, f'Bug 创建成功并同步到云效 (耗时{elapsed}ms)')
+
+    except YunxiaoAPIError as e:
+        logger.error(f'[API:create_bug_to_yunxiao] 云效API错误: {e}')
+        return _build_error_response(f'云效 API 错误: {str(e)[:300]}')
+    except Exception as e:
+        logger.error(f'[API:create_bug_to_yunxiao] 错误: {e}', exc_info=True)
+        return _build_error_response(f'创建 Bug 失败: {str(e)[:300]}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_bug_to_yunxiao(request, sync_item_id):
+    """
+    更新 Bug 并同步到云效
+
+    PUT参数:
+        - token_id: 云效Token配置ID (推荐, 替代 token + organization_id)
+        - title: Bug 标题
+        - desc: Bug 描述
+        - status: 状态
+        - severity: 严重程度
+        - priority: 优先级
+        - module: 所属模块
+        - assignee: 处理人
+
+    返回:
+        - 更新结果
+    """
+    start_time = time.time()
+    try:
+        client, err = _resolve_yunxiao_client(request)
+        if err:
+            return err
+
+        from .yunxiao_client import DEFAULT_ORGANIZATION_ID
+        token = client.token
+        organization_id = DEFAULT_ORGANIZATION_ID
+        domain = request.data.get('domain', '').strip()
+
+        from .models import BugSyncItem
+        sync_item = BugSyncItem.objects.filter(id=sync_item_id).first()
+        if not sync_item:
+            return _build_error_response(f'同步项不存在: id={sync_item_id}', code=status.HTTP_404_NOT_FOUND)
+
+        workitem_id = sync_item.yunxiao_workitem_id
+        if not workitem_id:
+            return _build_error_response('该 Bug 尚未同步到云效，无法更新', code=status.HTTP_400_BAD_REQUEST)
+
+        # 获取space_id用于标签解析
+        local_data = sync_item.local_data or {}
+        space_id = local_data.get('space_id', '')
+
+        from .yunxiao_client import YunxiaoClient, YunxiaoAPIError
+        client_kwargs = {"token": token, "organization_id": organization_id}
+        if domain:
+            client_kwargs["domain"] = domain
+        client = YunxiaoClient(**client_kwargs)
+
+        # 构建更新数据
+        update_data = {}
+        for field in ['title', 'desc', 'status', 'severity', 'priority', 'module', 'assignee']:
+            val = request.data.get(field)
+            if val is not None:
+                update_data[field] = val
+
+        # 解析指派人ID (支持直接传递userId或用户名)
+        resolved_assignee = None
+        assignee_val = update_data.get('assignee')
+        
+        def is_user_id_format(value):
+            """检查是否为云效用户ID格式 (24位十六进制)"""
+            if not value:
+                return False
+            value = str(value)
+            return len(value) == 24 and all(c in '0123456789abcdef' for c in value.lower())
+        
+        if assignee_val:
+            # 如果已经是userId格式，直接使用
+            if is_user_id_format(assignee_val):
+                resolved_assignee = assignee_val
+            else:
+                space_id = sync_item.local_data.get('space_id') if sync_item.local_data else None
+                if space_id:
+                    try:
+                        members = client.list_project_members(space_id)
+                        for m in members:
+                            if m.get("userName") == assignee_val or m.get("userId") == assignee_val:
+                                resolved_assignee = m["userId"]
+                                break
+                    except Exception:
+                        pass
+
+        # 构建自定义字段 (severity/priority 已通过参数传递，不需重复添加)
+        custom_fields = {}
+
+        # 状态直接传递，yunxiao_client会自动将中文名称解析为状态ID
+        status_val = update_data.get('status')
+
+        # 标签(labels)处理: module字段对应云效标签
+        module_val = update_data.get('module', '').strip() if update_data.get('module') else ''
+        # 如果传入的是标签ID（24位hex），反查标签名称用于本地存储显示
+        module_name_for_storage = module_val
+        if module_val and space_id:
+            module_name_for_storage = client._resolve_label_name(space_id, module_val)
+        labels_param = [module_val] if module_val else None
+
+        # 转换为云效格式
+        payload = client.update_workitem(
+            workitem_id=workitem_id,
+            subject=update_data.get('title'),
+            description=update_data.get('desc'),
+            status=status_val,  # 状态名称会自动解析为ID
+            severity=update_data.get('severity'),
+            priority=update_data.get('priority'),
+            assignee=resolved_assignee,
+            labels=labels_param,
+            space_id=space_id if space_id else None,
+            custom_fields=custom_fields if custom_fields else None,
+        )
+
+        # 更新本地记录
+        if 'title' in update_data:
+            local_data['title'] = update_data['title']
+        if 'desc' in update_data:
+            local_data['desc'] = _clean_bug_description(update_data['desc'])
+        if 'status' in update_data:
+            local_data['status'] = update_data['status']
+        if 'severity' in update_data:
+            local_data['severity'] = update_data['severity']
+        if 'priority' in update_data:
+            local_data['priority'] = update_data['priority']
+        if 'module' in update_data:
+            local_data['module'] = module_name_for_storage  # 存储名称而非ID，用于列表显示
+            # 同步更新labels数组
+            if module_val:
+                local_data['labels'] = [module_val]
+
+        sync_item.local_data = local_data
+        sync_item.sync_status = 'synced'
+        sync_item.last_synced_at = timezone.now()
+        sync_item.save(update_fields=['local_data', 'sync_status', 'last_synced_at', 'updated_at'])
+
+        elapsed = round((time.time() - start_time) * 1000)
+        logger.info(f"[API:update_bug_to_yunxiao] 成功: workitem_id={workitem_id}, 耗时{elapsed}ms")
+
+        return _build_api_response({
+            'sync_item': sync_item.to_list_dict(),
+            'yunxiao_result': str(payload)[:500] if payload else {},
+        }, f'Bug 更新成功并同步到云效 (耗时{elapsed}ms)')
+
+    except YunxiaoAPIError as e:
+        # 标记为失败
+        try:
+            from .models import BugSyncItem
+            sync_item = BugSyncItem.objects.filter(id=sync_item_id).first()
+            if sync_item:
+                sync_item.sync_status = 'failed'
+                sync_item.save(update_fields=['sync_status', 'updated_at'])
+        except Exception:
+            pass
+        return _build_error_response(f'云效 API 错误: {e}')
+    except Exception as e:
+        logger.error(f'[API:update_bug_to_yunxiao] 错误: {e}', exc_info=True)
+        return _build_error_response(f'更新 Bug 失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def quick_change_bug_status(request, sync_item_id):
+    """
+    快捷修改Bug状态，支持上传截图作为评论
+
+    POST参数:
+        - token_id: 云效Token配置ID
+        - status: 新状态（已验证/已关闭/再次打开）
+        - screenshot: 截图文件（可选，multipart/form-data）
+        - comment: 评论文本（可选）
+
+    返回:
+        - 更新结果
+    """
+    start_time = time.time()
+    try:
+        client, err = _resolve_yunxiao_client(request)
+        if err:
+            return err
+
+        from .yunxiao_client import DEFAULT_ORGANIZATION_ID, YunxiaoClient, YunxiaoAPIError
+        token = client.token
+        organization_id = DEFAULT_ORGANIZATION_ID
+        domain = request.data.get('domain', '').strip()
+
+        from .models import BugSyncItem
+        sync_item = BugSyncItem.objects.filter(id=sync_item_id).first()
+        if not sync_item:
+            return _build_error_response(f'同步项不存在: id={sync_item_id}', code=status.HTTP_404_NOT_FOUND)
+
+        workitem_id = sync_item.yunxiao_workitem_id
+        if not workitem_id:
+            return _build_error_response('该 Bug 尚未同步到云效，无法更新', code=status.HTTP_400_BAD_REQUEST)
+
+        local_data = sync_item.local_data or {}
+        space_id = local_data.get('space_id', '')
+
+        client_kwargs = {"token": token, "organization_id": organization_id}
+        if domain:
+            client_kwargs["domain"] = domain
+        client = YunxiaoClient(**client_kwargs)
+
+        # 1. 更新状态
+        new_status = request.data.get('status', '').strip()
+        if not new_status:
+            return _build_error_response('状态不能为空', code=status.HTTP_400_BAD_REQUEST)
+
+        client.update_bug_status(workitem_id=workitem_id, status=new_status, space_id=space_id if space_id else None)
+
+        # 2. 如果有截图，上传附件并添加评论
+        screenshot = request.FILES.get('screenshot')
+        comment_text = request.data.get('comment', '').strip()
+
+        if screenshot:
+            # 读取文件内容
+            file_content = screenshot.read()
+            filename = screenshot.name
+            content_type = screenshot.content_type or 'image/png'
+
+            # 上传附件
+            attach_result = client.upload_attachment(
+                workitem_id=workitem_id,
+                file_content=file_content,
+                filename=filename,
+                content_type=content_type,
+            )
+
+            # 构建评论内容，用HTML嵌入图片（云效评论支持HTML不支持markdown图片）
+            embed_html = attach_result.get('embedHtml', '')
+            embed_url = attach_result.get('embedUrl', '')
+            comment_parts = []
+            if comment_text:
+                comment_parts.append(comment_text)
+            if embed_html:
+                comment_parts.append(embed_html)
+            elif embed_url:
+                comment_parts.append(f'<img src="{embed_url}"/>')
+
+            full_comment = '<br/><br/>'.join(comment_parts)
+            try:
+                client.add_comment(workitem_id=workitem_id, content=full_comment)
+            except Exception as e:
+                logger.warning(f'[quick_change_bug_status] 添加评论失败（不影响状态更新）: {e}')
+        elif comment_text:
+            # 没有截图但有评论
+            full_comment = comment_text
+            try:
+                client.add_comment(workitem_id=workitem_id, content=full_comment)
+            except Exception as e:
+                logger.warning(f'[quick_change_bug_status] 添加评论失败（不影响状态更新）: {e}')
+
+        # 3. 更新本地记录
+        local_data['status'] = new_status
+        sync_item.local_data = local_data
+        sync_item.sync_status = 'synced'
+        sync_item.last_synced_at = timezone.now()
+        sync_item.save(update_fields=['local_data', 'sync_status', 'last_synced_at', 'updated_at'])
+
+        elapsed = round((time.time() - start_time) * 1000)
+        logger.info(f"[API:quick_change_bug_status] 成功: workitem_id={workitem_id}, status={new_status}, 截图={'有' if screenshot else '无'}, 耗时{elapsed}ms")
+
+        return _build_api_response({
+            'sync_item': sync_item.to_list_dict(),
+        }, f'状态已更新为「{new_status}」{"并上传截图" if screenshot else ""} (耗时{elapsed}ms)')
+
+    except YunxiaoAPIError as e:
+        try:
+            from .models import BugSyncItem
+            sync_item = BugSyncItem.objects.filter(id=sync_item_id).first()
+            if sync_item:
+                sync_item.sync_status = 'failed'
+                sync_item.save(update_fields=['sync_status', 'updated_at'])
+        except Exception:
+            pass
+        return _build_error_response(f'云效 API 错误: {e}')
+    except Exception as e:
+        logger.error(f'[API:quick_change_bug_status] 错误: {e}', exc_info=True)
+        return _build_error_response(f'快捷改状态失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def resync_bug_item(request, sync_item_id):
+    """
+    重新同步单个Bug项：从云效获取最新信息，补全serialNumber等字段
+    
+    POST参数: (通过token_id自动选择token)
+    """
+    start_time = time.time()
+    try:
+        from .models import BugSyncItem, YunxiaoToken
+        
+        sync_item = BugSyncItem.objects.filter(id=sync_item_id).first()
+        if not sync_item:
+            return _build_error_response(f'同步项不存在 (id={sync_item_id})', code=status.HTTP_404_NOT_FOUND)
+        
+        workitem_id = sync_item.yunxiao_workitem_id
+        if not workitem_id:
+            return _build_error_response('该记录尚未同步到云效，无workitem_id')
+        
+        # 直接使用任意一个启用的token（BugSyncItem不存储token_id）
+        token_obj = YunxiaoToken.objects.filter(is_active=True).first()
+        
+        if not token_obj:
+            return _build_error_response('没有可用的云效Token配置，请先在Token管理中添加')
+        
+        from .yunxiao_client import YunxiaoClient
+        client = YunxiaoClient(
+            token=token_obj.token,
+            organization_id='68d8e1cb66aca23eccbd5e0a'
+        )
+        
+        # 获取workitem详情
+        workitem_detail = client.get_workitem(workitem_id)
+        logger.info(f"[API:resync_bug_item] workitem详情: {json.dumps(workitem_detail, ensure_ascii=False)[:1500]}")
+        
+        # 引入严重程度标准化函数和标签提取工具
+        from .yunxiao_client import YunxiaoClient as YC, _pick_module_name_from_labels
+        
+        def _extract_value_recursive(data_dict, target_keys, depth=0):
+            """递归提取简单字符串值"""
+            if depth > 8 or not isinstance(data_dict, dict):
+                return ""
+            
+            def _try_extract(val):
+                """尝试从值中提取字符串"""
+                if val is None:
+                    return ""
+                if isinstance(val, (str, int, float)):
+                    val_str = str(val).strip()
+                    if val_str:
+                        return val_str
+                elif isinstance(val, dict):
+                    # 如果是对象，尝试从中提取name/value/displayName等
+                    for sub_key in ["name", "value", "displayName", "label", "id", "identifier", "key"]:
+                        sub_val = val.get(sub_key)
+                        if sub_val is not None:
+                            sub_str = str(sub_val).strip()
+                            if sub_str and len(sub_str) < 100:
+                                return sub_str
+                elif isinstance(val, list) and len(val) > 0:
+                    for item in val:
+                        result = _try_extract(item)
+                        if result:
+                            return result
+                return ""
+            
+            def _extract_from_field_arrays(data, keys):
+                """从fieldValues数组中提取值"""
+                if not isinstance(data, dict):
+                    return ""
+                for arr_key in ["fieldValues", "customFieldValues", "fields", "workitemFields"]:
+                    fields_arr = data.get(arr_key)
+                    if isinstance(fields_arr, list):
+                        for field in fields_arr:
+                            if not isinstance(field, dict):
+                                continue
+                            field_key = str(field.get("fieldKey") or field.get("key") or field.get("fieldIdentifier") or "").lower()
+                            for target_key in keys:
+                                if target_key.lower() in field_key:
+                                    val = field.get("value") or field.get("fieldValue") or field.get("name") or field.get("displayValue")
+                                    result = _try_extract(val)
+                                    if result:
+                                        return result
+                return ""
+            
+            # 0. 先从字段数组中提取
+            result = _extract_from_field_arrays(data_dict, target_keys)
+            if result:
+                return result
+            
+            # 1. 直接在当前层级查找
+            for key in target_keys:
+                val = data_dict.get(key)
+                result = _try_extract(val)
+                if result:
+                    return result
+            
+            # 2. 查找常见的嵌套字段
+            common_nested = ["data", "result", "value", "workitem", "item", "field", "fields", "workItem"]
+            for nested_key in common_nested:
+                nested_val = data_dict.get(nested_key)
+                if isinstance(nested_val, dict):
+                    result = _extract_from_field_arrays(nested_val, target_keys)
+                    if result:
+                        return result
+                    found = _extract_value_recursive(nested_val, target_keys, depth + 1)
+                    if found:
+                        return found
+                elif isinstance(nested_val, list):
+                    for item in nested_val:
+                        if isinstance(item, dict):
+                            result = _extract_from_field_arrays(item, target_keys)
+                            if result:
+                                return result
+                            found = _extract_value_recursive(item, target_keys, depth + 1)
+                            if found:
+                                return found
+            
+            # 3. 深度搜索（限制层级）
+            if depth < 4:
+                for key, val in data_dict.items():
+                    if isinstance(val, dict):
+                        result = _extract_from_field_arrays(val, target_keys)
+                        if result:
+                            return result
+                        found = _extract_value_recursive(val, target_keys, depth + 1)
+                        if found and len(found) < 100:
+                            return found
+            
+            return ""
+        
+        def _extract_user_display(data_dict, target_keys, depth=0):
+            """递归提取用户显示名称（处理人等），支持多种字段名和嵌套结构"""
+            if depth > 8 or not isinstance(data_dict, dict):
+                return ""
+            
+            def _try_extract_user(val):
+                """尝试从各种格式的值中提取用户显示名"""
+                if val is None:
+                    return ""
+                if isinstance(val, dict):
+                    # 用户对象，优先提取displayName，然后name/userName
+                    for name_key in ["displayName", "name", "userName", "nickName", "realName", "cnName", "email"]:
+                        name_val = val.get(name_key)
+                        if name_val and isinstance(name_val, str) and name_val.strip():
+                            return name_val.strip()
+                    # 如果没有显示名，尝试提取ID
+                    for id_key in ["id", "userId", "identifier", "uniqueId"]:
+                        id_val = val.get(id_key)
+                        if id_val and str(id_val).strip():
+                            return str(id_val).strip()
+                elif isinstance(val, str) and val.strip():
+                    return val.strip()
+                elif isinstance(val, list) and len(val) > 0:
+                    # 数组，取第一个用户
+                    for item in val:
+                        result = _try_extract_user(item)
+                        if result:
+                            return result
+                return ""
+            
+            def _extract_from_field_arrays(data):
+                """从fieldValues/customFieldValues数组中提取处理人"""
+                if not isinstance(data, dict):
+                    return ""
+                # 查找字段数组
+                for arr_key in ["fieldValues", "customFieldValues", "fields", "workitemFields"]:
+                    fields_arr = data.get(arr_key)
+                    if isinstance(fields_arr, list):
+                        for field in fields_arr:
+                            if not isinstance(field, dict):
+                                continue
+                            field_key = field.get("fieldKey") or field.get("key") or field.get("fieldIdentifier") or ""
+                            # 匹配处理人相关的fieldKey
+                            assignee_keys = ["assignee", "assignTo", "assignedTo", "handler", "executor", "responsible", "owner",
+                                          "currentHandler", "processingPerson", "worker", "dealPerson"]
+                            if any(ak.lower() in str(field_key).lower() for ak in assignee_keys):
+                                val = field.get("value") or field.get("fieldValue") or field.get("userValue")
+                                result = _try_extract_user(val)
+                                if result:
+                                    logger.info(f"[resync] 从字段数组 '{arr_key}' 的 '{field_key}' 提取到用户: {result}")
+                                    return result
+                return ""
+            
+            # 0. 先尝试从字段数组中提取（云效常用格式）
+            result = _extract_from_field_arrays(data_dict)
+            if result:
+                return result
+            
+            # 1. 直接在当前层级查找目标字段
+            for key in target_keys:
+                val = data_dict.get(key)
+                result = _try_extract_user(val)
+                if result:
+                    logger.info(f"[resync] 从字段 '{key}' (depth={depth}) 提取到用户: {result}")
+                    return result
+            
+            # 2. 查找常见的嵌套字段
+            common_nested = ["data", "result", "value", "workitem", "item", "field", "fields", "workItem"]
+            for nested_key in common_nested:
+                nested_val = data_dict.get(nested_key)
+                if isinstance(nested_val, dict):
+                    # 先尝试从嵌套的dict中提取字段数组
+                    result = _extract_from_field_arrays(nested_val)
+                    if result:
+                        return result
+                    result = _extract_user_display(nested_val, target_keys, depth + 1)
+                    if result:
+                        return result
+                elif isinstance(nested_val, list):
+                    for item in nested_val:
+                        if isinstance(item, dict):
+                            result = _extract_from_field_arrays(item)
+                            if result:
+                                return result
+                            result = _extract_user_display(item, target_keys, depth + 1)
+                            if result:
+                                return result
+            
+            # 3. 递归遍历所有dict类型的值（深度搜索）
+            if depth < 5:
+                for key, val in data_dict.items():
+                    if isinstance(val, dict):
+                        result = _extract_from_field_arrays(val)
+                        if result:
+                            return result
+                        result = _extract_user_display(val, target_keys, depth + 1)
+                        if result and len(result) < 100:  # 避免返回过长的非用户名字符串
+                            return result
+                    elif isinstance(val, list) and len(val) > 0 and len(val) < 20:
+                        for item in val:
+                            if isinstance(item, dict):
+                                result = _extract_from_field_arrays(item)
+                                if result:
+                                    return result
+                                result = _extract_user_display(item, target_keys, depth + 1)
+                                if result and len(result) < 100:
+                                    return result
+            
+            return ""
+        
+        # 提取各字段 - 使用直接结构解析，更可靠
+        serial_number = workitem_detail.get("serialNumber") or ""
+        
+        # 状态：从status对象取name
+        status_obj = workitem_detail.get("status") or {}
+        if isinstance(status_obj, dict):
+            remote_status = status_obj.get("name") or status_obj.get("displayName") or ""
+        else:
+            remote_status = str(status_obj).strip() if status_obj else ""
+        
+        # space_id：从space对象取id（不是name！）
+        space_obj = workitem_detail.get("space") or {}
+        if isinstance(space_obj, dict):
+            remote_space_id = space_obj.get("id") or space_obj.get("spaceId") or ""
+        else:
+            remote_space_id = str(space_obj).strip() if space_obj else ""
+        
+        # 手动收集状态映射到客户端缓存
+        if remote_space_id:
+            client._collect_statuses_from_workitems(remote_space_id, [workitem_detail])
+        
+        # 处理人：从assignedTo对象取userId（与创建时保持一致）
+        assignee_obj = workitem_detail.get("assignedTo") or {}
+        if isinstance(assignee_obj, dict):
+            remote_assignee = assignee_obj.get("id") or assignee_obj.get("userId") or assignee_obj.get("name") or assignee_obj.get("displayName") or assignee_obj.get("userName") or ""
+        else:
+            remote_assignee = str(assignee_obj).strip() if assignee_obj else ""
+        
+        # 从customFieldValues数组中提取优先级和严重程度
+        remote_priority = ""
+        remote_severity_raw = ""
+        custom_fields_arr = workitem_detail.get("customFieldValues") or []
+        if isinstance(custom_fields_arr, list):
+            for cf in custom_fields_arr:
+                if not isinstance(cf, dict):
+                    continue
+                field_id = str(cf.get("fieldId") or cf.get("fieldKey") or "").lower()
+                field_name = str(cf.get("fieldName") or "").lower()
+                values_arr = cf.get("values") or []
+                display_val = ""
+                identifier_val = ""
+                if isinstance(values_arr, list) and len(values_arr) > 0:
+                    first_val = values_arr[0]
+                    if isinstance(first_val, dict):
+                        display_val = first_val.get("displayValue") or first_val.get("name") or ""
+                        identifier_val = first_val.get("identifier") or first_val.get("id") or ""
+                    elif isinstance(first_val, (str, int)):
+                        display_val = str(first_val)
+                
+                if "priority" in field_id or "优先级" in field_name:
+                    remote_priority = display_val or identifier_val
+                elif "serious" in field_id or "severity" in field_id or "严重程度" in field_name:
+                    remote_severity_raw = display_val or identifier_val
+        
+        # 备用：如果customFieldValues没取到，用通用递归
+        if not remote_priority:
+            remote_priority = _extract_value_recursive(workitem_detail, ["priority", "priorityName", "priorityLabel"])
+        if not remote_severity_raw:
+            remote_severity_raw = _extract_value_recursive(workitem_detail, ["seriousLevel", "severity", "severityName"])
+        
+        # 标准化严重程度为本地P等级格式
+        remote_severity = YC.normalize_severity_from_yunxiao(remote_severity_raw) if remote_severity_raw else ""
+        
+        # 提取云效标签(labels)用于更新所属模块
+        remote_labels = []  # 标签名称列表（用于显示）
+        remote_label_ids = []  # 标签ID列表
+        try:
+            raw_labels = workitem_detail.get("labels") or []
+            if isinstance(raw_labels, list):
+                for item in raw_labels:
+                    if isinstance(item, dict):
+                        lb_id = item.get("id") or item.get("labelId") or ""
+                        lb_name = item.get("name") or item.get("displayName") or item.get("labelName") or ""
+                        if lb_id:
+                            remote_label_ids.append(str(lb_id))
+                        if lb_name:
+                            remote_labels.append(str(lb_name).strip())
+                    elif isinstance(item, str) and item.strip():
+                        remote_labels.append(item.strip())
+        except Exception as e:
+            logger.warning(f"[API:resync_bug_item] 提取labels异常: {e}")
+        
+        # 通过标签列表API，用ID反查正确的标签名称（修正历史错误数据）
+        remote_module = ""
+        if remote_space_id:
+            try:
+                # 构建ID->名称映射，优先用标签列表API返回的名称
+                all_labels = client.list_project_labels(remote_space_id)
+                id_to_name = {}
+                for lb in all_labels:
+                    lb_id = str(lb.get("id") or lb.get("labelId") or "")
+                    lb_name = str(lb.get("name") or lb.get("labelName") or "")
+                    if lb_id and lb_name:
+                        id_to_name[lb_id] = lb_name
+                
+                # 用标签ID反查正确名称，修正remote_labels
+                corrected_labels = []
+                for lb_id in remote_label_ids:
+                    if lb_id in id_to_name:
+                        corrected_labels.append(id_to_name[lb_id])
+                    else:
+                        # ID在列表中找不到，保留原始name
+                        pass
+                # 如果通过ID找到了名称，优先使用修正后的列表
+                if corrected_labels:
+                    remote_labels = corrected_labels
+                
+                remote_module = _pick_module_name_from_labels(remote_labels) if remote_labels else ""
+            except Exception as e:
+                logger.warning(f"[API:resync_bug_item] 标签ID反查名称异常: {e}")
+                remote_module = _pick_module_name_from_labels(remote_labels) if remote_labels else ""
+        else:
+            remote_module = _pick_module_name_from_labels(remote_labels) if remote_labels else ""
+        
+        logger.info(f"[API:resync_bug_item] 提取字段: serial={serial_number}, status={remote_status}, priority={remote_priority}, "
+                    f"severity_raw={remote_severity_raw} -> severity={remote_severity}, assignee={remote_assignee}, "
+                    f"space_id={remote_space_id}, labels={remote_labels}, module={remote_module}")
+        
+        # 更新local_data（保留原有数据，只更新有值的字段）
+        local_data = sync_item.local_data or {}
+        updated_fields_count = 0
+        if serial_number and not sync_item.yunxiao_serial_number:
+            sync_item.yunxiao_serial_number = serial_number
+            updated_fields_count += 1
+        if remote_status and remote_status != local_data.get("status"):
+            local_data["status"] = remote_status
+            updated_fields_count += 1
+        if remote_priority and remote_priority != local_data.get("priority"):
+            local_data["priority"] = remote_priority
+            updated_fields_count += 1
+        if remote_severity and remote_severity != local_data.get("severity"):
+            local_data["severity"] = remote_severity
+            updated_fields_count += 1
+        if remote_assignee and remote_assignee != local_data.get("assignee"):
+            local_data["assignee"] = remote_assignee
+            updated_fields_count += 1
+        if remote_module and remote_module != local_data.get("module"):
+            local_data["module"] = remote_module
+            updated_fields_count += 1
+        if remote_labels:
+            local_data["labels"] = remote_labels
+        # 补全space_id（针对历史数据可能缺失的情况）
+        if remote_space_id and not local_data.get("space_id"):
+            local_data["space_id"] = remote_space_id
+            updated_fields_count += 1
+        
+        # 更新记录
+        update_fields = ['updated_at', 'local_data']
+        if serial_number:
+            update_fields.append('yunxiao_serial_number')
+            sync_item.yunxiao_serial_number = serial_number
+        
+        # 更新状态为已同步
+        if sync_item.sync_status != 'synced':
+            sync_item.sync_status = 'synced'
+            update_fields.append('sync_status')
+        
+        sync_item.local_data = local_data
+        sync_item.last_synced_at = timezone.now()
+        update_fields.append('last_synced_at')
+        sync_item.remote_data_cache = workitem_detail
+        update_fields.append('remote_data_cache')
+        
+        sync_item.save(update_fields=update_fields)
+        
+        elapsed = round((time.time() - start_time) * 1000)
+        update_msg_parts = []
+        if serial_number:
+            update_msg_parts.append(f"编号:{serial_number}")
+        if remote_status:
+            update_msg_parts.append(f"状态:{remote_status}")
+        if remote_severity:
+            update_msg_parts.append(f"严重程度:{remote_severity}")
+        if remote_module:
+            update_msg_parts.append(f"模块:{remote_module}")
+        if remote_assignee:
+            update_msg_parts.append(f"处理人:{remote_assignee}")
+        logger.info(f"[API:resync_bug_item] 成功: workitem_id={workitem_id}, 更新字段: {update_msg_parts}, 耗时{elapsed}ms")
+        
+        msg = f'重新同步成功 (耗时{elapsed}ms)'
+        if update_msg_parts:
+            msg += '，更新: ' + ', '.join(update_msg_parts)
+        
+        return _build_api_response({
+            'sync_item': sync_item.to_list_dict(),
+            'serial_number': serial_number,
+            'updated_fields': {
+                'status': remote_status,
+                'assignee': remote_assignee,
+                'priority': remote_priority,
+                'severity': remote_severity,
+                'module': remote_module,
+                'labels': remote_labels,
+            }
+        }, msg)
+        
+    except Exception as e:
+        logger.error(f'[API:resync_bug_item] 错误: {e}', exc_info=True)
+        return _build_error_response(f'重新同步失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def bug_sync_items(request):
+    """
+    获取 Bug 同步项列表
+
+    GET参数:
+        - analysis_record_id: 关联分析记录ID (可选)
+        - sync_status: 同步状态过滤 (可选)
+        - page: 页码 (默认1)
+        - page_size: 每页数量 (默认20)
+    """
+    try:
+        from .models import BugSyncItem
+        queryset = BugSyncItem.objects.all().order_by('-created_at')
+
+        analysis_record_id = request.query_params.get('analysis_record_id')
+        if analysis_record_id:
+            queryset = queryset.filter(analysis_record_id=analysis_record_id)
+
+        sync_status = request.query_params.get('sync_status')
+        if sync_status:
+            queryset = queryset.filter(sync_status=sync_status)
+
+        page = max(int(request.query_params.get('page', 1)), 1)
+        page_size = min(int(request.query_params.get('page_size', 20)), 100)
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        total = queryset.count()
+        items = queryset[start:end]
+
+        items_data = [item.to_list_dict() for item in items]
+
+        return _build_api_response({
+            'items': items_data,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': max((total + page_size - 1) // page_size, 1),
+        })
+
+    except Exception as e:
+        logger.error(f'[API:bug_sync_items] 错误: {e}', exc_info=True)
+        return _build_error_response(f'获取同步项列表失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def poll_remote_status(request):
+    """
+    轮询云效 Bug 状态变更并更新本地 (反向同步)
+
+    GET参数:
+        - token: 云效个人访问令牌 (必填)
+        - organization_id: 组织 ID (中心版必填)
+        - domain: API 域名 (可选)
+        - sync_item_id: 单个同步项ID (可选，不填则批量检查)
+        - analysis_record_id: 关联分析记录ID (可选)
+
+    返回:
+        - 变更列表 + 更新统计
+    """
+    try:
+        token = request.query_params.get('token', '').strip()
+        organization_id = request.query_params.get('organization_id', '').strip()
+        domain = request.query_params.get('domain', '').strip()
+        sync_item_id = request.query_params.get('sync_item_id')
+        analysis_record_id = request.query_params.get('analysis_record_id')
+
+        if not token:
+            return _build_error_response('请提供云效访问令牌 (token)')
+
+        from .yunxiao_client import YunxiaoClient, YunxiaoAPIError
+        from .models import BugSyncItem
+        client_kwargs = {"token": token, "organization_id": organization_id}
+        if domain:
+            client_kwargs["domain"] = domain
+        client = YunxiaoClient(**client_kwargs)
+
+        # 确定要检查的同步项
+        if sync_item_id:
+            sync_items = BugSyncItem.objects.filter(id=sync_item_id).exclude(yunxiao_workitem_id='')
+        elif analysis_record_id:
+            sync_items = BugSyncItem.objects.filter(analysis_record_id=analysis_record_id).exclude(yunxiao_workitem_id='')
+        else:
+            sync_items = BugSyncItem.objects.exclude(yunxiao_workitem_id='').order_by('-updated_at')[:100]
+
+        changes = []
+        update_count = 0
+        error_count = 0
+
+        for item in sync_items:
+            try:
+                remote_data = client.get_workitem(item.yunxiao_workitem_id)
+                if not remote_data or isinstance(remote_data, list):
+                    remote_data = remote_data[0] if isinstance(remote_data, list) and remote_data else {}
+
+                # 提取远端状态和space_id，收集状态映射
+                remote_status = ""
+                if isinstance(remote_data, dict):
+                    remote_status = str(remote_data.get("status", "") or "")
+                    # 提取space_id收集状态缓存
+                    space_obj = remote_data.get("space") or {}
+                    if isinstance(space_obj, dict):
+                        rid = space_obj.get("id") or space_obj.get("spaceId") or ""
+                        if rid:
+                            client._collect_statuses_from_workitems(rid, [remote_data])
+
+                # 对比本地
+                local_data = item.local_data or {}
+                local_status = str(local_data.get("status", "") or "")
+
+                if remote_status and remote_status != local_status:
+                    # 检测到状态变更
+                    local_data['status'] = remote_status
+                    item.local_data = local_data
+                    item.remote_data_cache = remote_data
+                    item.sync_status = 'synced'
+                    item.last_synced_at = timezone.now()
+                    item.last_remote_check_at = timezone.now()
+                    item.save()
+
+                    changes.append({
+                        'id': item.id,
+                        'yunxiao_workitem_id': item.yunxiao_workitem_id,
+                        'title': local_data.get('title', ''),
+                        'old_status': local_status,
+                        'new_status': remote_status,
+                    })
+                    update_count += 1
+                else:
+                    # 无变更，只更新检查时间
+                    item.last_remote_check_at = timezone.now()
+                    item.remote_data_cache = remote_data
+                    item.save(update_fields=['last_remote_check_at', 'remote_data_cache'])
+
+            except YunxiaoAPIError as e:
+                logger.warning(f"[API:poll_remote_status] workitem_id={item.yunxiao_workitem_id} 获取失败: {e}")
+                error_count += 1
+            except Exception as e:
+                logger.warning(f"[API:poll_remote_status] workitem_id={item.yunxiao_workitem_id} 异常: {e}")
+                error_count += 1
+
+        logger.info(f"[API:poll_remote_status] 检查完成: 共{len(list(sync_items))}项, 更新{update_count}项, 错误{error_count}项")
+
+        return _build_api_response({
+            'total_checked': len(list(sync_items)),
+            'updated_count': update_count,
+            'error_count': error_count,
+            'changes': changes,
+        }, f'远程状态检查完成: {update_count} 项更新')
+
+    except YunxiaoAPIError as e:
+        return _build_error_response(f'云效 API 错误: {e}')
+    except Exception as e:
+        logger.error(f'[API:poll_remote_status] 错误: {e}', exc_info=True)
+        return _build_error_response(f'轮询远程状态失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_bug_sync_item(request, sync_item_id):
+    """
+    删除 Bug 同步项 (本地删除，不影响云效数据)
+    """
+    try:
+        from .models import BugSyncItem
+        sync_item = BugSyncItem.objects.filter(id=sync_item_id).first()
+        if not sync_item:
+            return _build_error_response(f'同步项不存在: id={sync_item_id}', code=status.HTTP_404_NOT_FOUND)
+
+        sync_item.delete()
+        return _build_api_response({}, f'同步项 id={sync_item_id} 已删除')
+
+    except Exception as e:
+        logger.error(f'[API:delete_bug_sync_item] 错误: {e}', exc_info=True)
+        return _build_error_response(f'删除失败: {str(e)}',
                                      code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
 
 
@@ -2505,3 +3836,209 @@ def bug_analysis_ai_status(request, record_id):
         logger.error(f'[API:bug_analysis_ai_status] 错误: {e}', exc_info=True)
         return _build_error_response(f'查询AI状态失败: {str(e)}',
                                      code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+# ============================================================
+# 云效 Token 配置管理 API
+# ============================================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def yunxiao_token_list(request):
+    """
+    云效 Token 配置列表 (GET) + 新建 (POST)
+
+    GET参数:
+        - keyword: 搜索标签/创建者 (可选)
+        - is_active: 过滤启用状态 (可选)
+        - page: 页码 (默认1)
+        - page_size: 每页数量 (默认20)
+
+    POST参数:
+        - label: 标签/备注 (必填)
+        - token: 云效PAT令牌 (必填)
+        - is_active: 是否启用 (默认True)
+    """
+    from .models import YunxiaoToken
+
+    if request.method == 'POST':
+        try:
+            label = request.data.get('label', '').strip()
+            token_val = request.data.get('token', '').strip()
+            is_active = request.data.get('is_active', True)
+
+            if not label:
+                return _build_error_response('请输入标签/备注')
+            if not token_val:
+                return _build_error_response('请输入云效访问令牌')
+
+            # 获取当前用户
+            user = request.user
+            created_by = user.username if user and user.is_authenticated else 'system'
+
+            item = YunxiaoToken.objects.create(
+                label=label,
+                token=token_val,
+                is_active=is_active,
+                created_by=created_by,
+            )
+
+            logger.info(f'[API:yunxiao_token_list] 创建Token: id={item.id}, label={label}, by={created_by}')
+            return _build_api_response({'token': item.to_list_dict()}, 'Token 创建成功')
+
+        except Exception as e:
+            logger.error(f'[API:yunxiao_token_list] 创建错误: {e}', exc_info=True)
+            return _build_error_response(f'创建Token失败: {str(e)}',
+                                         code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+    # GET 请求
+    try:
+        queryset = YunxiaoToken.objects.all()
+
+        keyword = request.query_params.get('keyword', '').strip()
+        if keyword:
+            queryset = queryset.filter(
+                Q(label__icontains=keyword) | Q(created_by__icontains=keyword)
+            )
+
+        is_active = request.query_params.get('is_active')
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() in ('true', '1', 'yes'))
+
+        page = max(int(request.query_params.get('page', 1)), 1)
+        page_size = min(int(request.query_params.get('page_size', 20)), 100)
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        total = queryset.count()
+        items = queryset[start:end]
+        items_data = [item.to_list_dict() for item in items]
+
+        return _build_api_response({
+            'items': items_data,
+            'total': total,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': max((total + page_size - 1) // page_size, 1),
+        })
+
+    except Exception as e:
+        logger.error(f'[API:yunxiao_token_list] 列表错误: {e}', exc_info=True)
+        return _build_error_response(f'获取Token列表失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def yunxiao_token_detail(request, token_id):
+    """
+    云效 Token 详情 (GET/更新 (PUT) / 删除 (DELETE)
+
+    PUT参数:
+        - label: 标签/备注
+        - token: 云效PAT令牌
+        - is_active: 是否启用
+    """
+    from .models import YunxiaoToken
+
+    item = YunxiaoToken.objects.filter(id=token_id).first()
+    if not item:
+        return _build_error_response(f'Token不存在: id={token_id}', code=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        item.delete()
+        logger.info(f'[API:yunxiao_token_detail] 删除Token: id={token_id}')
+        return _build_api_response({}, f'Token id={token_id} 已删除')
+
+    if request.method == 'PUT':
+        try:
+            label = request.data.get('label', '').strip()
+            token_val = request.data.get('token', '').strip()
+            is_active = request.data.get('is_active')
+
+            if label:
+                item.label = label
+            if token_val:
+                item.token = token_val
+            if is_active is not None:
+                item.is_active = is_active
+
+            item.save()
+            logger.info(f'[API:yunxiao_token_detail] 更新Token: id={token_id}')
+            return _build_api_response({'token': item.to_list_dict()}, 'Token 更新成功')
+
+        except Exception as e:
+            logger.error(f'[API:yunxiao_token_detail] 更新错误: {e}', exc_info=True)
+            return _build_error_response(f'更新Token失败: {str(e)}',
+                                         code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+    # GET
+    return _build_api_response({'token': item.to_list_dict()})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def yunxiao_token_options(request):
+    """
+    获取启用的Token列表 (用于下拉选择)
+
+    仅返回启用状态的Token，供前端下拉选择使用
+    """
+    from .models import YunxiaoToken
+
+    try:
+        items = YunxiaoToken.objects.filter(is_active=True).order_by('-created_at')
+        options = [item.to_select_dict() for item in items]
+        return _build_api_response({'options': options})
+
+    except Exception as e:
+        logger.error(f'[API:yunxiao_token_options] 错误: {e}', exc_info=True)
+        return _build_error_response(f'获取Token选项失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def yunxiao_token_test(request, token_id):
+    """
+    测试Token是否有效 (调用云效API验证)
+
+    POST参数:
+        - test_space_id: 测试项目ID (可选)
+    """
+    from .models import YunxiaoToken
+    from .yunxiao_client import YunxiaoClient, DEFAULT_ORGANIZATION_ID
+
+    item = YunxiaoToken.objects.filter(id=token_id).first()
+    if not item:
+        return _build_error_response(f'Token不存在: id={token_id}', code=status.HTTP_404_NOT_FOUND)
+
+    try:
+        client = YunxiaoClient(token=item.token, organization_id=DEFAULT_ORGANIZATION_ID)
+
+        # 尝试搜索项目来验证Token有效性
+        test_space_id = request.data.get('test_space_id', '').strip()
+        if test_space_id:
+            projects = client.search_projects()
+            return _build_api_response({
+                'valid': True,
+                'message': f'Token有效，可访问 {len(projects)} 个项目',
+            }, 'Token 验证成功')
+        else:
+            # 简单测试: 搜索项目列表
+            projects = client.search_projects()
+            return _build_api_response({
+                'valid': True,
+                'message': f'Token有效，可访问 {len(projects)} 个项目',
+            }, 'Token 验证成功')
+
+    except YunxiaoAPIError as e:
+        return _build_api_response({
+            'valid': False,
+            'message': f'Token无效: {str(e)}',
+        }, 'Token 验证失败')
+    except Exception as e:
+        return _build_api_response({
+            'valid': False,
+            'message': f'验证异常: {str(e)}',
+        }, 'Token 验证失败')

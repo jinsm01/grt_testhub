@@ -934,6 +934,7 @@
       :close-on-click-modal="false"
       destroy-on-close
       class="yunxiao-sync-drawer"
+      @opened="onYunxiaoDialogOpened"
     >
       <div class="yunxiao-drawer-body">
         <el-form
@@ -943,22 +944,29 @@
           :rules="yunxiaoRules"
           class="yunxiao-form"
         >
-          <el-form-item label="访问令牌" prop="token">
-            <el-input
-              v-model="yunxiaoForm.token"
-              type="password"
-              show-password
-              placeholder="云效个人访问令牌 (PAT)"
-              clearable
-            />
-          </el-form-item>
-
-          <el-form-item label="组织 ID" prop="organization_id">
-            <el-input
-              v-model="yunxiaoForm.organization_id"
-              placeholder="组织管理后台获取"
-              clearable
-            />
+          <el-form-item label="访问令牌" prop="token_id">
+            <div class="token-select-row">
+              <el-select
+                v-model="yunxiaoForm.token_id"
+                placeholder="选择Token"
+                filterable
+                clearable
+                style="flex: 1;"
+              >
+                <el-option
+                  v-for="opt in yunxiaoTokenOptions"
+                  :key="opt.id"
+                  :label="opt.display"
+                  :value="opt.id"
+                />
+                <el-option
+                  v-if="yunxiaoTokenOptions.length === 0"
+                  label="暂无Token，请点击上方Token管理添加"
+                  disabled
+                  :value="null"
+                />
+              </el-select>
+            </div>
           </el-form-item>
 
           <el-form-item label="项目" prop="space_id">
@@ -972,6 +980,7 @@
               :loading="yunxiaoProjectLoading"
               style="width: 100%;"
               @change="onYunxiaoProjectChange"
+              @visible-change="(visible) => { if (visible && yunxiaoProjects.length === 0) searchYunxiaoProjects('') }"
             >
               <el-option
                 v-for="proj in yunxiaoProjects"
@@ -1025,13 +1034,245 @@
             type="primary"
             @click="startYunxiaoSync"
             :loading="analyzing"
-            :disabled="!yunxiaoForm.token || !yunxiaoForm.space_id"
+            :disabled="!yunxiaoForm.token_id || !yunxiaoForm.space_id"
           >
             开始同步
           </el-button>
         </div>
       </template>
     </el-drawer>
+
+    <!-- Bug 创建/编辑对话框 -->
+    <el-dialog
+      v-model="showBugDialog"
+      :title="bugDialogMode === 'create' ? '新建Bug并同步到云效' : '编辑Bug并同步到云效'"
+      width="680px"
+      :close-on-click-modal="false"
+      destroy-on-close
+      @opened="onBugDialogOpened"
+    >
+      <el-form
+        ref="bugFormRef"
+        :model="bugForm"
+        label-width="100px"
+        :rules="bugFormRules"
+        class="bug-form"
+      >
+        <el-form-item label="标题" prop="title">
+          <el-input
+            v-model="bugForm.title"
+            placeholder="Bug标题 (必填)"
+            clearable
+          />
+        </el-form-item>
+
+        <el-form-item label="描述" prop="desc">
+          <el-input
+            v-model="bugForm.desc"
+            type="textarea"
+            :rows="4"
+            placeholder="Bug详细描述 (可选)"
+          />
+        </el-form-item>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="严重程度" prop="severity">
+              <el-select
+                v-model="bugForm.severity"
+                placeholder="选择严重程度"
+                clearable
+                style="width: 100%;"
+              >
+                <el-option label="P0-致命" value="P0" />
+                <el-option label="P1-严重" value="P1" />
+                <el-option label="P2-一般" value="P2" />
+                <el-option label="P3-轻微" value="P3" />
+                <el-option label="P4-建议" value="P4" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="优先级" prop="priority">
+              <el-select
+                v-model="bugForm.priority"
+                placeholder="选择优先级"
+                clearable
+                style="width: 100%;"
+              >
+                <el-option label="紧急" value="紧急" />
+                <el-option label="高" value="高" />
+                <el-option label="中" value="中" />
+                <el-option label="低" value="低" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="状态" prop="status">
+              <el-select
+                v-model="bugForm.status"
+                placeholder="选择状态"
+                clearable
+                style="width: 100%;"
+              >
+                <el-option label="新建" value="新建" />
+                <el-option label="进行中" value="进行中" />
+                <el-option label="已解决" value="已解决" />
+                <el-option label="已关闭" value="已关闭" />
+                <el-option label="重新打开" value="重新打开" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="所属模块" prop="module">
+              <el-select
+                v-model="bugForm.module"
+                placeholder="选择模块/标签"
+                filterable
+                clearable
+                allow-create
+                default-first-option
+                style="width: 100%;"
+                :disabled="!bugForm.space_id"
+                :loading="bugFormLabelLoading"
+                @visible-change="(visible) => { if (visible && bugFormLabels.length === 0) searchBugFormLabels() }"
+              >
+                <el-option
+                  v-for="label in bugFormLabels"
+                  :key="label.id || label.name"
+                  :label="label.name"
+                  :value="label.name"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item label="处理人" prop="assignee">
+          <el-select
+            v-model="bugForm.assignee"
+            placeholder="选择处理人"
+            filterable
+            clearable
+            style="width: 100%;"
+            :disabled="!bugForm.space_id"
+            :loading="bugFormMemberLoading"
+            @visible-change="(visible) => { if (visible && bugFormMembers.length === 0) searchBugFormMembers() }"
+          >
+            <el-option
+              v-for="member in bugFormMembers"
+              :key="member.userId"
+              :label="member.displayName || member.userName"
+              :value="member.userId"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-divider content-position="left">云效同步配置</el-divider>
+
+        <el-alert
+          v-if="bugDialogMode === 'create' && !yunxiaoForm.token_id"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 16px;"
+        >
+          请先在"云效同步"中配置访问令牌，或在此手动输入
+        </el-alert>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="访问令牌" prop="token_id">
+              <div class="token-select-row">
+                <el-select
+                  v-model="bugForm.token_id"
+                  placeholder="选择Token"
+                  filterable
+                  clearable
+                  style="flex: 1;"
+                  :disabled="bugDialogMode === 'edit'"
+                >
+                  <el-option
+                    v-for="opt in yunxiaoTokenOptions"
+                    :key="opt.id"
+                    :label="opt.display"
+                    :value="opt.id"
+                  />
+                  <el-option
+                    v-if="yunxiaoTokenOptions.length === 0"
+                    label="暂无Token，请点击上方Token管理添加"
+                    disabled
+                    :value="null"
+                  />
+                </el-select>
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="项目" prop="space_id">
+              <el-select
+                v-model="bugForm.space_id"
+                placeholder="选择项目"
+                filterable
+                clearable
+                remote
+                :remote-method="searchBugFormProjects"
+                :loading="bugFormProjectLoading"
+                style="width: 100%;"
+                :disabled="bugDialogMode === 'edit'"
+                @change="onBugFormProjectChange"
+                @visible-change="(visible) => { if (visible && bugFormProjects.length === 0) searchBugFormProjects('') }"
+              >
+                <el-option
+                  v-for="proj in bugFormProjects"
+                  :key="proj.id"
+                  :label="proj.name"
+                  :value="proj.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="迭代" prop="sprint_id">
+              <el-select
+                v-model="bugForm.sprint_id"
+                placeholder="选择迭代"
+                filterable
+                clearable
+                :loading="bugFormSprintLoading"
+                style="width: 100%;"
+                :disabled="!bugForm.space_id || bugDialogMode === 'edit'"
+              >
+                <el-option
+                  v-for="sp in bugFormSprints"
+                  :key="sp.id"
+                  :label="sp.name"
+                  :value="sp.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="showBugDialog = false">取消</el-button>
+        <el-button
+          type="primary"
+          @click="submitBugForm"
+          :loading="bugFormSubmitting"
+          :disabled="!bugForm.token_id || !bugForm.space_id || (bugDialogMode === 'create' && !bugForm.sprint_id)"
+        >
+          {{ bugDialogMode === 'create' ? '创建并同步到云效' : '更新并同步到云效' }}
+        </el-button>
+      </template>
+    </el-dialog>
 
     <!-- 同步日志抽屉 -->
     <el-drawer
@@ -1180,8 +1421,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import * as echarts from 'echarts'
 import { DataAnalysis, UploadFilled, Loading, RefreshLeft, Document, Grid, TrendCharts, User,
   InfoFilled, Warning, List, Clock, Close, Download, MagicStick, Search, Check, View, Delete, ArrowLeft, Upload, CircleCheck, FolderOpened,
-  CircleClose, Refresh, Flag, Lightning, AlarmClock, ArrowDown, Histogram } from '@element-plus/icons-vue'
-import { analyzeBugExcel, enhanceWithAI, getBugAnalysisRecords, getBugAnalysisRecordDetail, getModuleDetail, deleteBugAnalysisRecord, analyzeModuleFocusIntelligent, getYunxiaoProjects, getYunxiaoSprints, syncFromYunxiao, getYunxiaoSyncLog, getBugAnalysisAiStatus } from '@/api/data-factory'
+  CircleClose, Refresh, Flag, Lightning, AlarmClock, ArrowDown, Histogram, Plus } from '@element-plus/icons-vue'
+import { analyzeBugExcel, enhanceWithAI, getBugAnalysisRecords, getBugAnalysisRecordDetail, getModuleDetail, deleteBugAnalysisRecord, analyzeModuleFocusIntelligent, getYunxiaoProjects, getYunxiaoSprints, getYunxiaoMembers, getYunxiaoLabels, syncFromYunxiao, getYunxiaoSyncLog, getBugAnalysisAiStatus, createBugToYunxiao, updateBugToYunxiao, pollRemoteStatus, getYunxiaoTokenOptions } from '@/api/data-factory'
 
 const route = useRoute()
 const router = useRouter()
@@ -1247,21 +1488,56 @@ const exporting = ref(false)
 const showYunxiaoDialog = ref(false)
 const yunxiaoFormRef = ref(null)
 const yunxiaoForm = ref({
-  token: '',
-  organization_id: '',
+  token_id: null,
   space_id: '',
   sprint_id: '',
   version_tag: '',
   max_bugs: 1000,
 })
 const yunxiaoRules = {
-  token: [{ required: true, message: '请输入云效访问令牌', trigger: 'blur' }],
+  token_id: [{ required: true, message: '请选择访问令牌', trigger: 'change' }],
   space_id: [{ required: true, message: '请选择项目', trigger: 'change' }],
 }
 const yunxiaoProjects = ref([])
 const yunxiaoSprints = ref([])
 const yunxiaoProjectLoading = ref(false)
 const yunxiaoSprintLoading = ref(false)
+
+// Bug 创建/编辑表单
+const showBugDialog = ref(false)
+const bugDialogMode = ref('create') // 'create' | 'edit'
+const bugFormRef = ref(null)
+const bugFormSubmitting = ref(false)
+const bugForm = ref({
+  title: '',
+  desc: '',
+  severity: 'P2',
+  priority: '中',
+  status: '新建',
+  module: '',
+  assignee: '',
+  token_id: null,
+  space_id: '',
+  sprint_id: '',
+  sync_item_id: null,
+})
+const bugFormRules = {
+  title: [{ required: true, message: '请输入Bug标题', trigger: 'blur' }],
+  token_id: [{ required: true, message: '请选择访问令牌', trigger: 'change' }],
+  space_id: [{ required: true, message: '请选择项目', trigger: 'change' }],
+}
+const bugFormProjects = ref([])
+const bugFormSprints = ref([])
+const bugFormMembers = ref([])
+const bugFormLabels = ref([])
+const bugFormProjectLoading = ref(false)
+const bugFormSprintLoading = ref(false)
+const bugFormMemberLoading = ref(false)
+const bugFormLabelLoading = ref(false)
+
+// Token 选项 (供下拉选择)
+const yunxiaoTokenOptions = ref([])
+const yunxiaoTokenOptionsLoading = ref(false)
 
 // 同步日志对话框
 const showSyncLogDialog = ref(false)
@@ -2698,6 +2974,28 @@ watch(() => activeTab.value, async (newTab) => {
   }
 })
 
+// 监听云效同步Token变化，自动加载项目列表
+watch(() => yunxiaoForm.value.token_id, async (newTokenId) => {
+  yunxiaoForm.value.space_id = ''
+  yunxiaoForm.value.sprint_id = ''
+  yunxiaoProjects.value = []
+  yunxiaoSprints.value = []
+  if (newTokenId) {
+    await searchYunxiaoProjects('')
+  }
+})
+
+// 监听Bug创建表单Token变化，自动加载项目列表
+watch(() => bugForm.value.token_id, async (newTokenId) => {
+  bugForm.value.space_id = ''
+  bugForm.value.sprint_id = ''
+  bugFormProjects.value = []
+  bugFormSprints.value = []
+  if (newTokenId) {
+    await searchBugFormProjects('')
+  }
+})
+
 // 详情页刷新时恢复数据
 const restoreDetailView = async () => {
   console.log('[restoreDetailView] 开始恢复, 状态:', {
@@ -2801,6 +3099,8 @@ onMounted(() => {
     // 历史记录加载完成后，如果是详情视图则恢复数据
     restoreDetailView()
   })
+  // 加载Token选项
+  loadTokenOptions()
   // 监听窗口resize
   window.addEventListener('resize', handleResize)
 })
@@ -2836,24 +3136,43 @@ onUnmounted(() => {
 
 // ==================== 云效同步方法 ====================
 
+// 云效同步抽屉打开时，自动加载Token选项和项目列表
+async function onYunxiaoDialogOpened() {
+  console.log('[onYunxiaoDialogOpened] 抽屉打开')
+  if (yunxiaoTokenOptions.value.length === 0) {
+    await loadTokenOptions()
+  }
+  // 如果已选Token，自动加载项目
+  if (yunxiaoForm.value.token_id) {
+    await searchYunxiaoProjects('')
+  }
+}
+
 // 搜索云效项目
 async function searchYunxiaoProjects(keyword) {
-  if (!yunxiaoForm.value.token) return
+  if (!yunxiaoForm.value.token_id) return
   yunxiaoProjectLoading.value = true
   try {
-    const res = await getYunxiaoProjects({
-      token: yunxiaoForm.value.token,
-      organization_id: yunxiaoForm.value.organization_id,
+    const payload = {
+      token_id: yunxiaoForm.value.token_id,
       keyword: keyword || '',
       page: 1,
       per_page: 50,
-    })
+    }
+    console.log('[searchYunxiaoProjects] 请求参数:', payload)
+    const res = await getYunxiaoProjects(payload)
+    console.log('[searchYunxiaoProjects] 响应:', res.data)
     if (res.data && res.data.success) {
       yunxiaoProjects.value = res.data.items || []
+      console.log('[searchYunxiaoProjects] 项目列表数量:', yunxiaoProjects.value.length)
+      if (yunxiaoProjects.value.length === 0) {
+        ElMessage.warning('获取成功但项目列表为空，请检查Token权限或组织ID')
+      }
     } else {
       ElMessage.error((res.data && res.data.message) || '获取项目列表失败')
     }
   } catch (e) {
+    console.error('[searchYunxiaoProjects] 错误:', e)
     ElMessage.error('获取项目列表失败: ' + (e.message || e))
   } finally {
     yunxiaoProjectLoading.value = false
@@ -2864,12 +3183,11 @@ async function searchYunxiaoProjects(keyword) {
 async function onYunxiaoProjectChange() {
   yunxiaoForm.value.sprint_id = ''
   yunxiaoSprints.value = []
-  if (!yunxiaoForm.value.space_id || !yunxiaoForm.value.token) return
+  if (!yunxiaoForm.value.space_id || !yunxiaoForm.value.token_id) return
   yunxiaoSprintLoading.value = true
   try {
     const res = await getYunxiaoSprints({
-      token: yunxiaoForm.value.token,
-      organization_id: yunxiaoForm.value.organization_id,
+      token_id: yunxiaoForm.value.token_id,
       space_id: yunxiaoForm.value.space_id,
       page: 1,
       per_page: 100,
@@ -2888,7 +3206,7 @@ async function onYunxiaoProjectChange() {
 
 // 开始云效同步
 async function startYunxiaoSync() {
-  if (!yunxiaoForm.value.token || !yunxiaoForm.value.space_id) {
+  if (!yunxiaoForm.value.token_id || !yunxiaoForm.value.space_id) {
     ElMessage.warning('请填写访问令牌并选择项目')
     return
   }
@@ -2910,8 +3228,7 @@ async function startYunxiaoSync() {
       : ''
 
     const res = await syncFromYunxiao({
-      token: yunxiaoForm.value.token,
-      organization_id: yunxiaoForm.value.organization_id,
+      token_id: yunxiaoForm.value.token_id,
       space_id: yunxiaoForm.value.space_id,
       sprint_id: yunxiaoForm.value.sprint_id || undefined,
       sprint_name: sprintName || undefined,
@@ -2931,8 +3248,7 @@ async function startYunxiaoSync() {
 
     // 清空表单
     yunxiaoForm.value = {
-      token: yunxiaoForm.value.token,
-      organization_id: yunxiaoForm.value.organization_id,
+      token_id: null,
       space_id: '',
       sprint_id: '',
       version_tag: '',
@@ -2974,9 +3290,211 @@ async function startYunxiaoSync() {
       startAiPolling(currentRecordId.value)
     }
   } catch (e) {
-    ElMessage.error('同步失败: ' + (e.message || e))
+    const errorMsg = e?.response?.data?.error || e?.response?.data?.message || e?.message || String(e)
+    ElMessage.error('同步失败: ' + errorMsg)
   } finally {
     analyzing.value = false
+  }
+}
+
+// ===== Bug 创建/编辑 相关方法 =====
+
+function openCreateBugDialog() {
+  bugDialogMode.value = 'create'
+  bugForm.value = {
+    title: '',
+    desc: '',
+    severity: 'P2',
+    priority: '中',
+    status: '新建',
+    module: '',
+    assignee: '',
+    token_id: yunxiaoForm.value.token_id || null,
+    space_id: yunxiaoForm.value.space_id || '',
+    sprint_id: yunxiaoForm.value.sprint_id || '',
+    sync_item_id: null,
+  }
+  bugFormProjects.value = []
+  bugFormSprints.value = []
+  bugFormMembers.value = []
+  bugFormLabels.value = []
+  showBugDialog.value = true
+
+  if (bugForm.value.token_id) {
+    searchBugFormProjects('')
+  }
+}
+
+async function searchBugFormProjects(keyword) {
+  if (!bugForm.value.token_id) return
+  bugFormProjectLoading.value = true
+  try {
+    const res = await getYunxiaoProjects({
+      token_id: bugForm.value.token_id,
+      keyword: keyword || '',
+      page: 1,
+      per_page: 50,
+    })
+    if (res.data?.success) {
+      bugFormProjects.value = res.data.items || []
+    }
+  } catch { /* ignore */ }
+  finally {
+    bugFormProjectLoading.value = false
+  }
+}
+
+// Bug 对话框打开时
+async function onBugDialogOpened() {
+  if (yunxiaoTokenOptions.value.length === 0) {
+    await loadTokenOptions()
+  }
+  if (bugForm.value.token_id) {
+    await searchBugFormProjects('')
+  }
+}
+
+async function onBugFormProjectChange(spaceId) {
+  if (!bugForm.value.token_id || !spaceId) return
+  bugFormSprintLoading.value = true
+  bugFormMemberLoading.value = true
+  bugFormLabelLoading.value = true
+  bugFormSprints.value = []
+  bugFormMembers.value = []
+  bugFormLabels.value = []
+  bugForm.value.sprint_id = ''
+  bugForm.value.assignee = ''
+  bugForm.value.module = ''
+  
+  // 并行加载迭代列表、成员列表和标签列表
+  try {
+    const [sprintsRes, membersRes, labelsRes] = await Promise.all([
+      getYunxiaoSprints({
+        token_id: bugForm.value.token_id,
+        space_id: spaceId,
+      }),
+      getYunxiaoMembers({
+        token_id: bugForm.value.token_id,
+        space_id: spaceId,
+      }).catch(() => ({ data: { success: false, items: [] } })),
+      getYunxiaoLabels({
+        token_id: bugForm.value.token_id,
+        space_id: spaceId,
+      }).catch(() => ({ data: { success: false, items: [] } })),
+    ])
+    
+    if (sprintsRes.data?.success) {
+      bugFormSprints.value = sprintsRes.data.items || []
+    }
+    if (membersRes.data?.success) {
+      bugFormMembers.value = membersRes.data.items || []
+    }
+    if (labelsRes.data?.success) {
+      bugFormLabels.value = labelsRes.data.items || []
+    }
+  } catch { /* ignore */ }
+  finally {
+    bugFormSprintLoading.value = false
+    bugFormMemberLoading.value = false
+    bugFormLabelLoading.value = false
+  }
+}
+
+async function searchBugFormMembers() {
+  if (!bugForm.value.token_id || !bugForm.value.space_id) return
+  bugFormMemberLoading.value = true
+  try {
+    const res = await getYunxiaoMembers({
+      token_id: bugForm.value.token_id,
+      space_id: bugForm.value.space_id,
+    })
+    if (res.data?.success) {
+      bugFormMembers.value = res.data.items || []
+    }
+  } catch { /* ignore */ }
+  finally {
+    bugFormMemberLoading.value = false
+  }
+}
+
+async function searchBugFormLabels() {
+  if (!bugForm.value.token_id || !bugForm.value.space_id) return
+  bugFormLabelLoading.value = true
+  try {
+    const res = await getYunxiaoLabels({
+      token_id: bugForm.value.token_id,
+      space_id: bugForm.value.space_id,
+    })
+    if (res.data?.success) {
+      bugFormLabels.value = res.data.items || []
+    }
+  } catch { /* ignore */ }
+  finally {
+    bugFormLabelLoading.value = false
+  }
+}
+
+async function submitBugForm() {
+  if (!bugFormRef.value) return
+  try {
+    await bugFormRef.value.validate()
+  } catch {
+    return
+  }
+
+  bugFormSubmitting.value = true
+  try {
+    const payload = {
+      token_id: bugForm.value.token_id,
+      space_id: bugForm.value.space_id,
+      sprint_id: bugForm.value.sprint_id || undefined,
+      title: bugForm.value.title,
+      desc: bugForm.value.desc,
+      severity: bugForm.value.severity,
+      priority: bugForm.value.priority,
+      status: bugForm.value.status,
+      module: bugForm.value.module || undefined,
+      assignee: bugForm.value.assignee || undefined,
+    }
+
+    let res
+    if (bugDialogMode.value === 'create') {
+      res = await createBugToYunxiao(payload)
+    } else {
+      res = await updateBugToYunxiao(bugForm.value.sync_item_id, payload)
+    }
+
+    if (res.data?.success) {
+      ElMessage.success(res.data.message || '同步成功')
+      showBugDialog.value = false
+    } else {
+      ElMessage.error(res.data?.message || '同步失败')
+    }
+  } catch (e) {
+    const errorMsg = e?.response?.data?.error || e?.response?.data?.message || e?.message || String(e)
+    ElMessage.error('同步失败: ' + errorMsg)
+  } finally {
+    bugFormSubmitting.value = false
+  }
+}
+
+// 轮询远程状态（反向同步）
+async function pollRemoteBugStatus() {
+  if (!yunxiaoForm.value.token_id) {
+    ElMessage.warning('请先在"云效同步"中配置访问令牌')
+    return
+  }
+  try {
+    const res = await pollRemoteStatus({
+      token_id: yunxiaoForm.value.token_id,
+    })
+    if (res.data?.success) {
+      const updated = res.data.updated_count || 0
+      const errors = res.data.error_count || 0
+      ElMessage.success(`远程同步完成：检查${res.data.total_checked || 0}项，更新${updated}项，错误${errors}项`)
+    }
+  } catch (e) {
+    ElMessage.warning('远程同步失败: ' + (e.message || e))
   }
 }
 
@@ -3014,6 +3532,23 @@ function copyFirstBugFields() {
   }).catch(() => {
     ElMessage.error('复制失败，请手动复制')
   })
+}
+
+// ==================== Token 管理方法 ====================
+
+// 加载 Token 下拉选项
+async function loadTokenOptions() {
+  yunxiaoTokenOptionsLoading.value = true
+  try {
+    const res = await getYunxiaoTokenOptions()
+    if (res.data?.success) {
+      yunxiaoTokenOptions.value = res.data.options || []
+    }
+  } catch (e) {
+    console.warn('加载Token选项失败:', e.message)
+  } finally {
+    yunxiaoTokenOptionsLoading.value = false
+  }
 }
 </script>
 
@@ -5403,5 +5938,12 @@ function copyFirstBugFields() {
   overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* ==================== Token 管理样式 ==================== */
+.token-select-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 </style>

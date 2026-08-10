@@ -44,6 +44,10 @@
                 <el-icon><DataAnalysis /></el-icon>
                 <span>Bug 分析</span>
               </template>
+              <el-menu-item index="/ai-generation/bug-analysis/sync">
+                <el-icon><Connection /></el-icon>
+                <span>Bug管理</span>
+              </el-menu-item>
               <el-menu-item index="/ai-generation/bug-analysis/history">
                 <el-icon><Clock /></el-icon>
                 <span>迭代报告</span>
@@ -706,7 +710,12 @@ const moduleRoute = computed(() => {
     return '/ai-generation/projects'
   }
 
-  // Bug 分析相关页面，返回到 Bug 分析历史记录
+  // Bug 同步管理页面，返回到自身
+  if (path === '/ai-generation/bug-analysis/sync') {
+    return '/ai-generation/bug-analysis/sync'
+  }
+
+  // Bug 分析相关页面（除同步管理外），返回到 Bug 分析历史记录
   if (path.startsWith('/ai-generation/bug-analysis')) {
     return '/ai-generation/bug-analysis/history'
   }
@@ -795,6 +804,7 @@ const breadcrumbTitle = computed(() => {
     '/ai-generation/generated-testcases': t('menu.aiGeneratedTestcases'),
     '/ai-generation/xmind-converter': 'XMind 转 Excel',
     '/ai-generation/bug-analysis': 'Bug 分析',
+    '/ai-generation/bug-analysis/sync': 'Bug管理',
     '/ai-generation/bug-analysis/history': '迭代报告',
     '/ai-generation/bug-analysis/summary': '汇总分析',
     '/ai-generation/projects': t('menu.aiProjectManagement'),

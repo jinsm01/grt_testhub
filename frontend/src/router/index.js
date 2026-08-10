@@ -246,6 +246,11 @@ const routes = [
         redirect: 'bug-analysis/history',
         children: [
           {
+            path: 'sync',
+            name: 'BugSyncManagement',
+            component: () => import('@/views/data-factory/BugSyncManagement.vue')
+          },
+          {
             path: 'history',
             name: 'BugAnalysisHistory',
             component: () => import('@/views/data-factory/BugAnalysis.vue')

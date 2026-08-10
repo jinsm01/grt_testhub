@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -288,3 +289,177 @@ class AIRubricRecord(models.Model):
             d['rubric_data'] = []
             d['notes_data'] = []
         return d
+
+
+class BugSyncItem(models.Model):
+    """
+    Bug 同步项 - 追踪单条 Bug 与云效的双向同步状态
+
+    支持:
+    - 本地创建的 Bug 推送到云效
+    - 从云效拉取的 Bug 记录 workitem ID
+    - 状态变更追踪 (本地 vs 云效)
+    - 冲突检测 (双向同时修改)
+    """
+
+    SYNC_STATUS_CHOICES = (
+        ('pending', '待同步'),
+        ('synced', '已同步'),
+        ('conflict', '冲突'),
+        ('failed', '失败'),
+    )
+
+    id = models.AutoField(primary_key=True)
+    # 关联分析记录
+    analysis_record = models.ForeignKey(
+        BugAnalysisRecord, on_delete=models.CASCADE,
+        related_name='sync_items', null=True, blank=True,
+        verbose_name='关联分析记录'
+    )
+
+    # 云效侧标识
+    yunxiao_workitem_id = models.CharField(max_length=100, blank=True, default='',
+                                            verbose_name='云效工作项ID')
+    yunxiao_serial_number = models.CharField(max_length=100, blank=True, default='',
+                                              verbose_name='云效序列号')
+
+    # 本地 Bug 数据 (JSON 存储完整 Bug 信息)
+    local_data = models.JSONField(default=dict, verbose_name='本地Bug数据')
+
+    # 云效侧最新数据缓存 (用于对比变更)
+    remote_data_cache = models.JSONField(default=dict, blank=True, verbose_name='云效数据缓存')
+
+    # 同步状态
+    sync_status = models.CharField(max_length=20, choices=SYNC_STATUS_CHOICES,
+                                    default='pending', verbose_name='同步状态')
+    last_synced_at = models.DateTimeField(null=True, blank=True, verbose_name='最后同步时间')
+    last_remote_check_at = models.DateTimeField(null=True, blank=True, verbose_name='最后远程检查时间')
+
+    # 版本哈希 (用于检测变更)
+    local_version_hash = models.CharField(max_length=64, blank=True, default='', verbose_name='本地版本哈希')
+    remote_version_hash = models.CharField(max_length=64, blank=True, default='', verbose_name='远程版本哈希')
+
+    # 元信息
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+
+    class Meta:
+        db_table = 'df_bug_sync_item'
+        verbose_name = 'Bug同步项'
+        verbose_name_plural = verbose_name
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['yunxiao_workitem_id']),
+            models.Index(fields=['sync_status']),
+            models.Index(fields=['analysis_record']),
+            models.Index(fields=['-updated_at']),
+        ]
+
+    def __str__(self):
+        title = (self.local_data or {}).get('title', '无标题')
+        return f"BugSyncItem [{self.sync_status}] {title[:30]} @{self.updated_at:%Y-%m-%d %H:%M}"
+
+    def mark_synced(self, remote_data: dict):
+        """标记为已同步"""
+        self.remote_data_cache = remote_data
+        self.last_synced_at = timezone.now()
+        self.sync_status = 'synced'
+
+    def mark_conflict(self):
+        """标记为冲突"""
+        self.sync_status = 'conflict'
+
+    def mark_failed(self):
+        """标记为失败"""
+        self.sync_status = 'failed'
+
+    def update_local(self, local_data: dict):
+        """更新本地数据"""
+        self.local_data = local_data
+        self.sync_status = 'pending'
+        self.save(update_fields=['local_data', 'sync_status', 'updated_at'])
+
+    def to_list_dict(self) -> dict:
+        """转换为列表展示格式"""
+        # 处理时间字段，转换为本地时间
+        last_synced_at = '-'
+        if self.last_synced_at:
+            last_synced_at = timezone.localtime(self.last_synced_at).strftime('%Y-%m-%d %H:%M:%S')
+        
+        created_at = timezone.localtime(self.created_at).strftime('%Y-%m-%d %H:%M:%S')
+        updated_at = timezone.localtime(self.updated_at).strftime('%Y-%m-%d %H:%M:%S')
+        
+        d = {
+            'id': self.id,
+            'yunxiao_workitem_id': self.yunxiao_workitem_id,
+            'yunxiao_serial_number': self.yunxiao_serial_number,
+            'sync_status': self.sync_status,
+            'sync_status_display': self.get_sync_status_display(),
+            'last_synced_at': last_synced_at,
+            'local_data': self.local_data,
+            'created_at': created_at,
+            'updated_at': updated_at,
+        }
+        return d
+
+
+class YunxiaoToken(models.Model):
+    """
+    云效访问令牌配置 - 团队成员可添加各自的Token，通过下拉选择使用
+
+    支持:
+    - 多人协作: 每个成员可添加自己的云效PAT令牌
+    - 标签化: 为Token添加备注标签(如"张三-日常用")
+    - 启停控制: 可临时禁用某个Token
+    - 安全存储: 令牌仅在服务端存储，前端展示时脱敏
+    """
+
+    id = models.AutoField(primary_key=True)
+    label = models.CharField(max_length=100, verbose_name='标签/备注', default='',
+                              help_text="如: 张三-日常使用、李四-CI专用")
+    token = models.CharField(max_length=500, verbose_name='云效访问令牌(PAT)')
+    is_active = models.BooleanField(default=True, verbose_name='是否启用')
+
+    # 元信息
+    created_by = models.CharField(max_length=50, default='system', verbose_name='创建者')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+
+    class Meta:
+        db_table = 'df_yunxiao_token'
+        verbose_name = '云效令牌配置'
+        verbose_name_plural = verbose_name
+        ordering = ['-created_at']
+
+    def __str__(self):
+        status = '启用' if self.is_active else '禁用'
+        return f"[{status}] {self.label or f'Token#{self.id}'} ({self.created_by})"
+
+    def mask_token(self) -> str:
+        """脱敏显示Token"""
+        if not self.token or len(self.token) <= 8:
+            return '****'
+        return self.token[:4] + '****' + self.token[-4:]
+
+    def to_list_dict(self) -> dict:
+        """转换为列表展示格式 (Token脱敏)"""
+        local_tz = timezone.get_current_timezone()
+        return {
+            'id': self.id,
+            'label': self.label,
+            'token_masked': self.mask_token(),
+            'is_active': self.is_active,
+            'created_by': self.created_by,
+            'created_at': timezone.localtime(self.created_at, local_tz).strftime('%Y-%m-%d %H:%M:%S'),
+            'updated_at': timezone.localtime(self.updated_at, local_tz).strftime('%Y-%m-%d %H:%M:%S'),
+        }
+
+    def to_select_dict(self) -> dict:
+        """转换为下拉选择格式"""
+        label = self.label or f'Token#{self.id}'
+        return {
+            'id': self.id,
+            'label': label,
+            'display': f"{label} ({self.created_by})",
+            'is_active': self.is_active,
+        }

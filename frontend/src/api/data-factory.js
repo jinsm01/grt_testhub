@@ -319,6 +319,30 @@ export function getYunxiaoSprints(data) {
 }
 
 /**
+ * 获取云效项目成员列表
+ * @param {Object} data - { token_id, space_id }
+ */
+export function getYunxiaoMembers(data) {
+  return request({
+    url: '/data-factory/bug-analysis/yunxiao/members/',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 获取云效项目标签列表 (用于模块选择)
+ * @param {Object} data - { token_id, space_id }
+ */
+export function getYunxiaoLabels(data) {
+  return request({
+    url: '/data-factory/bug-analysis/yunxiao/labels/',
+    method: 'post',
+    data
+  })
+}
+
+/**
  * 从云效同步 Bug 数据并分析
  * @param {Object} data - { token, organization_id, domain, space_id, sprint_id, version_tag, ai_provider, skip_ai, max_bugs }
  */
@@ -350,6 +374,173 @@ export function getBugAnalysisAiStatus(recordId) {
   return request({
     url: `/data-factory/bug-analysis/records/${recordId}/ai-status/`,
     method: 'get'
+  })
+}
+
+// ========== Bug 双向同步 (云效写入 + 反向同步) ==========
+
+/**
+ * 创建 Bug 并推送到云效指定迭代
+ * @param {Object|FormData} data - Bug数据（支持FormData包含附件）
+ * @param {Object} [config] - axios配置（如headers）
+ */
+export function createBugToYunxiao(data, config = {}) {
+  return request({
+    url: '/data-factory/bug-analysis/yunxiao/create-bug/',
+    method: 'post',
+    data,
+    timeout: 120000,  // 上传文件需要更长超时
+    ...config
+  })
+}
+
+/**
+ * 更新 Bug 并同步到云效
+ * @param {number} syncItemId - 同步项ID
+ * @param {Object} data - Bug更新数据 + 云效认证信息
+ */
+export function updateBugToYunxiao(syncItemId, data) {
+  return request({
+    url: `/data-factory/bug-analysis/yunxiao/update-bug/${syncItemId}/`,
+    method: 'put',
+    data,
+    timeout: 30000
+  })
+}
+
+/**
+ * 快捷修改Bug状态，支持上传截图
+ * @param {number} syncItemId - 同步项ID
+ * @param {FormData} formData - { token_id, status, screenshot?, comment? }
+ */
+export function quickChangeBugStatus(syncItemId, formData) {
+  return request({
+    url: `/data-factory/bug-analysis/yunxiao/quick-change-status/${syncItemId}/`,
+    method: 'post',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120000
+  })
+}
+
+/**
+ * 获取 Bug 同步项列表
+ * @param {Object} params - { analysis_record_id?, sync_status?, page?, page_size? }
+ */
+export function getBugSyncItems(params) {
+  return request({
+    url: '/data-factory/bug-analysis/yunxiao/sync-items/',
+    method: 'get',
+    params
+  })
+}
+
+/**
+ * 轮询云效 Bug 状态变更 (反向同步)
+ * @param {Object} params - 云效认证信息 + 过滤条件
+ */
+export function pollRemoteStatus(params) {
+  return request({
+    url: '/data-factory/bug-analysis/yunxiao/poll-status/',
+    method: 'get',
+    params,
+    timeout: 60000
+  })
+}
+
+/**
+ * 删除 Bug 同步项
+ * @param {number} syncItemId - 同步项ID
+ */
+export function deleteBugSyncItem(syncItemId) {
+  return request({
+    url: `/data-factory/bug-analysis/yunxiao/sync-items/${syncItemId}/delete/`,
+    method: 'delete'
+  })
+}
+
+/**
+ * 重新同步单个Bug项（从云效获取最新信息，补全serialNumber等字段）
+ * @param {number} syncItemId - 同步项ID
+ */
+export function resyncBugItem(syncItemId) {
+  return request({
+    url: `/data-factory/bug-analysis/yunxiao/resync-item/${syncItemId}/`,
+    method: 'post'
+  })
+}
+
+// ========== 云效 Token 配置管理 ==========
+
+/**
+ * 获取云效 Token 列表
+ * @param {Object} params - { keyword?, is_active?, page?, page_size? }
+ */
+export function getYunxiaoTokens(params) {
+  return request({
+    url: '/data-factory/bug-analysis/yunxiao/tokens/',
+    method: 'get',
+    params
+  })
+}
+
+/**
+ * 创建云效 Token
+ * @param {Object} data - { label, token, is_active? }
+ */
+export function createYunxiaoToken(data) {
+  return request({
+    url: '/data-factory/bug-analysis/yunxiao/tokens/',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 更新云效 Token
+ * @param {number} tokenId - Token ID
+ * @param {Object} data - { label?, token?, is_active? }
+ */
+export function updateYunxiaoToken(tokenId, data) {
+  return request({
+    url: `/data-factory/bug-analysis/yunxiao/tokens/${tokenId}/`,
+    method: 'put',
+    data
+  })
+}
+
+/**
+ * 删除云效 Token
+ * @param {number} tokenId - Token ID
+ */
+export function deleteYunxiaoToken(tokenId) {
+  return request({
+    url: `/data-factory/bug-analysis/yunxiao/tokens/${tokenId}/`,
+    method: 'delete'
+  })
+}
+
+/**
+ * 获取启用的 Token 选项列表 (用于下拉选择)
+ */
+export function getYunxiaoTokenOptions() {
+  return request({
+    url: '/data-factory/bug-analysis/yunxiao/tokens/options/',
+    method: 'get'
+  })
+}
+
+/**
+ * 测试 Token 是否有效
+ * @param {number} tokenId - Token ID
+ * @param {Object} data - { test_space_id? }
+ */
+export function testYunxiaoToken(tokenId, data) {
+  return request({
+    url: `/data-factory/bug-analysis/yunxiao/tokens/${tokenId}/test/`,
+    method: 'post',
+    data,
+    timeout: 15000
   })
 }
 

@@ -23,9 +23,22 @@ from .bug_analysis_view import (
     bug_analysis_summary_delete,
     yunxiao_projects,
     yunxiao_sprints,
+    yunxiao_members,
+    yunxiao_labels,
     sync_from_yunxiao,
     yunxiao_sync_log,
     bug_analysis_ai_status,
+    create_bug_to_yunxiao,
+    update_bug_to_yunxiao,
+    quick_change_bug_status,
+    resync_bug_item,
+    bug_sync_items,
+    poll_remote_status,
+    delete_bug_sync_item,
+    yunxiao_token_list,
+    yunxiao_token_detail,
+    yunxiao_token_options,
+    yunxiao_token_test,
 )
 # AI 评分量表生成视图
 from .rubric_view import (
@@ -77,8 +90,25 @@ urlpatterns = [
     # === 云效同步 (新增) ===
     path('bug-analysis/yunxiao/projects/', yunxiao_projects, name='yunxiao-projects'),
     path('bug-analysis/yunxiao/sprints/', yunxiao_sprints, name='yunxiao-sprints'),
+    path('bug-analysis/yunxiao/members/', yunxiao_members, name='yunxiao-members'),
+    path('bug-analysis/yunxiao/labels/', yunxiao_labels, name='yunxiao-labels'),
     path('bug-analysis/yunxiao/sync/', sync_from_yunxiao, name='yunxiao-sync'),
     path('bug-analysis/yunxiao/log/<int:record_id>/', yunxiao_sync_log, name='yunxiao-sync-log'),
+
+    # === Bug 双向同步 (云效写入 + 反向同步) ===
+    path('bug-analysis/yunxiao/create-bug/', create_bug_to_yunxiao, name='create-bug-to-yunxiao'),
+    path('bug-analysis/yunxiao/update-bug/<int:sync_item_id>/', update_bug_to_yunxiao, name='update-bug-to-yunxiao'),
+    path('bug-analysis/yunxiao/quick-change-status/<int:sync_item_id>/', quick_change_bug_status, name='quick-change-bug-status'),
+    path('bug-analysis/yunxiao/resync-item/<int:sync_item_id>/', resync_bug_item, name='resync-bug-item'),
+    path('bug-analysis/yunxiao/sync-items/', bug_sync_items, name='bug-sync-items'),
+    path('bug-analysis/yunxiao/poll-status/', poll_remote_status, name='poll-remote-status'),
+    path('bug-analysis/yunxiao/sync-items/<int:sync_item_id>/delete/', delete_bug_sync_item, name='delete-bug-sync-item'),
+
+    # === 云效 Token 配置管理 ===
+    path('bug-analysis/yunxiao/tokens/', yunxiao_token_list, name='yunxiao-token-list'),  # GET/POST
+    path('bug-analysis/yunxiao/tokens/options/', yunxiao_token_options, name='yunxiao-token-options'),  # GET 下拉选项
+    path('bug-analysis/yunxiao/tokens/<int:token_id>/', yunxiao_token_detail, name='yunxiao-token-detail'),  # GET/PUT/DELETE
+    path('bug-analysis/yunxiao/tokens/<int:token_id>/test/', yunxiao_token_test, name='yunxiao-token-test'),  # POST 测试
 
     # === AI 评分量表生成管理 ===
     path('rubric/records/', rubric_records, name='rubric-records'),
