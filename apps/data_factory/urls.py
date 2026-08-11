@@ -39,6 +39,7 @@ from .bug_analysis_view import (
     yunxiao_token_detail,
     yunxiao_token_options,
     yunxiao_token_test,
+    personnel_assessment,
 )
 # AI 评分量表生成视图
 from .rubric_view import (
@@ -74,6 +75,7 @@ urlpatterns = [
     path('bug-analysis/records/<int:record_id>/', bug_analysis_record_detail, name='bug-analysis-record-detail'),  # GET 详情
     path('bug-analysis/records/<int:record_id>/delete/', bug_analysis_record_delete, name='bug-analysis-record-delete'),  # DELETE
     path('bug-analysis/records/<int:record_id>/ai-status/', bug_analysis_ai_status, name='bug-analysis-ai-status'),  # GET AI分析状态
+    path('bug-analysis/records/<int:record_id>/assessment/', personnel_assessment, name='bug-analysis-personnel-assessment'),  # GET/POST 人员评估
 
     # === Bug 分析增强功能 (新增 V2) ===
     path('bug-analysis/compare/', bug_analysis_compare, name='bug-analysis-compare'),  # 跨版本对比

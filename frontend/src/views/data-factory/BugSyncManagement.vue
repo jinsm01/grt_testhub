@@ -69,7 +69,7 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="50" align="center" />
-        <el-table-column label="云效编号" width="150" header-align="center" align="center" show-overflow-tooltip>
+        <el-table-column label="云效编号" width="100" header-align="center" align="center" show-overflow-tooltip>
           <template #default="{ row }">
             <span v-if="formatYunxiaoId(row.yunxiao_serial_number, row.yunxiao_workitem_id)" 
                   class="yunxiao-link" 
@@ -85,6 +85,13 @@
             <span class="bug-title-text">{{ row.local_data?.title || '-' }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="状态" width="120" header-align="center" align="center">
+          <template #default="{ row }">
+            <span :class="['status-tag', `status-${getStatusClass(row.local_data?.status)}`]">
+              {{ row.local_data?.status || '-' }}
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column label="严重程度" width="100" header-align="center" align="center">
           <template #default="{ row }">
             <span
@@ -96,7 +103,7 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="优先级" width="90" header-align="center" align="center">
+        <el-table-column label="优先级" width="100" header-align="center" align="center">
           <template #default="{ row }">
             <span
               v-if="row.local_data?.priority"
@@ -107,19 +114,12 @@
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="120" header-align="center" align="center">
-          <template #default="{ row }">
-            <span :class="['status-tag', `status-${getStatusClass(row.local_data?.status)}`]">
-              {{ row.local_data?.status || '-' }}
-            </span>
-          </template>
-        </el-table-column>
         <el-table-column label="所属模块" min-width="120" show-overflow-tooltip header-align="center" align="center">
           <template #default="{ row }">
             <span class="module-text">{{ row.local_data?.module || '-' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="负责人" width="100" header-align="center" align="center">
+        <el-table-column label="负责人" width="210" header-align="center" align="center">
           <template #default="{ row }">
             <span class="creator-text">{{ getMemberDisplayName(row.local_data?.assignee) }}</span>
           </template>
@@ -132,6 +132,22 @@
         <el-table-column label="操作" width="240" fixed="right" header-align="center" align="center">
           <template #default="{ row }">
             <div class="action-buttons">
+              <el-button
+                size="small"
+                type="primary"
+                @click="editBugSyncItem(row)"
+              >
+                <el-icon><Edit /></el-icon>
+                <span>编辑</span>
+              </el-button>
+              <el-button
+                size="small"
+                type="danger"
+                @click="handleDeleteBugSyncItem(row)"
+              >
+                <el-icon><Delete /></el-icon>
+                <span>删除</span>
+              </el-button>
               <el-dropdown
                 v-if="row.local_data?.status === '已修复'"
                 trigger="click"
@@ -149,22 +165,6 @@
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
-              <el-button
-                size="small"
-                type="primary"
-                @click="editBugSyncItem(row)"
-              >
-                <el-icon><Edit /></el-icon>
-                <span>编辑</span>
-              </el-button>
-              <el-button
-                size="small"
-                type="danger"
-                @click="handleDeleteBugSyncItem(row)"
-              >
-                <el-icon><Delete /></el-icon>
-                <span>删除</span>
-              </el-button>
             </div>
           </template>
         </el-table-column>
@@ -217,9 +217,6 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item v-if="bugDialogMode !== 'edit'" label="项目">
-          <el-input model-value="学习公社6.0" disabled style="width: 100%;" />
-        </el-form-item>
         <el-form-item v-if="bugDialogMode !== 'edit'" label="迭代" prop="sprint_id" required>
           <el-select
             v-model="bugForm.sprint_id"
@@ -238,10 +235,6 @@
             />
           </el-select>
         </el-form-item>
-
-        <el-divider content-position="left">
-          <span style="font-size: 13px; color: #909399;">Bug 信息</span>
-        </el-divider>
 
         <el-form-item label="所属模块" prop="module" required>
           <el-select
@@ -374,7 +367,7 @@
             multiple
             :accept="imageAccept + ',' + videoAccept + ',*/*'"
           >
-            <el-button type="primary" plain size="small">
+            <el-button class="attachment-upload-btn" size="small">
               <el-icon><Upload /></el-icon>
               选择附件（支持图片/视频/文档）
             </el-button>
@@ -402,49 +395,65 @@
     <!-- 快捷改状态弹窗 -->
     <el-dialog
       v-model="quickChangeVisible"
-      :title="`快捷改状态 → ${quickChangeData.targetStatus}`"
-      width="480px"
+      width="500px"
       :close-on-click-modal="false"
+      class="quick-change-dialog"
     >
-      <div class="quick-change-info">
-        <span>Bug：{{ quickChangeData.row?.local_data?.title || '' }}</span>
+      <template #header>
+        <div class="quick-change-header">
+          <el-icon class="quick-change-header-icon"><Promotion /></el-icon>
+          <span class="quick-change-header-title">快捷改状态</span>
+          <span :class="['status-tag', `status-${getStatusClass(quickChangeData.targetStatus)}`, 'quick-change-target-status']">
+            {{ quickChangeData.targetStatus }}
+          </span>
+        </div>
+      </template>
+      <div class="quick-change-bug-info">
+        <el-icon class="quick-change-bug-icon"><Warning /></el-icon>
+        <span class="quick-change-bug-title">{{ quickChangeData.row?.local_data?.title || '' }}</span>
       </div>
-      <el-form label-width="80px" style="margin-top: 16px;">
-        <el-form-item label="截图">
-          <el-upload
-            :auto-upload="false"
-            :on-change="handleQuickScreenshotChange"
-            :file-list="quickScreenshotList"
-            :show-file-list="true"
-            :limit="1"
-            accept="image/*"
-          >
-            <el-button type="primary" plain size="small">
-              <el-icon><Upload /></el-icon>
-              选择验证截图
-            </el-button>
-            <template #tip>
-              <div style="font-size: 12px; color: #909399; margin-top: 4px;">
-                支持jpg/png等图片，截图将上传到云效评论作为验证凭证
-              </div>
-            </template>
-          </el-upload>
-        </el-form-item>
+      <el-form label-width="70px" class="quick-change-form">
         <el-form-item label="备注">
           <el-input
             v-model="quickChangeData.comment"
             type="textarea"
-            :rows="2"
-            placeholder="可选，输入验证说明"
+            :rows="3"
+            placeholder="可选，输入验证说明（支持直接粘贴截图上传）"
             maxlength="200"
+            show-word-limit
+            @paste="handleQuickPaste"
           />
+        </el-form-item>
+        <el-form-item label="截图">
+          <el-upload
+            :auto-upload="false"
+            :on-change="handleQuickScreenshotChange"
+            :on-remove="handleQuickScreenshotRemove"
+            :file-list="quickScreenshotList"
+            :show-file-list="true"
+            multiple
+            accept="image/*"
+            class="quick-change-upload"
+          >
+            <div class="quick-change-upload-trigger">
+              <el-icon><Upload /></el-icon>
+              <span>选择验证截图</span>
+            </div>
+            <template #tip>
+              <div class="quick-change-upload-tip">
+                支持jpg/png等图片，可多选，可在备注框直接粘贴截图
+              </div>
+            </template>
+          </el-upload>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="quickChangeVisible = false">取消</el-button>
-        <el-button type="primary" :loading="quickChangeLoading" @click="submitQuickChange">
-          确认改状态
-        </el-button>
+        <div class="quick-change-footer">
+          <el-button class="quick-change-cancel-btn" @click="quickChangeVisible = false">取消</el-button>
+          <el-button type="primary" :loading="quickChangeLoading" @click="submitQuickChange" class="quick-change-submit-btn">
+            确认改状态
+          </el-button>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -453,7 +462,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh, Link, Edit, Delete, Document, Upload, Search, Key, CaretBottom } from '@element-plus/icons-vue'
+import { Plus, Refresh, Link, Edit, Delete, Document, Upload, Search, Key, CaretBottom, Promotion, Warning } from '@element-plus/icons-vue'
 import {
   getBugSyncItems,
   createBugToYunxiao,
@@ -485,7 +494,6 @@ const quickChangeData = reactive({
   comment: '',
 })
 const quickScreenshotList = ref([])
-const quickScreenshotFile = ref(null)
 
 // Token 管理抽屉
 const showTokenManager = ref(false)
@@ -1168,13 +1176,37 @@ function openQuickChangeDialog(row, targetStatus) {
   quickChangeData.targetStatus = targetStatus
   quickChangeData.comment = ''
   quickScreenshotList.value = []
-  quickScreenshotFile.value = null
   quickChangeVisible.value = true
 }
 
 function handleQuickScreenshotChange(file) {
-  quickScreenshotFile.value = file.raw
-  quickScreenshotList.value = [file]
+  quickScreenshotList.value.push(file)
+}
+
+function handleQuickScreenshotRemove(file) {
+  const idx = quickScreenshotList.value.findIndex(f => f.uid === file.uid)
+  if (idx >= 0) {
+    quickScreenshotList.value.splice(idx, 1)
+  }
+}
+
+function handleQuickPaste(event) {
+  // 处理粘贴图片，与Bug创建的粘贴上传交互一致
+  const items = event.clipboardData?.items
+  if (!items) return
+
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.startsWith('image/')) {
+      const file = items[i].getAsFile()
+      if (file) {
+        event.preventDefault()
+        const ext = file.type.split('/')[1] || 'png'
+        const pastedFile = new File([file], `pasted-image-${Date.now()}.${ext}`, { type: file.type })
+        quickScreenshotList.value.push({ name: pastedFile.name, raw: pastedFile })
+        ElMessage.success(`截图已粘贴（共${quickScreenshotList.value.length}张）`)
+      }
+    }
+  }
 }
 
 async function submitQuickChange() {
@@ -1189,9 +1221,11 @@ async function submitQuickChange() {
     if (quickChangeData.comment) {
       formData.append('comment', quickChangeData.comment)
     }
-    if (quickScreenshotFile.value) {
-      formData.append('screenshot', quickScreenshotFile.value)
-    }
+    quickScreenshotList.value.forEach((item, idx) => {
+      if (item.raw) {
+        formData.append(`screenshot_${idx}`, item.raw)
+      }
+    })
 
     const res = await quickChangeBugStatus(row.id, formData)
     if (res.data?.success) {
@@ -1377,20 +1411,27 @@ async function submitBugForm() {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
     } else {
-      // 编辑模式：暂不支持附件，使用JSON
-      const payload = {
-        token_id: bugForm.value.token_id,
-        space_id: bugForm.value.space_id,
-        sprint_id: bugForm.value.sprint_id || undefined,
-        title: bugForm.value.title,
-        desc: bugForm.value.desc,
-        severity: bugForm.value.severity,
-        priority: bugForm.value.priority,
-        status: bugForm.value.status,
-        module: bugForm.value.module || undefined,
-        assignee: bugForm.value.assignee || undefined,
-      }
-      res = await updateBugToYunxiao(bugForm.value.sync_item_id, payload)
+      // 编辑模式：使用 FormData 支持附件上传
+      const formData = new FormData()
+      formData.append('token_id', bugForm.value.token_id)
+      formData.append('space_id', bugForm.value.space_id)
+      if (bugForm.value.sprint_id) formData.append('sprint_id', bugForm.value.sprint_id)
+      formData.append('title', bugForm.value.title)
+      formData.append('desc', bugForm.value.desc)
+      formData.append('severity', bugForm.value.severity)
+      formData.append('priority', bugForm.value.priority)
+      formData.append('status', bugForm.value.status)
+      if (bugForm.value.module) formData.append('module', bugForm.value.module)
+      if (bugForm.value.assignee) formData.append('assignee', bugForm.value.assignee)
+
+      // 添加附件
+      pendingAttachments.value.forEach((file, index) => {
+        formData.append(`attachment_${index}`, file)
+      })
+
+      res = await updateBugToYunxiao(bugForm.value.sync_item_id, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
     }
     if (res.data?.success) {
       ElMessage.success(res.data.message || '同步成功')
@@ -1908,12 +1949,126 @@ onMounted(async () => {
   margin-left: 2px;
 }
 
-.quick-change-info {
-  background: #f5f7fa;
+/* ==================== 快捷改状态弹窗 ==================== */
+.quick-change-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #f8f7ff 0%, #fff 100%);
+  border-bottom: 1px solid rgba(147, 112, 219, 0.12);
+  margin-bottom: 0;
+  padding: 18px 24px;
+}
+
+.quick-change-dialog :deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+.quick-change-dialog :deep(.el-dialog__footer) {
+  padding: 12px 24px 20px;
+}
+
+.quick-change-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quick-change-header-icon {
+  font-size: 20px;
+  color: #7b42f6;
+}
+
+.quick-change-header-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #5a32a3;
+}
+
+.quick-change-target-status {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 10px;
   border-radius: 4px;
-  padding: 8px 12px;
+}
+
+.quick-change-bug-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #f8f7ff 0%, #f3f0ff 100%);
+  border: 1px solid rgba(147, 112, 219, 0.15);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 18px;
+}
+
+.quick-change-bug-icon {
+  font-size: 16px;
+  color: #7b42f6;
+  flex-shrink: 0;
+}
+
+.quick-change-bug-title {
   font-size: 13px;
   color: #606266;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-change-form :deep(.el-form-item__label) {
+  font-weight: 500;
+  color: #5a32a3;
+}
+
+.quick-change-upload-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px dashed #b37feb;
+  border-radius: 8px;
+  color: #7b42f6;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fafaff;
+}
+
+.quick-change-upload-trigger:hover {
+  border-color: #7b42f6;
+  background: #f5f0ff;
+  color: #5a32a3;
+}
+
+.quick-change-upload-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.quick-change-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.quick-change-cancel-btn:hover {
+  color: #7b42f6 !important;
+  border-color: #b37feb !important;
+  background: #f8f7ff !important;
+}
+
+.quick-change-submit-btn {
+  background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%) !important;
+  border: none !important;
+  font-weight: 600 !important;
+}
+
+.quick-change-submit-btn:hover {
+  background: linear-gradient(135deg, #6d33e6 0%, #4a249c 100%) !important;
+  box-shadow: 0 4px 12px rgba(123, 66, 246, 0.4);
 }
 
 /* 同步状态标签 */
@@ -1981,9 +2136,16 @@ onMounted(async () => {
 /* 操作按钮样式 */
 .action-buttons {
   display: flex;
-  gap: 4px;
   justify-content: center;
   align-items: center;
+}
+
+.action-buttons > * {
+  margin-left: 8px;
+}
+
+.action-buttons > *:first-child {
+  margin-left: 0;
 }
 
 .action-buttons .el-button {
@@ -1995,6 +2157,10 @@ onMounted(async () => {
   padding: 4px 10px !important;
   border-radius: 6px;
   transition: all 0.3s ease;
+}
+
+.action-buttons :deep(.el-dropdown) {
+  margin-left: 8px;
 }
 
 .action-buttons .el-button--primary {
@@ -2326,12 +2492,35 @@ onMounted(async () => {
 .desc-template-tag {
   cursor: pointer;
   transition: all 0.2s ease;
+  /* 覆盖 el-tag plain 默认蓝色主题为平台紫色 */
+  --el-tag-text-color: #7b42f6;
+  --el-tag-border-color: #d3c5f9;
+  --el-tag-bg-color: #f8f7ff;
+  color: #7b42f6 !important;
+  border-color: #d3c5f9 !important;
+  background-color: #f8f7ff !important;
 }
 
 .desc-template-tag:hover {
   color: #7b42f6;
   border-color: #7b42f6;
   background: #f8f7ff;
+}
+
+/* 附件上传按钮 - 紫色 plain 风格 */
+.attachment-upload-btn {
+  border: 1px solid #d3c5f9 !important;
+  background: #f8f7ff !important;
+  color: #7b42f6 !important;
+  border-radius: 8px !important;
+  font-weight: 500;
+  transition: all 0.2s ease !important;
+}
+
+.attachment-upload-btn:hover {
+  border-color: #7b42f6 !important;
+  background: #f5f0ff !important;
+  color: #5a32a3 !important;
 }
 
 /* ==================== 附件上传 ==================== */

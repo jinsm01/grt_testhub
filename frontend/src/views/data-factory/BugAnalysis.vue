@@ -6,7 +6,7 @@
       <div class="filter-bar">
         <el-input
           v-model="searchQuery"
-          placeholder="搜索文件名"
+          placeholder="搜索迭代名"
           clearable
           @clear="handleSearch"
           @keyup.enter="handleSearch"
@@ -85,7 +85,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column label="文件名" min-width="280" show-overflow-tooltip header-align="center" align="left">
+          <el-table-column label="迭代名" min-width="280" show-overflow-tooltip header-align="center" align="left">
             <template #default="{ row }">
               <span class="file-name">{{ row.display_name || row.file_name || '未命名' }}</span>
             </template>
@@ -108,7 +108,22 @@
             </template>
           </el-table-column>
 
-
+          <el-table-column label="迭代评估" width="120" header-align="center" align="center">
+            <template #default="{ row }">
+              <span
+                v-if="row.overall_conclusion"
+                class="conclusion-badge"
+                :class="{
+                  'conclusion-pass': row.overall_conclusion === '通过',
+                  'conclusion-conditional': row.overall_conclusion === '有条件通过',
+                  'conclusion-fail': row.overall_conclusion !== '通过' && row.overall_conclusion !== '有条件通过'
+                }"
+              >
+                {{ row.overall_conclusion }}
+              </span>
+              <span v-else class="unevaluated-text">未评估</span>
+            </template>
+          </el-table-column>
 
           <el-table-column label="同步人" width="120" header-align="center" align="center">
             <template #default="{ row }">
@@ -355,6 +370,15 @@
             <span>模块测试重点</span>
             <el-tag type="info" size="small" class="tab-badge">{{ Object.keys(testFocusData).length }}</el-tag>
           </div>
+          <div 
+            class="tab-item" 
+            :class="{ active: activeTab === 'personnel' }"
+            @click="activeTab = 'personnel'"
+          >
+            <el-icon><User /></el-icon>
+            <span>迭代评估</span>
+            <el-tag v-if="overallConclusion" :type="overallConclusion === '通过' ? 'success' : overallConclusion === '有条件通过' ? 'warning' : 'danger'" size="small" class="tab-badge">{{ overallConclusion }}</el-tag>
+          </div>
         </div>
 
         <!-- Tab 内容区域 -->
@@ -521,7 +545,7 @@
             <!-- AI 风险分析结果 -->
             <div v-else-if="aiRisks && (aiRisks.P0?.length > 0 || aiRisks.P1?.length > 0 || aiRisks.P2?.length > 0)" class="ai-risk-result">
               <!-- P0 高风险 -->
-              <div class="ai-risk-level-block p0-block" v-if="aiRisks.P0 && aiRisks.P0.length > 0">
+              <div class="ai-risk-level-block p0-block" v-if="parsedRisks.P0.length > 0">
                 <div class="risk-level-header">
                   <div class="risk-level-icon">
                     <el-icon><WarningFilled /></el-icon>
@@ -531,22 +555,32 @@
                     <span class="level-desc">必须回归 · 服务中断/应用崩溃</span>
                   </div>
                   <div class="risk-level-count">
-                    <span class="count-num">{{ aiRisks.P0.length }}</span>
+                    <span class="count-num">{{ parsedRisks.P0.length }}</span>
                     <span class="count-label">类风险</span>
                   </div>
                 </div>
                 <div class="risk-items-grid">
-                  <div v-for="(risk, idx) in aiRisks.P0" :key="idx" class="risk-item-card p0-item">
+                  <div v-for="(risk, idx) in parsedRisks.P0" :key="idx" class="risk-item-card p0-item">
                     <div class="risk-item-content">
-                      <span class="risk-type">{{ getRiskType(risk.description) }}</span>
-                      <span class="risk-desc">{{ getRiskDesc(risk.description) }}</span>
+                      <span class="risk-type">{{ risk.type }}</span>
+                      <div class="risk-desc-rich">
+                        <p v-for="(seg, i) in risk.parsed.segments" :key="i" class="risk-desc-segment">{{ seg }}</p>
+                        <div class="risk-meta estimated" v-if="risk.parsed.estimated">
+                          <span class="risk-meta-label">预估数量</span>
+                          <span class="risk-meta-value">{{ risk.parsed.estimated }}</span>
+                        </div>
+                        <div class="risk-meta suggestion" v-if="risk.parsed.suggestion">
+                          <span class="risk-meta-label">回归建议</span>
+                          <span class="risk-meta-value">{{ risk.parsed.suggestion }}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
               
               <!-- P1 中风险 -->
-              <div class="ai-risk-level-block p1-block" v-if="aiRisks.P1 && aiRisks.P1.length > 0">
+              <div class="ai-risk-level-block p1-block" v-if="parsedRisks.P1.length > 0">
                 <div class="risk-level-header">
                   <div class="risk-level-icon">
                     <el-icon><InfoFilled /></el-icon>
@@ -556,22 +590,32 @@
                     <span class="level-desc">应该回归 · 功能阻塞/修复质量存疑</span>
                   </div>
                   <div class="risk-level-count">
-                    <span class="count-num">{{ aiRisks.P1.length }}</span>
+                    <span class="count-num">{{ parsedRisks.P1.length }}</span>
                     <span class="count-label">类风险</span>
                   </div>
                 </div>
                 <div class="risk-items-grid">
-                  <div v-for="(risk, idx) in aiRisks.P1" :key="idx" class="risk-item-card p1-item">
+                  <div v-for="(risk, idx) in parsedRisks.P1" :key="idx" class="risk-item-card p1-item">
                     <div class="risk-item-content">
-                      <span class="risk-type">{{ getRiskType(risk.description) }}</span>
-                      <span class="risk-desc">{{ getRiskDesc(risk.description) }}</span>
+                      <span class="risk-type">{{ risk.type }}</span>
+                      <div class="risk-desc-rich">
+                        <p v-for="(seg, i) in risk.parsed.segments" :key="i" class="risk-desc-segment">{{ seg }}</p>
+                        <div class="risk-meta estimated" v-if="risk.parsed.estimated">
+                          <span class="risk-meta-label">预估数量</span>
+                          <span class="risk-meta-value">{{ risk.parsed.estimated }}</span>
+                        </div>
+                        <div class="risk-meta suggestion" v-if="risk.parsed.suggestion">
+                          <span class="risk-meta-label">回归建议</span>
+                          <span class="risk-meta-value">{{ risk.parsed.suggestion }}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
               
               <!-- P2 低风险 -->
-              <div class="ai-risk-level-block p2-block" v-if="aiRisks.P2 && aiRisks.P2.length > 0">
+              <div class="ai-risk-level-block p2-block" v-if="parsedRisks.P2.length > 0">
                 <div class="risk-level-header">
                   <div class="risk-level-icon">
                     <el-icon><CircleCheck /></el-icon>
@@ -581,15 +625,25 @@
                     <span class="level-desc">按需回归 · 影响较轻/边界场景</span>
                   </div>
                   <div class="risk-level-count">
-                    <span class="count-num">{{ aiRisks.P2.length }}</span>
+                    <span class="count-num">{{ parsedRisks.P2.length }}</span>
                     <span class="count-label">类风险</span>
                   </div>
                 </div>
                 <div class="risk-items-grid">
-                  <div v-for="(risk, idx) in aiRisks.P2" :key="idx" class="risk-item-card p2-item">
+                  <div v-for="(risk, idx) in parsedRisks.P2" :key="idx" class="risk-item-card p2-item">
                     <div class="risk-item-content">
-                      <span class="risk-type">{{ getRiskType(risk.description) }}</span>
-                      <span class="risk-desc">{{ getRiskDesc(risk.description) }}</span>
+                      <span class="risk-type">{{ risk.type }}</span>
+                      <div class="risk-desc-rich">
+                        <p v-for="(seg, i) in risk.parsed.segments" :key="i" class="risk-desc-segment">{{ seg }}</p>
+                        <div class="risk-meta estimated" v-if="risk.parsed.estimated">
+                          <span class="risk-meta-label">预估数量</span>
+                          <span class="risk-meta-value">{{ risk.parsed.estimated }}</span>
+                        </div>
+                        <div class="risk-meta suggestion" v-if="risk.parsed.suggestion">
+                          <span class="risk-meta-label">回归建议</span>
+                          <span class="risk-meta-value">{{ risk.parsed.suggestion }}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -706,11 +760,83 @@
               </div>
             </div>
           </div>
+
+          <!-- 人员评估 Tab -->
+          <div v-show="activeTab === 'personnel'" class="tab-panel">
+            <div v-loading="personnelLoading" class="personnel-assessment">
+              <!-- 迭代上线评估 -->
+              <div class="assessment-conclusion">
+                <span class="conclusion-label">能否上线评估：</span>
+                <el-select v-model="overallConclusion" placeholder="选择上线结论" style="width: 160px;" size="default" :disabled="!assessmentEditing">
+                  <el-option label="通过" value="通过" />
+                  <el-option label="有条件通过" value="有条件通过" />
+                  <el-option label="不通过" value="不通过" />
+                </el-select>
+                <el-input v-model="overallSummary" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" placeholder="填写上线评估说明..." style="flex: 1; margin-left: 12px;" :disabled="!assessmentEditing" />
+                <el-button v-if="!assessmentEditing" type="warning" @click="assessmentEditing = true" style="margin-left: 12px;">
+                  修改评估
+                </el-button>
+                <el-button v-else type="primary" :loading="personnelSaving" @click="savePersonnelAssessmentData" style="margin-left: 12px;">
+                  保存评估
+                </el-button>
+              </div>
+
+              <!-- 人员评估表格 -->
+              <el-table :data="personnelList" stripe size="default" empty-text="暂无人员数据" class="personnel-table" :header-cell-style="{ background: '#faf9fc', color: '#606266', fontWeight: 600 }">
+                <el-table-column type="index" label="序号" width="80" align="center" fixed />
+                <el-table-column prop="name" label="人员" width="120" align="center" fixed />
+                <el-table-column prop="bugCount" label="Bug数" width="100" align="center" />
+                <el-table-column prop="p0" label="P0" width="75" align="center">
+                  <template #default="{ row }">
+                    <el-tag :type="row.p0 > 0 ? 'danger' : 'info'" size="small" effect="dark" round>{{ row.p0 }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="p1" label="P1" width="75" align="center">
+                  <template #default="{ row }">
+                    <el-tag :type="row.p1 > 0 ? 'warning' : 'info'" size="small" effect="dark" round>{{ row.p1 }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="p2" label="P2" width="75" align="center">
+                  <template #default="{ row }">
+                    <el-tag :type="row.p2 > 0 ? 'info' : 'info'" size="small" effect="plain" round>{{ row.p2 }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="fixed" label="已修复" width="90" align="center" />
+                <el-table-column prop="remaining" label="遗留" width="85" align="center">
+                  <template #default="{ row }">
+                    <span :style="{ color: row.remaining > 0 ? '#e6a23c' : '' }">{{ row.remaining }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="fixRate" label="修复率" width="140" align="center">
+                  <template #default="{ row }">
+                    <el-progress
+                      :percentage="row.fixRate"
+                      :stroke-width="16"
+                      :color="row.fixRate >= 80 ? '#67c23a' : row.fixRate >= 50 ? '#e6a23c' : '#f56c6c'"
+                      :text-inside="true"
+                      class="fix-rate-progress"
+                    />
+                  </template>
+                </el-table-column>
+                <el-table-column label="评分" width="140" align="center">
+                  <template #default="{ row }">
+                    <el-rate v-model="row.score" :max="5" :disabled="!assessmentEditing" />
+                  </template>
+                </el-table-column>
+                <el-table-column label="评语" min-width="200">
+                  <template #default="{ row }">
+                    <el-input v-model="row.remark" type="textarea" :rows="1" :disabled="!assessmentEditing" />
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
+
         </div><!-- end tab-content -->
       </div><!-- end main-content -->
 
       <!-- ===== 模块详情抽屉 (V2新增) ===== -->
-      <el-drawer v-model="moduleDrawerVisible" :title="'模块详情: ' + selectedModule" direction="rtl" size="50%" destroy-on-close>
+      <el-drawer v-model="moduleDrawerVisible" :title="'模块详情: ' + selectedModule" direction="rtl" size="70%" destroy-on-close>
         <template #header>
           <div class="drawer-header">
             <span>{{ selectedModule }}</span>
@@ -803,17 +929,17 @@
           <div class="detail-section bug-list-section">
             <h4 class="detail-section-title">Bug 明细列表 <el-text type="info" size="small">({{ filteredModuleBugs.length }} 条)</el-text></h4>
             <div class="bug-filter-bar">
-              <el-input v-model="bugFilter.keyword" placeholder="搜索标题..." clearable size="small" style="width: 200px;" prefix-icon="Search" />
+              <el-input v-model="bugFilter.keyword" placeholder="搜索标题" clearable size="small" style="width: 200px;" prefix-icon="Search" />
               <el-select v-model="bugFilter.severity" placeholder="严重度" clearable size="small" style="width: 130px;"><el-option label="P0" value="P0"/><el-option label="P1" value="P1"/><el-option label="P2" value="P2"/></el-select>
               <el-select v-model="bugFilter.defectType" placeholder="缺陷类型" clearable size="small" style="width: 140px;"><el-option v-for="dt in Object.keys(selectedModuleStats.dtype_dist || {})" :key="dt" :label="dt" :value="dt"/></el-select>
             </div>
             <el-table :data="filteredModuleBugs" border size="small" max-height="400" stripe>
               <el-table-column prop="title" label="标题" min-width="220" show-overflow-tooltip />
-              <el-table-column prop="inferred_sev" label="推断严重度" width="90" align="center"><template #default="{ row }"><el-tag :type="sevTagType(row.inferred_sev)" size="small">{{ row.inferred_sev }}</el-tag></template></el-table-column>
+              <el-table-column prop="inferred_sev" label="推断严重度" width="120" align="center"><template #default="{ row }"><el-tag :type="sevTagType(row.inferred_sev)" size="small">{{ row.inferred_sev }}</el-tag></template></el-table-column>
               <el-table-column prop="defect_type" label="缺陷类型" width="100" align="center" />
               <el-table-column prop="status" label="状态" width="90" align="center" />
               <el-table-column prop="creator" label="创建者" width="90" align="center" />
-              <el-table-column prop="created" label="创建时间" width="120" align="center" sortable />
+              <el-table-column prop="created" label="创建时间" width="180" align="center" sortable />
             </el-table>
           </div>
         </div>
@@ -1422,7 +1548,7 @@ import * as echarts from 'echarts'
 import { DataAnalysis, UploadFilled, Loading, RefreshLeft, Document, Grid, TrendCharts, User,
   InfoFilled, Warning, List, Clock, Close, Download, MagicStick, Search, Check, View, Delete, ArrowLeft, Upload, CircleCheck, FolderOpened,
   CircleClose, Refresh, Flag, Lightning, AlarmClock, ArrowDown, Histogram, Plus } from '@element-plus/icons-vue'
-import { analyzeBugExcel, enhanceWithAI, getBugAnalysisRecords, getBugAnalysisRecordDetail, getModuleDetail, deleteBugAnalysisRecord, analyzeModuleFocusIntelligent, getYunxiaoProjects, getYunxiaoSprints, getYunxiaoMembers, getYunxiaoLabels, syncFromYunxiao, getYunxiaoSyncLog, getBugAnalysisAiStatus, createBugToYunxiao, updateBugToYunxiao, pollRemoteStatus, getYunxiaoTokenOptions } from '@/api/data-factory'
+import { analyzeBugExcel, enhanceWithAI, getBugAnalysisRecords, getBugAnalysisRecordDetail, getModuleDetail, deleteBugAnalysisRecord, analyzeModuleFocusIntelligent, getYunxiaoProjects, getYunxiaoSprints, getYunxiaoMembers, getYunxiaoLabels, syncFromYunxiao, getYunxiaoSyncLog, getBugAnalysisAiStatus, createBugToYunxiao, updateBugToYunxiao, pollRemoteStatus, getYunxiaoTokenOptions, getPersonnelAssessment, savePersonnelAssessment } from '@/api/data-factory'
 
 const route = useRoute()
 const router = useRouter()
@@ -1663,8 +1789,16 @@ const sectionCollapsed = ref({
 })
 
 // Tab 标签页状态
-const activeTab = ref('overview')  // overview | charts | risk | focus
+const activeTab = ref('overview')  // overview | charts | risk | focus | personnel
 const isAnalyzingAllModules = ref(false)
+
+// ==================== 人员评估 ====================
+const personnelList = ref([])
+const personnelLoading = ref(false)
+const personnelSaving = ref(false)
+const overallConclusion = ref('')
+const overallSummary = ref('')
+const assessmentEditing = ref(false)
 // 全局分析状态锁和队列
 const currentAnalyzingModule = ref('')
 const analyzeQueue = ref([])
@@ -1776,15 +1910,86 @@ function getRiskType(desc) {
   return ''
 }
 
-// 拆分风险描述：获取冒号后的部分（具体内容）
-function getRiskDesc(desc) {
-  if (!desc) return ''
-  const colonIndex = desc.indexOf('：') || desc.indexOf(':')
-  if (colonIndex > 0) {
-    return desc.substring(colonIndex + 1)
+// 解析风险描述为结构化内容：主体分段 + 预估数量 + 回归建议
+function parseRiskDesc(desc) {
+  const empty = { segments: [], estimated: '', suggestion: '' }
+  // 类型保护：非字符串一律返回空结构，避免 indexOf 抛异常导致 computed 失败
+  if (typeof desc !== 'string') return empty
+  // 取第一个冒号后的部分作为主体
+  const cIdx = desc.indexOf('：') >= 0 ? desc.indexOf('：') : desc.indexOf(':')
+  let body = cIdx > 0 ? desc.substring(cIdx + 1).trim() : desc.trim()
+  if (!body) return empty
+
+  let estimated = ''
+  let suggestion = ''
+
+  // 提取"回归建议：xxx"（到字符串结尾）
+  const sugIdx = body.search(/回归建议\s*[：:]/)
+  if (sugIdx >= 0) {
+    const m = body.substring(sugIdx).match(/回归建议\s*[：:]\s*([\s\S]+)$/)
+    if (m) suggestion = m[1].trim()
+    body = body.substring(0, sugIdx).trim()
   }
-  return desc
+
+  // 提取"预估数量：xxx。"
+  const estIdx = body.search(/预估数量\s*[：:]/)
+  if (estIdx >= 0) {
+    const m = body.substring(estIdx).match(/预估数量\s*[：:]\s*([^。]*。?)/)
+    if (m) estimated = m[1].replace(/。$/, '').trim()
+    body = body.substring(0, estIdx).trim()
+  }
+
+  // 主体分段：若包含"第X，"分点则按分点切分
+  let segments = []
+  if (body) {
+    if (/第[一二三四五六七八九十]+[，,]/.test(body)) {
+      const splitParts = body.split(/(第[一二三四五六七八九十]+[，,])/)
+      let current = ''
+      for (let i = 0; i < splitParts.length; i++) {
+        const part = splitParts[i]
+        if (/^第[一二三四五六七八九十]+[，,]$/.test(part)) {
+          if (current.trim()) segments.push(current.trim())
+          current = part
+        } else {
+          current += part
+        }
+      }
+      if (current.trim()) segments.push(current.trim())
+    } else {
+      segments = [body]
+    }
+  }
+
+  return { segments, estimated, suggestion }
 }
+
+// 预解析 AI 风险描述为结构化内容（避免模板内重复解析）
+// 兜底策略：单个 item 解析异常时降级为原始描述单段展示，保证区域内容始终可见
+const parsedRisks = computed(() => {
+  const result = { P0: [], P1: [], P2: [] }
+  ;['P0', 'P1', 'P2'].forEach(level => {
+    const arr = aiRisks.value[level] || []
+    result[level] = arr.map(item => {
+      try {
+        const desc = typeof item.description === 'string' ? item.description : ''
+        return {
+          ...item,
+          type: getRiskType(desc) || '',
+          parsed: parseRiskDesc(desc)
+        }
+      } catch (e) {
+        // 解析失败时降级：把原始描述作为单段展示，至少内容不丢
+        const fallback = typeof item.description === 'string' ? item.description : ''
+        return {
+          ...item,
+          type: '',
+          parsed: { segments: fallback ? [fallback] : [], estimated: '', suggestion: '' }
+        }
+      }
+    })
+  })
+  return result
+})
 
 function sevTagType(sev){return{'P0':'danger','P1':'warning','P2':'info'}[sev]||''}
 function dtypeTagType(dt){return{'UI显示':'','功能逻辑':'warning','数据内容':'danger','交互操作':'','性能稳定':'danger','跨端兼容':'warning'}[dt]||'info'}
@@ -2316,6 +2521,10 @@ function applyAnalysisResult(result){
   if(result.record_id){
     currentRecordId.value=result.record_id
   }
+  // 预填迭代评估结论，使详情页 Tab badge 立即显示状态（完整数据切换 Tab 时再加载）
+  const _pa = result.personnel_assessment || {}
+  overallConclusion.value = _pa.overallConclusion || ''
+  overallSummary.value = _pa.overallSummary || ''
 }
 
 async function loadHistoryRecords(){
@@ -2972,7 +3181,56 @@ watch(() => activeTab.value, async (newTab) => {
       }
     }, 100)
   }
+  // 切换到人员评估 Tab 时加载数据
+  if (newTab === 'personnel' && currentRecordId.value) {
+    await loadPersonnelAssessment()
+  }
 })
+
+// ==================== 人员评估函数 ====================
+const loadPersonnelAssessment = async () => {
+  if (!currentRecordId.value) return
+  personnelLoading.value = true
+  try {
+    const res = await getPersonnelAssessment(currentRecordId.value)
+    personnelList.value = res.data?.personnel || []
+    overallConclusion.value = res.data?.overallConclusion || ''
+    overallSummary.value = res.data?.overallSummary || ''
+    // 已有评估数据时进入只读模式，否则进入编辑模式
+    assessmentEditing.value = !overallConclusion.value && personnelList.value.every(p => !p.score)
+  } catch (e) {
+    ElMessage.error('加载人员评估数据失败')
+    console.error('加载人员评估失败:', e)
+  } finally {
+    personnelLoading.value = false
+  }
+}
+
+const savePersonnelAssessmentData = async () => {
+  if (!currentRecordId.value) return
+  personnelSaving.value = true
+  try {
+    // 构造 { name: { score, remark } } 格式
+    const personnel = {}
+    personnelList.value.forEach(p => {
+      personnel[p.name] = { score: p.score, remark: p.remark }
+    })
+    const res = await savePersonnelAssessment(currentRecordId.value, {
+      personnel,
+      overallConclusion: overallConclusion.value,
+      overallSummary: overallSummary.value,
+    })
+    overallConclusion.value = res.data?.overallConclusion || overallConclusion.value
+    ElMessage.success('评估保存成功')
+    // 保存成功后切换为只读模式
+    assessmentEditing.value = false
+  } catch (e) {
+    ElMessage.error('评估保存失败')
+    console.error('保存人员评估失败:', e)
+  } finally {
+    personnelSaving.value = false
+  }
+}
 
 // 监听云效同步Token变化，自动加载项目列表
 watch(() => yunxiaoForm.value.token_id, async (newTokenId) => {
@@ -4332,41 +4590,43 @@ async function loadTokenOptions() {
 }
 
 .ai-risk-level-block {
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
 }
 
 .p0-block {
-  background: linear-gradient(135deg, #fff5f5 0%, #ffebee 100%);
-  border: 2px solid #ffcdd2;
+  border-color: rgba(229, 57, 53, 0.2);
 }
 
 .p1-block {
-  background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
-  border: 2px solid #ffe0b2;
+  border-color: rgba(245, 158, 11, 0.2);
 }
 
 .p2-block {
-  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-  border: 2px solid #a5d6a7;
+  border-color: rgba(34, 197, 94, 0.2);
 }
 
 .risk-level-header {
   display: flex;
   align-items: center;
-  padding: 16px 20px;
-  gap: 16px;
+  padding: 14px 18px;
+  gap: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-/* P0区块 - 淡红风格，类似平台浅紫 */
-.p0-block .risk-level-header {
-  background: linear-gradient(135deg, #fff5f7 0%, #ffeef2 100%);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+/* 各档头部：透明背景，不再套渐变卡片 */
+.p0-block .risk-level-header,
+.p1-block .risk-level-header,
+.p2-block .risk-level-header {
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .p0-block .risk-level-icon {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(229, 57, 53, 0.1);
 }
 
 .p0-block .risk-level-icon .el-icon {
@@ -4382,7 +4642,7 @@ async function loadTokenOptions() {
 }
 
 .p0-block .risk-level-count {
-  background: rgba(239, 68, 68, 0.08);
+  background: rgba(229, 57, 53, 0.08);
 }
 
 .p0-block .count-num {
@@ -4391,12 +4651,6 @@ async function loadTokenOptions() {
 
 .p0-block .count-label {
   color: rgba(192, 57, 43, 0.85);
-}
-
-/* P1区块 - 淡黄风格，类似平台浅紫 */
-.p1-block .risk-level-header {
-  background: linear-gradient(135deg, #fffaf0 0%, #fff5e6 100%);
-  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 .p1-block .risk-level-icon {
@@ -4425,12 +4679,6 @@ async function loadTokenOptions() {
 
 .p1-block .count-label {
   color: rgba(204, 126, 34, 0.85);
-}
-
-/* P2区块 - 淡绿风格，类似平台浅紫 */
-.p2-block .risk-level-header {
-  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
-  border: 1px solid rgba(34, 197, 94, 0.2);
 }
 
 .p2-block .risk-level-icon {
@@ -4462,18 +4710,16 @@ async function loadTokenOptions() {
 }
 
 .risk-level-icon {
-  width: 44px;
-  height: 44px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .risk-level-icon .el-icon {
-  font-size: 24px;
-  color: #fff;
+  font-size: 22px;
 }
 
 .risk-level-title {
@@ -4481,15 +4727,14 @@ async function loadTokenOptions() {
 }
 
 .level-name {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
-  color: #fff;
   display: block;
 }
 
 .level-desc {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  color: #999;
   margin-top: 2px;
 }
 
@@ -4497,69 +4742,58 @@ async function loadTokenOptions() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.15);
+  padding: 6px 14px;
   border-radius: 8px;
 }
 
 .count-num {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
-  color: #fff;
 }
 
 .count-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: #999;
 }
 
 .risk-items-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 20px 20px;
+  padding: 6px 18px 14px;
 }
 
+/* 单条风险：去卡片化，列表项风格，底部细线分隔 */
 .risk-item-card {
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 8px;
-  padding: 12px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  transition: all 0.2s;
+  padding: 14px 4px 14px 12px;
+  border-radius: 0;
+  border: none;
+  border-left: 2px solid transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: transparent;
+  transition: background 0.18s;
+}
+
+.risk-item-card:last-child {
+  border-bottom: none;
 }
 
 .risk-item-card:hover {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.02);
+  box-shadow: none;
   transform: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+/* 左侧等级色条（轻量标识） */
 .p0-item {
-  border-left: 3px solid #e53935;
+  border-left-color: #e53935;
 }
 
 .p1-item {
-  border-left: 3px solid #f59e0b;
+  border-left-color: #f59e0b;
 }
 
 .p2-item {
-  border-left: 3px solid #22c55e;
-}
-
-.p0-item:hover {
-  border-left-color: #c0392b;
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.p1-item:hover {
-  border-left-color: #d97706;
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.p2-item:hover {
-  border-left-color: #16a34a;
-  background: rgba(255, 255, 255, 0.95);
+  border-left-color: #22c55e;
 }
 
 .risk-item-content {
@@ -4568,10 +4802,17 @@ async function loadTokenOptions() {
   line-height: 1.7;
 }
 
+/* 风险类型：内联小标签 chip，不再占用整行带下边框 */
 .risk-item-content .risk-type {
+  display: inline-block;
+  font-size: 12px;
   font-weight: 600;
   color: #555;
-  margin-right: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  margin-bottom: 10px;
+  border: none;
 }
 
 .risk-item-content .risk-desc {
@@ -4579,22 +4820,145 @@ async function loadTokenOptions() {
   line-height: 1.7;
 }
 
-/* P0风险类型 - 加深红色 */
+/* 结构化风险描述：主体分段 */
+.risk-desc-rich {
+  margin-top: 0;
+}
+
+.risk-desc-segment {
+  margin: 0 0 8px 0;
+  color: #444;
+  line-height: 1.75;
+  text-align: justify;
+}
+
+.risk-desc-segment:last-of-type {
+  margin-bottom: 10px;
+}
+
+/* 预估数量 / 回归建议：内联轻量行，不再套卡片 */
+.risk-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-left: none;
+}
+
+.risk-meta-label {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #909399;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+
+.risk-meta-label::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+  background: #909399;
+}
+
+.risk-meta-value {
+  flex: 1;
+  font-size: 13px;
+  color: #555;
+  line-height: 1.7;
+}
+
+/* 预估数量 - 蓝 */
+.risk-meta.estimated .risk-meta-label {
+  color: #5b8def;
+}
+
+.risk-meta.estimated .risk-meta-label::before {
+  background: #5b8def;
+}
+
+.risk-meta.estimated .risk-meta-value {
+  color: #3a3a3a;
+  font-weight: 600;
+}
+
+/* 回归建议 - 紫 */
+.risk-meta.suggestion .risk-meta-label {
+  color: #9c27b0;
+}
+
+.risk-meta.suggestion .risk-meta-label::before {
+  background: #9c27b0;
+}
+
+.risk-meta.suggestion .risk-meta-value {
+  color: #6a1b9a;
+}
+
+/* P0/P1/P2 回归建议配色 */
+.p0-item .risk-meta.suggestion .risk-meta-label {
+  color: #e53935;
+}
+
+.p0-item .risk-meta.suggestion .risk-meta-label::before {
+  background: #e53935;
+}
+
+.p0-item .risk-meta.suggestion .risk-meta-value {
+  color: #b71c1c;
+}
+
+.p1-item .risk-meta.suggestion .risk-meta-label {
+  color: #f59e0b;
+}
+
+.p1-item .risk-meta.suggestion .risk-meta-label::before {
+  background: #f59e0b;
+}
+
+.p1-item .risk-meta.suggestion .risk-meta-value {
+  color: #b45309;
+}
+
+.p2-item .risk-meta.suggestion .risk-meta-label {
+  color: #22c55e;
+}
+
+.p2-item .risk-meta.suggestion .risk-meta-label::before {
+  background: #22c55e;
+}
+
+.p2-item .risk-meta.suggestion .risk-meta-value {
+  color: #15803d;
+}
+
+/* P0风险类型 - 红 */
 .p0-item .risk-type {
   color: #c0392b;
-  font-weight: 700;
+  background: rgba(229, 57, 53, 0.08);
 }
 
-/* P1风险类型 - 加深黄色 */
+/* P1风险类型 - 黄 */
 .p1-item .risk-type {
   color: #d68910;
-  font-weight: 700;
+  background: rgba(245, 158, 11, 0.08);
 }
 
-/* P2风险类型 - 加深绿色 */
+/* P2风险类型 - 绿 */
 .p2-item .risk-type {
   color: #1e8449;
-  font-weight: 700;
+  background: rgba(34, 197, 94, 0.08);
 }
 
 .ai-generated-mark {
@@ -5434,6 +5798,34 @@ async function loadTokenOptions() {
   white-space: nowrap;
 }
 
+/* 迭代评估徽章（与 count-badge 同款风格，按结论着色） */
+.conclusion-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.conclusion-pass {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.conclusion-conditional {
+  background: #fff7e6;
+  color: #fa8c16;
+}
+
+.conclusion-fail {
+  background: #fff1f0;
+  color: #f5222d;
+}
+
 .version-badge {
   display: inline-flex;
   align-items: center;
@@ -5490,6 +5882,11 @@ async function loadTokenOptions() {
 .creator-text {
   color: #333;
   font-size: 13px;
+}
+
+.unevaluated-text {
+  color: #bbb;
+  font-size: 12px;
 }
 
 .action-buttons {
@@ -5945,5 +6342,74 @@ async function loadTokenOptions() {
   display: flex;
   align-items: center;
   width: 100%;
+}
+
+/* ==================== 人员评估 ==================== */
+.personnel-assessment {
+  padding: 8px 0;
+}
+
+/* 人员评估表格 - 现代风格 */
+.personnel-table {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #ebeef5 !important;
+}
+
+.personnel-table :deep(.el-table__cell) {
+  border-bottom: 1px solid #f0f0f3;
+}
+
+.personnel-table :deep(.el-table__row:hover > td) {
+  background-color: #f8f7ff !important;
+}
+
+.personnel-table :deep(.el-table__row--striped) td {
+  background-color: #fcfcfe !important;
+}
+
+.personnel-table :deep(.el-table__header-wrapper th) {
+  border-bottom: 2px solid #ebeef5;
+}
+
+.personnel-table :deep(.el-table--border .el-table__fixed-right-patch) {
+  box-shadow: none;
+}
+
+.personnel-table :deep(.el-rate) {
+  display: inline-flex;
+  align-items: center;
+}
+
+.fix-rate-progress {
+  width: 100%;
+}
+
+.fix-rate-progress :deep(.el-progress-bar) {
+  width: 100%;
+}
+
+.assessment-conclusion {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(147, 112, 219, 0.12);
+  box-shadow: 0 4px 16px rgba(147, 112, 219, 0.08);
+}
+
+.conclusion-label {
+  font-weight: 600;
+  color: #5a32a3;
+  white-space: nowrap;
+  line-height: 32px;
+}
+
+.assessment-actions {
+  margin-top: 16px;
+  text-align: right;
 }
 </style>

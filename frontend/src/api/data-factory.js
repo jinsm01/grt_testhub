@@ -399,12 +399,13 @@ export function createBugToYunxiao(data, config = {}) {
  * @param {number} syncItemId - 同步项ID
  * @param {Object} data - Bug更新数据 + 云效认证信息
  */
-export function updateBugToYunxiao(syncItemId, data) {
+export function updateBugToYunxiao(syncItemId, data, config = {}) {
   return request({
     url: `/data-factory/bug-analysis/yunxiao/update-bug/${syncItemId}/`,
     method: 'put',
     data,
-    timeout: 30000
+    timeout: 120000,
+    ...config
   })
 }
 
@@ -598,5 +599,26 @@ export function getRubricStatistics() {
   return request({
     url: '/data-factory/rubric/statistics/',
     method: 'get'
+  })
+}
+
+/**
+ * 获取人员评估数据（Bug统计 + 已保存评估）
+ */
+export function getPersonnelAssessment(recordId) {
+  return request({
+    url: `/data-factory/bug-analysis/records/${recordId}/assessment/`,
+    method: 'get'
+  })
+}
+
+/**
+ * 保存人员评估（个人打分+评语+整体结论）
+ */
+export function savePersonnelAssessment(recordId, data) {
+  return request({
+    url: `/data-factory/bug-analysis/records/${recordId}/assessment/`,
+    method: 'post',
+    data
   })
 }

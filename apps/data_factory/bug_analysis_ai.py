@@ -1010,6 +1010,98 @@ class QwenBugAnalysisAI(BugAnalysisAIProvider):
         logger.info("[Qwen AI] 总结报告: 已生成")
         return result
 
+    def _parse_risk_sections(self, text: str) -> Dict:
+        """
+        解析 AI 返回的风险分析文本，兼容多种格式。
+
+        支持的段落标记格式：
+        - 【P0 高风险】  (标准格式)
+        - **P0 高风险**  (Markdown 粗体)
+        - ### P0 高风险  (Markdown 标题)
+        - 一、 P0 高风险  (中文序号)
+        - 1. P0 高风险  (数字序号)
+        - P0 高风险  (无前缀)
+
+        策略：逐行扫描，按行首是否包含 P0/P1/P2 + 风险关键词来分段，
+        然后对每个段落内容尝试提取列表项或段落。
+        """
+        import re
+
+        risks = {'P0': [], 'P1': [], 'P2': []}
+        risk_type_map = {'P0': '高风险', 'P1': '中风险', 'P2': '低风险'}
+
+        # 逐行扫描，识别段落头部
+        lines = text.split('\n')
+        current_level = None
+        section_lines = []
+
+        def _is_header(line: str):
+            """判断该行是否是风险级别头部，返回 level 或 None"""
+            stripped = line.strip()
+            if not stripped:
+                return None
+            # 头部行通常较短（<30字符），避免内容段落误判
+            if len(stripped) > 30:
+                return None
+            # 去掉常见前缀符号后检查
+            cleaned = re.sub(r'^[【】\*#一二三四五六七八九十\d、\.\s]+', '', stripped)
+            for lvl in ['P0', 'P1', 'P2']:
+                if lvl in cleaned:
+                    # 确认是风险级别头部（包含"风险"或"高"/"中"/"低"）
+                    if '风险' in cleaned or '高' in cleaned or '中' in cleaned or '低' in cleaned:
+                        return lvl
+            return None
+
+        def _flush_section(level, content_lines):
+            """将累积的内容解析为风险项"""
+            if not level or not content_lines:
+                return
+            risk_type = risk_type_map.get(level, '')
+            section_text = '\n'.join(content_lines).strip()
+            if not section_text:
+                return
+
+            # 策略1: 提取列表项（以 -, *, •, · 开头的行）
+            list_items = []
+            for line in section_text.split('\n'):
+                line = line.strip()
+                if line and re.match(r'^[-*•·]\s+', line):
+                    item_text = re.sub(r'^[-*•·]\s+', '', line).strip()
+                    if item_text and len(item_text) > 2:
+                        list_items.append({'description': item_text, 'type': risk_type})
+
+            if list_items:
+                risks[level] = list_items
+                return
+
+            # 策略2: 按空行分段拆分
+            paragraphs = [p.strip() for p in section_text.split('\n\n') if p.strip()]
+            if paragraphs:
+                meaningful = [p for p in paragraphs if len(p) > 10]
+                if meaningful:
+                    risks[level] = [{'description': p, 'type': risk_type} for p in meaningful]
+                    return
+
+            # 策略3: 整段文本作为一条
+            if len(section_text) > 5:
+                risks[level] = [{'description': section_text, 'type': risk_type}]
+
+        for line in lines:
+            level = _is_header(line)
+            if level:
+                # 遇到新段落头部，先保存上一段
+                _flush_section(current_level, section_lines)
+                current_level = level
+                section_lines = []
+            else:
+                if current_level:
+                    section_lines.append(line)
+
+        # 保存最后一段
+        _flush_section(current_level, section_lines)
+
+        return risks
+
     async def analyze_risks(self, bugs: List[Dict], analysis_result: Dict) -> Dict:
         """
         AI 动态风险类型分析 - 真实 AI 实现
@@ -1048,44 +1140,8 @@ class QwenBugAnalysisAI(BugAnalysisAIProvider):
         try:
             result = await self._call_llm(messages, temperature=0.3)
             logger.info(f"[Qwen AI] 风险分析完成(纯文本): 长度={len(result)}")
-            
-            # 解析文本段落，转换为前端可用格式
-            risks = {'P0': [], 'P1': [], 'P2': []}
-            
-            # 按段落标记提取内容
-            import re
-            p0_match = re.search(r'【P0 高风险】\s*(.+?)(?=【P1|$)', result, re.DOTALL)
-            p1_match = re.search(r'【P1 中风险】\s*(.+?)(?=【P2|$)', result, re.DOTALL)
-            p2_match = re.search(r'【P2 低风险】\s*(.+?)$', result, re.DOTALL)
-            
-            if p0_match:
-                p0_text = p0_match.group(1).strip()
-                # 按行拆分，每行作为一条风险项
-                for line in p0_text.split('\n'):
-                    line = line.strip()
-                    if line and line.startswith('-'):
-                        risks['P0'].append({'description': line[1:].strip(), 'type': '高风险'})
-            if p1_match:
-                p1_text = p1_match.group(1).strip()
-                for line in p1_text.split('\n'):
-                    line = line.strip()
-                    if line and line.startswith('-'):
-                        risks['P1'].append({'description': line[1:].strip(), 'type': '中风险'})
-            if p2_match:
-                p2_text = p2_match.group(1).strip()
-                for line in p2_text.split('\n'):
-                    line = line.strip()
-                    if line and line.startswith('-'):
-                        risks['P2'].append({'description': line[1:].strip(), 'type': '低风险'})
-            
-            # 如果解析失败，将整段文本作为一条
-            if not risks['P0'] and p0_match:
-                risks['P0'].append({'description': p0_text, 'type': '高风险'})
-            if not risks['P1'] and p1_match:
-                risks['P1'].append({'description': p1_text, 'type': '中风险'})
-            if not risks['P2'] and p2_match:
-                risks['P2'].append({'description': p2_text, 'type': '低风险'})
 
+            risks = self._parse_risk_sections(result)
             logger.info(f"[Qwen AI] 风险分析完成: P0={len(risks['P0'])}类, P1={len(risks['P1'])}类, P2={len(risks['P2'])}类")
             return risks
 

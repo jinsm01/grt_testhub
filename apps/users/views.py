@@ -5,7 +5,7 @@ from django.contrib.auth import login, logout
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from .models import User, UserProfile
-from .serializers import UserSerializer, UserCreateSerializer, LoginSerializer, UserProfileSerializer
+from .serializers import UserSerializer, UserCreateSerializer, LoginSerializer, UserProfileSerializer, ChangePasswordSerializer
 
 # JWT 相关导入
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -173,3 +173,29 @@ def upload_avatar(request):
         'message': '头像上传成功',
         'avatar': user.avatar.url if user.avatar else None
     })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def change_password(request):
+    """修改密码"""
+    serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+    serializer.is_valid(raise_exception=True)
+
+    user = request.user
+    user.set_password(serializer.validated_data['new_password'])
+    user.save()
+
+    # 将当前用户的所有 refresh token 加入黑名单，强制重新登录
+    try:
+        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+        from rest_framework_simplejwt.tokens import RefreshToken
+        for token in OutstandingToken.objects.filter(user=user):
+            try:
+                RefreshToken(token.token).blacklist()
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"清理旧token失败: {e}")
+
+    return Response({'message': '密码修改成功'})

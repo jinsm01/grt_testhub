@@ -63,3 +63,23 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = '__all__'
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """修改密码序列化器"""
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True, min_length=6)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate_current_password(self, value):
+        user = self.context['request'].user
+        if not user.check_password(value):
+            raise serializers.ValidationError('当前密码错误')
+        return value
+
+    def validate(self, attrs):
+        if attrs['new_password'] != attrs['confirm_password']:
+            raise serializers.ValidationError('两次输入的新密码不一致')
+        if attrs['new_password'] == attrs['current_password']:
+            raise serializers.ValidationError('新密码不能与当前密码相同')
+        return attrs

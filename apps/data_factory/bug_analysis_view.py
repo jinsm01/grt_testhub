@@ -1106,6 +1106,7 @@ def bug_analysis_records(request):
                 },
                 'created_at': localtime(r.created_at).strftime('%Y-%m-%d %H:%M:%S'),
                 'created_by': r.created_by,
+                'overall_conclusion': ((r.analysis_result or {}).get('personnel_assessment', {}) or {}).get('overallConclusion', ''),
             })
 
         return Response({
@@ -2887,6 +2888,35 @@ def update_bug_to_yunxiao(request, sync_item_id):
             custom_fields=custom_fields if custom_fields else None,
         )
 
+        # 上传附件（如果有）- 编辑模式支持追加附件
+        uploaded_attachments = local_data.get('attachments', [])
+        if workitem_id and request.FILES:
+            logger.info(f"[API:update_bug_to_yunxiao] 开始上传 {len(request.FILES)} 个附件")
+            for file_key in request.FILES:
+                uploaded_file = request.FILES[file_key]
+                try:
+                    file_content = uploaded_file.read()
+                    filename = uploaded_file.name
+                    content_type = uploaded_file.content_type or "application/octet-stream"
+
+                    logger.info(f"[API:update_bug_to_yunxiao] 上传附件: {filename}, 大小: {len(file_content)} bytes, 类型: {content_type}")
+                    attach_result = client.upload_attachment(
+                        workitem_id=workitem_id,
+                        file_content=file_content,
+                        filename=filename,
+                        content_type=content_type
+                    )
+                    uploaded_attachments.append({
+                        "name": filename,
+                        "size": len(file_content),
+                        "id": attach_result.get("id", ""),
+                        "url": attach_result.get("url", ""),
+                        "is_image": content_type.startswith("image/"),
+                    })
+                    logger.info(f"[API:update_bug_to_yunxiao] 附件 {filename} 上传成功: id={attach_result.get('id')}")
+                except Exception as e:
+                    logger.error(f"[API:update_bug_to_yunxiao] 上传附件 {uploaded_file.name} 失败: {e}")
+
         # 更新本地记录
         if 'title' in update_data:
             local_data['title'] = update_data['title']
@@ -2903,6 +2933,9 @@ def update_bug_to_yunxiao(request, sync_item_id):
             # 同步更新labels数组
             if module_val:
                 local_data['labels'] = [module_val]
+        # 更新附件列表
+        if request.FILES:
+            local_data['attachments'] = uploaded_attachments
 
         sync_item.local_data = local_data
         sync_item.sync_status = 'synced'
@@ -2985,33 +3018,41 @@ def quick_change_bug_status(request, sync_item_id):
         client.update_bug_status(workitem_id=workitem_id, status=new_status, space_id=space_id if space_id else None)
 
         # 2. 如果有截图，上传附件并添加评论
-        screenshot = request.FILES.get('screenshot')
         comment_text = request.data.get('comment', '').strip()
+        # 收集所有截图文件（前端以 screenshot_0, screenshot_1... 命名）
+        screenshot_files = [
+            f for key, f in request.FILES.items()
+            if key.startswith('screenshot')
+        ]
 
-        if screenshot:
-            # 读取文件内容
-            file_content = screenshot.read()
-            filename = screenshot.name
-            content_type = screenshot.content_type or 'image/png'
+        if screenshot_files:
+            # 逐个上传截图，收集嵌入HTML
+            embed_parts = []
+            for screenshot in screenshot_files:
+                file_content = screenshot.read()
+                filename = screenshot.name
+                content_type = screenshot.content_type or 'image/png'
+                try:
+                    attach_result = client.upload_attachment(
+                        workitem_id=workitem_id,
+                        file_content=file_content,
+                        filename=filename,
+                        content_type=content_type,
+                    )
+                    embed_html = attach_result.get('embedHtml', '')
+                    embed_url = attach_result.get('embedUrl', '')
+                    if embed_html:
+                        embed_parts.append(embed_html)
+                    elif embed_url:
+                        embed_parts.append(f'<img src="{embed_url}"/>')
+                except Exception as e:
+                    logger.warning(f'[quick_change_bug_status] 截图上传失败（不影响其他截图）: {filename}: {e}')
 
-            # 上传附件
-            attach_result = client.upload_attachment(
-                workitem_id=workitem_id,
-                file_content=file_content,
-                filename=filename,
-                content_type=content_type,
-            )
-
-            # 构建评论内容，用HTML嵌入图片（云效评论支持HTML不支持markdown图片）
-            embed_html = attach_result.get('embedHtml', '')
-            embed_url = attach_result.get('embedUrl', '')
+            # 构建评论内容
             comment_parts = []
             if comment_text:
                 comment_parts.append(comment_text)
-            if embed_html:
-                comment_parts.append(embed_html)
-            elif embed_url:
-                comment_parts.append(f'<img src="{embed_url}"/>')
+            comment_parts.extend(embed_parts)
 
             full_comment = '<br/><br/>'.join(comment_parts)
             try:
@@ -3034,11 +3075,12 @@ def quick_change_bug_status(request, sync_item_id):
         sync_item.save(update_fields=['local_data', 'sync_status', 'last_synced_at', 'updated_at'])
 
         elapsed = round((time.time() - start_time) * 1000)
-        logger.info(f"[API:quick_change_bug_status] 成功: workitem_id={workitem_id}, status={new_status}, 截图={'有' if screenshot else '无'}, 耗时{elapsed}ms")
+        screenshot_count = len(screenshot_files)
+        logger.info(f"[API:quick_change_bug_status] 成功: workitem_id={workitem_id}, status={new_status}, 截图={screenshot_count}张, 耗时{elapsed}ms")
 
         return _build_api_response({
             'sync_item': sync_item.to_list_dict(),
-        }, f'状态已更新为「{new_status}」{"并上传截图" if screenshot else ""} (耗时{elapsed}ms)')
+        }, f'状态已更新为「{new_status}」{f"并上传{screenshot_count}张截图" if screenshot_count else ""} (耗时{elapsed}ms)')
 
     except YunxiaoAPIError as e:
         try:
@@ -4042,3 +4084,146 @@ def yunxiao_token_test(request, token_id):
             'valid': False,
             'message': f'验证异常: {str(e)}',
         }, 'Token 验证失败')
+
+
+# ============================================================
+# API 端点：人员评估（上线人员评估）
+# ============================================================
+
+def _compute_personnel_stats(raw_bugs):
+    """从原始 Bug 数据计算每位参与人（研发）的 Bug 统计
+    
+    取值优先级：
+    1. custom_fields 中的参与人字段（参与者/参与人/相关人员/协同人等）
+    2. assignee 字段（处理人/负责人/解决人）
+    一个 Bug 可能有多个参与人，每人都计入统计
+    """
+    import re
+    PARTICIPANT_KEYS = ['参与者', '参与人', '相关人员', '协同人', '参与人员',
+                         'participant', 'participants', '多人处理', '协同处理',
+                         '跟进人', '关注人']
+    
+    stats = {}  # {person: {total, p0, p1, p2, fixed, remaining}}
+    for b in raw_bugs:
+        # 提取参与人列表
+        persons = []
+        
+        # 1. 优先从 custom_fields 提取参与人
+        cf = b.get('custom_fields', {})
+        for key in PARTICIPANT_KEYS:
+            val = cf.get(key)
+            if val:
+                if isinstance(val, str):
+                    for p in re.split(r'[,，;；、]', val):
+                        p = p.strip()
+                        if p:
+                            persons.append(p)
+                elif isinstance(val, list):
+                    for p in val:
+                        p = str(p).strip()
+                        if p:
+                            persons.append(p)
+                break
+        
+        # 2. 无参与人时，回退到 assignee（处理人）
+        if not persons:
+            assignee = (b.get('assignee') or '').strip()
+            if assignee:
+                persons.append(assignee)
+        
+        if not persons:
+            continue
+        
+        # Bug 级别统计（每人共享）
+        inf_sev = b.get('inferred_sev', '')
+        bug_status = b.get('status', '')
+        is_fixed = ('已解决' in bug_status or '已关闭' in bug_status) and ('再次打开' not in bug_status and '重新打开' not in bug_status)
+        
+        for person in persons:
+            if person not in stats:
+                stats[person] = {'total': 0, 'p0': 0, 'p1': 0, 'p2': 0, 'fixed': 0, 'remaining': 0}
+            s = stats[person]
+            s['total'] += 1
+            if inf_sev == 'P0':
+                s['p0'] += 1
+            elif inf_sev == 'P1':
+                s['p1'] += 1
+            elif inf_sev == 'P2':
+                s['p2'] += 1
+            if is_fixed:
+                s['fixed'] += 1
+            else:
+                s['remaining'] += 1
+    return stats
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def personnel_assessment(request, record_id):
+    """人员评估：GET 获取统计数据+已保存评估，POST 保存评估（个人打分+评语+整体结论）"""
+    try:
+        if not _DB_RECORDS_AVAILABLE:
+            return _build_error_response('历史记录功能暂不可用', code=status.HTTP_503_SERVICE_UNAVAILABLE)
+        record = BugAnalysisRecord.objects.filter(id=record_id).first()
+        if not record:
+            return _build_error_response(f'记录不存在: id={record_id}', code=status.HTTP_404_NOT_FOUND)
+
+        analysis_result = record.analysis_result or {}
+        saved = analysis_result.get('personnel_assessment', {})
+        saved_personnel = saved.get('personnel', {}) if isinstance(saved, dict) else {}
+        saved_overall_conclusion = saved.get('overallConclusion', '')
+        saved_overall_summary = saved.get('overallSummary', '')
+
+        if request.method == 'GET':
+            # 计算每位人员的 Bug 统计
+            stats = _compute_personnel_stats(record.raw_bugs or [])
+            # 合并已保存的评估数据（打分、评语）
+            personnel_list = []
+            for person, s in stats.items():
+                assessment = saved_personnel.get(person, {})
+                fix_rate = round(s['fixed'] / s['total'] * 100, 1) if s['total'] > 0 else 0
+                personnel_list.append({
+                    'name': person,
+                    'bugCount': s['total'],
+                    'p0': s['p0'],
+                    'p1': s['p1'],
+                    'p2': s['p2'],
+                    'fixed': s['fixed'],
+                    'remaining': s['remaining'],
+                    'fixRate': fix_rate,
+                    'score': assessment.get('score', 0),
+                    'remark': assessment.get('remark', ''),
+                })
+            # 按Bug总数降序
+            personnel_list.sort(key=lambda x: x['bugCount'], reverse=True)
+            return _build_api_response({
+                'personnel': personnel_list,
+                'overallConclusion': saved_overall_conclusion,
+                'overallSummary': saved_overall_summary,
+            })
+
+        elif request.method == 'POST':
+            # 保存评估数据
+            personnel_data = request.data.get('personnel', {})
+            overall_conclusion = request.data.get('overallConclusion', '')
+            overall_summary = request.data.get('overallSummary', '')
+            if not isinstance(personnel_data, dict):
+                return _build_error_response('人员评估数据格式错误，应为对象', code=status.HTTP_400_BAD_REQUEST)
+
+            assessment_data = {
+                'personnel': personnel_data,
+                'overallConclusion': overall_conclusion,
+                'overallSummary': overall_summary,
+            }
+            analysis_result['personnel_assessment'] = assessment_data
+            record.analysis_result = analysis_result
+            record.save(update_fields=['analysis_result'])
+
+            return _build_api_response({
+                'overallConclusion': overall_conclusion,
+            }, '评估保存成功')
+
+    except Exception as e:
+        logger.error(f'[API:personnel_assessment] 错误: {e}', exc_info=True)
+        return _build_error_response(f'人员评估操作失败: {str(e)}',
+                                     code=status.HTTP_500_INTERNAL_SERVER_ERROR, log_level='error')

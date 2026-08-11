@@ -58,16 +58,16 @@
         <el-tab-pane :label="$t('profile.changePassword')" name="password">
           <el-form label-width="120px">
             <el-form-item :label="$t('profile.currentPassword')">
-              <el-input type="password" />
+              <el-input v-model="passwordForm.currentPassword" type="password" show-password />
             </el-form-item>
             <el-form-item :label="$t('profile.newPassword')">
-              <el-input type="password" />
+              <el-input v-model="passwordForm.newPassword" type="password" show-password />
             </el-form-item>
             <el-form-item :label="$t('profile.confirmPassword')">
-              <el-input type="password" />
+              <el-input v-model="passwordForm.confirmPassword" type="password" show-password />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary">{{ $t('profile.changePasswordButton') }}</el-button>
+              <el-button type="primary" @click="handleChangePassword">{{ $t('profile.changePasswordButton') }}</el-button>
             </el-form-item>
           </el-form>
         </el-tab-pane>
@@ -86,6 +86,11 @@ import api from '@/utils/api'
 const userStore = useUserStore()
 const activeTab = ref('basic')
 const avatarInput = ref(null)
+const passwordForm = ref({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
 
 // 计算头像URL
 const avatarUrl = computed(() => {
@@ -118,6 +123,60 @@ const saveProfile = async () => {
   } catch (error) {
     ElMessage.error('保存失败，请稍后重试')
     console.error('保存个人信息失败:', error)
+  }
+}
+
+// 修改密码
+const handleChangePassword = async () => {
+  // 前端基础校验
+  if (!passwordForm.value.currentPassword) {
+    ElMessage.warning('请输入当前密码')
+    return
+  }
+  if (!passwordForm.value.newPassword) {
+    ElMessage.warning('请输入新密码')
+    return
+  }
+  if (passwordForm.value.newPassword.length < 6) {
+    ElMessage.warning('新密码长度不能少于6位')
+    return
+  }
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    ElMessage.warning('两次输入的新密码不一致')
+    return
+  }
+  if (passwordForm.value.newPassword === passwordForm.value.currentPassword) {
+    ElMessage.warning('新密码不能与当前密码相同')
+    return
+  }
+
+  try {
+    await api.post('/auth/change-password/', {
+      current_password: passwordForm.value.currentPassword,
+      new_password: passwordForm.value.newPassword,
+      confirm_password: passwordForm.value.confirmPassword
+    })
+
+    ElMessage.success('密码修改成功，请重新登录')
+    // 密码修改后旧 token 已失效，调用 logout 清除本地状态并跳转登录页
+    setTimeout(() => {
+      userStore.logout()
+    }, 1500)
+  } catch (error) {
+    // 提取后端返回的错误信息
+    const errors = error.response?.data
+    if (errors) {
+      // DRF 返回的是 {field: [error_msg]} 格式
+      const firstKey = Object.keys(errors)[0]
+      if (Array.isArray(errors[firstKey])) {
+        ElMessage.error(errors[firstKey][0])
+      } else {
+        ElMessage.error(errors[firstKey])
+      }
+    } else {
+      ElMessage.error('密码修改失败，请稍后重试')
+    }
+    console.error('修改密码失败:', error)
   }
 }
 
