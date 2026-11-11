@@ -3,28 +3,55 @@
     <!-- 配置面板 - 参考 InterfaceList.vue 顶部样式 -->
     <div v-if="!showReportDetail" class="page-header">
       <div class="filter-section">
-        <el-input v-model="config.project_id" placeholder="Apifox 项目 ID" clearable style="width: 200px;" />
-        <el-input v-model="config.environment_id" placeholder="Apifox 环境 ID" clearable style="width: 200px;" />
-        <el-input
-          v-model="config.access_token"
-          placeholder="请输入 Apifox Access Token"
-          show-password
+        <el-select
+          v-if="isRunMode && scenarios.length > 0"
+          v-model="creatorFilter"
+          placeholder="创建人筛选"
           clearable
-          style="width: 300px;"
-        />
+          style="width: 150px;"
+        >
+          <el-option v-for="c in uniqueCreators" :key="c" :label="c" :value="c" />
+        </el-select>
+        <el-select
+          v-if="isRunMode && scenarios.length > 0"
+          v-model="folderFilter"
+          placeholder="所属目录筛选"
+          clearable
+          filterable
+          style="width: 200px;"
+        >
+          <el-option v-for="f in uniqueFolders" :key="f" :label="f" :value="f" />
+        </el-select>
       </div>
       <div class="header-actions">
-        <el-button @click="rulesDrawerVisible = true">
+        <el-button @click="configDrawerVisible = true">
+          <el-icon style="margin-right: 4px;"><Setting /></el-icon>
+          Apifox配置
+          <el-tag v-if="config.project_id && config.environment_id && config.access_token" size="small" type="success" style="margin-left: 6px;">已配置</el-tag>
+          <el-tag v-else size="small" type="warning" style="margin-left: 6px;">未配置</el-tag>
+        </el-button>
+        <el-button v-if="!isRunMode" @click="rulesDrawerVisible = true">
           <el-icon style="margin-right: 4px;"><List /></el-icon>
           规则查看
         </el-button>
-        <el-button @click="exemptionsDrawerVisible = true">
+        <el-button v-if="!isRunMode" @click="exemptionsDrawerVisible = true">
           <el-icon style="margin-right: 4px;"><CircleCheck /></el-icon>
           白名单
         </el-button>
-        <el-button type="primary" @click="generateReport" :loading="generating" :disabled="generating">
+        <el-button v-if="!isRunMode" type="primary" @click="generateReport" :loading="generating" :disabled="generating">
           <el-icon style="margin-right: 4px;"><VideoPlay /></el-icon>
           {{ generating ? '生成中...' : '开始检查' }}
+        </el-button>
+        <el-divider v-if="isRunMode" direction="vertical" />
+        <el-tooltip v-if="isRunMode" :content="scenarioCacheTime ? `上次拉取: ${formatCacheTime(scenarioCacheTime)}` : '尚未拉取'" placement="top">
+          <el-button @click="fetchScenarios" :loading="fetchingScenarios" :disabled="fetchingScenarios">
+            <el-icon style="margin-right: 4px;"><Refresh /></el-icon>
+            {{ fetchingScenarios ? '拉取中...' : (scenarios.length > 0 ? '刷新场景' : '拉取场景') }}
+          </el-button>
+        </el-tooltip>
+        <el-button v-if="isRunMode" type="success" @click="runScenarios" :loading="running" :disabled="running || selectedScenarioIds.length === 0">
+          <el-icon style="margin-right: 4px;"><VideoPlay /></el-icon>
+          {{ running ? '运行中...' : `运行选中 (${selectedScenarioIds.length})` }}
         </el-button>
       </div>
     </div>
@@ -67,6 +94,210 @@
         <el-button v-if="!generating" @click="progressDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- 运行进度抽屉 -->
+    <el-drawer
+      v-model="runProgressDialogVisible"
+      :title="running ? '场景运行进度' : '运行报告详情'"
+      direction="rtl"
+      size="1000px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="!running"
+      :show-close="!running"
+      :destroy-on-close="true"
+      class="modern-drawer run-progress-drawer"
+    >
+      <div class="drawer-body progress-dialog-content">
+        <el-alert
+          v-if="runTaskError"
+          :title="runTaskError"
+          type="error"
+          show-icon
+          :closable="true"
+          @close="runTaskError = ''"
+        />
+        <template v-else>
+          <!-- 进度条 -->
+          <div v-if="running" class="run-progress-wrap">
+            <el-progress
+              :percentage="runTotal > 0 ? Math.round((runCompleted / runTotal) * 100) : 0"
+              :stroke-width="10"
+              :status="runCompleted >= runTotal && runTotal > 0 ? 'success' : ''"
+            />
+            <p class="progress-text">{{ runProgressText }}</p>
+            <p class="progress-sub-text">{{ runCompleted }} / {{ runTotal }} 个场景已完成</p>
+          </div>
+          <!-- 运行完成 - 实时结果 -->
+          <div v-if="!running && runResults.length > 0" class="run-results-summary">
+            <el-alert
+              :title="runProgressText === '运行报告详情' ? '运行报告详情' : '运行完成！'"
+              :type="runFailedCount > 0 ? 'warning' : 'success'"
+              show-icon
+              :closable="false"
+            >
+              <template #default>
+                共 {{ runResults.length }} 个场景，{{ runPassedCount }} 通过，{{ runFailedCount }} 失败
+              </template>
+            </el-alert>
+            <el-table :data="runResults" size="small" style="margin-top: 12px;" max-height="calc(100vh - 280px)">
+              <el-table-column prop="scenario_name" label="场景名称" min-width="200" show-overflow-tooltip />
+              <el-table-column label="结果" width="80" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="row.is_passed ? 'success' : 'danger'" size="small">
+                    {{ row.is_passed ? '通过' : '失败' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="请求" width="100" align="center">
+                <template #default="{ row }">
+                  {{ row.total_requests || 0 }} ({{ row.failed_requests || 0 }} 失败)
+                </template>
+              </el-table-column>
+              <el-table-column label="断言" width="100" align="center">
+                <template #default="{ row }">
+                  {{ row.total_assertions || 0 }} ({{ row.failed_assertions || 0 }} 失败)
+                </template>
+              </el-table-column>
+              <el-table-column label="错误" min-width="200" show-overflow-tooltip>
+                <template #default="{ row }">
+                  <span v-if="row.error" style="color: #f56c6c; font-size: 12px;">{{ row.error }}</span>
+                  <span v-else-if="row.failures && row.failures.length > 0" style="color: #f56c6c; font-size: 12px;">
+                    {{ row.failures[0].message }}
+                  </span>
+                  <span v-else style="color: #999;">-</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="80" align="center">
+                <template #default="{ row }">
+                  <el-button size="small" class="action-btn view-btn" @click="viewRunDetail(row)">
+                    <el-icon><View /></el-icon>
+                    <span>详情</span>
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+        </template>
+      </div>
+      <template #footer>
+        <div class="drawer-footer">
+          <el-button v-if="!running" @click="runProgressDialogVisible = false">关闭</el-button>
+          <el-button v-if="!running && runTestExecutionId" type="primary" @click="goToUnifiedReport">查看统一报告</el-button>
+        </div>
+      </template>
+    </el-drawer>
+
+    <!-- 运行详情抽屉 -->
+    <el-drawer
+      v-model="runDetailDrawerVisible"
+      title="场景运行详情"
+      direction="rtl"
+      size="70%"
+      :destroy-on-close="true"
+      class="modern-drawer run-detail-drawer"
+    >
+      <div class="drawer-body" v-if="currentRunDetail">
+        <!-- 场景概览 -->
+        <div class="run-detail-header">
+          <div class="run-detail-title">
+            <el-tag :type="currentRunDetail.is_passed ? 'success' : 'danger'" size="large">
+              {{ currentRunDetail.is_passed ? '通过' : '失败' }}
+            </el-tag>
+            <span class="scenario-detail-name">{{ currentRunDetail.scenario_name }}</span>
+          </div>
+          <div class="run-detail-stats">
+            <span class="stat-item">请求: {{ currentRunDetail.total_requests || 0 }} ({{ currentRunDetail.failed_requests || 0 }} 失败)</span>
+            <span class="stat-item">断言: {{ currentRunDetail.total_assertions || 0 }} ({{ currentRunDetail.failed_assertions || 0 }} 失败)</span>
+            <span class="stat-item" v-if="currentRunDetail.response_avg">平均耗时: {{ currentRunDetail.response_avg }}ms</span>
+          </div>
+        </div>
+
+        <!-- 错误信息（如果有） -->
+        <el-alert
+          v-if="currentRunDetail.error"
+          :title="currentRunDetail.error"
+          type="error"
+          show-icon
+          :closable="false"
+          style="margin-bottom: 16px;"
+        />
+        <el-alert
+          v-else-if="currentRunDetail.failures && currentRunDetail.failures.length > 0"
+          type="error"
+          show-icon
+          :closable="false"
+          style="margin-bottom: 16px;"
+        >
+          <template #title>有 {{ currentRunDetail.failures.length }} 个失败项</template>
+          <div v-for="(f, i) in currentRunDetail.failures" :key="i" style="font-size: 12px; margin-top: 4px;">
+            <strong v-if="f.step_name">{{ f.step_name }}:</strong> {{ f.message }}
+          </div>
+        </el-alert>
+
+        <!-- 步骤详情 -->
+        <div class="steps-section" v-if="currentRunDetail.steps && currentRunDetail.steps.length > 0">
+          <h4 class="steps-title">执行步骤 ({{ currentRunDetail.steps.length }})</h4>
+          <el-table :data="currentRunDetail.steps" style="width: 100%" class="custom-table" row-key="name">
+            <el-table-column type="expand">
+              <template #default="{ row }">
+                <div class="step-expand-content">
+                  <!-- 断言详情 -->
+                  <div v-if="row.assertions && row.assertions.length > 0" class="step-sub-section">
+                    <div class="sub-title">断言 ({{ row.assertions.length }})</div>
+                    <div v-for="(a, i) in row.assertions" :key="i" class="assertion-item">
+                      <el-tag :type="a.passed ? 'success' : 'danger'" size="small">
+                        {{ a.passed ? '通过' : '失败' }}
+                      </el-tag>
+                      <span class="assertion-name">{{ a.name }}</span>
+                      <span v-if="a.error" class="assertion-error">{{ a.error }}</span>
+                    </div>
+                  </div>
+                  <!-- 请求体 -->
+                  <div v-if="row.request_body" class="step-sub-section">
+                    <div class="sub-title">请求体</div>
+                    <pre class="code-block">{{ row.request_body }}</pre>
+                  </div>
+                  <!-- 响应体 -->
+                  <div v-if="row.response_body" class="step-sub-section">
+                    <div class="sub-title">响应体</div>
+                    <pre class="code-block">{{ row.response_body }}</pre>
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="结果" width="60" align="center">
+              <template #default="{ row }">
+                <el-tag :type="row.passed ? 'success' : 'danger'" size="small">
+                  {{ row.passed ? '通过' : '失败' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="name" label="步骤名称" min-width="180" show-overflow-tooltip />
+            <el-table-column label="方法" width="70" align="center">
+              <template #default="{ row }">
+                <el-tag :type="methodTagType(row.method)" size="small" effect="plain">{{ row.method }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="url" label="请求URL" min-width="300" show-overflow-tooltip />
+            <el-table-column label="状态码" width="80" align="center">
+              <template #default="{ row }">
+                <span :style="{ color: statusCodeColor(row.status_code), fontWeight: '600' }">
+                  {{ row.status_code || '-' }}
+                </span>
+              </template>
+            </el-table-column>
+            <el-table-column label="耗时" width="90" align="center">
+              <template #default="{ row }">
+                {{ row.response_time ? row.response_time + 'ms' : '-' }}
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <!-- 无步骤数据 -->
+        <el-empty v-else description="无步骤详情数据" />
+      </div>
+    </el-drawer>
 
     <!-- 规则查看抽屉 -->
     <el-drawer
@@ -323,107 +554,223 @@
       @back="backToList"
     />
 
-    <!-- 历史报告列表 -->
+    <!-- 报告列表 / 场景运行 -->
     <div v-else class="card-container">
-      <!-- 加载状态 -->
-      <div v-if="loadingReports" class="loading-state">
-        <el-skeleton :rows="6" animated />
-      </div>
-      
-      <!-- 空状态 -->
-      <div v-else-if="reports.length === 0" class="empty-state">
-        <el-empty description="暂无生成报告，请先配置并点击「开始检查」" />
+      <!-- 检查报告内容 -->
+      <div v-if="!isRunMode">
+          <!-- 加载状态 -->
+          <div v-if="loadingReports" class="loading-state">
+            <el-skeleton :rows="6" animated />
+          </div>
+          <!-- 空状态 -->
+          <div v-else-if="reports.length === 0" class="empty-state">
+            <el-empty description="暂无生成报告，请先配置并点击「开始检查」" />
+          </div>
+          <!-- 报告列表 -->
+          <div v-else class="table-wrapper">
+            <el-table
+              ref="tableRef"
+              :data="reports"
+              v-loading="loadingReports"
+              style="width: 100%"
+              class="custom-table"
+              :header-cell-style="{ background: '#ffffff', color: '#5a32a3', fontWeight: 600, fontSize: '14px' }"
+            >
+              <el-table-column label="序号" width="90" header-align="center" align="center">
+                <template #default="{ $index }">
+                  {{ $index + 1 }}
+                </template>
+              </el-table-column>
+              <el-table-column label="报告文件" min-width="200" header-align="center" show-overflow-tooltip>
+                <template #default="{ row }">
+                  <div style="text-align: center; width: 100%;">
+                    <span class="report-filename">{{ row.filename }}</span>
+                  </div>
+                </template>
+              </el-table-column>
+              <el-table-column label="场景总数" width="120" header-align="center" align="center">
+                <template #default="{ row }">
+                  <span>{{ row.total_scenarios !== null && row.total_scenarios !== undefined ? row.total_scenarios : '-' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="执行人" width="120" header-align="center" align="center">
+                <template #default="{ row }">
+                  <span>{{ row.executed_by || '-' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="文件大小" width="120" header-align="center" align="center">
+                <template #default="{ row }">
+                  <span>{{ formatSize(row.size) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="生成时间" width="200" header-align="center" align="center">
+                <template #default="{ row }">
+                  <span>{{ formatTime(row.created_at) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="250" header-align="center" align="center" fixed="right">
+                <template #default="{ row }">
+                  <div class="action-buttons">
+                    <el-button type="primary" size="small" class="action-btn view-btn" @click="viewReport(row)">
+                      <el-icon><View /></el-icon>
+                      <span>查看</span>
+                    </el-button>
+                    <el-button type="danger" size="small" class="action-btn delete-btn" @click="deleteReport(row)">
+                      <el-icon><Delete /></el-icon>
+                      <span>删除</span>
+                    </el-button>
+                  </div>
+                </template>
+              </el-table-column>
+            </el-table>
+            <!-- 分页 -->
+            <div class="pagination-container">
+              <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :page-sizes="[10, 20, 50, 100]"
+                :total="totalReports"
+                layout="total, sizes, prev, pager, next, jumper"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+              />
+            </div>
+          </div>
       </div>
 
-      <!-- 报告列表 -->
-      <div v-else class="table-wrapper">
-        <el-table
-          ref="tableRef"
-          :data="reports"
-          v-loading="loadingReports"
-          style="width: 100%"
-          class="custom-table"
-          :header-cell-style="{ background: '#ffffff', color: '#5a32a3', fontWeight: 600, fontSize: '14px' }"
-        >
-          <el-table-column label="序号" width="90" header-align="center" align="center">
-            <template #default="{ $index }">
-              {{ $index + 1 }}
-            </template>
-          </el-table-column>
-          <el-table-column label="报告文件" min-width="200" header-align="center" show-overflow-tooltip>
-            <template #default="{ row }">
-              <div style="text-align: center; width: 100%;">
-                <span class="report-filename">{{ row.filename }}</span>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="场景总数" width="120" header-align="center" align="center">
-            <template #default="{ row }">
-              <span>{{ row.total_scenarios !== null && row.total_scenarios !== undefined ? row.total_scenarios : '-' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="执行人" width="120" header-align="center" align="center">
-            <template #default="{ row }">
-              <span>{{ row.executed_by || '-' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="文件大小" width="120" header-align="center" align="center">
-            <template #default="{ row }">
-              <span>{{ formatSize(row.size) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="生成时间" width="200" header-align="center" align="center">
-            <template #default="{ row }">
-              <span>{{ formatTime(row.created_at) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="250" header-align="center" align="center" fixed="right">
-            <template #default="{ row }">
-              <div class="action-buttons">
-                <el-button type="primary" size="small" class="action-btn view-btn" @click="viewReport(row)">
-                  <el-icon><View /></el-icon>
-                  <span>查看</span>
-                </el-button>
-                <el-button type="danger" size="small" class="action-btn delete-btn" @click="deleteReport(row)">
-                  <el-icon><Delete /></el-icon>
-                  <span>删除</span>
-                </el-button>
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
+      <!-- 场景运行内容 -->
+      <div v-else>
+          <!-- 场景列表 -->
+          <div v-if="scenarios.length > 0" class="table-wrapper">
+            <el-table
+              ref="scenarioTableRef"
+              :data="pagedScenarios"
+              v-loading="fetchingScenarios"
+              style="width: 100%"
+              class="custom-table"
+              row-key="id"
+              :header-cell-style="{ background: '#ffffff', color: '#5a32a3', fontWeight: 600, fontSize: '14px' }"
+              @selection-change="handleSelectionChange"
+            >
+              <el-table-column type="selection" width="55" header-align="center" align="center" :reserve-selection="true" />
+              <el-table-column prop="name" label="场景名称" min-width="150" show-overflow-tooltip header-align="center" align="left" />
+              <el-table-column prop="folder_path" label="所属目录" min-width="150" show-overflow-tooltip header-align="center" align="center">
+                <template #default="{ row }">
+                  <span>{{ row.folder_path || '-' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="step_count" label="步骤数" width="80" header-align="center" align="center" />
+              <el-table-column label="最近运行" width="120" header-align="center" align="center">
+                <template #default="{ row }">
+                  <span class="status-badge" :class="row.last_run_status === 'passed' ? 'run-passed' : row.last_run_status === 'failed' ? 'run-failed' : 'run-pending'">
+                    {{ row.last_run_status === 'passed' ? '通过' : row.last_run_status === 'failed' ? '失败' : '未运行' }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column prop="creator" label="创建人" width="100" header-align="center" align="center">
+                <template #default="{ row }">
+                  <span>{{ row.creator || '-' }}</span>
+                </template>
+              </el-table-column>
+            </el-table>
+            <!-- 分页 -->
+            <div class="pagination-container">
+              <el-pagination
+                v-model:current-page="scenarioCurrentPage"
+                v-model:page-size="scenarioPageSize"
+                :page-sizes="[10, 20, 50, 100]"
+                :total="filteredScenarios.length"
+                layout="total, sizes, prev, pager, next, jumper"
+                @size-change="handleScenarioSizeChange"
+                @current-change="handleScenarioCurrentChange"
+              />
+            </div>
+          </div>
+          <!-- 空状态 -->
+          <div v-else class="empty-state">
+            <el-empty :description="scenarioCacheTime ? '缓存已清空，请重新拉取' : '暂无场景数据，请先点击「拉取场景」获取 Apifox 场景列表'">
+              <el-button type="primary" @click="fetchScenarios" :loading="fetchingScenarios">
+                <el-icon style="margin-right: 4px;"><Refresh /></el-icon>
+                拉取场景
+              </el-button>
+            </el-empty>
+          </div>
 
-        <!-- 分页 -->
-        <div class="pagination-container">
-          <el-pagination
-            v-model:current-page="currentPage"
-            v-model:page-size="pageSize"
-            :page-sizes="[10, 20, 50, 100]"
-            :total="totalReports"
-            layout="total, sizes, prev, pager, next, jumper"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-          />
-        </div>
       </div>
     </div>
+
+    <!-- Apifox 配置抽屉 -->
+    <el-drawer v-model="configDrawerVisible" title="Apifox 配置" size="450px" :close-on-click-modal="false" @closed="saveConfig">
+      <el-form label-width="130px" label-position="left">
+        <el-form-item label="项目 ID">
+          <el-input v-model="config.project_id" placeholder="Apifox 项目 ID" clearable />
+        </el-form-item>
+        <el-form-item label="环境 ID">
+          <el-input v-model="config.environment_id" placeholder="Apifox 环境 ID" clearable />
+        </el-form-item>
+        <el-form-item label="Access Token">
+          <el-input v-model="config.access_token" placeholder="请输入 Apifox Access Token" show-password clearable />
+        </el-form-item>
+        <el-form-item label="本地环境变量" v-if="isRunMode">
+          <el-select
+            v-model="config.local_environment_id"
+            placeholder="选择本地环境变量（可选）"
+            clearable
+            filterable
+            style="width: 100%"
+            :loading="loadingEnvironments"
+          >
+            <el-option
+              v-for="env in localEnvironments"
+              :key="env.id"
+              :label="env.name"
+              :value="env.id"
+            />
+          </el-select>
+          <div style="font-size: 12px; color: #909399; line-height: 1.4; margin-top: 4px;">
+            选择后，本地环境变量将通过 CLI 参数传递给 Apifox，确保变量正确替换
+          </div>
+        </el-form-item>
+      </el-form>
+      <div style="margin-top: 20px; padding: 12px; background: #f5f7fa; border-radius: 4px; font-size: 12px; color: #909399; line-height: 1.6;">
+        <p style="margin: 0 0 8px 0; font-weight: 600; color: #606266;">配置说明</p>
+        <p style="margin: 0 0 4px 0;">• 项目 ID 和环境 ID 可在 Apifox 项目设置中查看</p>
+        <p style="margin: 0 0 4px 0;">• Access Token 在 Apifox → 项目设置 → 访问令牌中创建</p>
+        <p style="margin: 0 0 4px 0;">• Token 仅存储在服务端配置文件中，不会暴露给前端</p>
+        <p style="margin: 0;">• 本地环境变量用于解决 CLI 与客户端变量值不一致的问题</p>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { DataAnalysis, Setting, Check, VideoPlay, Refresh, FolderOpened, View, Delete, Loading, List, CircleCheck, Plus, Edit, ArrowLeft, InfoFilled, Lock, User, Document } from '@element-plus/icons-vue'
 import api from '@/utils/api'
+import { getEnvironments } from '@/api/api-testing'
 import ReportDetail from './components/ReportDetail.vue'
+
+// 模式：'check' = 场景检查（默认），'run' = 场景运行
+const props = defineProps({
+  mode: { type: String, default: 'check' },
+})
+const isRunMode = computed(() => props.mode === 'run')
 
 // 配置
 const config = reactive({
   project_id: '7366718',
   environment_id: '39566850',
   access_token: '',
+  local_environment_id: null,
 })
 const savingConfig = ref(false)
+const configDrawerVisible = ref(false)
+
+// 本地环境列表
+const localEnvironments = ref([])
+const loadingEnvironments = ref(false)
 
 // 报告生成
 const generating = ref(false)
@@ -661,8 +1008,24 @@ const loadConfig = async () => {
     // 后端返回的 access_token 是脱敏的（含 ****），不要直接填入表单
     // 如果 has_token 为 true，保留空字符串提示用户已保存过
     config.access_token = ''
+    // 如果后端返回了 local_environment_id，恢复它
+    config.local_environment_id = res.data.local_environment_id || null
   } catch (e) {
     console.error('加载配置失败:', e)
+  }
+}
+
+// 加载本地环境列表
+const loadLocalEnvironments = async () => {
+  loadingEnvironments.value = true
+  try {
+    const res = await getEnvironments({ is_active: true })
+    localEnvironments.value = res.data?.results || res.data || []
+  } catch (e) {
+    console.error('加载本地环境列表失败:', e)
+    localEnvironments.value = []
+  } finally {
+    loadingEnvironments.value = false
   }
 }
 
@@ -674,8 +1037,10 @@ const saveConfig = async () => {
       project_id: config.project_id,
       environment_id: config.environment_id,
       access_token: config.access_token,
+      local_environment_id: config.local_environment_id,
     })
     ElMessage.success('配置保存成功')
+    configDrawerVisible.value = false
   } catch (e) {
     ElMessage.error('配置保存失败: ' + (e.response?.data?.error || e.message))
   } finally {
@@ -837,10 +1202,273 @@ const formatTime = (isoStr) => {
   })
 }
 
-onMounted(() => {
-  loadConfig()
+// ============================================================
+// 场景运行功能
+// ============================================================
+
+// 场景列表
+const scenarios = ref([])
+const fetchingScenarios = ref(false)
+const selectedScenarios = ref([])
+const scenarioTableRef = ref(null)
+const scenarioCacheTime = ref('')  // 场景列表缓存时间
+const SCENARIO_CACHE_KEY = 'apifox_scenarios_cache'
+const selectedScenarioIds = computed(() => selectedScenarios.value.map(s => s.id))
+
+// 场景分页
+const scenarioCurrentPage = ref(1)
+const scenarioPageSize = ref(10)
+const creatorFilter = ref('')
+const folderFilter = ref('')
+const uniqueCreators = computed(() => {
+  const set = new Set(scenarios.value.map(s => s.creator).filter(Boolean))
+  return [...set].sort()
+})
+const uniqueFolders = computed(() => {
+  const set = new Set(scenarios.value.map(s => s.folder_path).filter(Boolean))
+  return [...set].sort((a, b) => a.localeCompare(b, 'zh-CN'))
+})
+const filteredScenarios = computed(() => {
+  let list = [...scenarios.value]
+  if (creatorFilter.value) list = list.filter(s => s.creator === creatorFilter.value)
+  if (folderFilter.value) list = list.filter(s => s.folder_path === folderFilter.value)
+  return list.sort((a, b) => {
+    const fa = a.folder_path || ''
+    const fb = b.folder_path || ''
+    if (fa !== fb) return fa.localeCompare(fb, 'zh-CN')
+    return (a.name || '').localeCompare(b.name || '', 'zh-CN')
+  })
+})
+const pagedScenarios = computed(() => {
+  const start = (scenarioCurrentPage.value - 1) * scenarioPageSize.value
+  const end = start + scenarioPageSize.value
+  return filteredScenarios.value.slice(start, end)
+})
+watch(creatorFilter, () => { scenarioCurrentPage.value = 1 })
+watch(folderFilter, () => { scenarioCurrentPage.value = 1 })
+
+const handleScenarioSizeChange = (val) => {
+  scenarioPageSize.value = val
+  scenarioCurrentPage.value = 1
+}
+const handleScenarioCurrentChange = (val) => {
+  scenarioCurrentPage.value = val
+}
+
+// 运行状态
+const running = ref(false)
+const runProgressDialogVisible = ref(false)
+const runProgressText = ref('')
+const runTaskError = ref('')
+const runTotal = ref(0)
+const runCompleted = ref(0)
+const runResults = ref([])
+const runTestExecutionId = ref(null)
+let runPollTimer = null
+
+const runPassedCount = computed(() => runResults.value.filter(r => r.is_passed).length)
+const runFailedCount = computed(() => runResults.value.filter(r => !r.is_passed).length)
+
+
+
+// 路由
+const router = useRouter()
+
+// 跳转到统一报告页面
+const goToUnifiedReport = () => {
+  runProgressDialogVisible.value = false
+  router.push('/api-testing/reports')
+}
+
+// 运行详情抽屉
+const runDetailDrawerVisible = ref(false)
+const currentRunDetail = ref(null)
+
+// HTTP 方法标签类型
+const methodTagType = (method) => {
+  const m = (method || '').toUpperCase()
+  if (m === 'GET') return 'success'
+  if (m === 'POST') return 'warning'
+  if (m === 'PUT' || m === 'PATCH') return ''
+  if (m === 'DELETE') return 'danger'
+  return 'info'
+}
+
+// 状态码颜色
+const statusCodeColor = (code) => {
+  if (!code) return '#999'
+  if (code >= 200 && code < 300) return '#67c23a'
+  if (code >= 400 && code < 500) return '#e6a23c'
+  if (code >= 500) return '#f56c6c'
+  return '#909399'
+}
+
+// 查看运行详情
+const viewRunDetail = (row) => {
+  currentRunDetail.value = row
+  runDetailDrawerVisible.value = true
+}
+
+// 拉取场景列表
+const fetchScenarios = async () => {
+  if (!config.project_id || !config.environment_id) {
+    ElMessage.warning('请先填写项目 ID 和环境 ID')
+    return
+  }
+
+  fetchingScenarios.value = true
+  try {
+    // 先保存配置
+    if (config.access_token) {
+      await api.post('/api-testing/apifox-check/config/', {
+        project_id: config.project_id,
+        environment_id: config.environment_id,
+        access_token: config.access_token,
+      })
+    }
+    const res = await api.get('/api-testing/apifox-check/scenarios/', {
+      params: {
+        project_id: config.project_id,
+        environment_id: config.environment_id,
+      }
+    })
+    scenarios.value = res.data.scenarios || []
+    scenarioCurrentPage.value = 1
+    // 保存到 localStorage 缓存
+    const cacheData = {
+      scenarios: scenarios.value,
+      cachedAt: new Date().toISOString(),
+      projectId: config.project_id,
+    }
+    localStorage.setItem(SCENARIO_CACHE_KEY, JSON.stringify(cacheData))
+    scenarioCacheTime.value = cacheData.cachedAt
+    ElMessage.success(`成功拉取 ${scenarios.value.length} 个场景`)
+  } catch (e) {
+    ElMessage.error(e.response?.data?.error || '拉取场景列表失败')
+  } finally {
+    fetchingScenarios.value = false
+  }
+}
+
+// 从本地缓存加载场景列表
+const loadCachedScenarios = () => {
+  try {
+    const raw = localStorage.getItem(SCENARIO_CACHE_KEY)
+    if (!raw) return
+    const cache = JSON.parse(raw)
+    // 仅当缓存的项目 ID 与当前配置一致时才使用缓存
+    if (cache.projectId && cache.projectId === config.project_id) {
+      scenarios.value = cache.scenarios || []
+      scenarioCacheTime.value = cache.cachedAt || ''
+    }
+  } catch {
+    // 缓存解析失败，忽略
+  }
+}
+
+// 格式化缓存时间
+const formatCacheTime = (isoStr) => {
+  if (!isoStr) return ''
+  try {
+    const d = new Date(isoStr)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  } catch {
+    return isoStr
+  }
+}
+
+// 表格选择变化
+const handleSelectionChange = (selection) => {
+  selectedScenarios.value = selection
+}
+
+// 全选/取消全选
+const toggleAllScenarios = () => {
+  if (!scenarioTableRef.value) return
+  scenarioTableRef.value.toggleAllSelection()
+}
+
+// 运行选中场景
+const runScenarios = async () => {
+  if (selectedScenarioIds.value.length === 0) {
+    ElMessage.warning('请先选择要运行的场景')
+    return
+  }
+
+  running.value = true
+  runProgressDialogVisible.value = true
+  runProgressText.value = '正在启动运行任务...'
+  runTaskError.value = ''
+  runResults.value = []
+  runTotal.value = selectedScenarioIds.value.length
+  runCompleted.value = 0
+
+  try {
+    // 先保存配置
+    if (config.access_token) {
+      await api.post('/api-testing/apifox-check/config/', {
+        project_id: config.project_id,
+        environment_id: config.environment_id,
+        access_token: config.access_token,
+        local_environment_id: config.local_environment_id,
+      })
+    }
+
+    const res = await api.post('/api-testing/apifox-check/run/', {
+      project_id: config.project_id,
+      environment_id: config.environment_id,
+      access_token: config.access_token,
+      scenario_ids: selectedScenarioIds.value,
+      local_environment_id: config.local_environment_id,
+    })
+
+    if (res.data.task_id) {
+      pollRunStatus(res.data.task_id)
+    } else {
+      running.value = false
+      runTaskError.value = res.data.error || '启动运行任务失败'
+    }
+  } catch (e) {
+    running.value = false
+    runTaskError.value = e.response?.data?.error || '启动运行任务失败'
+  }
+}
+
+// 轮询运行状态
+const pollRunStatus = (taskId) => {
+  const poll = async () => {
+    try {
+      const res = await api.get(`/api-testing/apifox-check/run/${taskId}/status/`)
+      runProgressText.value = res.data.progress || '运行中...'
+      runTotal.value = res.data.total || 0
+      runCompleted.value = res.data.completed || 0
+      runResults.value = res.data.results || []
+      runTestExecutionId.value = res.data.test_execution_id || null
+
+      if (res.data.status === 'completed') {
+        running.value = false
+        runProgressText.value = '运行完成！'
+        ElMessage.success(`运行完成：${runPassedCount.value} 通过，${runFailedCount.value} 失败`)
+      } else if (res.data.status === 'failed') {
+        running.value = false
+        runTaskError.value = res.data.error || '运行失败'
+      } else {
+        runPollTimer = setTimeout(poll, 2000)
+      }
+    } catch (e) {
+      running.value = false
+      runTaskError.value = '查询运行状态失败'
+    }
+  }
+  poll()
+}
+
+onMounted(async () => {
+  await loadConfig()
+  loadCachedScenarios()
   loadReports()
   loadExemptions()
+  loadLocalEnvironments()
 })
 </script>
 
@@ -854,6 +1482,184 @@ onMounted(() => {
   flex-direction: column;
   gap: 20px;
   position: relative;
+}
+
+// ========== Tab 样式 ==========
+.content-tabs {
+  :deep(.el-tabs__header) {
+    margin: 0;
+    padding: 0 24px;
+    background: linear-gradient(135deg, #fafbff 0%, #f8f7ff 100%);
+    border-bottom: 1px solid rgba(147, 112, 219, 0.12);
+
+    .el-tabs__item {
+      height: 52px;
+      line-height: 52px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #6d5d8f;
+
+      &.is-active {
+        color: #5a32a3;
+        font-weight: 600;
+      }
+
+      &:hover {
+        color: #7b42f6;
+      }
+    }
+
+    .el-tabs__active-bar {
+      background: linear-gradient(135deg, #7b42f6 0%, #5a32a3 100%);
+      height: 3px;
+      border-radius: 2px;
+    }
+  }
+
+  :deep(.el-tabs__content) {
+    padding: 20px 24px;
+  }
+}
+
+// ========== 运行进度弹窗 ==========
+.run-progress-wrap {
+  padding: 16px 0;
+
+  .progress-text {
+    text-align: center;
+    color: #7b42f6;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 16px 0 4px 0;
+  }
+
+  .progress-sub-text {
+    text-align: center;
+    color: #8c8c8c;
+    font-size: 13px;
+    margin: 0;
+  }
+}
+
+.run-results-summary {
+  padding: 8px 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .el-table {
+    flex: 1;
+  }
+}
+
+// ========== 场景列表区域 ==========
+.scenario-section {
+  margin-bottom: 20px;
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+}
+
+// ========== 运行详情抽屉 ==========
+.run-detail-header {
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 16px;
+
+  .run-detail-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+
+    .scenario-detail-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+
+  .run-detail-stats {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+
+    .stat-item {
+      font-size: 13px;
+      color: #666;
+      background: #f5f7fa;
+      padding: 4px 12px;
+      border-radius: 4px;
+    }
+  }
+}
+
+.steps-section {
+  .steps-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #5a32a3;
+    margin: 0 0 12px 0;
+  }
+}
+
+.step-expand-content {
+  padding: 12px 24px;
+  background: #fafbfc;
+
+  .step-sub-section {
+    margin-bottom: 16px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .sub-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+  }
+
+  .assertion-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+
+    .assertion-name {
+      font-size: 13px;
+      color: #333;
+      flex: 1;
+    }
+
+    .assertion-error {
+      font-size: 12px;
+      color: #f56c6c;
+      flex: 2;
+    }
+  }
+
+  .code-block {
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    color: #333;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 0;
+  }
 }
 
 // ========== 页面标题栏（参考 InterfaceList.vue 样式） ==========
@@ -954,8 +1760,13 @@ onMounted(() => {
 }
 
 // ========== 进度卡片 ==========
-// 生成进度弹窗样式
+// 运行进度抽屉内容样式
 .progress-dialog-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
   .progress-bar-wrap {
     padding: 16px 0;
   }
@@ -1324,6 +2135,27 @@ onMounted(() => {
   }
 }
 
+// ========== 运行进度抽屉样式 ==========
+.run-progress-drawer {
+  :deep(.el-drawer__body) {
+    padding: 0;
+    background: #ffffff;
+  }
+
+  .drawer-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 24px;
+  }
+
+  :deep(.el-drawer__footer) {
+    padding: 0;
+    border-top: 1px solid #ebeef5;
+    background: #ffffff;
+  }
+}
+
 .drawer-body {
   padding: 24px;
   height: 100%;
@@ -1585,6 +2417,24 @@ onMounted(() => {
   &.severity-info {
     background: #e6f7ff;
     color: #1890ff;
+  }
+
+  // 最近运行 - 通过（绿色）
+  &.run-passed {
+    background: #f6ffed;
+    color: #52c41a;
+  }
+
+  // 最近运行 - 失败（红色）
+  &.run-failed {
+    background: #fff1f0;
+    color: #f5222d;
+  }
+
+  // 最近运行 - 未运行（灰色）
+  &.run-pending {
+    background: #f5f5f5;
+    color: #8c8c8c;
   }
 }
 
@@ -2277,6 +3127,18 @@ onMounted(() => {
 
   .form-input-wrap {
     width: 100%;
+  }
+}
+
+// ========== 运行进度抽屉 Footer ==========
+.run-progress-drawer {
+  .drawer-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #ebeef5;
+    background: #ffffff;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
   }
 }
 </style>

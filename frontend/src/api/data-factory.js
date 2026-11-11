@@ -622,3 +622,81 @@ export function savePersonnelAssessment(recordId, data) {
     data
   })
 }
+
+// ========== 账号激活 ==========
+
+/**
+ * 获取账号激活 API 配置（当前用户）
+ */
+export function getActivationConfig() {
+  return request({
+    url: '/data-factory/activation/config/',
+    method: 'get'
+  })
+}
+
+/**
+ * 保存账号激活 API 配置
+ */
+export function saveActivationConfig(data) {
+  return request({
+    url: '/data-factory/activation/config/',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 恢复默认 API 配置
+ */
+export function resetActivationConfig() {
+  return request({
+    url: '/data-factory/activation/config/reset/',
+    method: 'post'
+  })
+}
+
+/**
+ * 批量激活 - 后端代理调用外部接口
+ * @param {Object} data - { authorization, mobiles, api_url?, api_method?, api_headers?, body_template?, interval_sec?, max_retry?, timeout?, per_batch? }
+ */
+export function batchActivate(data) {
+  return request({
+    url: '/data-factory/activation/batch/',
+    method: 'post',
+    data,
+    timeout: 300000  // 批量操作可能耗时长
+  })
+}
+
+/**
+ * 获取激活日志列表
+ */
+export function getActivationLogs(limit = 50) {
+  return request({
+    url: '/data-factory/activation/logs/',
+    method: 'get',
+    params: { limit }
+  })
+}
+
+/**
+ * 获取单条激活日志详情
+ */
+export function getActivationLogDetail(logId) {
+  return request({
+    url: `/data-factory/activation/logs/${logId}/`,
+    method: 'get'
+  })
+}
+
+/**
+ * 获取数据工厂手机号生成历史（用于「一键导入」）
+ */
+export function getPhoneHistory(limit = 20) {
+  return request({
+    url: '/data-factory/activation/phone-history/',
+    method: 'get',
+    params: { limit }
+  })
+}

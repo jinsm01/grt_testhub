@@ -16,6 +16,9 @@ from .apifox_check_views import (
     apifox_check_task_status, apifox_check_reports,
     apifox_check_report_detail, apifox_check_report_delete,
     apifox_check_exemptions, apifox_check_report_json,
+    apifox_check_scenarios, apifox_check_run, apifox_check_run_status,
+    apifox_check_run_reports, apifox_check_run_report_detail,
+    apifox_check_run_report_delete,
 )
 
 router = DefaultRouter()
@@ -64,6 +67,18 @@ urlpatterns = [
     path('api-testing/apifox-check/report/<str:filename>/json/', apifox_check_report_json, name='apifox-check-report-json'),
     # Apifox 场景检查 - 报告详情 (HTML)
     path('api-testing/apifox-check/report/<str:filename>/', apifox_check_report_detail, name='apifox-check-report-detail'),
+    # Apifox 场景运行 - 拉取场景列表
+    path('api-testing/apifox-check/scenarios/', apifox_check_scenarios, name='apifox-check-scenarios'),
+    # Apifox 场景运行 - 触发运行
+    path('api-testing/apifox-check/run/', apifox_check_run, name='apifox-check-run'),
+    # Apifox 场景运行 - 运行状态
+    path('api-testing/apifox-check/run/<str:task_id>/status/', apifox_check_run_status, name='apifox-check-run-status'),
+    # Apifox 场景运行 - 运行报告列表
+    path('api-testing/apifox-check/run-reports/', apifox_check_run_reports, name='apifox-check-run-reports'),
+    # Apifox 场景运行 - 删除运行报告
+    path('api-testing/apifox-check/run-report/<str:filename>/delete/', apifox_check_run_report_delete, name='apifox-check-run-report-delete'),
+    # Apifox 场景运行 - 运行报告详情 (JSON)
+    path('api-testing/apifox-check/run-report/<str:filename>/', apifox_check_run_report_detail, name='apifox-check-run-report-detail'),
 ]
 
 # 添加媒体文件路由

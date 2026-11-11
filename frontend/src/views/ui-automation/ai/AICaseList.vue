@@ -33,13 +33,13 @@
             {{ (pagination.currentPage - 1) * pagination.pageSize + $index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column prop="name" :label="$t('uiAutomation.ai.caseList.caseName')" min-width="200" show-overflow-tooltip header-align="center" align="left">
+        <el-table-column prop="name" :label="$t('uiAutomation.ai.caseList.caseName')" min-width="180" show-overflow-tooltip header-align="center" align="left">
           <template #default="{ row }">
             <div class="case-name-cell">{{ row.name }}</div>
           </template>
         </el-table-column>
-        <el-table-column prop="description" :label="$t('uiAutomation.common.description')" min-width="200" show-overflow-tooltip header-align="center" align="left" />
-        <el-table-column prop="task_description" label="操作步骤" min-width="300" header-align="center" align="left">
+        <!-- <el-table-column prop="description" :label="$t('uiAutomation.common.description')" min-width="200" show-overflow-tooltip header-align="center" align="left" /> -->
+        <el-table-column prop="task_description" label="操作步骤" min-width="400" header-align="center" align="left">
           <template #default="{ row }">
             <el-tooltip placement="top" :show-after="200" popper-class="custom-tooltip">
               <template #content>
@@ -50,7 +50,9 @@
                 </div>
               </template>
               <div class="task-description-cell">
-                <div class="task-description-text">{{ row.task_description }}</div>
+                <div v-for="(line, index) in getFormattedLines(row.task_description)" :key="index" class="task-description-line">
+                  {{ line }}
+                </div>
               </div>
             </el-tooltip>
           </template>
@@ -918,18 +920,21 @@ onMounted(() => {
 }
 
 .case-name-cell {
+  width: 100%;
   padding: 4px 8px;
   line-height: 1.6;
 }
 
 .task-description-cell {
+  width: 100%;
   line-height: 1.6;
   padding: 4px 8px;
+  max-height: 4.8em;
+  overflow: hidden;
 
-  .task-description-text {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .task-description-line {
+    white-space: normal;
+    word-break: break-word;
     text-align: left;
   }
 }

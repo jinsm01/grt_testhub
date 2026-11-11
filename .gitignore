@@ -67,9 +67,11 @@ media/app-automation/allure-reports/*
 media/app-automation/screenshots/*
 !media/app-automation/screenshots/.gitkeep
 
-# 忽略 AI 测试截图和 Apifox 检查报告（运行时产物）
+# 忽略 AI 测试截图和 Apifox 检查/运行报告（运行时产物）
 media/ai_screenshots/*
 !media/ai_screenshots/.gitkeep
+media/apifox-run-reports/*
+!media/apifox-run-reports/.gitkeep
 media/apifox-check-reports/*
 !media/apifox-check-reports/.gitkeep
 

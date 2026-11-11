@@ -200,3 +200,31 @@ export function updateTestSuiteRequest(id, data) {
     data
   })
 }
+
+// ==================== Apifox 场景相关 API ====================
+
+// 获取 Apifox 配置
+export function getApifoxConfig() {
+  return request({
+    url: '/api-testing/apifox-check/config/',
+    method: 'get'
+  })
+}
+
+// 保存 Apifox 配置
+export function saveApifoxConfig(data) {
+  return request({
+    url: '/api-testing/apifox-check/config/',
+    method: 'post',
+    data
+  })
+}
+
+// 获取 Apifox 场景列表
+export function getApifoxScenarios(params) {
+  return request({
+    url: '/api-testing/apifox-check/scenarios/',
+    method: 'get',
+    params
+  })
+}

@@ -28,5 +28,6 @@
   "rule_statuses": {
     "fixture-dir-skip": true,
     "scenario-run-passed": true
-  }
+  },
+  "local_environment_id": 1
 }

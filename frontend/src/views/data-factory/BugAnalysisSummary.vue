@@ -52,7 +52,7 @@
                 <span class="summary-name">{{ row.name || '未命名汇总' }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="关联文件" min-width="200" show-overflow-tooltip header-align="center" align="center">
+            <el-table-column label="关联迭代" min-width="200" show-overflow-tooltip header-align="center" align="center">
               <template #default="{ row }">
                 <span
                   v-if="(row.related_files || []).length"
@@ -345,7 +345,7 @@
         <div class="dialog-filter-bar">
           <el-input
             v-model="searchQuery"
-            placeholder="搜索文件名"
+            placeholder="搜索迭代名"
             clearable
             style="width: 240px;"
             size="default"
@@ -389,7 +389,7 @@
                 <span>{{ $index + 1 }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="file_name" label="文件名" min-width="180" show-overflow-tooltip header-align="center" align="left">
+            <el-table-column prop="file_name" label="关联迭代" min-width="180" show-overflow-tooltip header-align="center" align="left">
               <template #default="{ row }">
                 <span>{{ row.file_name || '未命名' }}</span>
               </template>

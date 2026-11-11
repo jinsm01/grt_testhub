@@ -186,6 +186,10 @@
               <el-icon><DataAnalysis /></el-icon>
               <span>Apifox 场景检查</span>
             </el-menu-item>
+            <el-menu-item index="/api-testing/apifox-scene-run">
+              <el-icon><VideoPlay /></el-icon>
+              <span>Apifox 场景运行</span>
+            </el-menu-item>
           </template>
 
           <!-- UI自动化测试模块菜单 -->
@@ -414,6 +418,10 @@
             <el-menu-item index="/data-factory/ai-rubric">
               <el-icon><ScaleToOriginal /></el-icon>
               <span style="color:#7c3aed;">量表生成</span>
+            </el-menu-item>
+            <el-menu-item index="/data-factory/account-activation">
+              <el-icon><User /></el-icon>
+              <span>账号激活</span>
             </el-menu-item>
           </template>
         </el-menu>
@@ -829,6 +837,7 @@ const breadcrumbTitle = computed(() => {
     '/api-testing/environments': t('menu.environmentManagement'),
     '/api-testing/reports': t('menu.testReport'),
     '/api-testing/apifox-scene-check': 'Apifox场景检查',
+    '/api-testing/apifox-scene-run': 'Apifox场景运行',
     '/api-testing/scheduled-tasks': t('menu.scheduledTasks'),
     '/api-testing/notification-logs': t('menu.notificationList'),
 
@@ -883,6 +892,7 @@ const breadcrumbTitle = computed(() => {
     '/data-factory/history': '使用记录',
     '/data-factory/excel-filler': '智能填充',
     '/data-factory/ai-rubric': '量表生成',
+    '/data-factory/account-activation': '账号激活',
 
     '/profile': t('nav.profile')
   }

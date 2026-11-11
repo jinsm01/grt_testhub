@@ -3256,6 +3256,58 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
             color: #dc2626;
         }}
 
+        .test-meta {{
+            margin-top: 6px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 12px;
+        }}
+        .test-meta .meta-item {{
+            display: inline-flex;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #475569;
+        }}
+        .test-meta .meta-status {{ font-weight: 600; }}
+        .test-meta .meta-status.pass {{ color: #16a34a; }}
+        .test-meta .meta-status.fail {{ color: #dc2626; }}
+        .test-assertions {{
+            margin-top: 6px;
+            font-size: 12px;
+        }}
+        .test-assertion-item {{
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            padding: 2px 0;
+        }}
+        .test-assertion-mark {{ font-weight: 700; flex-shrink: 0; }}
+        .test-assertion-mark.passed {{ color: #16a34a; }}
+        .test-assertion-mark.failed {{ color: #dc2626; }}
+        .test-code-block {{
+            margin-top: 4px;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+            color: #334155;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }}
+        .test-sub-title {{
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+        }}
+
         /* Empty State */
         .empty-state {{
             text-align: center;
@@ -3402,6 +3454,39 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
                     method_class = method.lower()
                     error_html = f'''<div class="test-error"><strong>错误:</strong> {result.get("error", "")}</div>''' if result.get('error') else ""
 
+                    # 构建元数据行（状态码、响应时间、断言数）
+                    meta_parts = []
+                    status_code = result.get('status_code')
+                    if status_code:
+                        sc_class = "pass" if 200 <= status_code < 400 else "fail"
+                        meta_parts.append(f'<span class="meta-item meta-status {sc_class}">HTTP {status_code}</span>')
+                    response_time = result.get('response_time')
+                    if response_time:
+                        meta_parts.append(f'<span class="meta-item">耗时 {response_time}ms</span>')
+                    assertions = result.get('assertions_results', [])
+                    if assertions:
+                        ap = sum(1 for a in assertions if a.get('passed'))
+                        at = len(assertions)
+                        meta_parts.append(f'<span class="meta-item">断言 {ap}/{at}</span>')
+                    meta_html = f'<div class="test-meta">{"".join(meta_parts)}</div>' if meta_parts else ""
+
+                    # 构建断言详情
+                    assertions_html = ""
+                    if assertions:
+                        items = []
+                        for a in assertions:
+                            amark = "✓" if a.get('passed') else "✗"
+                            acls = "passed" if a.get('passed') else "failed"
+                            aerr = f' <span style="color:#dc2626">{a.get("error", "")}</span>' if a.get('error') else ""
+                            items.append(f'<div class="test-assertion-item"><span class="test-assertion-mark {acls}">{amark}</span><span>{a.get("name", "")}{aerr}</span></div>')
+                        assertions_html = f'<div class="test-assertions">{"".join(items)}</div>'
+
+                    # 构建请求/响应体
+                    req_body = (result.get('request_data') or {}).get('body', '')
+                    resp_body = (result.get('response_data') or {}).get('body', '')
+                    req_body_html = f'<div class="test-sub-title">请求体</div><pre class="test-code-block">{req_body}</pre>' if req_body else ""
+                    resp_body_html = f'<div class="test-sub-title">响应体</div><pre class="test-code-block">{resp_body}</pre>' if resp_body else ""
+
                     index_content += f"""                <div class="test-item">
                     <div class="test-status {'passed' if is_passed else 'failed'}">{status_mark}</div>
                     <div class="test-content">
@@ -3410,7 +3495,11 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
                             <span class="test-name">{result.get('name', f'测试请求 {i+1}')}</span>
                         </div>
                         <div class="test-url">{result.get('url', '')}</div>
+                        {meta_html}
                         {error_html}
+                        {assertions_html}
+                        {req_body_html}
+                        {resp_body_html}
                     </div>
                 </div>
 """
@@ -4107,6 +4196,58 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
         .test-error strong {{
             color: #dc2626;
         }}
+
+        .test-meta {{
+            margin-top: 6px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 12px;
+        }}
+        .test-meta .meta-item {{
+            display: inline-flex;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #475569;
+        }}
+        .test-meta .meta-status {{ font-weight: 600; }}
+        .test-meta .meta-status.pass {{ color: #16a34a; }}
+        .test-meta .meta-status.fail {{ color: #dc2626; }}
+        .test-assertions {{
+            margin-top: 6px;
+            font-size: 12px;
+        }}
+        .test-assertion-item {{
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            padding: 2px 0;
+        }}
+        .test-assertion-mark {{ font-weight: 700; flex-shrink: 0; }}
+        .test-assertion-mark.passed {{ color: #16a34a; }}
+        .test-assertion-mark.failed {{ color: #dc2626; }}
+        .test-code-block {{
+            margin-top: 4px;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+            color: #334155;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }}
+        .test-sub-title {{
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+        }}
         
         /* Empty State */
         .empty-state {{
@@ -4261,7 +4402,40 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
                     method = result.get('method', 'GET').upper()
                     method_class = method.lower()
                     error_html = f'''<div class="test-error"><strong>错误:</strong> {result.get("error", "")}</div>''' if result.get('error') else ""
-                    
+
+                    # 构建元数据行（状态码、响应时间、断言数）
+                    meta_parts = []
+                    status_code = result.get('status_code')
+                    if status_code:
+                        sc_class = "pass" if 200 <= status_code < 400 else "fail"
+                        meta_parts.append(f'<span class="meta-item meta-status {sc_class}">HTTP {status_code}</span>')
+                    response_time = result.get('response_time')
+                    if response_time:
+                        meta_parts.append(f'<span class="meta-item">耗时 {response_time}ms</span>')
+                    assertions = result.get('assertions_results', [])
+                    if assertions:
+                        ap = sum(1 for a in assertions if a.get('passed'))
+                        at = len(assertions)
+                        meta_parts.append(f'<span class="meta-item">断言 {ap}/{at}</span>')
+                    meta_html = f'<div class="test-meta">{"".join(meta_parts)}</div>' if meta_parts else ""
+
+                    # 构建断言详情
+                    assertions_html = ""
+                    if assertions:
+                        items = []
+                        for a in assertions:
+                            amark = "✓" if a.get('passed') else "✗"
+                            acls = "passed" if a.get('passed') else "failed"
+                            aerr = f' <span style="color:#dc2626">{a.get("error", "")}</span>' if a.get('error') else ""
+                            items.append(f'<div class="test-assertion-item"><span class="test-assertion-mark {acls}">{amark}</span><span>{a.get("name", "")}{aerr}</span></div>')
+                        assertions_html = f'<div class="test-assertions">{"".join(items)}</div>'
+
+                    # 构建请求/响应体
+                    req_body = (result.get('request_data') or {}).get('body', '')
+                    resp_body = (result.get('response_data') or {}).get('body', '')
+                    req_body_html = f'<div class="test-sub-title">请求体</div><pre class="test-code-block">{req_body}</pre>' if req_body else ""
+                    resp_body_html = f'<div class="test-sub-title">响应体</div><pre class="test-code-block">{resp_body}</pre>' if resp_body else ""
+
                     index_content += f"""                <div class="test-item">
                     <div class="test-status {'passed' if is_passed else 'failed'}">{status_mark}</div>
                     <div class="test-content">
@@ -4270,7 +4444,11 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
                             <span class="test-name">{result.get('name', f'测试请求 {i+1}')}</span>
                         </div>
                         <div class="test-url">{result.get('url', '')}</div>
+                        {meta_html}
                         {error_html}
+                        {assertions_html}
+                        {req_body_html}
+                        {resp_body_html}
                     </div>
                 </div>
 """
@@ -4437,38 +4615,96 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
         return asyncio.run(_capture_screenshot())
 
     def _generate_test_result_files(self, execution, report_dir):
-        """生成测试结果文件"""
+        """生成测试结果文件，基于真实 wall-clock 时间分配每个请求的执行时长"""
         try:
-            # 检查execution.results是否存在
             if not execution.results:
                 logger.warning(f"执行记录 {execution.id} 没有结果数据")
                 return
 
-            # 生成容器文件，定义测试套件
+            import time as time_module
+            from datetime import datetime as dt
+
+            # 计算整体 wall-clock 时间跨度
+            if execution.start_time and execution.end_time:
+                # 使用 TestExecution 的 start/end 时间作为真实时长
+                start_dt = execution.start_time
+                if timezone.is_naive(start_dt):
+                    start_dt = timezone.make_aware(start_dt)
+                end_dt = execution.end_time
+                if timezone.is_naive(end_dt):
+                    end_dt = timezone.make_aware(end_dt)
+                total_duration_ms = max((end_dt - start_dt).total_seconds() * 1000, 1000)
+                base_time_ms = int(start_dt.timestamp() * 1000)
+            else:
+                # 回退：使用当前时间
+                base_time_ms = int(time_module.time() * 1000)
+                total_duration_ms = len(execution.results) * 1000  # 每个请求默认1秒
+
+            # 计算每个请求的 response_time 总和，用于按比例分配
+            total_response_time = 0
+            for result in execution.results:
+                rt = result.get('response_time')
+                if rt and isinstance(rt, (int, float)) and rt > 0:
+                    total_response_time += rt
+
+            # 如果没有有效的 response_time，平均分配
+            if total_response_time <= 0:
+                per_request_ms = total_duration_ms / len(execution.results)
+                response_times = [per_request_ms] * len(execution.results)
+            else:
+                # 按 response_time 比例分配到 total_duration_ms
+                scale_factor = total_duration_ms / total_response_time
+                response_times = []
+                for result in execution.results:
+                    rt = result.get('response_time')
+                    if rt and isinstance(rt, (int, float)) and rt > 0:
+                        response_times.append(rt * scale_factor)
+                    else:
+                        response_times.append(total_duration_ms / len(execution.results))
+
+            # 计算每个请求的 start/stop 时间
+            result_timings = []
+            cumulative_ms = 0
+            for i, duration_ms in enumerate(response_times):
+                start_ms = base_time_ms + cumulative_ms
+                stop_ms = start_ms + duration_ms
+                result_timings.append({
+                    'start': int(start_ms),
+                    'stop': int(stop_ms),
+                    'duration': int(duration_ms),
+                })
+                cumulative_ms += duration_ms
+
+            # 生成容器文件
             container_data = {
                 "uuid": str(execution.id),
                 "name": execution.test_suite.name,
-                "children": []
+                "children": [],
+                "start": result_timings[0]['start'] if result_timings else base_time_ms,
+                "stop": result_timings[-1]['stop'] if result_timings else base_time_ms + total_duration_ms,
             }
 
-            # 为每个测试请求添加到children列表
             for i, result in enumerate(execution.results):
                 container_data["children"].append(f"{execution.id}-{i}")
 
-            # 保存容器文件
             container_file_path = os.path.join(report_dir, f'{execution.id}-container.json')
             with open(container_file_path, 'w', encoding='utf-8') as f:
                 json.dump(container_data, f, ensure_ascii=False, indent=2)
 
-            # 只生成每个测试请求的结果文件，不生成测试套件的结果文件
+            # 生成每个请求的结果文件
             for i, result in enumerate(execution.results):
+                timing = result_timings[i]
+                
+                send_duration = int(timing['duration'] * 0.6)
+                verify_duration = timing['duration'] - send_duration
+
                 request_result = {
                     "uuid": f"{execution.id}-{i}",
                     "name": result.get('name', f'测试请求 {i+1}'),
                     "status": "passed" if result.get('passed', False) else "failed",
                     "stage": "finished",
-                    "start": int(time.time() * 1000) - 1000,  # 模拟开始时间
-                    "stop": int(time.time() * 1000),  # 模拟结束时间
+                    "start": timing['start'],
+                    "stop": timing['stop'],
                     "description": f"Method: {result.get('method', 'GET')}\nURL: {result.get('url', '')}",
                     "historyId": f"{execution.test_suite.id}-{i}",
                     "fullName": f"{execution.test_suite.name} / {result.get('name', f'请求 {i+1}')}",
@@ -4488,29 +4724,31 @@ class TestExecutionViewSet(viewsets.ModelViewSet):
                             "name": "发送请求",
                             "status": "passed",
                             "stage": "finished",
-                            "start": int(time.time() * 1000) - 1000,
-                            "stop": int(time.time() * 1000) - 500,
+                            "start": timing['start'],
+                            "stop": timing['start'] + send_duration,
                             "steps": []
                         },
                         {
                             "name": "验证响应",
                             "status": "passed" if result.get('passed', False) else "failed",
                             "stage": "finished",
-                            "start": int(time.time() * 1000) - 500,
-                            "stop": int(time.time() * 1000),
+                            "start": timing['start'] + send_duration,
+                            "stop": timing['stop'],
                             "steps": []
                         }
                     ]
                 }
-                
-                # 添加错误信息（如果有的话）
+
                 if result.get('error'):
                     request_result["statusDetails"] = {
                         "message": result.get('error'),
                         "trace": ""
                     }
-                
-                # 保存请求结果
+
+                response_time = result.get('response_time')
+                if response_time:
+                    request_result["description"] += f"\n原始响应时间: {response_time}ms"
+
                 request_file_path = os.path.join(report_dir, f'{execution.id}-{i}-result.json')
                 with open(request_file_path, 'w', encoding='utf-8') as f:
                     json.dump(request_result, f, ensure_ascii=False, indent=2)
@@ -4658,22 +4896,29 @@ class ScheduledTaskViewSet(viewsets.ModelViewSet):
                     result = self._execute_test_suite(task)
                 elif task.task_type == 'API_REQUEST':
                     result = self._execute_api_request(task)
+                elif task.task_type == 'APIFOX_SCENARIO':
+                    result = self._execute_apifox_scenarios(task)
                 else:
                     raise ValueError(f"未知的任务类型: {task.task_type}")
                 
+                # 判断执行是否成功
+                is_success = True
+                if task.task_type == 'APIFOX_SCENARIO':
+                    is_success = result.get('is_passed', False)
+                
                 # 更新执行结果
-                execution_log.status = 'COMPLETED'
+                execution_log.status = 'COMPLETED' if is_success else 'FAILED'
                 execution_log.end_time = timezone.now()
                 execution_log.result = result
                 execution_log.save()
                 
                 # 更新任务统计
-                task.update_run_stats(success=True)
+                task.update_run_stats(success=is_success)
                 task.last_result = result
                 task.save()
                 
-                # 自动生成报告（如果是测试套件类型）
-                if task.task_type == 'TEST_SUITE' and result.get('execution_id'):
+                # 自动生成报告（如果是测试套件或 Apifox 场景类型）
+                if task.task_type in ('TEST_SUITE', 'APIFOX_SCENARIO') and result.get('execution_id'):
                     try:
                         from .models import TestExecution
                         test_execution_id = result.get('execution_id')
@@ -4693,35 +4938,30 @@ class ScheduledTaskViewSet(viewsets.ModelViewSet):
                     except Exception as e:
                         logger.error(f"自动生成报告时出错: {str(e)}", exc_info=True)
                 
-                logger.info("=== 开始检查发送成功通知 ===")
+                logger.info("=== 开始检查发送通知 ===")
                 # 发送通知（如果配置了）
-                # 检查任务是否有通知设置
                 notification_setting = None
                 if hasattr(task, 'notification_settings'):
                     try:
                         notification_setting = task.notification_settings.first()
                         logger.info(f"获取到通知设置: {notification_setting}")
                         if notification_setting:
-                            logger.info(f"通知设置详情 - ID: {notification_setting.id}, 是否启用: {notification_setting.is_enabled}, 成功通知: {notification_setting.notify_on_success}")
-                        else:
-                            logger.info("没有找到通知设置")
+                            logger.info(f"通知设置详情 - ID: {notification_setting.id}, 是否启用: {notification_setting.is_enabled}")
                     except Exception as e:
                         logger.error(f"获取任务通知设置时出错: {e}")
-                        import traceback
-                        traceback.print_exc()
-                else:
-                    logger.info("任务没有notification_settings属性")
                 
                 if notification_setting and notification_setting.is_enabled:
-                    logger.info("通知设置已启用，准备发送成功通知")
-                    if notification_setting.notify_on_success:
+                    if is_success and notification_setting.notify_on_success:
                         logger.info("调用 _send_notification 方法发送成功通知")
                         self._send_notification(task, execution_log, success=True)
+                    elif not is_success and notification_setting.notify_on_failure:
+                        logger.info("调用 _send_notification 方法发送失败通知")
+                        self._send_notification(task, execution_log, success=False)
                     else:
-                        logger.info("通知设置中未启用成功通知")
+                        logger.info("根据执行状态和通知设置，跳过通知发送")
                 else:
-                    logger.info("通知设置未启用或不存在，跳过成功通知")
-                logger.info("=== 结束检查发送成功通知 ===")
+                    logger.info("通知设置未启用或不存在，跳过通知")
+                logger.info("=== 结束检查发送通知 ===")
                 
             except Exception as e:
                 # 记录执行失败
@@ -4811,6 +5051,153 @@ class ScheduledTaskViewSet(viewsets.ModelViewSet):
             task.environment, 
             task.created_by
         )
+        return result
+    
+    def _execute_apifox_scenarios(self, task):
+        """执行 Apifox CLI 场景"""
+        import logging
+        import time
+        from datetime import datetime as dt
+        logger = logging.getLogger(__name__)
+        
+        # 记录开始时间（使用 Django 时区感知的 datetime）
+        execution_start_time = timezone.now()
+        
+        apifox_config = task.apifox_config or {}
+        scenario_ids = task.apifox_scenario_ids or []
+        
+        project_id = apifox_config.get('project_id')
+        environment_id = apifox_config.get('environment_id')
+        access_token = apifox_config.get('access_token')
+        local_environment_id = apifox_config.get('local_environment_id')
+        
+        # 如果 token 被脱敏（包含 ****），从配置文件加载完整 token
+        if access_token and '****' in access_token:
+            from .apifox_check_views import _load_config
+            saved_config = _load_config()
+            access_token = saved_config.get('access_token', access_token)
+            logger.info("Apifox token 已从配置文件恢复")
+        
+        if not all([project_id, environment_id, access_token]):
+            raise ValueError("Apifox配置不完整：缺少project_id, environment_id或access_token")
+        
+        if not scenario_ids:
+            raise ValueError("未配置Apifox场景ID列表")
+        
+        # 获取本地环境变量
+        local_env_vars = {}
+        if local_environment_id:
+            try:
+                local_env = Environment.objects.get(id=local_environment_id)
+                local_env_vars = local_env.variables or {}
+            except Environment.DoesNotExist:
+                pass
+        
+        # 导入 Apifox 场景运行工具
+        from .apifox_check_views import (
+            _run_apifox_scenario, _parse_run_report,
+            _create_test_execution_for_apifox_run,
+        )
+        import tempfile
+        import shutil
+        
+        all_results = []
+        total_passed = 0
+        total_failed = 0
+        total_requests = 0
+        
+        for sid in scenario_ids:
+            temp_dir = tempfile.mkdtemp(prefix='apifox_scheduled_')
+            output_file = f'scenario_{sid}'
+            
+            try:
+                success, report, cli_stdout, error = _run_apifox_scenario(
+                    access_token, project_id, sid, environment_id,
+                    temp_dir, output_file, env_vars=local_env_vars
+                )
+                
+                if success and report:
+                    parsed = _parse_run_report(report, f'场景_{sid}', cli_stdout)
+                    parsed['scenario_id'] = sid
+                    all_results.append(parsed)
+                    total_requests += parsed.get('total_requests', 0)
+                    total_passed += parsed.get('passed_requests', 0)
+                    total_failed += parsed.get('failed_requests', 0)
+                else:
+                    failed_result = {
+                        'scenario_id': sid,
+                        'scenario_name': f'场景_{sid}',
+                        'is_passed': False,
+                        'error': error or '运行失败',
+                        'total_requests': 0,
+                        'passed_requests': 0,
+                        'failed_requests': 0,
+                    }
+                    all_results.append(failed_result)
+                    total_failed += 1
+                    
+            except Exception as e:
+                failed_result = {
+                    'scenario_id': sid,
+                    'scenario_name': f'场景_{sid}',
+                    'is_passed': False,
+                    'error': str(e)[:300],
+                    'total_requests': 0,
+                    'passed_requests': 0,
+                    'failed_requests': 0,
+                }
+                all_results.append(failed_result)
+                total_failed += 1
+            finally:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+        
+        is_passed = total_failed == 0
+        
+        result = {
+            'is_passed': is_passed,
+            'total_scenarios': len(scenario_ids),
+            'passed_scenarios': len(scenario_ids) - total_failed,
+            'failed_scenarios': total_failed,
+            'total_requests': total_requests,
+            'passed_requests': total_passed,
+            'failed_requests': total_failed,
+            'scenarios': all_results,
+        }
+        
+        # 创建 TestExecution 记录，生成统一报告
+        try:
+            user_obj = task.created_by
+            execution_end_time = timezone.now()
+            elapsed = (execution_end_time - execution_start_time).total_seconds()
+            logger.info(f"Apifox 场景执行耗时: {elapsed:.2f}s, 开始: {execution_start_time}, 结束: {execution_end_time}")
+            
+            # 记录每个场景的 response_time 用于调试
+            for r in all_results:
+                steps = r.get('steps', [])
+                step_times = [s.get('response_time', 0) for s in steps]
+                logger.info(f"  场景 {r.get('scenario_id')} ({r.get('scenario_name')}): "
+                           f"{len(steps)} steps, response_times={step_times}, "
+                           f"is_passed={r.get('is_passed')}")
+
+            execution = _create_test_execution_for_apifox_run(
+                all_results=all_results,
+                summary={
+                    'total_scenarios': len(scenario_ids),
+                    'passed_scenarios': len(scenario_ids) - total_failed,
+                    'failed_scenarios': total_failed,
+                    'total_requests': total_requests,
+                    'passed_requests': total_passed,
+                    'failed_requests': total_failed,
+                },
+                user=user_obj,
+                start_time_dt=execution_start_time,
+                end_time_dt=execution_end_time,
+            )
+            result['execution_id'] = execution.id
+            result['report_url'] = f'/api-testing/reports'
+        except Exception as e:
+            logger.error(f"创建 TestExecution 记录失败: {e}")
+        
         return result
     
     def _send_notification(self, task, execution_log, success=True):
@@ -4924,14 +5311,27 @@ class ScheduledTaskViewSet(viewsets.ModelViewSet):
             if execution_log.result:
                 result_data = execution_log.result
                 
-                # 执行概要
+                # 执行概要 - 兼容不同任务类型的结果字段
+                result_success = result_data.get('success')
+                if result_success is None:
+                    result_success = result_data.get('is_passed')
+                # API请求类型没有 success/is_passed 字段，用 success 参数兜底
+                if result_success is None:
+                    result_success = success
+
+                # 统计字段兼容：TEST_SUITE 用 total_count/passed_count/failed_count
+                # APIFOX_SCENARIO 用 total_requests/passed_requests/failed_requests
+                total_count = result_data.get('total_count', result_data.get('total_requests', 0))
+                passed_count = result_data.get('passed_count', result_data.get('passed_requests', 0))
+                failed_count = result_data.get('failed_count', result_data.get('failed_requests', 0))
+
                 summary_fields = {
                     '执行ID': result_data.get('execution_id'),
-                    '执行状态': '成功' if result_data.get('success') else '失败',
-                    '总请求数': result_data.get('total_count'),
-                    '通过数': result_data.get('passed_count'),
-                    '失败数': result_data.get('failed_count'),
-                    '通过率': f"{result_data.get('passed_count', 0) / result_data.get('total_count', 1) * 100:.1f}%" if result_data.get('total_count') else 'N/A'
+                    '执行状态': '成功' if result_success else '失败',
+                    '总请求数': total_count if total_count else None,
+                    '通过数': passed_count if passed_count else None,
+                    '失败数': failed_count if failed_count else None,
+                    '通过率': f"{passed_count / total_count * 100:.1f}%" if total_count else 'N/A'
                 }
                 summary_info = '\n'.join([f'{k}: {v}' for k, v in summary_fields.items() if v is not None])
                 
@@ -4967,9 +5367,9 @@ class ScheduledTaskViewSet(viewsets.ModelViewSet):
                 execution_id = result_data.get('execution_id')
                 if execution_id:
                     local_ip = self._get_local_ip()
-                    site_url = getattr(settings, 'SITE_URL', f"http://{local_ip}:8000")
+                    site_url = getattr(settings, 'SITE_URL', f"http://{local_ip}:3000")
                     if 'localhost' in site_url or '127.0.0.1' in site_url:
-                        site_url = f"http://{local_ip}:8000"
+                        site_url = f"http://{local_ip}:3000"
                     report_url = f"{site_url}/api-testing/allure-reports/execution_{execution_id}/summary.html"
 
             # 构建完整邮件内容
@@ -4979,7 +5379,7 @@ class ScheduledTaskViewSet(viewsets.ModelViewSet):
                 f"任务名称: {task.name}",
                 f"执行状态: {'成功' if success else '失败'}",
                 f"执行时间: {local_execution_time}",
-                f"任务类型: {'测试场景执行' if task.task_type == 'TEST_SUITE' else 'API请求执行'}",
+                f"任务类型: {task.get_task_type_display()}",
                 "",
                 "═══════════ 执行概要 ═══════════",
                 summary_info,
@@ -5172,11 +5572,13 @@ class ScheduledTaskViewSet(viewsets.ModelViewSet):
             status_text = '成功' if success else '失败'
             status_color = 'green' if success else 'red'
 
-            # 获取执行结果统计 - 从 result 中获取 TestExecution 相关信息
+            # 获取执行结果统计 - 兼容不同任务类型的结果字段
+            # TEST_SUITE: total_count/passed_count/failed_count
+            # APIFOX_SCENARIO: total_requests/passed_requests/failed_requests
             result = execution_log.result or {}
-            total_requests = result.get('total_count', 0)
-            passed_requests = result.get('passed_count', 0)
-            failed_requests = result.get('failed_count', 0)
+            total_requests = result.get('total_count', result.get('total_requests', 0))
+            passed_requests = result.get('passed_count', result.get('passed_requests', 0))
+            failed_requests = result.get('failed_count', result.get('failed_requests', 0))
             pass_rate = f"{(passed_requests / total_requests * 100):.1f}%" if total_requests > 0 else "0.0%"
 
             # 将UTC时间转换为本地时间
@@ -5188,12 +5590,12 @@ class ScheduledTaskViewSet(viewsets.ModelViewSet):
             # 构建报告和截图链接
             # 优先使用配置的 SITE_URL，如果没有则自动获取本地 IP
             local_ip = self._get_local_ip()
-            default_site_url = f"http://{local_ip}:8000"
+            default_site_url = f"http://{local_ip}:3000"
             site_url = getattr(settings, 'SITE_URL', default_site_url)
 
             # 如果 site_url 包含 localhost，替换为本地 IP
             if 'localhost' in site_url or '127.0.0.1' in site_url:
-                site_url = f"http://{local_ip}:8000"
+                site_url = f"http://{local_ip}:3000"
 
             # 使用 TestExecution ID 构建报告 URL（如果存在）
             # 优先使用 execution_log.result 中保存的报告链接和截图链接
@@ -5233,7 +5635,7 @@ class ScheduledTaskViewSet(viewsets.ModelViewSet):
 
 **执行时间:** {local_execution_time}
 
-**任务类型:** {'测试场景执行' if task.task_type == 'TEST_SUITE' else 'API请求执行'}
+**任务类型:** {task.get_task_type_display()}
 
 **查看报告:** [点击查看完整报告]({report_url})"""
 
@@ -5245,7 +5647,7 @@ class ScheduledTaskViewSet(viewsets.ModelViewSet):
                     }
                 elif bot_type == 'feishu':  # 飞书
                     # 构建飞书卡片内容
-                    feishu_content = f"**任务名称:** {task.name}\n**执行状态:** {status_text}\n**执行时间:** {local_execution_time}\n**任务类型:** {'测试场景执行' if task.task_type == 'TEST_SUITE' else 'API请求执行'}\n\n**执行统计**\n总请求数: {total_requests}\n通过: {passed_requests}\n失败: {failed_requests}\n通过率: {pass_rate}"
+                    feishu_content = f"**任务名称:** {task.name}\n**执行状态:** {status_text}\n**执行时间:** {local_execution_time}\n**任务类型:** {task.get_task_type_display()}\n\n**执行统计**\n总请求数: {total_requests}\n通过: {passed_requests}\n失败: {failed_requests}\n通过率: {pass_rate}"
 
                     message_data = {
                         "msg_type": "interactive",
@@ -5297,7 +5699,7 @@ class ScheduledTaskViewSet(viewsets.ModelViewSet):
 
 **执行时间:** {local_execution_time}
 
-**任务类型:** {'测试场景执行' if task.task_type == 'TEST_SUITE' else 'API请求执行'}
+**任务类型:** {task.get_task_type_display()}
 
 **查看报告:** [点击查看完整报告]({report_url})"""
 

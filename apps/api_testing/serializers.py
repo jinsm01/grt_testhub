@@ -446,6 +446,7 @@ class ScheduledTaskSerializer(serializers.ModelSerializer):
             'next_run_time', 'total_runs', 'successful_runs', 'failed_runs',
             'last_result', 'error_message', 'notify_on_success', 'notify_on_failure',
             'notify_emails', 'notification_type', 'notification_type_display', 'notification_type_input', 'created_by', 'created_by_name',
+            'apifox_scenario_ids', 'apifox_config',
             'created_at', 'updated_at'
         ]
         read_only_fields = [
@@ -500,6 +501,13 @@ class ScheduledTaskSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("测试套件不能为空")
         elif task_type == 'API_REQUEST' and not attrs.get('api_request'):
             raise serializers.ValidationError("API请求不能为空")
+        elif task_type == 'APIFOX_SCENARIO':
+            scenario_ids = attrs.get('apifox_scenario_ids', [])
+            if not scenario_ids or len(scenario_ids) == 0:
+                raise serializers.ValidationError("请选择至少一个Apifox场景")
+            apifox_config = attrs.get('apifox_config', {})
+            if not apifox_config or not apifox_config.get('project_id'):
+                raise serializers.ValidationError("Apifox配置不能为空，请先配置Apifox项目信息")
 
         return attrs
 

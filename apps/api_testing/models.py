@@ -352,6 +352,7 @@ class ScheduledTask(SoftDeleteModel):
     TASK_TYPE_CHOICES = [
         ('TEST_SUITE', '测试套件执行'),
         ('API_REQUEST', 'API请求执行'),
+        ('APIFOX_SCENARIO', 'Apifox场景执行'),
     ]
 
     STATUS_CHOICES = [
@@ -388,6 +389,10 @@ class ScheduledTask(SoftDeleteModel):
                                     verbose_name='API请求')
     environment = models.ForeignKey('Environment', on_delete=models.SET_NULL, null=True, blank=True,
                                     verbose_name='执行环境')
+
+    # Apifox 场景配置
+    apifox_scenario_ids = models.JSONField(default=list, blank=True, verbose_name='Apifox场景ID列表')
+    apifox_config = models.JSONField(default=dict, blank=True, verbose_name='Apifox配置')
 
     # 状态管理
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE', verbose_name='任务状态')

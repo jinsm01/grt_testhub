@@ -49,6 +49,15 @@ from .rubric_view import (
     rubric_delete,
     rubric_statistics,
 )
+# 账号激活视图
+from .activation_view import (
+    activation_config,
+    activation_config_reset,
+    batch_activate,
+    activation_logs,
+    activation_log_detail,
+    phone_history,
+)
 
 router = DefaultRouter()
 router.register(r'', DataFactoryViewSet, basename='data-factory')
@@ -118,4 +127,12 @@ urlpatterns = [
     path('rubric/statistics/', rubric_statistics, name='rubric-statistics'),
     path('rubric/<int:record_id>/', rubric_detail, name='rubric-detail'),
     path('rubric/<int:record_id>/delete/', rubric_delete, name='rubric-delete'),
+
+    # === 账号激活 ===
+    path('activation/config/', activation_config, name='activation-config'),
+    path('activation/config/reset/', activation_config_reset, name='activation-config-reset'),
+    path('activation/batch/', batch_activate, name='activation-batch'),
+    path('activation/logs/', activation_logs, name='activation-logs'),
+    path('activation/logs/<int:log_id>/', activation_log_detail, name='activation-log-detail'),
+    path('activation/phone-history/', phone_history, name='activation-phone-history'),
 ]

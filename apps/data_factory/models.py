@@ -463,3 +463,106 @@ class YunxiaoToken(models.Model):
             'display': f"{label} ({self.created_by})",
             'is_active': self.is_active,
         }
+
+
+class ActivationConfig(models.Model):
+    """
+    账号激活 API 配置 - 页面可维护的外部接口配置
+
+    用户可以自定义: URL / Method / Headers / Body 模板
+    下次进入页面自动加载上次保存的配置
+    """
+
+    HTTP_METHOD_CHOICES = (
+        ('GET', 'GET'),
+        ('POST', 'POST'),
+        ('PUT', 'PUT'),
+        ('DELETE', 'DELETE'),
+    )
+
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用户')
+
+    # API 配置 - 默认值来自 batch_activate_students.py 脚本
+    api_url = models.CharField(
+        max_length=500, verbose_name='接口URL',
+        default='https://apaas.grtcloud.net/api/grt-user-service/user/v1/user/batchActivateStudents',
+    )
+    api_method = models.CharField(
+        max_length=10, choices=HTTP_METHOD_CHOICES, default='POST', verbose_name='请求方法',
+    )
+    api_headers = models.JSONField(
+        default=dict, blank=True, verbose_name='自定义Headers',
+        help_text='如 {"TenantId": "xxx"}，Authorization 由执行时输入',
+    )
+    body_template = models.TextField(
+        default='{"tenant_id": "", "mobiles": {{mobiles}}}', verbose_name='请求体模板',
+        help_text='使用 {{mobiles}} 作为手机号列表占位符',
+    )
+
+    # 执行参数
+    interval_sec = models.FloatField(default=0.5, verbose_name='请求间隔(秒)')
+    max_retry = models.IntegerField(default=2, verbose_name='最大重试次数')
+    timeout = models.IntegerField(default=15, verbose_name='单次超时(秒)')
+
+    # 元信息
+    is_default = models.BooleanField(default=True, verbose_name='是否默认配置')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
+
+    class Meta:
+        db_table = 'df_activation_config'
+        verbose_name = '账号激活API配置'
+        verbose_name_plural = verbose_name
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"[{self.user.username}] {self.api_url[:60]}"
+
+
+class ActivationLog(models.Model):
+    """
+    账号激活执行日志 - 记录每一批次的激活结果
+    """
+
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用户')
+
+    # 本次配置快照
+    api_url = models.CharField(max_length=500, verbose_name='接口URL快照', default='')
+    api_method = models.CharField(max_length=10, verbose_name='请求方法快照', default='POST')
+    interval_sec = models.FloatField(default=0.5, verbose_name='请求间隔')
+
+    # 执行数据
+    mobiles = models.JSONField(default=list, verbose_name='本次手机号列表')
+    success_count = models.IntegerField(default=0, verbose_name='成功数')
+    fail_count = models.IntegerField(default=0, verbose_name='失败数')
+    results = models.JSONField(
+        default=list, verbose_name='逐条执行结果明细',
+        help_text='[{"mobile": "138...", "status": "SUCCESS", "userId": "xxx", "msg": "..."}]',
+    )
+
+    # 元信息
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='执行时间')
+
+    class Meta:
+        db_table = 'df_activation_log'
+        verbose_name = '账号激活执行日志'
+        verbose_name_plural = verbose_name
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"激活日志 #{self.id} (成功{self.success_count}/失败{self.fail_count}) @{self.created_at:%Y-%m-%d %H:%M}"
+
+    def to_list_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'api_url': self.api_url[:80],
+            'mobile_count': len(self.mobiles or []),
+            'success_count': self.success_count,
+            'fail_count': self.fail_count,
+            'created_at': timezone.localtime(self.created_at).strftime('%Y-%m-%d %H:%M:%S'),
+        }

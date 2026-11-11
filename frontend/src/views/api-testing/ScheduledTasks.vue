@@ -5,6 +5,7 @@
       <el-select v-model="filters.task_type" :placeholder="$t('apiTesting.scheduledTask.taskType')" clearable style="width: 160px;" @change="handleFilterChange">
         <el-option :label="$t('apiTesting.scheduledTask.taskTypes.testSuite')" value="TEST_SUITE" />
         <el-option :label="$t('apiTesting.scheduledTask.taskTypes.apiRequest')" value="API_REQUEST" />
+        <el-option :label="$t('apiTesting.scheduledTask.taskTypes.apifoxScenario')" value="APIFOX_SCENARIO" />
       </el-select>
       <el-select v-model="filters.trigger_type" :placeholder="$t('apiTesting.scheduledTask.triggerType')" clearable style="width: 160px;" @change="handleFilterChange">
         <el-option :label="$t('apiTesting.scheduledTask.triggerTypes.cron')" value="CRON" />
@@ -35,8 +36,8 @@
         <el-table-column prop="name" :label="$t('apiTesting.scheduledTask.taskName')" min-width="180" header-align="center" align="center" show-overflow-tooltip />
         <el-table-column prop="task_type" :label="$t('apiTesting.scheduledTask.taskType')" width="120" header-align="center" align="center">
           <template #default="scope">
-            <span class="task-type-badge" :class="scope.row.task_type === 'TEST_SUITE' ? 'test-suite' : 'api-request'">
-              {{ scope.row.task_type === 'TEST_SUITE' ? $t('apiTesting.scheduledTask.taskTypes.testSuiteShort') : $t('apiTesting.scheduledTask.taskTypes.apiRequestShort') }}
+            <span class="task-type-badge" :class="getTaskTypeClass(scope.row.task_type)">
+              {{ getTaskTypeText(scope.row.task_type) }}
             </span>
           </template>
         </el-table-column>
@@ -137,6 +138,7 @@
           <el-radio-group v-model="taskForm.task_type">
             <el-radio label="TEST_SUITE">{{ $t('apiTesting.scheduledTask.taskTypes.testSuite') }}</el-radio>
             <el-radio label="API_REQUEST">{{ $t('apiTesting.scheduledTask.taskTypes.apiRequest') }}</el-radio>
+            <el-radio label="APIFOX_SCENARIO">{{ $t('apiTesting.scheduledTask.taskTypes.apifoxScenario') }}</el-radio>
           </el-radio-group>
         </el-form-item>
 
@@ -209,6 +211,60 @@
             />
           </el-select>
         </el-form-item>
+
+        <!-- Apifox 场景配置 -->
+        <template v-if="taskForm.task_type === 'APIFOX_SCENARIO'">
+          <el-form-item :label="$t('apiTesting.scheduledTask.apifoxConfig')" required>
+            <div class="apifox-config-section">
+              <el-form-item :label="$t('apiTesting.scheduledTask.apifoxProjectId')" required>
+                <el-input v-model="taskForm.apifox_config.project_id" :placeholder="$t('apiTesting.scheduledTask.apifoxProjectIdPlaceholder')" />
+              </el-form-item>
+              <el-form-item :label="$t('apiTesting.scheduledTask.apifoxEnvironmentId')" required>
+                <el-input v-model="taskForm.apifox_config.environment_id" :placeholder="$t('apiTesting.scheduledTask.apifoxEnvironmentIdPlaceholder')" />
+              </el-form-item>
+              <el-form-item :label="$t('apiTesting.scheduledTask.apifoxAccessToken')" required>
+                <el-input v-model="taskForm.apifox_config.access_token" type="password" show-password :placeholder="$t('apiTesting.scheduledTask.apifoxAccessTokenPlaceholder')" />
+              </el-form-item>
+              <el-form-item :label="$t('apiTesting.scheduledTask.apifoxLocalEnvironment')">
+                <el-select v-model="taskForm.apifox_config.local_environment_id" clearable filterable :placeholder="$t('apiTesting.scheduledTask.apifoxSelectLocalEnv')">
+                  <el-option
+                    v-for="env in environments"
+                    :key="env.id"
+                    :label="env.name"
+                    :value="env.id"
+                  />
+                </el-select>
+              </el-form-item>
+            </div>
+          </el-form-item>
+
+          <el-form-item :label="$t('apiTesting.scheduledTask.apifoxScenarios')" required>
+            <div class="apifox-scenario-section">
+              <div class="scenario-selector">
+                <el-button type="primary" plain @click="openScenarioSelector">
+                  {{ $t('apiTesting.scheduledTask.apifoxSelectScenarios') }}
+                </el-button>
+                <el-button link type="primary" @click="fetchApifoxScenarios" :loading="fetchingApifoxScenarios">
+                  {{ $t('apiTesting.scheduledTask.apifoxRefreshScenarios') }}
+                </el-button>
+              </div>
+              <div v-if="taskForm.apifox_scenario_ids.length > 0" class="selected-scenarios">
+                <el-tag
+                  v-for="sid in taskForm.apifox_scenario_ids"
+                  :key="sid"
+                  closable
+                  @close="removeScenario(sid)"
+                  class="scenario-tag"
+                >
+                  {{ getScenarioName(sid) }}
+                </el-tag>
+              </div>
+              <div v-else class="no-scenarios-tip">
+                {{ $t('apiTesting.scheduledTask.apifoxNoScenariosSelected') }}
+              </div>
+            </div>
+          </el-form-item>
+        </template>
 
         <el-form-item :label="$t('apiTesting.scheduledTask.executeEnvironment')">
           <el-select v-model="taskForm.environment" :placeholder="$t('apiTesting.scheduledTask.selectEnvironment')">
@@ -284,11 +340,40 @@
         <el-table-column prop="error_message" :label="$t('apiTesting.scheduledTask.errorMessage')" min-width="300" show-overflow-tooltip header-align="center" align="center" />
       </el-table>
     </el-dialog>
+
+    <!-- Apifox 场景选择对话框 -->
+    <el-dialog v-model="showScenarioSelector" :title="$t('apiTesting.scheduledTask.apifoxSelectScenarios')" width="700px">
+      <div class="scenario-selector-content">
+        <div class="selector-tip">
+          {{ $t('apiTesting.scheduledTask.apifoxConfigTip') }}
+        </div>
+        <div class="selector-search">
+          <el-input v-model="scenarioSearchText" :placeholder="$t('apiTesting.scheduledTask.apifoxSearchScenario')" clearable style="width: 100%;" />
+        </div>
+        <div v-loading="fetchingApifoxScenarios" class="selector-table">
+          <el-table :data="filteredApifoxScenarios" @selection-change="handleScenarioSelectionChange" ref="scenarioTableRef" height="360">
+            <el-table-column type="selection" width="50" />
+            <el-table-column prop="name" :label="$t('apiTesting.scheduledTask.apifoxScenarioName')" min-width="200" show-overflow-tooltip />
+            <el-table-column prop="folder_path" :label="$t('apiTesting.scheduledTask.apifoxScenarioFolder')" width="150" show-overflow-tooltip />
+            <el-table-column prop="step_count" :label="$t('apiTesting.scheduledTask.apifoxScenarioSteps')" width="80" align="center" />
+          </el-table>
+        </div>
+        <div class="selector-footer">
+          <span>{{ $t('apiTesting.scheduledTask.apifoxSelectedCount', { count: tempSelectedScenarioIds.length }) }}</span>
+        </div>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button class="cancel-btn" @click="cancelScenarioSelection">{{ $t('apiTesting.common.cancel') }}</el-button>
+          <el-button type="primary" class="save-btn" @click="confirmScenarioSelection">{{ $t('apiTesting.common.confirm') }}</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Warning } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
@@ -303,7 +388,10 @@ import {
   getTestSuites,
   getApiRequests,
   getEnvironments,
-  getUsers
+  getUsers,
+  getApifoxScenarios,
+  getApifoxConfig,
+  saveApifoxConfig,
 } from '@/api/api-testing.js'
 
 const { t } = useI18n()
@@ -353,6 +441,26 @@ const getNotificationTypeClass = (typeDisplay) => {
   return typeMap[typeDisplay] || ''
 }
 
+// 获取任务类型样式类
+const getTaskTypeClass = (taskType) => {
+  const classMap = {
+    'TEST_SUITE': 'test-suite',
+    'API_REQUEST': 'api-request',
+    'APIFOX_SCENARIO': 'apifox-scenario'
+  }
+  return classMap[taskType] || 'default'
+}
+
+// 获取任务类型文本
+const getTaskTypeText = (taskType) => {
+  const textMap = {
+    'TEST_SUITE': t('apiTesting.scheduledTask.taskTypes.testSuiteShort'),
+    'API_REQUEST': t('apiTesting.scheduledTask.taskTypes.apiRequestShort'),
+    'APIFOX_SCENARIO': t('apiTesting.scheduledTask.taskTypes.apifoxScenarioShort')
+  }
+  return textMap[taskType] || taskType
+}
+
 // 数据状态
 const tasks = ref([])
 const executionLogs = ref([])
@@ -396,7 +504,35 @@ const taskForm = reactive({
   notify_on_success: false,
   notify_on_failure: false,
   notification_type: 'email',
-  notify_emails: []
+  notify_emails: [],
+  apifox_scenario_ids: [],
+  apifox_config: {
+    project_id: '',
+    environment_id: '',
+    access_token: '',
+    local_environment_id: null,
+  }
+})
+
+// Apifox 场景相关状态
+const apifoxScenarios = ref([])
+const fetchingApifoxScenarios = ref(false)
+const showScenarioSelector = ref(false)
+const scenarioSearchText = ref('')
+const tempSelectedScenarioIds = ref([])
+const scenarioTableRef = ref(null)
+const apifoxScenarioNameMap = computed(() => {
+  const map = {}
+  apifoxScenarios.value.forEach(s => { map[s.id] = s.name })
+  return map
+})
+const filteredApifoxScenarios = computed(() => {
+  if (!scenarioSearchText.value) return apifoxScenarios.value
+  const kw = scenarioSearchText.value.toLowerCase()
+  return apifoxScenarios.value.filter(s =>
+    (s.name && s.name.toLowerCase().includes(kw)) ||
+    (s.folder_path && s.folder_path.toLowerCase().includes(kw))
+  )
 })
 
 // 生命周期
@@ -406,6 +542,7 @@ onMounted(() => {
   loadApiRequests()
   loadEnvironments()
   loadUsers()
+  loadApifoxConfig()
 })
 
 // 加载任务列表
@@ -500,7 +637,14 @@ const resetTaskForm = () => {
     notify_on_success: false,
     notify_on_failure: false,
     notification_type: 'email',
-    notify_emails: []
+    notify_emails: [],
+    apifox_scenario_ids: [],
+    apifox_config: {
+      project_id: '',
+      environment_id: '',
+      access_token: '',
+      local_environment_id: null,
+    }
   })
 }
 
@@ -532,6 +676,15 @@ const submitTaskForm = async () => {
       submitData.test_suite = taskForm.test_suite
     } else if (taskForm.task_type === 'API_REQUEST') {
       submitData.api_request = taskForm.api_request
+    } else if (taskForm.task_type === 'APIFOX_SCENARIO') {
+      submitData.apifox_scenario_ids = taskForm.apifox_scenario_ids
+      submitData.apifox_config = taskForm.apifox_config
+      // 保存 Apifox 配置到后端
+      try {
+        await saveApifoxConfig(taskForm.apifox_config)
+      } catch (e) {
+        console.warn('保存Apifox配置失败:', e)
+      }
     }
 
     if (editingTask.value) {
@@ -615,9 +768,20 @@ const editTask = (task) => {
     notify_on_success: task.notify_on_success,
     notify_on_failure: task.notify_on_failure,
     notification_type: task.notification_type || 'email',
-    notify_emails: task.notify_emails || []
+    notify_emails: task.notify_emails || [],
+    apifox_scenario_ids: task.apifox_scenario_ids || [],
+    apifox_config: task.apifox_config || {
+      project_id: '',
+      environment_id: '',
+      access_token: '',
+      local_environment_id: null,
+    }
   })
   showCreateDialog.value = true
+  // 如果是 Apifox 场景类型，加载场景列表
+  if (task.task_type === 'APIFOX_SCENARIO' && task.apifox_config?.project_id) {
+    fetchApifoxScenarios()
+  }
 }
 
 // 暂停任务
@@ -662,6 +826,79 @@ const deleteTask = async (task) => {
     if (error !== 'cancel') {
       ElMessage.error(t('apiTesting.messages.error.deleteTaskFailed'))
     }
+  }
+}
+
+// ==================== Apifox 场景相关方法 ====================
+
+const fetchApifoxScenarios = async () => {
+  if (!taskForm.apifox_config.project_id || !taskForm.apifox_config.environment_id) {
+    ElMessage.warning(t('apiTesting.scheduledTask.apifoxConfigRequired'))
+    return
+  }
+  fetchingApifoxScenarios.value = true
+  try {
+    const res = await getApifoxScenarios({
+      project_id: taskForm.apifox_config.project_id,
+      environment_id: taskForm.apifox_config.environment_id,
+    })
+    apifoxScenarios.value = res.data.scenarios || []
+    ElMessage.success(t('apiTesting.scheduledTask.apifoxLoadSuccess', { count: apifoxScenarios.value.length }))
+  } catch (e) {
+    ElMessage.error(e.response?.data?.error || t('apiTesting.scheduledTask.apifoxLoadFailed'))
+  } finally {
+    fetchingApifoxScenarios.value = false
+  }
+}
+
+const openScenarioSelector = async () => {
+  if (apifoxScenarios.value.length === 0) {
+    await fetchApifoxScenarios()
+  }
+  tempSelectedScenarioIds.value = [...taskForm.apifox_scenario_ids]
+  scenarioSearchText.value = ''
+  showScenarioSelector.value = true
+}
+
+const handleScenarioSelectionChange = (selection) => {
+  tempSelectedScenarioIds.value = selection.map(s => s.id)
+}
+
+const confirmScenarioSelection = () => {
+  taskForm.apifox_scenario_ids = [...tempSelectedScenarioIds.value]
+  showScenarioSelector.value = false
+  ElMessage.success(t('apiTesting.scheduledTask.apifoxSelectedCount', { count: taskForm.apifox_scenario_ids.length }))
+}
+
+const cancelScenarioSelection = () => {
+  showScenarioSelector.value = false
+}
+
+const removeScenario = (sid) => {
+  const idx = taskForm.apifox_scenario_ids.indexOf(sid)
+  if (idx > -1) {
+    taskForm.apifox_scenario_ids.splice(idx, 1)
+  }
+}
+
+const getScenarioName = (sid) => {
+  return apifoxScenarioNameMap.value[sid] || `场景_${sid}`
+}
+
+// 加载 Apifox 配置
+const loadApifoxConfig = async () => {
+  try {
+    const res = await getApifoxConfig()
+    if (res.data) {
+      if (!taskForm.apifox_config.project_id && res.data.project_id) {
+        taskForm.apifox_config.project_id = res.data.project_id
+      }
+      if (!taskForm.apifox_config.environment_id && res.data.environment_id) {
+        taskForm.apifox_config.environment_id = res.data.environment_id
+      }
+    }
+  } catch (e) {
+    // 静默失败，配置可能不存在
   }
 }
 </script>
@@ -763,6 +1000,16 @@ const deleteTask = async (task) => {
     &.api-request {
       background: #e6f7ff;
       color: #1890ff;
+    }
+
+    &.apifox-scenario {
+      background: #f9f0ff;
+      color: #722ed1;
+    }
+
+    &.default {
+      background: #f5f5f5;
+      color: #8c8c8c;
     }
   }
 
@@ -1258,6 +1505,79 @@ const deleteTask = async (task) => {
         }
       }
     }
+  }
+}
+
+// Apifox 配置区域样式
+.apifox-config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+
+  .el-form-item {
+    margin-bottom: 12px;
+  }
+}
+
+// Apifox 场景选择区域样式
+.apifox-scenario-section {
+  width: 100%;
+
+  .scenario-selector {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .selected-scenarios {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px;
+    background: #f8f7ff;
+    border-radius: 8px;
+    border: 1px dashed rgba(147, 112, 219, 0.3);
+
+    .scenario-tag {
+      margin: 0;
+    }
+  }
+
+  .no-scenarios-tip {
+    color: #999;
+    font-size: 13px;
+    padding: 12px;
+    background: #fafafa;
+    border-radius: 8px;
+    text-align: center;
+  }
+}
+
+// 场景选择对话框样式
+.scenario-selector-content {
+  .selector-tip {
+    padding: 8px 12px;
+    background: #fffbe6;
+    border-radius: 6px;
+    color: #fa8c16;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .selector-search {
+    margin-bottom: 12px;
+  }
+
+  .selector-table {
+    margin-bottom: 12px;
+  }
+
+  .selector-footer {
+    text-align: right;
+    color: #666;
+    font-size: 13px;
   }
 }
 

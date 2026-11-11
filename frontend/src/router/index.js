@@ -10,6 +10,7 @@ import Home from '@/views/Home.vue'
 import DataFactory from '@/views/data-factory/DataFactory.vue'
 import ExcelDataFiller from '@/views/data-factory/ExcelDataFiller.vue'
 import AIRubricGenerator from '@/views/data-factory/AIRubricGenerator.vue'
+import AccountActivation from '@/views/data-factory/AccountActivation.vue'
 import ApiProjectManagement from '@/views/api-testing/ProjectManagement.vue'
 import ApiInterfaceManagement from '@/views/api-testing/InterfaceManagement.vue'
 import ApiInterfaceList from '@/views/api-testing/InterfaceList.vue'
@@ -351,6 +352,12 @@ const routes = [
         path: 'apifox-scene-check',
         name: 'ApifoxSceneCheck',
         component: ApiApifoxSceneCheck
+      },
+      {
+        path: 'apifox-scene-run',
+        name: 'ApifoxSceneRun',
+        component: ApiApifoxSceneCheck,
+        props: { mode: 'run' }
       }
     ]
   },
@@ -502,6 +509,11 @@ const routes = [
         path: 'ai-rubric',
         name: 'AIRubricGenerator',
         component: AIRubricGenerator
+      },
+      {
+        path: 'account-activation',
+        name: 'AccountActivation',
+        component: AccountActivation
       }
     ]
   },

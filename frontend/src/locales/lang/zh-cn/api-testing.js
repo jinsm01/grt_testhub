@@ -349,8 +349,10 @@ export default {
     taskTypes: {
       testSuite: '测试场景执行',
       apiRequest: 'API请求执行',
+      apifoxScenario: 'Apifox场景执行',
       testSuiteShort: '测试场景',
-      apiRequestShort: 'API请求'
+      apiRequestShort: 'API请求',
+      apifoxScenarioShort: 'Apifox场景'
     },
     triggerType: '触发器类型',
     triggerTypes: {
@@ -406,7 +408,29 @@ export default {
     startTime: '开始时间',
     endTime: '结束时间',
     errorMessage: '错误信息',
-    confirmDeleteTask: '确定要删除这个定时任务吗？'
+    confirmDeleteTask: '确定要删除这个定时任务吗？',
+    apifoxConfig: 'Apifox配置',
+    apifoxProjectId: '项目ID',
+    apifoxProjectIdPlaceholder: '请输入Apifox项目ID',
+    apifoxEnvironmentId: '环境ID',
+    apifoxEnvironmentIdPlaceholder: '请输入Apifox环境ID',
+    apifoxAccessToken: '访问令牌',
+    apifoxAccessTokenPlaceholder: '请输入Apifox Access Token',
+    apifoxLocalEnvironment: '本地执行环境',
+    apifoxSelectLocalEnv: '选择本地环境（可选，用于传递本地变量）',
+    apifoxScenarios: '选择场景',
+    apifoxSelectScenarios: '选择Apifox场景',
+    apifoxRefreshScenarios: '刷新场景列表',
+    apifoxNoScenariosSelected: '尚未选择任何场景，请点击上方按钮选择',
+    apifoxConfigTip: '请先配置Apifox项目信息，然后选择要执行的场景',
+    apifoxConfigRequired: '请先填写Apifox项目ID和环境ID',
+    apifoxSearchScenario: '搜索场景名称或路径',
+    apifoxScenarioName: '场景名称',
+    apifoxScenarioFolder: '所属目录',
+    apifoxScenarioSteps: '步骤数',
+    apifoxSelectedCount: '已选择 {count} 个场景',
+    apifoxLoadSuccess: '成功加载 {count} 个场景',
+    apifoxLoadFailed: '加载场景列表失败'
   },
 
   // 请求历史
